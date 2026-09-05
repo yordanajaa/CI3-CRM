@@ -433,7 +433,8 @@ class Model_crm extends CI_Model
 				'target' => $phone,
 				'message' => $message,
 			];
-			curl_setopt($ch, CURLOPT_URL, $api_url ?: 'https://api.fonnte.com/send');
+			$target_url = (empty($api_url) || strpos($api_url, 'send-message') !== false) ? 'https://api.fonnte.com/send' : $api_url;
+			curl_setopt($ch, CURLOPT_URL, $target_url);
 			curl_setopt($ch, CURLOPT_POST, true);
 			curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post_data));
 		} elseif ($provider === 'wablas') {
