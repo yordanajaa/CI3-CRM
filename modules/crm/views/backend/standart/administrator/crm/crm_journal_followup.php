@@ -627,7 +627,7 @@ window.addEventListener('load', function() {
           apiMsg = r.api_results[0].message || '';
         }
         if (apiSuccess) {
-          notify('success', 'Pesan WA BERHASIL dikirim via Fonnte API ke ' + nama + ' (' + rawPhone + ')!');
+          notify('success', 'Pesan WA sukses terkirim via Fonnte API ke ' + nama + ' (' + rawPhone + ')! Pesan telah masuk antrean pengiriman.');
         } else {
           notify('error', 'Gagal pengiriman via Fonnte API: ' + apiMsg);
         }
