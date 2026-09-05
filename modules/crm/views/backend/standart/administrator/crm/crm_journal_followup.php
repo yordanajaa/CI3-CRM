@@ -380,7 +380,7 @@
     <div class="modal-content">
       <div class="modal-header" style="background:#f8f9fa;border-bottom:2px solid #3498db;">
         <button type="button" class="close" data-dismiss="modal">&times;</button>
-        <h4 class="modal-title"><i class="fa fa-comment"></i> Tambah Catatan Follow-Up</h4>
+        <h4 class="modal-title"><i class="fa fa-comments"></i> Catatan & Riwayat Pesan WhatsApp</h4>
       </div>
       <div class="modal-body">
         <p><strong>Customer:</strong> <span id="note-customer-name"></span></p>
