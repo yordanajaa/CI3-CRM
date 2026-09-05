@@ -170,7 +170,12 @@ class Crm extends Admin
 			echo json_encode(['success' => false, 'message' => 'Pilih minimal 1 customer']); return;
 		}
 
+		$config = $this->model_crm->get_wa_gateway_config();
+		$use_api = ($config->mode === 'wa_gateway');
+
 		$wa_links = [];
+		$api_results = [];
+
 		foreach ($label_ids as $lid) {
 			$label = $this->model_crm->get_label($lid);
 			if (!$label) continue;
@@ -178,12 +183,73 @@ class Crm extends Admin
 			if ($label->is_broadcast_sent) continue;
 
 			$message = !empty($custom_message) ? $custom_message : $this->model_crm->render_template($label->template_pesan_default, $label);
-			$wa_link = $this->model_crm->generate_wa_link($label->customer_phone, $message);
-			$this->model_crm->log_broadcast($lid, $message);
-			$wa_links[] = ['link' => $wa_link, 'nama' => $label->customer_nama, 'phone' => $label->customer_phone];
+
+			if ($use_api) {
+				$api_res = $this->model_crm->send_wa_via_api($label->customer_phone, $message);
+				$this->model_crm->log_broadcast($lid, $message, 'wa_gateway_api');
+				$api_results[] = [
+					'phone' => $label->customer_phone,
+					'nama' => $label->customer_nama,
+					'success' => $api_res['success'],
+					'message' => $api_res['message']
+				];
+			} else {
+				$wa_link = $this->model_crm->generate_wa_link($label->customer_phone, $message);
+				$this->model_crm->log_broadcast($lid, $message, 'wa_direct_link');
+				$wa_links[] = ['link' => $wa_link, 'nama' => $label->customer_nama, 'phone' => $label->customer_phone];
+			}
 		}
 
-		echo json_encode(['success' => true, 'wa_links' => $wa_links, 'count' => count($wa_links)]);
+		echo json_encode([
+			'success' => true,
+			'mode' => $config->mode,
+			'wa_links' => $wa_links,
+			'api_results' => $api_results,
+			'count' => $use_api ? count($api_results) : count($wa_links)
+		]);
+	}
+
+	// ===== MODUL WA GATEWAY API CONFIGURATION =====
+
+	public function wa_gateway_setting()
+	{
+		$this->data['config'] = $this->model_crm->get_wa_gateway_config();
+		$this->template->title('CRM — Pengaturan WhatsApp Gateway API');
+		$this->render('backend/standart/administrator/crm/crm_wa_gateway_setting', $this->data);
+	}
+
+	public function save_wa_gateway_config_ajax()
+	{
+		header('Content-Type: application/json');
+		$data = [
+			'mode' => $this->input->post('mode') ?: 'wa_direct',
+			'provider' => $this->input->post('provider') ?: 'fonnte',
+			'api_key' => trim($this->input->post('api_key') ?: ''),
+			'api_url' => trim($this->input->post('api_url') ?: ''),
+			'sender_phone' => trim($this->input->post('sender_phone') ?: ''),
+			'additional_headers' => trim($this->input->post('additional_headers') ?: ''),
+		];
+
+		$res = $this->model_crm->save_wa_gateway_config($data);
+		echo json_encode([
+			'success' => (bool)$res,
+			'message' => $res ? 'Konfigurasi WhatsApp Gateway API berhasil disimpan' : 'Gagal menyimpan konfigurasi'
+		]);
+	}
+
+	public function test_wa_gateway_ajax()
+	{
+		header('Content-Type: application/json');
+		$phone = trim($this->input->post('phone') ?: '');
+		$message = trim($this->input->post('message') ?: 'Tes WA Gateway ERP Metafora');
+
+		if (empty($phone)) {
+			echo json_encode(['success' => false, 'message' => 'Nomor HP tidak boleh kosong']);
+			return;
+		}
+
+		$res = $this->model_crm->send_wa_via_api($phone, $message);
+		echo json_encode($res);
 	}
 
 	// ===== Follow-Up Settings =====

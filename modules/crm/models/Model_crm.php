@@ -368,6 +368,159 @@ class Model_crm extends CI_Model
 		]);
 	}
 
+	/**
+	 * Get WA Gateway Configuration
+	 */
+	public function get_wa_gateway_config()
+	{
+		$row = $this->db->get('crm_wa_gateway_config')->row();
+		if (!$row) {
+			return (object)[
+				'provider' => 'fonnte',
+				'mode' => 'wa_direct',
+				'api_key' => '',
+				'api_url' => 'https://api.fonnte.com/send-message',
+				'sender_phone' => '',
+				'additional_headers' => '',
+				'is_active' => 1
+			];
+		}
+		return $row;
+	}
+
+	public function save_wa_gateway_config($data)
+	{
+		$row = $this->db->get('crm_wa_gateway_config')->row();
+		if ($row) {
+			$data['updated_at'] = date('Y-m-d H:i:s');
+			return $this->db->where('id', $row->id)->update('crm_wa_gateway_config', $data);
+		} else {
+			$data['created_at'] = date('Y-m-d H:i:s');
+			return $this->db->insert('crm_wa_gateway_config', $data);
+		}
+	}
+
+	/**
+	 * Send WhatsApp message directly via Gateway API (cURL)
+	 */
+	public function send_wa_via_api($phone, $message)
+	{
+		$config = $this->get_wa_gateway_config();
+
+		// Normalize phone: 08xx -> 628xx
+		$phone = preg_replace('/^0/', '62', $phone);
+		$phone = preg_replace('/[^0-9]/', '', $phone);
+		if (substr($phone, 0, 2) !== '62') $phone = '62' . $phone;
+
+		$provider = strtolower($config->provider ?: 'fonnte');
+		$api_key = trim($config->api_key ?: '');
+		$api_url = trim($config->api_url ?: 'https://api.fonnte.com/send-message');
+
+		if (empty($api_key) && in_array($provider, ['fonnte', 'wablas', 'starsender'])) {
+			return [
+				'success' => false,
+				'message' => 'API Key WhatsApp Gateway belum dikonfigurasi di sistem.',
+			];
+		}
+
+		$ch = curl_init();
+		$headers = [];
+		$post_data = [];
+
+		if ($provider === 'fonnte') {
+			$headers[] = 'Authorization: ' . $api_key;
+			$post_data = [
+				'target' => $phone,
+				'message' => $message,
+			];
+			curl_setopt($ch, CURLOPT_URL, $api_url ?: 'https://api.fonnte.com/send-message');
+			curl_setopt($ch, CURLOPT_POST, true);
+			curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post_data));
+		} elseif ($provider === 'wablas') {
+			$headers[] = 'Authorization: ' . $api_key;
+			$headers[] = 'Content-Type: application/json';
+			$payload = [
+				'data' => [
+					['phone' => $phone, 'message' => $message]
+				]
+			];
+			curl_setopt($ch, CURLOPT_URL, $api_url ?: 'https://api.wablas.com/api/v2/send-message');
+			curl_setopt($ch, CURLOPT_POST, true);
+			curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+		} elseif ($provider === 'waha') {
+			$headers[] = 'Content-Type: application/json';
+			if (!empty($api_key)) {
+				$headers[] = 'x-api-key: ' . $api_key;
+			}
+			$payload = [
+				'chatId' => $phone . '@c.us',
+				'text' => $message
+			];
+			$url = rtrim($api_url ?: 'http://localhost:3000', '/') . '/api/sendText';
+			curl_setopt($ch, CURLOPT_URL, $url);
+			curl_setopt($ch, CURLOPT_POST, true);
+			curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+		} elseif ($provider === 'starsender') {
+			$headers[] = 'apikey: ' . $api_key;
+			$post_data = [
+				'message' => $message,
+				'tujuan' => $phone
+			];
+			curl_setopt($ch, CURLOPT_URL, $api_url ?: 'https://api.starsender.online/api/sendText');
+			curl_setopt($ch, CURLOPT_POST, true);
+			curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post_data));
+		} else { // custom cURL
+			$headers[] = 'Authorization: Bearer ' . $api_key;
+			$headers[] = 'Content-Type: application/json';
+
+			if (!empty($config->additional_headers)) {
+				$extra_lines = explode("\n", $config->additional_headers);
+				foreach ($extra_lines as $el) {
+					$el = trim($el);
+					if (!empty($el)) $headers[] = $el;
+				}
+			}
+
+			$payload = [
+				'phone' => $phone,
+				'target' => $phone,
+				'message' => $message,
+				'text' => $message
+			];
+			curl_setopt($ch, CURLOPT_URL, $api_url);
+			curl_setopt($ch, CURLOPT_POST, true);
+			curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+		}
+
+		curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+		curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+
+		$response = curl_exec($ch);
+		$err = curl_error($ch);
+		$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		curl_close($ch);
+
+		if ($err) {
+			return [
+				'success' => false,
+				'message' => 'cURL Error: ' . $err,
+				'http_code' => $http_code
+			];
+		}
+
+		$res_json = json_decode($response, true);
+		$is_ok = ($http_code >= 200 && $http_code < 300);
+
+		return [
+			'success' => $is_ok,
+			'message' => $is_ok ? 'Pesan WA berhasil dikirim via API' : ('API Error (HTTP ' . $http_code . ')'),
+			'response' => $res_json ?: $response,
+			'http_code' => $http_code
+		];
+	}
+
 	public function get_broadcast_logs($filters = [], $limit = 25, $offset = 0)
 	{
 		$this->db->select('bl.*, tfl.customer_nama, tfl.customer_phone, tfl.no_pesanan, tfl.order_source, fc.nama_kategori');
