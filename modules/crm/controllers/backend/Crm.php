@@ -179,8 +179,8 @@ class Crm extends Admin
 		foreach ($label_ids as $lid) {
 			$label = $this->model_crm->get_label($lid);
 			if (!$label) continue;
-			// FB-10: Check duplicate
-			if ($label->is_broadcast_sent) continue;
+			// Skip duplicate only on bulk broadcast without custom message
+			if ($label->is_broadcast_sent && count($label_ids) > 1 && empty($custom_message)) continue;
 
 			$message = !empty($custom_message) ? $custom_message : $this->model_crm->render_template($label->template_pesan_default, $label);
 

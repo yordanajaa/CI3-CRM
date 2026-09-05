@@ -349,7 +349,7 @@
             </td>
             <td class="text-center" style="white-space:nowrap;">
               <?php if (!empty($e->customer_phone)): ?>
-              <button class="btn-wa-sm btn-send-wa <?= $e->is_broadcast_sent ? 'disabled' : ''; ?>" data-label-id="<?= $e->id; ?>" <?= $e->is_broadcast_sent ? 'disabled title="Sudah dikirim"' : 'title="Kirim WA"'; ?>>
+              <button class="btn-wa-sm btn-send-wa <?= $e->is_broadcast_sent ? 'sent-active' : ''; ?>" data-label-id="<?= $e->id; ?>" title="<?= $e->is_broadcast_sent ? 'Sudah pernah dikirim (Klik untuk kirim ulang / follow up susulan)' : 'Kirim WA'; ?>">
                 <i class="fa fa-whatsapp"></i>
               </button>
               <?php endif; ?>
@@ -559,7 +559,6 @@ window.addEventListener('load', function() {
 
   // ===== Single WA Send (With Preview & Edit Modal) =====
   $(document).on('click', '.btn-send-wa', function() {
-    if ($(this).hasClass('disabled')) return;
     var $btn = $(this);
     var label_id = $btn.data('label-id');
 
@@ -612,7 +611,7 @@ window.addEventListener('load', function() {
       $('#modal-wa-preview').modal('hide');
       
       var $targetBtn = $('.btn-send-wa[data-label-id="' + label_id + '"]');
-      $targetBtn.addClass('disabled').prop('disabled', true).attr('title', 'Sudah dikirim');
+      $targetBtn.addClass('sent-active').prop('disabled', false).attr('title', 'Sudah pernah dikirim (Klik untuk kirim ulang / follow up susulan)');
 
       var $statusSel = $('.status-select[data-label-id="' + label_id + '"]');
       if ($statusSel.length && $statusSel.val() === 'Pending') {
