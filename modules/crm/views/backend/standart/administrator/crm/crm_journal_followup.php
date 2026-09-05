@@ -349,6 +349,9 @@
               <div class="time-log-wa" id="time-log-<?= $e->id; ?>" style="font-size:11px;color:#27ae60;margin-top:4px;font-weight:600;<?= empty($e->waktu_kirim_wa) ? 'display:none;' : ''; ?>">
                 <i class="fa fa-paper-plane" style="color:#25D366;"></i> Terkirim: <span class="time-val"><?= !empty($e->waktu_kirim_wa) ? date('d/m/Y H:i', strtotime($e->waktu_kirim_wa)) : ''; ?></span>
               </div>
+              <span class="badge label-success badge-wa-count" id="badge-count-<?= $e->id; ?>" data-count="<?= (int)($e->total_wa_sent ?? 0); ?>" style="background:#25D366;font-size:10px;padding:3px 8px;margin-top:3px;display:<?= (!empty($e->total_wa_sent) && $e->total_wa_sent > 0) ? 'inline-block' : 'none'; ?>;border-radius:10px;" title="Total pengiriman WhatsApp ke customer ini">
+                <i class="fa fa-comments"></i> <span class="cnt-val"><?= (int)($e->total_wa_sent ?? 0); ?></span>x Chat WA
+              </span>
             </td>
             <td class="text-center" style="white-space:nowrap;">
               <?php if (!empty($e->customer_phone)): ?>
@@ -620,6 +623,11 @@ window.addEventListener('load', function() {
       var nowStr = ('0' + dt.getDate()).slice(-2) + '/' + ('0' + (dt.getMonth() + 1)).slice(-2) + '/' + dt.getFullYear() + ' ' + ('0' + dt.getHours()).slice(-2) + ':' + ('0' + dt.getMinutes()).slice(-2);
       $('#time-log-' + label_id).show().find('.time-val').text(nowStr);
 
+      var $cntBadge = $('#badge-count-' + label_id);
+      var currCnt = parseInt($cntBadge.attr('data-count') || 0) + 1;
+      $cntBadge.attr('data-count', currCnt).find('.cnt-val').text(currCnt);
+      $cntBadge.css('display', 'inline-block');
+
       var $statusSel = $('.status-select[data-label-id="' + label_id + '"]');
       if ($statusSel.length && $statusSel.val() === 'Pending') {
         $statusSel.val('Sudah Dikirim').trigger('change');
@@ -725,13 +733,23 @@ window.addEventListener('load', function() {
     
     $.get(_BASE + 'administrator/crm/get_notes_ajax', { label_id: lid }, function(res) {
       var r = parseRes(res);
-      var html = '<hr><h5 style="font-weight:700;font-size:12px;color:#1e293b;"><i class="fa fa-history" style="color:#3b82f6;"></i> Riwayat Pengiriman WA & Catatan:</h5>';
+      var totalWa = r.wa_logs ? r.wa_logs.length : 0;
+      var totalNotes = r.notes ? r.notes.length : 0;
+
+      var html = '<hr>';
+      html += '<div style="background:#f1f5f9;border:1px solid #cbd5e1;padding:8px 12px;border-radius:6px;margin-bottom:12px;font-size:12px;display:flex;justify-content:space-between;align-items:center;">';
+      html += '<span><i class="fa fa-comments" style="color:#25D366;font-size:13px;"></i> Total Chat WA: <strong style="color:#15803d;font-size:12px;">' + totalWa + ' Kali</strong></span>';
+      html += '<span><i class="fa fa-commenting-o" style="color:#3b82f6;font-size:13px;"></i> Total Catatan CS: <strong style="color:#1d4ed8;font-size:12px;">' + totalNotes + '</strong></span>';
+      html += '</div>';
+
       var timeline = [];
+      var waCounter = totalWa;
 
       if (r.wa_logs && r.wa_logs.length > 0) {
         $.each(r.wa_logs, function(i, w) {
           timeline.push({
             type: 'wa',
+            num: waCounter--,
             time: w.waktu_kirim || w.created_at,
             user: w.dikirim_oleh || 'system',
             method: w.metode_kirim || 'wa_gateway',
@@ -758,15 +776,21 @@ window.addEventListener('load', function() {
         $.each(timeline, function(i, item) {
           var safeMsg = $('<div>').text(item.msg || '').html();
           if (item.type === 'wa') {
-            html += '<div style="background:#f0fdf4;border-left:4px solid #22c55e;padding:8px 12px;border-radius:6px;margin-bottom:6px;font-size:12px;">';
-            html += '<i class="fa fa-paper-plane" style="color:#22c55e;"></i> <strong style="color:#15803d;">Pesan WA Terkirim</strong> <span style="color:#64748b;font-size:11px;">(' + item.user + ' • ' + item.time + ')</span>';
-            html += '<div style="margin-top:4px;color:#334155;white-space:pre-wrap;font-size:12px;background:#ffffff;padding:6px 10px;border-radius:4px;border:1px solid #dcfce7;">' + safeMsg + '</div>';
+            html += '<div style="background:#f0fdf4;border-left:4px solid #22c55e;padding:10px 12px;border-radius:6px;margin-bottom:8px;font-size:12px;">';
+            html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
+            html += '<span><i class="fa fa-paper-plane" style="color:#22c55e;"></i> <strong style="color:#15803d;font-size:12px;">Pesan WA Ke-' + item.num + ' Terkirim</strong> <span style="color:#64748b;font-size:11px;">(' + item.user + ')</span></span>';
+            html += '<span class="label" style="background:#22c55e;color:#fff;font-size:10px;"><i class="fa fa-clock-o"></i> ' + item.time + '</span>';
+            html += '</div>';
+            html += '<div style="color:#334155;white-space:pre-wrap;font-size:12px;background:#ffffff;padding:8px 12px;border-radius:6px;border:1px solid #dcfce7;line-height:1.5;">' + safeMsg + '</div>';
             html += '</div>';
           } else {
-            html += '<div style="background:#eff6ff;border-left:4px solid #3b82f6;padding:8px 12px;border-radius:6px;margin-bottom:6px;font-size:12px;">';
-            html += '<i class="fa fa-comment" style="color:#3b82f6;"></i> <strong style="color:#1d4ed8;">Catatan CS</strong> <span style="color:#64748b;font-size:11px;">(' + item.user + ' • ' + item.time + ')</span>';
-            if (item.status) html += ' <span class="label label-info">' + item.status + '</span>';
-            html += '<div style="margin-top:4px;color:#334155;white-space:pre-wrap;font-size:12px;">' + safeMsg + '</div>';
+            html += '<div style="background:#eff6ff;border-left:4px solid #3b82f6;padding:10px 12px;border-radius:6px;margin-bottom:8px;font-size:12px;">';
+            html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
+            html += '<span><i class="fa fa-comment" style="color:#3b82f6;"></i> <strong style="color:#1d4ed8;font-size:12px;">Catatan CS</strong> <span style="color:#64748b;font-size:11px;">(' + item.user + ')</span></span>';
+            html += '<span style="color:#64748b;font-size:11px;"><i class="fa fa-clock-o"></i> ' + item.time + '</span>';
+            html += '</div>';
+            if (item.status) html += '<div style="margin-bottom:4px;"><span class="label label-info">' + item.status + '</span></div>';
+            html += '<div style="color:#334155;white-space:pre-wrap;font-size:12px;background:#ffffff;padding:6px 10px;border-radius:4px;border:1px solid #dbeafe;">' + safeMsg + '</div>';
             html += '</div>';
           }
         });

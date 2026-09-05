@@ -187,7 +187,7 @@ class Model_crm extends CI_Model
 	 */
 	public function get_journal_entries($filters = [], $limit = 25, $offset = 0)
 	{
-		$this->db->select('tfl.*, fc.nama_kategori, fc.kode_kategori, fc.jumlah_hari');
+		$this->db->select('tfl.*, fc.nama_kategori, fc.kode_kategori, fc.jumlah_hari, (SELECT COUNT(*) FROM crm_broadcast_logs bl WHERE bl.followup_label_id = tfl.id) AS total_wa_sent');
 		$this->db->from('crm_transaction_followup_labels tfl');
 		$this->db->join('crm_followup_categories fc', 'tfl.followup_category_id = fc.id');
 
