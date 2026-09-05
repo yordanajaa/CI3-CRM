@@ -346,6 +346,9 @@
                 <option value="<?= $st; ?>" <?= ($e->status_label == $st) ? 'selected' : ''; ?>><?= $st; ?></option>
                 <?php endforeach; ?>
               </select>
+              <div class="time-log-wa" id="time-log-<?= $e->id; ?>" style="font-size:11px;color:#27ae60;margin-top:4px;font-weight:600;<?= empty($e->waktu_kirim_wa) ? 'display:none;' : ''; ?>">
+                <i class="fa fa-paper-plane" style="color:#25D366;"></i> Terkirim: <span class="time-val"><?= !empty($e->waktu_kirim_wa) ? date('d/m/Y H:i', strtotime($e->waktu_kirim_wa)) : ''; ?></span>
+              </div>
             </td>
             <td class="text-center" style="white-space:nowrap;">
               <?php if (!empty($e->customer_phone)): ?>
@@ -613,6 +616,10 @@ window.addEventListener('load', function() {
       var $targetBtn = $('.btn-send-wa[data-label-id="' + label_id + '"]');
       $targetBtn.addClass('sent-active').prop('disabled', false).attr('title', 'Sudah pernah dikirim (Klik untuk kirim ulang / follow up susulan)');
 
+      var dt = new Date();
+      var nowStr = ('0' + dt.getDate()).slice(-2) + '/' + ('0' + (dt.getMonth() + 1)).slice(-2) + '/' + dt.getFullYear() + ' ' + ('0' + dt.getHours()).slice(-2) + ':' + ('0' + dt.getMinutes()).slice(-2);
+      $('#time-log-' + label_id).show().find('.time-val').text(nowStr);
+
       var $statusSel = $('.status-select[data-label-id="' + label_id + '"]');
       if ($statusSel.length && $statusSel.val() === 'Pending') {
         $statusSel.val('Sudah Dikirim').trigger('change');
@@ -718,19 +725,53 @@ window.addEventListener('load', function() {
     
     $.get(_BASE + 'administrator/crm/get_notes_ajax', { label_id: lid }, function(res) {
       var r = parseRes(res);
-      var html = '';
+      var html = '<hr><h5 style="font-weight:700;font-size:12px;color:#1e293b;"><i class="fa fa-history" style="color:#3b82f6;"></i> Riwayat Pengiriman WA & Catatan:</h5>';
+      var timeline = [];
+
+      if (r.wa_logs && r.wa_logs.length > 0) {
+        $.each(r.wa_logs, function(i, w) {
+          timeline.push({
+            type: 'wa',
+            time: w.waktu_kirim || w.created_at,
+            user: w.dikirim_oleh || 'system',
+            method: w.metode_kirim || 'wa_gateway',
+            msg: w.isi_pesan_final || ''
+          });
+        });
+      }
+
       if (r.notes && r.notes.length > 0) {
-        html += '<hr><h5 style="font-weight:700;font-size:12px;">Riwayat Catatan:</h5>';
         $.each(r.notes, function(i, n) {
-          var safeNote = $('<div>').text(n.catatan || '').html();
-          html += '<div style="background:#f8f9fa;padding:8px 12px;border-radius:5px;margin-bottom:5px;font-size:12px;">';
-          html += '<strong>' + (n.username || 'system') + '</strong> <span style="color:#95a5a6;">' + (n.created_at || '') + '</span>';
-          if (n.status_manual) html += ' <span class="label label-info">' + n.status_manual + '</span>';
-          html += '<br>' + safeNote;
-          html += '</div>';
+          timeline.push({
+            type: 'note',
+            time: n.created_at,
+            user: n.username || 'system',
+            status: n.status_manual,
+            msg: n.catatan || ''
+          });
+        });
+      }
+
+      timeline.sort(function(a, b) { return new Date(b.time) - new Date(a.time); });
+
+      if (timeline.length > 0) {
+        $.each(timeline, function(i, item) {
+          var safeMsg = $('<div>').text(item.msg || '').html();
+          if (item.type === 'wa') {
+            html += '<div style="background:#f0fdf4;border-left:4px solid #22c55e;padding:8px 12px;border-radius:6px;margin-bottom:6px;font-size:12px;">';
+            html += '<i class="fa fa-paper-plane" style="color:#22c55e;"></i> <strong style="color:#15803d;">Pesan WA Terkirim</strong> <span style="color:#64748b;font-size:11px;">(' + item.user + ' • ' + item.time + ')</span>';
+            html += '<div style="margin-top:4px;color:#334155;white-space:pre-wrap;font-size:12px;background:#ffffff;padding:6px 10px;border-radius:4px;border:1px solid #dcfce7;">' + safeMsg + '</div>';
+            html += '</div>';
+          } else {
+            html += '<div style="background:#eff6ff;border-left:4px solid #3b82f6;padding:8px 12px;border-radius:6px;margin-bottom:6px;font-size:12px;">';
+            html += '<i class="fa fa-comment" style="color:#3b82f6;"></i> <strong style="color:#1d4ed8;">Catatan CS</strong> <span style="color:#64748b;font-size:11px;">(' + item.user + ' • ' + item.time + ')</span>';
+            if (item.status) html += ' <span class="label label-info">' + item.status + '</span>';
+            html += '<div style="margin-top:4px;color:#334155;white-space:pre-wrap;font-size:12px;">' + safeMsg + '</div>';
+            html += '</div>';
+          }
         });
       } else {
-        html = '<p class="text-muted" style="font-size:11px;margin-top:10px;">Belum ada catatan sebelumnya.</p>';
+        html += '<p class="text-muted" style="font-size:11px;margin-top:10px;">Belum ada riwayat pengiriman WA atau catatan sebelumnya.</p>';
       }
       $('#note-history').html(html);
     }).fail(function() {

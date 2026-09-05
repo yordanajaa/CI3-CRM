@@ -570,7 +570,8 @@ class Crm extends Admin
 		header('Content-Type: application/json');
 		$label_id = $this->input->get('label_id');
 		$notes = $this->model_crm->get_notes($label_id);
-		echo json_encode(['success' => true, 'notes' => $notes]);
+		$wa_logs = $this->db->where('followup_label_id', $label_id)->order_by('waktu_kirim', 'DESC')->get('crm_broadcast_logs')->result();
+		echo json_encode(['success' => true, 'notes' => $notes, 'wa_logs' => $wa_logs]);
 	}
 
 	// ===== MODUL ANALITIK KINERJA & KONVERSI TIM CS =====
