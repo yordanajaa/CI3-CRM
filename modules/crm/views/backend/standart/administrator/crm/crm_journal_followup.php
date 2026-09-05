@@ -601,15 +601,7 @@ window.addEventListener('load', function() {
       return;
     }
 
-    var phone = rawPhone.replace(/^0/, '62').replace(/[^0-9]/g, '');
-    if (phone.substring(0, 2) !== '62') phone = '62' + phone;
-
-    var wa_link = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(customMsg);
-
-    // Open WA in new tab
-    window.open(wa_link, '_blank');
-
-    $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Mengirim...');
+    $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Mengirim via WA API...');
 
     $.post(_BASE + 'administrator/crm/send_broadcast_ajax', buildPayload({
       label_ids: [label_id],
@@ -627,10 +619,18 @@ window.addEventListener('load', function() {
         $statusSel.val('Sudah Dikirim').trigger('change');
       }
 
-      notify('success', 'Pesan WA berhasil dikirim ke ' + nama);
+      if (r.mode === 'wa_gateway') {
+        notify('success', 'Pesan WA berhasil dikirim via Fonnte Gateway API ke ' + nama);
+      } else {
+        var phone = rawPhone.replace(/^0/, '62').replace(/[^0-9]/g, '');
+        if (phone.substring(0, 2) !== '62') phone = '62' + phone;
+        var wa_link = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(customMsg);
+        window.open(wa_link, '_blank');
+        notify('success', 'Pesan WA terbuka untuk ' + nama);
+      }
     }).fail(function() {
       $btn.prop('disabled', false).html('<i class="fa fa-paper-plane"></i> Kirim via WhatsApp');
-      notify('error', 'Gagal menyimpan log broadcast');
+      notify('error', 'Gagal mengirim pesan WA');
     });
   });
 
@@ -680,14 +680,19 @@ window.addEventListener('load', function() {
   function doBroadcast(ids) {
     $.post(_BASE + 'administrator/crm/send_broadcast_ajax', buildPayload({ label_ids: ids }), function(res) {
       var r = parseRes(res);
-      if (r.success && r.wa_links) {
-        var delay = 0;
-        $.each(r.wa_links, function(i, link) {
-          setTimeout(function() { window.open(link.link, '_blank'); }, delay);
-          delay += 2000;
-        });
-        notify('success', r.count + ' pesan WA berhasil dikirim!');
-        setTimeout(function() { location.reload(); }, 3000);
+      if (r.success) {
+        if (r.mode === 'wa_gateway') {
+          notify('success', 'Berhasil mengirim ' + r.count + ' pesan WA otomatis via Fonnte Gateway API!');
+          setTimeout(function() { location.reload(); }, 1500);
+        } else if (r.wa_links) {
+          var delay = 0;
+          $.each(r.wa_links, function(i, link) {
+            setTimeout(function() { window.open(link.link, '_blank'); }, delay);
+            delay += 2000;
+          });
+          notify('success', r.count + ' pesan WA berhasil dikirim!');
+          setTimeout(function() { location.reload(); }, 3000);
+        }
       }
     });
   }

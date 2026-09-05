@@ -294,18 +294,23 @@ $(document).ready(function() {
       label_ids: selectedIds
     }), function(res) {
       var r = parseRes(res);
-      if (r.success && r.wa_links) {
-        var delay = 0;
-        $.each(r.wa_links, function(i, item) {
+      if (r.success) {
+        if (r.mode === 'wa_gateway') {
+          notify('success', 'Berhasil mengirim ' + r.count + ' pesan WA otomatis via Fonnte Gateway API!');
+          setTimeout(function() { location.reload(); }, 1500);
+        } else if (r.wa_links) {
+          var delay = 0;
+          $.each(r.wa_links, function(i, item) {
+            setTimeout(function() {
+              window.open(item.link, '_blank');
+            }, delay);
+            delay += 2000;
+          });
+          notify('success', r.count + ' pesan WA sedang diproses batch!');
           setTimeout(function() {
-            window.open(item.link, '_blank');
-          }, delay);
-          delay += 2000;
-        });
-        notify('success', r.count + ' pesan WA sedang diproses batch!');
-        setTimeout(function() {
-          location.reload();
-        }, 3000);
+            location.reload();
+          }, 3000);
+        }
       } else {
         notify('error', r.message || 'Gagal mengirim broadcast');
       }
