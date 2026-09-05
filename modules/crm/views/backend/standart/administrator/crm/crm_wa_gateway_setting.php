@@ -115,8 +115,8 @@
 
             <div class="form-group">
               <label style="font-weight:700;font-size:12px;color:#334155;">API URL Endpoint</label>
-              <input type="text" class="form-control" name="api_url" id="config-api-url" value="<?= htmlspecialchars($config->api_url ?? 'https://api.fonnte.com/send-message'); ?>" placeholder="https://api.fonnte.com/send-message" style="border-radius:8px;height:40px;font-family:monospace;">
-              <small class="text-muted" id="url-help-text">URL endpoint default Fonnte: https://api.fonnte.com/send-message</small>
+              <input type="text" class="form-control" name="api_url" id="config-api-url" value="<?= htmlspecialchars($config->api_url ?? 'https://api.fonnte.com/send'); ?>" placeholder="https://api.fonnte.com/send" style="border-radius:8px;height:40px;font-family:monospace;">
+              <small class="text-muted" id="url-help-text">URL endpoint default Fonnte: https://api.fonnte.com/send</small>
             </div>
 
             <div class="form-group">
@@ -172,7 +172,7 @@
 <script>
 $(document).ready(function() {
   var presetUrls = {
-    'fonnte': 'https://api.fonnte.com/send-message',
+    'fonnte': 'https://api.fonnte.com/send',
     'wablas': 'https://api.wablas.com/api/v2/send-message',
     'waha': 'http://localhost:3000',
     'starsender': 'https://api.starsender.online/api/sendText',

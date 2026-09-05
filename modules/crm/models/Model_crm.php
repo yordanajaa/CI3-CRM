@@ -379,7 +379,7 @@ class Model_crm extends CI_Model
 				'provider' => 'fonnte',
 				'mode' => 'wa_direct',
 				'api_key' => '',
-				'api_url' => 'https://api.fonnte.com/send-message',
+				'api_url' => 'https://api.fonnte.com/send',
 				'sender_phone' => '',
 				'additional_headers' => '',
 				'is_active' => 1
@@ -414,7 +414,7 @@ class Model_crm extends CI_Model
 
 		$provider = strtolower($config->provider ?: 'fonnte');
 		$api_key = trim($config->api_key ?: '');
-		$api_url = trim($config->api_url ?: 'https://api.fonnte.com/send-message');
+		$api_url = trim($config->api_url ?: 'https://api.fonnte.com/send');
 
 		if (empty($api_key) && in_array($provider, ['fonnte', 'wablas', 'starsender'])) {
 			return [
@@ -433,7 +433,7 @@ class Model_crm extends CI_Model
 				'target' => $phone,
 				'message' => $message,
 			];
-			curl_setopt($ch, CURLOPT_URL, $api_url ?: 'https://api.fonnte.com/send-message');
+			curl_setopt($ch, CURLOPT_URL, $api_url ?: 'https://api.fonnte.com/send');
 			curl_setopt($ch, CURLOPT_POST, true);
 			curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post_data));
 		} elseif ($provider === 'wablas') {
