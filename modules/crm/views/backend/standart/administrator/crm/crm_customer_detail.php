@@ -1,63 +1,108 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
 <style>
-.profile-header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: #fff; padding: 30px; border-radius: 8px; margin-bottom: 20px; }
-.profile-header .name { font-size: 24px; font-weight: 700; margin-bottom: 5px; }
-.profile-header .phone { font-size: 15px; opacity: 0.9; }
-.summary-card { background: #fff; border-radius: 10px; padding: 18px 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); text-align: center; margin-bottom: 15px; transition: transform 0.2s; }
-.summary-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
-.summary-card .num { font-size: 28px; font-weight: 800; }
-.summary-card .lbl { font-size: 11px; color: #7f8c8d; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
-.sc-blue .num { color: #2980b9; }
-.sc-green .num { color: #27ae60; }
-.sc-orange .num { color: #e67e22; }
-.sc-purple .num { color: #8e44ad; }
-.sc-red .num { color: #e74c3c; }
-.badge-source { padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; color: #fff; display: inline-block; margin: 2px; }
-.badge-toko { background: #2c3e50; }
-.badge-shopee { background: #ee4d2d; }
-.badge-tokopedia { background: #42b549; }
-.badge-tiktok { background: #010101; }
-.badge-status { padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
-.bs-shipped { background: #3498db; color: #fff; }
-.bs-delivered { background: #27ae60; color: #fff; }
-.bs-pending { background: #f39c12; color: #fff; }
-.bs-cancelled { background: #e74c3c; color: #fff; }
-.bs-completed { background: #2ecc71; color: #fff; }
-.bs-processing { background: #9b59b6; color: #fff; }
-.timeline-fu { position: relative; padding-left: 30px; margin: 10px 0; }
-.timeline-fu::before { content: ''; position: absolute; left: 10px; top: 0; bottom: 0; width: 2px; background: #dee2e6; }
-.tl-item { position: relative; margin-bottom: 12px; padding: 10px 14px; background: #f8f9fa; border-radius: 6px; border-left: 3px solid #3498db; }
-.tl-item.tl-done { border-left-color: #27ae60; }
-.tl-item.tl-pending { border-left-color: #f39c12; }
-.tl-item .tl-title { font-weight: 700; font-size: 12px; }
-.tl-item .tl-date { font-size: 11px; color: #95a5a6; }
-.tl-item .tl-status { font-size: 11px; }
-.trx-row { cursor: pointer; transition: background 0.2s; }
-.trx-row:hover { background: #edf7ff !important; }
-.trx-detail-panel { display: none; background: #fafbfc; border-top: 2px solid #3498db; }
-.table-crm th { background: #f8f9fa; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #6c757d; }
-.table-crm td { font-size: 13px; vertical-align: middle !important; }
+.profile-header {
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #312e81 100%);
+  color: #fff;
+  padding: 28px 32px;
+  border-radius: 16px;
+  margin-bottom: 22px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+.profile-header::after {
+  content: '';
+  position: absolute;
+  top: -50%; right: -20%;
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, rgba(255,255,255,0) 70%);
+  pointer-events: none;
+}
+.profile-header .name { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+.profile-header .phone { font-size: 15px; color: #cbd5e1; font-weight: 500; }
+
+.summary-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 20px 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+  border: 1px solid #f1f5f9;
+  text-align: center;
+  margin-bottom: 16px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.summary-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.08);
+  border-color: #cbd5e1;
+}
+.summary-card .num { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+.summary-card .lbl { font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; margin-top: 4px; }
+.sc-blue .num { color: #2563eb; }
+.sc-green .num { color: #059669; }
+.sc-orange .num { color: #ea580c; }
+.sc-purple .num { color: #7c3aed; }
+.sc-red .num { color: #dc2626; }
+
+.badge-source {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  display: inline-block;
+  margin: 3px 2px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+.badge-toko { background: linear-gradient(135deg, #1e293b, #334155); }
+.badge-shopee { background: linear-gradient(135deg, #ee4d2d, #ff6b4a); }
+.badge-tokopedia { background: linear-gradient(135deg, #059669, #10b981); }
+.badge-tiktok { background: linear-gradient(135deg, #09090b, #18181b); }
+
+.badge-status {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-block;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+.bs-shipped { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+.bs-delivered { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+.bs-pending { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+.bs-cancelled { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+.bs-completed { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+.bs-processing { background: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.bs-packed { background: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff; }
+
+.timeline-fu { position: relative; padding-left: 28px; margin: 12px 0; }
+.timeline-fu::before { content: ''; position: absolute; left: 10px; top: 4px; bottom: 4px; width: 2px; background: #e2e8f0; }
+.tl-item { position: relative; margin-bottom: 12px; padding: 10px 14px; background: #ffffff; border-radius: 10px; border: 1px solid #f1f5f9; border-left: 4px solid #3b82f6; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+.tl-item.tl-done { border-left-color: #10b981; }
+.tl-item.tl-pending { border-left-color: #f59e0b; }
+.tl-item .tl-title { font-weight: 700; font-size: 13px; color: #1e293b; }
+.tl-item .tl-date { font-size: 11px; color: #64748b; }
+.tl-item .tl-status { font-size: 11px; margin-top: 3px; }
+
+.trx-row { cursor: pointer; transition: all 0.2s ease; }
+.trx-row:hover { background: #f8fafc !important; }
+.trx-detail-panel { display: none; background: #f8fafc; border-top: 2px solid #6366f1; border-bottom: 2px solid #cbd5e1; }
+.table-crm th { background: #f1f5f9; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: #475569; font-weight: 700; }
+.table-crm td { font-size: 13px; vertical-align: middle !important; color: #334155; }
 
 @media (max-width: 767px) {
-  .profile-header { padding: 20px 15px; text-align: center; }
+  .profile-header { padding: 20px 16px; text-align: center; }
   .profile-header .name { font-size: 20px; }
-  .profile-header .text-right { text-align: center !important; margin-top: 15px; }
+  .profile-header .text-right { text-align: center !important; margin-top: 16px; }
   .summary-card { padding: 12px; margin-bottom: 10px; }
-  .summary-card .num { font-size: 22px; }
-  .summary-card .lbl { font-size: 10px; }
+  .summary-card .num { font-size: 20px; }
+  .summary-card .lbl { font-size: 9px; }
 }
 </style>
 
-<section class="content-header">
-  <h1><i class="fa fa-user-circle"></i> Detail Customer <small>360° Profile</small></h1>
-  <ol class="breadcrumb">
-    <li><a href="<?= site_url('administrator/dashboard'); ?>"><i class="fa fa-dashboard"></i> Dashboard</a></li>
-    <li><a href="<?= site_url('administrator/crm'); ?>">CRM</a></li>
-    <li class="active">Detail Customer</li>
-  </ol>
-</section>
-
-<section class="content">
+<section class="content" style="padding-top:15px;">
   <!-- Profile Header -->
   <div class="profile-header">
     <div class="row">
@@ -170,12 +215,14 @@
             <td>
               <?php
               $st = strtolower($t->status);
+              $st_p = strtolower($t->status_pesanan ?: '');
               $stcls = 'bs-pending';
-              if (in_array($st, ['shipped','dikirim'])) $stcls = 'bs-shipped';
+              if (in_array($st, ['shipped','dikirim']) || strpos($st_p, 'dikirim') !== false) $stcls = 'bs-shipped';
               elseif (in_array($st, ['delivered','terkirim'])) $stcls = 'bs-delivered';
               elseif (in_array($st, ['completed','selesai'])) $stcls = 'bs-completed';
               elseif (in_array($st, ['cancelled','dibatalkan'])) $stcls = 'bs-cancelled';
-              elseif (in_array($st, ['processing','confirmed','packing'])) $stcls = 'bs-processing';
+              elseif (in_array($st, ['packed','dikemas']) || strpos($st_p, 'packed') !== false || strpos($st_p, 'kemas') !== false) $stcls = 'bs-packed';
+              elseif (in_array($st, ['processing','confirmed','packing']) || strpos($st_p, 'perlu dikirim') !== false) $stcls = 'bs-processing';
               ?>
               <span class="badge-status <?= $stcls; ?>"><?= ucfirst($t->status_pesanan ?: $t->status); ?></span>
             </td>
@@ -266,9 +313,12 @@ $(document).ready(function() {
           if (res.timeline.length > 0) {
             $.each(res.timeline, function(i, tl) {
               var cls = 'tl-pending';
-              if (tl.status_label === 'Selesai' || tl.status_label === 'Sudah Konfirmasi Diterima') cls = 'tl-done';
+              var catName = tl.nama_kategori || '';
+              if (catName.indexOf('H+') === -1) {
+                catName += ' (H+' + tl.jumlah_hari + ')';
+              }
               tlHtml += '<div class="tl-item ' + cls + '">';
-              tlHtml += '<div class="tl-title">' + tl.nama_kategori + ' (H+' + tl.jumlah_hari + ')</div>';
+              tlHtml += '<div class="tl-title">' + catName + '</div>';
               tlHtml += '<div class="tl-date">Target: ' + tl.tanggal_label_muncul + '</div>';
               tlHtml += '<div class="tl-status">';
               tlHtml += '<span class="label label-' + (tl.status_label === 'Pending' ? 'warning' : tl.status_label === 'Selesai' ? 'success' : 'info') + '">' + tl.status_label + '</span>';

@@ -1,39 +1,63 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
 <style>
-.crm-header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: #fff; padding: 25px 30px; border-radius: 8px; margin-bottom: 20px; }
-.crm-header h2 { margin: 0 0 5px 0; font-weight: 700; font-size: 22px; }
-.crm-header p { margin: 0; opacity: 0.8; font-size: 13px; }
-.stat-card { background: #fff; border-radius: 8px; padding: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 4px solid #3498db; margin-bottom: 15px; }
-.stat-card .stat-num { font-size: 26px; font-weight: 700; color: #2c3e50; }
-.stat-card .stat-label { font-size: 12px; color: #7f8c8d; text-transform: uppercase; letter-spacing: 0.5px; }
-.badge-source { padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; color: #fff; }
-.badge-toko { background: #2c3e50; }
-.badge-shopee { background: #ee4d2d; }
-.badge-tokopedia { background: #42b549; }
-.badge-tiktok { background: #010101; }
-.table-crm th { background: #f8f9fa; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #6c757d; border-bottom: 2px solid #dee2e6 !important; }
-.table-crm td { vertical-align: middle !important; font-size: 13px; }
-.pending-badge { background: #e74c3c; color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
-.btn-wa { background: #25D366; color: #fff; border: none; padding: 4px 12px; border-radius: 5px; font-size: 12px; }
+.crm-header {
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #312e81 100%);
+  color: #fff;
+  padding: 28px 32px;
+  border-radius: 16px;
+  margin-bottom: 22px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+.crm-header h2 { margin: 0 0 6px 0; font-weight: 800; font-size: 24px; letter-spacing: -0.5px; }
+.crm-header p { margin: 0; opacity: 0.85; font-size: 13px; }
+
+.stat-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+  border: 1px solid #f1f5f9;
+  border-left: 4px solid #3b82f6;
+  margin-bottom: 16px;
+}
+.stat-card .stat-num { font-size: 26px; font-weight: 800; color: #1e293b; }
+.stat-card .stat-label { font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; }
+
+.badge-source {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  display: inline-block;
+  margin: 2px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+.badge-toko { background: linear-gradient(135deg, #1e293b, #334155); }
+.badge-shopee { background: linear-gradient(135deg, #ee4d2d, #ff6b4a); }
+.badge-tokopedia { background: linear-gradient(135deg, #059669, #10b981); }
+.badge-tiktok { background: linear-gradient(135deg, #09090b, #18181b); }
+
+.table-crm th { background: #f1f5f9; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: #475569; font-weight: 700; }
+.table-crm td { vertical-align: middle !important; font-size: 13px; color: #334155; }
+.table-crm tbody tr { transition: all 0.2s ease; }
+.table-crm tbody tr:hover { background: #f8fafc !important; }
+
+.pending-badge { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; }
+.btn-wa { background: #25D366; color: #fff; border: none; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; }
 .btn-wa:hover { background: #128C7E; color: #fff; }
 
 @media (max-width: 767px) {
-  .crm-header { padding: 18px 15px; text-align: center; }
+  .crm-header { padding: 20px 16px; text-align: center; }
   .crm-header h2 { font-size: 18px; }
   .table-crm td, .table-crm th { font-size: 12px; padding: 8px 6px !important; }
   .badge-source { font-size: 10px; padding: 2px 6px; }
 }
 </style>
 
-<section class="content-header">
-  <h1><i class="fa fa-handshake-o"></i> CRM & After Sales <small>Customer Directory</small></h1>
-  <ol class="breadcrumb">
-    <li><a href="<?= site_url('administrator/dashboard'); ?>"><i class="fa fa-dashboard"></i> Dashboard</a></li>
-    <li class="active">CRM</li>
-  </ol>
-</section>
-
-<section class="content">
+<section class="content" style="padding-top:15px;">
   <div class="crm-header">
     <h2><i class="fa fa-users"></i> Customer Directory</h2>
     <p>Daftar pelanggan otomatis dari seluruh sumber penjualan — Toko, Shopee, Tokopedia, TikTok Shop</p>
@@ -53,7 +77,8 @@
           <div class="col-md-4">
             <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> Cari</button>
             <a href="<?= site_url('administrator/crm'); ?>" class="btn btn-default"><i class="fa fa-refresh"></i> Reset</a>
-            <a href="<?= site_url('administrator/crm/export_customers?q=' . urlencode($filter ?? '')); ?>" class="btn btn-success"><i class="fa fa-file-excel-o"></i> Export CSV</a>
+            <a href="<?= site_url('administrator/crm/export_customers?q=' . urlencode($filter ?? '')); ?>" class="btn btn-success"><i class="fa fa-file-excel-o"></i> CSV</a>
+            <a href="<?= site_url('administrator/crm/export_customers_pdf?q=' . urlencode($filter ?? '')); ?>" target="_blank" class="btn btn-danger"><i class="fa fa-file-pdf-o"></i> PDF</a>
             <a href="<?= site_url('administrator/crm/journal_followup'); ?>" class="btn btn-warning"><i class="fa fa-tasks"></i> Journal</a>
           </div>
         </div>

@@ -182,16 +182,7 @@
 }
 </style>
 
-<section class="content-header">
-  <h1><i class="fa fa-tachometer"></i> Dashboard CRM <small>Analytics & Performance Monitoring</small></h1>
-  <ol class="breadcrumb">
-    <li><a href="<?= site_url('administrator/dashboard'); ?>"><i class="fa fa-dashboard"></i> Dashboard</a></li>
-    <li><a href="<?= site_url('administrator/crm'); ?>">CRM</a></li>
-    <li class="active">Dashboard Analytics</li>
-  </ol>
-</section>
-
-<section class="content">
+<section class="content" style="padding-top:15px;">
   <!-- Header Banner -->
   <div class="crm-dash-header">
     <div class="row" style="align-items: center;">

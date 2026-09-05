@@ -1,37 +1,47 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
 <style>
-.crm-header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: #fff; padding: 25px 30px; border-radius: 8px; margin-bottom: 20px; }
-.crm-header h2 { margin: 0 0 5px 0; font-weight: 700; font-size: 22px; }
-.crm-header p { margin: 0; opacity: 0.8; font-size: 13px; }
-.cat-card { background: #fff; border-radius: 10px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); border-left: 4px solid #3498db; transition: transform 0.2s; }
-.cat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
-.cat-card.inactive { border-left-color: #bdc3c7; opacity: 0.6; }
-.cat-card .cat-title { font-size: 16px; font-weight: 700; color: #2c3e50; margin-bottom: 4px; }
-.cat-card .cat-code { font-size: 11px; color: #95a5a6; font-family: monospace; }
-.cat-card .cat-days { display: inline-block; background: #e8f4fd; color: #2980b9; padding: 3px 12px; border-radius: 15px; font-weight: 700; font-size: 13px; }
-.cat-card .cat-template { background: #f8f9fa; padding: 10px 14px; border-radius: 6px; margin-top: 10px; font-size: 12px; color: #555; white-space: pre-wrap; word-wrap: break-word; max-height: 120px; overflow-y: auto; }
-.var-tag { display: inline-block; background: #dfe6e9; color: #2c3e50; padding: 1px 8px; border-radius: 3px; font-size: 11px; font-family: monospace; margin: 2px; cursor: pointer; }
-.var-tag:hover { background: #3498db; color: #fff; }
+.crm-header {
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #312e81 100%);
+  color: #fff;
+  padding: 28px 32px;
+  border-radius: 16px;
+  margin-bottom: 22px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+.crm-header h2 { margin: 0 0 6px 0; font-weight: 800; font-size: 24px; letter-spacing: -0.5px; }
+.crm-header p { margin: 0; opacity: 0.85; font-size: 13px; }
+
+.cat-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 20px 22px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+  border: 1px solid #f1f5f9;
+  border-left: 4px solid #6366f1;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.cat-card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(0,0,0,0.08); }
+.cat-card.inactive { border-left-color: #cbd5e1; opacity: 0.65; }
+.cat-card .cat-title { font-size: 16px; font-weight: 800; color: #1e293b; margin-bottom: 4px; }
+.cat-card .cat-code { font-size: 11px; color: #64748b; font-family: monospace; font-weight: 600; }
+.cat-card .cat-days { display: inline-block; background: #e0e7ff; color: #4338ca; padding: 4px 14px; border-radius: 20px; font-weight: 800; font-size: 13px; box-shadow: 0 2px 6px rgba(99, 102, 241, 0.15); }
+.cat-card .cat-template { background: #f8fafc; padding: 12px 16px; border-radius: 10px; border: 1px solid #e2e8f0; margin-top: 12px; font-size: 12px; color: #334155; white-space: pre-wrap; word-wrap: break-word; max-height: 120px; overflow-y: auto; }
+.var-tag { display: inline-block; background: #e2e8f0; color: #334155; padding: 2px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; font-family: monospace; margin: 3px 2px; cursor: pointer; transition: all 0.2s ease; }
+.var-tag:hover { background: #6366f1; color: #fff; transform: translateY(-1px); }
 
 @media (max-width: 767px) {
-  .crm-header { padding: 18px 15px; text-align: center; }
+  .crm-header { padding: 20px 16px; text-align: center; }
   .crm-header h2 { font-size: 18px; }
-  .crm-header .text-right { text-align: center !important; margin-top: 15px; }
+  .crm-header .text-right { text-align: center !important; margin-top: 16px; }
   .cat-card { padding: 15px; margin-bottom: 12px; }
   .cat-card .cat-title { font-size: 14px; }
 }
 </style>
 
-<section class="content-header">
-  <h1><i class="fa fa-cogs"></i> Pengaturan Kelompok Follow-Up <small>CRUD Kategori H+ & Template WA</small></h1>
-  <ol class="breadcrumb">
-    <li><a href="<?= site_url('administrator/dashboard'); ?>"><i class="fa fa-dashboard"></i> Dashboard</a></li>
-    <li><a href="<?= site_url('administrator/crm'); ?>">CRM</a></li>
-    <li class="active">Kelompok Follow-Up</li>
-  </ol>
-</section>
-
-<section class="content">
+<section class="content" style="padding-top:15px;">
   <div class="crm-header">
     <div class="row">
       <div class="col-md-8">
@@ -151,6 +161,28 @@ function insertVar(v) {
 }
 
 $(document).ready(function() {
+  var csrf_name = '<?= $this->security->get_csrf_token_name(); ?>';
+  var csrf_hash = '<?= $this->security->get_csrf_hash(); ?>';
+  var _BASE = (typeof BASE_URL !== 'undefined') ? BASE_URL : '<?= base_url(); ?>';
+
+  function buildPayload(data) {
+    if (csrf_name && csrf_hash) data[csrf_name] = csrf_hash;
+    return data;
+  }
+
+  function parseRes(res) {
+    if (typeof res === 'object') return res;
+    try { return JSON.parse(res); } catch(e) { return { success: false, message: 'Gagal parse response' }; }
+  }
+
+  function notify(type, msg) {
+    if (typeof toastr !== 'undefined' && typeof toastr[type] === 'function') {
+      toastr[type](msg);
+    } else {
+      alert(msg);
+    }
+  }
+
   // Add new
   $('#btn-add-cat').on('click', function() {
     resetForm();
@@ -175,23 +207,29 @@ $(document).ready(function() {
   $('#btn-save-cat').on('click', function() {
     var data = {
       id: $('#cat-id').val(),
-      nama_kategori: $('#cat-nama').val(),
-      kode_kategori: $('#cat-kode').val(),
+      nama_kategori: $.trim($('#cat-nama').val()),
+      kode_kategori: $.trim($('#cat-kode').val()),
       jumlah_hari: $('#cat-hari').val(),
       template_pesan_default: $('#cat-template').val(),
       is_active: $('#cat-active').val(),
-      urutan: $('#cat-urutan').val(),
-      [csrf]: token
+      urutan: $('#cat-urutan').val()
     };
-    if (!data.nama_kategori || !data.kode_kategori) { toastr.warning('Nama dan Kode wajib diisi'); return; }
-    $.post(BASE_URL + 'administrator/crm/save_category_ajax', data, function(res) {
-      var r = JSON.parse(res);
+
+    if (!data.nama_kategori || !data.kode_kategori) {
+      notify('warning', 'Nama dan Kode wajib diisi');
+      return;
+    }
+
+    $.post(_BASE + 'administrator/crm/save_category_ajax', buildPayload(data), function(res) {
+      var r = parseRes(res);
       if (r.success) {
-        toastr.success(r.message);
-        location.reload();
+        notify('success', r.message || 'Berhasil disimpan');
+        setTimeout(function() { location.reload(); }, 800);
       } else {
-        toastr.error(r.message);
+        notify('error', r.message || 'Gagal menyimpan');
       }
+    }).fail(function() {
+      notify('error', 'Gagal menghubungi server');
     });
   });
 
@@ -199,26 +237,37 @@ $(document).ready(function() {
   $('.btn-del-cat').on('click', function() {
     var id = $(this).data('id');
     var nama = $(this).data('nama');
-    swal({
-      title: 'Hapus "' + nama + '"?',
-      text: 'Kategori hanya bisa dihapus jika belum digunakan oleh label follow-up.',
-      type: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Hapus',
-      cancelButtonText: 'Batal'
-    }, function(confirmed) {
-      if (!confirmed) return;
-      $.post(BASE_URL + 'administrator/crm/delete_category_ajax', { id: id, [csrf]: token }, function(res) {
-        var r = JSON.parse(res);
-        if (r.success) {
-          toastr.success(r.message);
-          location.reload();
-        } else {
-          toastr.error(r.message);
-        }
+    if (typeof swal === 'function') {
+      swal({
+        title: 'Hapus "' + nama + '"?',
+        text: 'Kategori hanya bisa dihapus jika belum digunakan oleh label follow-up.',
+        type: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Hapus',
+        cancelButtonText: 'Batal'
+      }, function(confirmed) {
+        if (confirmed) doDeleteCat(id);
       });
-    });
+    } else {
+      if (confirm('Hapus "' + nama + '"?')) {
+        doDeleteCat(id);
+      }
+    }
   });
+
+  function doDeleteCat(id) {
+    $.post(_BASE + 'administrator/crm/delete_category_ajax', buildPayload({ id: id }), function(res) {
+      var r = parseRes(res);
+      if (r.success) {
+        notify('success', r.message || 'Berhasil dihapus');
+        setTimeout(function() { location.reload(); }, 800);
+      } else {
+        notify('error', r.message || 'Gagal menghapus kategori');
+      }
+    }).fail(function() {
+      notify('error', 'Gagal menghubungi server');
+    });
+  }
 
   // Reset
   $('#btn-reset-form').on('click', resetForm);

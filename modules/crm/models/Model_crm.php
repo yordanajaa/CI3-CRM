@@ -7,6 +7,22 @@ class Model_crm extends CI_Model
 	 * Get consolidated customer list from sales_order + penjualan_marketplace
 	 * Grouped by phone number (primary key for customer identity)
 	 */
+	private function get_query_count($sql, $params = [])
+	{
+		$row = $this->db->query($sql, $params)->row();
+		return $row ? (int)($row->cnt ?? 0) : 0;
+	}
+
+	private function get_query_sum($sql, $params = [])
+	{
+		$row = $this->db->query($sql, $params)->row();
+		return $row ? (float)($row->t ?? 0) : 0;
+	}
+
+	/**
+	 * Get consolidated customer list from sales_order + penjualan_marketplace
+	 * Grouped by phone number (primary key for customer identity)
+	 */
 	public function get_customers($filter = '', $limit = 25, $offset = 0)
 	{
 		$sql = "SELECT 
@@ -27,7 +43,7 @@ class Model_crm extends CI_Model
 		$sql .= " GROUP BY customer_phone, customer_nama ORDER BY last_order_date DESC";
 		
 		$count_sql = "SELECT COUNT(*) as cnt FROM ({$sql}) as sub";
-		$count = $this->db->query($count_sql)->row()->cnt;
+		$count = $this->get_query_count($count_sql);
 
 		$sql .= " LIMIT {$limit} OFFSET {$offset}";
 		$rows = $this->db->query($sql)->result();
@@ -43,27 +59,27 @@ class Model_crm extends CI_Model
 		$phone = $this->db->escape_str($phone);
 
 		// Get total spend from SO
-		$so_spend = $this->db->query("SELECT COALESCE(SUM(total),0) as t FROM sales_order WHERE no_telepon = '{$phone}'")->row()->t;
+		$so_spend = $this->get_query_sum("SELECT COALESCE(SUM(total),0) as t FROM sales_order WHERE no_telepon = ?", [$phone]);
 		
 		// Get total spend from marketplace
-		$mp_spend = $this->db->query("SELECT COALESCE(SUM(total),0) as t FROM penjualan_marketplace WHERE no_telepon = '{$phone}'")->row()->t;
+		$mp_spend = $this->get_query_sum("SELECT COALESCE(SUM(total),0) as t FROM penjualan_marketplace WHERE no_telepon = ?", [$phone]);
 
 		// Get order counts
-		$so_count = $this->db->query("SELECT COUNT(*) as c FROM sales_order WHERE no_telepon = '{$phone}'")->row()->c;
-		$mp_count = $this->db->query("SELECT COUNT(*) as c FROM penjualan_marketplace WHERE no_telepon = '{$phone}'")->row()->c;
+		$so_count = $this->get_query_count("SELECT COUNT(*) as cnt FROM sales_order WHERE no_telepon = ?", [$phone]);
+		$mp_count = $this->get_query_count("SELECT COUNT(*) as cnt FROM penjualan_marketplace WHERE no_telepon = ?", [$phone]);
 
 		// Get sources breakdown
-		$sources = $this->db->query("SELECT DISTINCT order_source FROM crm_transaction_followup_labels WHERE customer_phone = '{$phone}'")->result();
+		$sources = $this->db->query("SELECT DISTINCT order_source FROM crm_transaction_followup_labels WHERE customer_phone = ?", [$phone])->result();
 		$source_list = array_map(function($s) { return $s->order_source; }, $sources);
 
 		// Get first and last order dates
 		$dates = $this->db->query("SELECT 
 			MIN(tanggal_pengiriman) as first_order, 
 			MAX(tanggal_pengiriman) as last_order 
-			FROM crm_transaction_followup_labels WHERE customer_phone = '{$phone}'")->row();
+			FROM crm_transaction_followup_labels WHERE customer_phone = ?", [$phone])->row();
 
 		// Customer name
-		$name_row = $this->db->query("SELECT customer_nama FROM crm_transaction_followup_labels WHERE customer_phone = '{$phone}' ORDER BY id DESC LIMIT 1")->row();
+		$name_row = $this->db->query("SELECT customer_nama FROM crm_transaction_followup_labels WHERE customer_phone = ? ORDER BY id DESC LIMIT 1", [$phone])->row();
 
 		return [
 			'nama' => $name_row ? $name_row->customer_nama : '-',
@@ -95,7 +111,12 @@ class Model_crm extends CI_Model
 				'Toko' as sumber_penjualan,
 				so.status, so.status_pesanan, so.nomor_resi, so.kurir_ekspedisi,
 				so.nama_penerima, so.no_telepon, so.alamat_pengiriman,
-				so.total, so.nama_produk_marketplace as produk_ringkasan
+				so.total, 
+				COALESCE(
+					NULLIF(so.nama_produk_marketplace, ''),
+					(SELECT COALESCE(NULLIF(soi.catatan, ''), p.nama_produk) FROM sales_order_item soi LEFT JOIN produk p ON soi.produk_id = p.id WHERE soi.so_id = so.id ORDER BY soi.id ASC LIMIT 1),
+					'Produk SO'
+				) as produk_ringkasan
 			FROM sales_order so 
 			WHERE so.no_telepon = '{$phone}')
 			UNION ALL
@@ -109,7 +130,12 @@ class Model_crm extends CI_Model
 				END as sumber_penjualan,
 				pm.status, pm.status_pesanan, pm.nomor_resi, pm.kurir_ekspedisi,
 				pm.nama_penerima, pm.no_telepon, pm.alamat_pengiriman,
-				pm.total, pm.nama_produk_marketplace as produk_ringkasan
+				pm.total, 
+				COALESCE(
+					NULLIF(pm.nama_produk_marketplace, ''),
+					(SELECT COALESCE(NULLIF(pmi.catatan, ''), p.nama_produk) FROM penjualan_marketplace_item pmi LEFT JOIN produk p ON pmi.produk_id = p.id WHERE pmi.penjualan_marketplace_id = pm.id ORDER BY pmi.id ASC LIMIT 1),
+					'Produk Marketplace'
+				) as produk_ringkasan
 			FROM penjualan_marketplace pm 
 			WHERE pm.no_telepon = '{$phone}')
 			ORDER BY tanggal DESC";
@@ -123,12 +149,16 @@ class Model_crm extends CI_Model
 	public function get_transaction_items($table, $order_id)
 	{
 		if ($table === 'sales_order') {
-			return $this->db->query("SELECT soi.*, p.nama_produk, p.kode_produk 
+			return $this->db->query("SELECT soi.*, 
+				COALESCE(NULLIF(soi.catatan, ''), p.nama_produk, 'Produk SO') as nama_produk, 
+				p.kode_produk 
 				FROM sales_order_item soi 
 				LEFT JOIN produk p ON soi.produk_id = p.id 
 				WHERE soi.so_id = ?", [$order_id])->result();
 		} else {
-			return $this->db->query("SELECT pmi.*, p.nama_produk, p.kode_produk 
+			return $this->db->query("SELECT pmi.*, 
+				COALESCE(NULLIF(pmi.catatan, ''), p.nama_produk, 'Produk Marketplace') as nama_produk, 
+				p.kode_produk 
 				FROM penjualan_marketplace_item pmi 
 				LEFT JOIN produk p ON pmi.produk_id = p.id 
 				WHERE pmi.penjualan_marketplace_id = ?", [$order_id])->result();
@@ -360,13 +390,12 @@ class Model_crm extends CI_Model
 		// Process sales_order
 		$so_rows = $this->db->query("SELECT so.*, p.nama_pelanggan, p.telepon, p.no_telp 
 			FROM sales_order so LEFT JOIN pelanggan p ON so.pelanggan_id = p.id 
-			WHERE so.status IN ('shipped','delivered','completed','processing')
-			OR so.status_pesanan IN ('Siap Kirim','Dikirim','Selesai')")->result();
+			WHERE so.status NOT IN ('cancelled','dibatalkan')")->result();
 
 		foreach ($so_rows as $so) {
-			$ship_date = $so->tanggal_kirim ?: $so->tanggal_so ?: substr($so->created_at, 0, 10);
-			$phone = $so->no_telepon ?: $so->telepon ?: $so->no_telp ?: '';
-			$nama = $so->nama_penerima ?: $so->nama_pelanggan ?: '-';
+			$ship_date = $so->tanggal_kirim ?: ($so->tanggal_so ?: substr($so->created_at, 0, 10));
+			$phone = $so->no_telepon ?: ($so->telepon ?: ($so->no_telp ?: ''));
+			$nama = $so->nama_penerima ?: ($so->nama_pelanggan ?: '-');
 
 			foreach ($categories as $cat) {
 				$target = date('Y-m-d', strtotime($ship_date . ' + ' . $cat->jumlah_hari . ' days'));
@@ -393,8 +422,7 @@ class Model_crm extends CI_Model
 
 		// Process penjualan_marketplace
 		$mp_rows = $this->db->query("SELECT * FROM penjualan_marketplace 
-			WHERE status IN ('shipped','delivered','completed','processing','confirmed','packing')
-			OR status_pesanan IN ('Siap Kirim','Dikirim','Selesai')")->result();
+			WHERE status NOT IN ('cancelled','dibatalkan','returned','pengembalian')")->result();
 
 		foreach ($mp_rows as $mp) {
 			$ship_date = $mp->tanggal_so ?: substr($mp->created_at, 0, 10);
@@ -460,28 +488,28 @@ class Model_crm extends CI_Model
 		$today = date('Y-m-d');
 		
 		// Total customers
-		$total_cust = $this->db->query("SELECT COUNT(DISTINCT customer_phone) as cnt FROM crm_transaction_followup_labels WHERE customer_phone IS NOT NULL AND customer_phone != ''")->row()->cnt;
+		$total_cust = $this->get_query_count("SELECT COUNT(DISTINCT customer_phone) as cnt FROM crm_transaction_followup_labels WHERE customer_phone IS NOT NULL AND customer_phone != ''");
 		
 		// Total spend
-		$so_spend = $this->db->query("SELECT COALESCE(SUM(total),0) as t FROM sales_order")->row()->t;
-		$mp_spend = $this->db->query("SELECT COALESCE(SUM(total),0) as t FROM penjualan_marketplace")->row()->t;
+		$so_spend = $this->get_query_sum("SELECT COALESCE(SUM(total),0) as t FROM sales_order");
+		$mp_spend = $this->get_query_sum("SELECT COALESCE(SUM(total),0) as t FROM penjualan_marketplace");
 		$total_spend = (float)$so_spend + (float)$mp_spend;
 
 		// Repeat order customers (more than 1 order)
-		$repeat_cust = $this->db->query("SELECT COUNT(*) as cnt FROM (
+		$repeat_cust = $this->get_query_count("SELECT COUNT(*) as cnt FROM (
 			SELECT customer_phone FROM crm_transaction_followup_labels 
 			WHERE customer_phone IS NOT NULL AND customer_phone != '' 
 			GROUP BY customer_phone HAVING COUNT(DISTINCT CONCAT(order_table, '-', order_id)) > 1
-		) sub")->row()->cnt;
+		) sub");
 		
 		$repeat_rate = $total_cust > 0 ? round(($repeat_cust / $total_cust) * 100, 1) : 0;
 
 		// Pending today & overdue
-		$pending_today = $this->db->query("SELECT COUNT(*) as cnt FROM crm_transaction_followup_labels WHERE status_label = 'Pending' AND tanggal_label_muncul = '$today'")->row()->cnt;
-		$overdue = $this->db->query("SELECT COUNT(*) as cnt FROM crm_transaction_followup_labels WHERE status_label = 'Pending' AND tanggal_label_muncul < '$today'")->row()->cnt;
+		$pending_today = $this->get_query_count("SELECT COUNT(*) as cnt FROM crm_transaction_followup_labels WHERE status_label = 'Pending' AND tanggal_label_muncul = ?", [$today]);
+		$overdue = $this->get_query_count("SELECT COUNT(*) as cnt FROM crm_transaction_followup_labels WHERE status_label = 'Pending' AND tanggal_label_muncul < ?", [$today]);
 
 		// Broadcast sent count
-		$total_broadcast = $this->db->query("SELECT COUNT(*) as cnt FROM crm_broadcast_logs")->row()->cnt;
+		$total_broadcast = $this->get_query_count("SELECT COUNT(*) as cnt FROM crm_broadcast_logs");
 
 		return [
 			'total_customers' => (int)$total_cust,
@@ -519,8 +547,8 @@ class Model_crm extends CI_Model
 			$d = date('Y-m-d', strtotime("-$i days"));
 			$dates[] = date('d M', strtotime($d));
 			
-			$bc = $this->db->query("SELECT COUNT(*) as cnt FROM crm_broadcast_logs WHERE DATE(waktu_kirim) = '$d'")->row()->cnt;
-			$lbl = $this->db->query("SELECT COUNT(*) as cnt FROM crm_transaction_followup_labels WHERE tanggal_label_muncul = '$d'")->row()->cnt;
+			$bc = $this->get_query_count("SELECT COUNT(*) as cnt FROM crm_broadcast_logs WHERE DATE(waktu_kirim) = ?", [$d]);
+			$lbl = $this->get_query_count("SELECT COUNT(*) as cnt FROM crm_transaction_followup_labels WHERE tanggal_label_muncul = ?", [$d]);
 			
 			$broadcast_counts[] = (int)$bc;
 			$labels_counts[] = (int)$lbl;
@@ -539,9 +567,9 @@ class Model_crm extends CI_Model
 		$result = [];
 
 		foreach ($cats as $c) {
-			$pending = $this->db->query("SELECT COUNT(*) as cnt FROM crm_transaction_followup_labels WHERE followup_category_id = {$c->id} AND status_label = 'Pending'")->row()->cnt;
-			$dikirim = $this->db->query("SELECT COUNT(*) as cnt FROM crm_transaction_followup_labels WHERE followup_category_id = {$c->id} AND status_label IN ('Sudah Dikirim','Direspon','Sudah Konfirmasi Diterima')")->row()->cnt;
-			$selesai = $this->db->query("SELECT COUNT(*) as cnt FROM crm_transaction_followup_labels WHERE followup_category_id = {$c->id} AND status_label IN ('Selesai','Tawarkan Repeat Order')")->row()->cnt;
+			$pending = $this->get_query_count("SELECT COUNT(*) as cnt FROM crm_transaction_followup_labels WHERE followup_category_id = ? AND status_label = 'Pending'", [(int)$c->id]);
+			$dikirim = $this->get_query_count("SELECT COUNT(*) as cnt FROM crm_transaction_followup_labels WHERE followup_category_id = ? AND status_label IN ('Sudah Dikirim','Direspon','Sudah Konfirmasi Diterima')", [(int)$c->id]);
+			$selesai = $this->get_query_count("SELECT COUNT(*) as cnt FROM crm_transaction_followup_labels WHERE followup_category_id = ? AND status_label IN ('Selesai','Tawarkan Repeat Order')", [(int)$c->id]);
 
 			$result[] = [
 				'kategori' => $c->nama_kategori,
@@ -613,5 +641,273 @@ class Model_crm extends CI_Model
 		LIMIT $limit";
 
 		return $this->db->query($sql)->result();
+	}
+
+	// ===== MODUL OTOMASI CRM (CLI & WEB) =====
+
+	public function run_all_automations($mode = 'web_manual', $executed_by = 'system')
+	{
+		$res1 = $this->process_overdue_automations($mode, $executed_by);
+		$res2 = $this->process_cancellation_automations($mode, $executed_by);
+		$res3 = $this->process_bundle_repeat_automations($mode, $executed_by);
+		$res4 = $this->process_conversion_tracking_automations($mode, $executed_by);
+
+		return [
+			'success' => true,
+			'mode' => $mode,
+			'executed_by' => $executed_by,
+			'executed_at' => date('Y-m-d H:i:s'),
+			'overdue' => $res1,
+			'cancellations' => $res2,
+			'bundles' => $res3,
+			'conversions' => $res4,
+			'total_affected' => $res1['count'] + $res2['count'] + $res3['count'] + $res4['count']
+		];
+	}
+
+	// Proses 1: Pembaruan Jadwal Follow-Up yang Jatuh Tempo
+	public function process_overdue_automations($mode, $executed_by)
+	{
+		$today = date('Y-m-d');
+		$sql = "SELECT id, customer_nama, customer_phone, no_pesanan, tanggal_label_muncul 
+			FROM crm_transaction_followup_labels 
+			WHERE status_label = 'Pending' AND is_cancelled = 0 AND tanggal_label_muncul < '$today'";
+		
+		$overdue_items = $this->db->query($sql)->result();
+		$count = count($overdue_items);
+
+		if ($count > 0) {
+			// Mark overdue status notice or update timestamp
+			$ids = array_map(function($o) { return $o->id; }, $overdue_items);
+			$this->db->where_in('id', $ids)->update('crm_transaction_followup_labels', ['updated_at' => date('Y-m-d H:i:s')]);
+		}
+
+		$details = "Terdeteksi $count label follow-up pending yang jatuh tempo (overdue).";
+		$this->log_automation_run('Overdue Follow-Up Update', $mode, $count, $details, $executed_by);
+
+		return ['count' => $count, 'details' => $details];
+	}
+
+	// Proses 2: Pembatalan Jadwal untuk Pesanan Retur / Cancelled
+	public function process_cancellation_automations($mode, $executed_by)
+	{
+		$affected = 0;
+
+		// 1. Cancelled from sales_order
+		$so_cancelled = $this->db->query("SELECT id, nomor_so, no_pesanan FROM sales_order WHERE status IN ('cancelled', 'dibatalkan', 'returned')")->result();
+		foreach ($so_cancelled as $so) {
+			$order_no = $so->no_pesanan ?: $so->nomor_so;
+			$this->db->query("UPDATE crm_transaction_followup_labels 
+				SET is_cancelled = 1, status_label = 'Batal (Retur/Cancelled)', updated_at = NOW() 
+				WHERE (order_table = 'sales_order' AND order_id = ?) OR (no_pesanan = ? AND is_cancelled = 0)", [(int)$so->id, $order_no]);
+			$affected += $this->db->affected_rows();
+		}
+
+		// 2. Cancelled from penjualan_marketplace
+		$mp_cancelled = $this->db->query("SELECT id, no_pesanan FROM penjualan_marketplace WHERE status IN ('cancelled', 'dibatalkan', 'returned', 'pengembalian')")->result();
+		foreach ($mp_cancelled as $mp) {
+			$this->db->query("UPDATE crm_transaction_followup_labels 
+				SET is_cancelled = 1, status_label = 'Batal (Retur/Cancelled)', updated_at = NOW() 
+				WHERE (order_table = 'penjualan_marketplace' AND order_id = ?) OR (no_pesanan = ? AND is_cancelled = 0)", [(int)$mp->id, $mp->no_pesanan]);
+			$affected += $this->db->affected_rows();
+		}
+
+		$details = "Otomatis membatalkan $affected label follow-up untuk pesanan retur/batal.";
+		$this->log_automation_run('Auto-Cancellation Retur/Cancelled', $mode, $affected, $details, $executed_by);
+
+		return ['count' => $affected, 'details' => $details];
+	}
+
+	// Proses 3: Penggabungan Penawaran Repeat Order Multi-Produk
+	public function process_bundle_repeat_automations($mode, $executed_by)
+	{
+		$sql = "SELECT customer_phone, customer_nama, COUNT(id) as label_count, GROUP_CONCAT(DISTINCT order_source SEPARATOR ', ') as sources 
+			FROM crm_transaction_followup_labels 
+			WHERE status_label IN ('Pending', 'Tawarkan Repeat Order') AND is_cancelled = 0 AND customer_phone IS NOT NULL AND customer_phone != ''
+			GROUP BY customer_phone, customer_nama 
+			HAVING label_count > 1";
+
+		$bundled_customers = $this->db->query($sql)->result();
+		$count = count($bundled_customers);
+
+		$details = "Penggabungan paket penawaran repeat order multi-produk untuk $count customer aktif.";
+		$this->log_automation_run('Multi-Product Repeat Consolidation', $mode, $count, $details, $executed_by);
+
+		return ['count' => $count, 'customers' => $bundled_customers, 'details' => $details];
+	}
+
+	// Proses 4: Pelacakan Konversi Transaksi dalam 14 Hari
+	public function process_conversion_tracking_automations($mode, $executed_by)
+	{
+		$converted_count = 0;
+		$total_amount = 0;
+
+		// Get all labels created in last 60 days that are not converted yet
+		$sql = "SELECT id, customer_phone, tanggal_label_muncul, order_table, order_id 
+			FROM crm_transaction_followup_labels 
+			WHERE is_converted = 0 AND is_cancelled = 0 AND customer_phone IS NOT NULL AND customer_phone != ''
+			AND tanggal_label_muncul <= CURDATE()";
+
+		$labels = $this->db->query($sql)->result();
+
+		foreach ($labels as $lbl) {
+			$start_date = $lbl->tanggal_label_muncul;
+			$end_date = date('Y-m-d', strtotime($start_date . ' +14 days'));
+			$phone = $lbl->customer_phone;
+
+			// Check SO new purchase within 14 days after label date
+			$new_so = $this->db->query("SELECT id, total, tanggal_so FROM sales_order 
+				WHERE (pelanggan_id IN (SELECT id FROM pelanggan WHERE no_telepon = ?) OR catatan LIKE ?)
+				AND tanggal_so >= ? AND tanggal_so <= ?
+				AND id != ? LIMIT 1", [$phone, "%{$phone}%", $start_date, $end_date, $lbl->order_id])->row();
+
+			// Check Marketplace new purchase within 14 days
+			$new_mp = $this->db->query("SELECT id, total, tanggal_so FROM penjualan_marketplace 
+				WHERE no_telepon = ? 
+				AND tanggal_so >= ? AND tanggal_so <= ?
+				AND id != ? LIMIT 1", [$phone, $start_date, $end_date, $lbl->order_id])->row();
+
+			$converted_order = $new_so ?: $new_mp;
+
+			if ($converted_order) {
+				$amt = (float)$converted_order->total;
+				$conv_date = $converted_order->tanggal_so;
+
+				$this->db->where('id', $lbl->id)->update('crm_transaction_followup_labels', [
+					'is_converted' => 1,
+					'converted_at' => date('Y-m-d H:i:s', strtotime($conv_date)),
+					'converted_amount' => $amt,
+					'status_label' => 'Selesai'
+				]);
+
+				$converted_count++;
+				$total_amount += $amt;
+			}
+		}
+
+		$details = "Berhasil melacak $converted_count konversi repeat order 14 hari dengan total nominal Rp " . number_format($total_amount, 0, ',', '.') . ".";
+		$this->log_automation_run('14-Day Conversion Tracking', $mode, $converted_count, $details, $executed_by);
+
+		return ['count' => $converted_count, 'amount' => $total_amount, 'details' => $details];
+	}
+
+	public function log_automation_run($process_name, $mode, $affected_count, $details, $executed_by = 'system')
+	{
+		$this->db->insert('crm_automation_logs', [
+			'process_name' => $process_name,
+			'mode' => $mode,
+			'affected_count' => (int)$affected_count,
+			'details' => $details,
+			'executed_by' => $executed_by,
+			'executed_at' => date('Y-m-d H:i:s')
+		]);
+	}
+
+	public function get_automation_logs($limit = 50, $offset = 0)
+	{
+		return $this->db->order_by('executed_at', 'DESC')
+			->limit($limit, $offset)
+			->get('crm_automation_logs')
+			->result();
+	}
+
+	// ===== MODUL ANALITIK KINERJA & KONVERSI TIM CS =====
+
+	public function get_cs_performance_report($filters = [])
+	{
+		$where_label = "WHERE (tfl.handled_by IS NOT NULL AND tfl.handled_by != '' AND tfl.handled_by != 'system')";
+		$where_bc = "WHERE (bl.dikirim_oleh IS NOT NULL AND bl.dikirim_oleh != '' AND bl.dikirim_oleh != 'system')";
+		$where_note = "WHERE (fn.username IS NOT NULL AND fn.username != '' AND fn.username != 'system')";
+
+		if (!empty($filters['date_from'])) {
+			$where_label .= " AND tfl.updated_at >= '{$filters['date_from']} 00:00:00'";
+			$where_bc .= " AND bl.waktu_kirim >= '{$filters['date_from']} 00:00:00'";
+			$where_note .= " AND fn.created_at >= '{$filters['date_from']} 00:00:00'";
+		}
+		if (!empty($filters['date_to'])) {
+			$where_label .= " AND tfl.updated_at <= '{$filters['date_to']} 23:59:59'";
+			$where_bc .= " AND bl.waktu_kirim <= '{$filters['date_to']} 23:59:59'";
+			$where_note .= " AND fn.created_at <= '{$filters['date_to']} 23:59:59'";
+		}
+
+		$sql = "SELECT 
+			u.cs_name,
+			COALESCE(lbl.handled_count, 0) + COALESCE(nt.note_count, 0) as total_handled,
+			COALESCE(bc.broadcast_count, 0) as broadcast_count,
+			COALESCE(lbl.respon_positif, 0) as respon_positif,
+			COALESCE(lbl.komplain_count, 0) as komplain_count,
+			COALESCE(lbl.conversion_count, 0) as conversion_count,
+			COALESCE(lbl.conversion_amount, 0) as conversion_amount
+		FROM (
+			SELECT DISTINCT handled_by as cs_name FROM crm_transaction_followup_labels WHERE handled_by IS NOT NULL AND handled_by != '' AND handled_by != 'system'
+			UNION
+			SELECT DISTINCT dikirim_oleh as cs_name FROM crm_broadcast_logs WHERE dikirim_oleh IS NOT NULL AND dikirim_oleh != '' AND dikirim_oleh != 'system'
+			UNION
+			SELECT DISTINCT username as cs_name FROM crm_followup_notes WHERE username IS NOT NULL AND username != '' AND username != 'system'
+		) u
+		LEFT JOIN (
+			SELECT 
+				handled_by,
+				COUNT(id) as handled_count,
+				SUM(CASE WHEN status_label IN ('Direspon', 'Sudah Konfirmasi Diterima', 'Selesai') THEN 1 ELSE 0 END) as respon_positif,
+				SUM(CASE WHEN status_label = 'Komplain' THEN 1 ELSE 0 END) as komplain_count,
+				SUM(CASE WHEN is_converted = 1 THEN 1 ELSE 0 END) as conversion_count,
+				SUM(CASE WHEN is_converted = 1 THEN converted_amount ELSE 0 END) as conversion_amount
+			FROM crm_transaction_followup_labels tfl
+			$where_label
+			GROUP BY handled_by
+		) lbl ON u.cs_name = lbl.handled_by
+		LEFT JOIN (
+			SELECT dikirim_oleh, COUNT(id) as broadcast_count 
+			FROM crm_broadcast_logs bl
+			$where_bc
+			GROUP BY dikirim_oleh
+		) bc ON u.cs_name = bc.dikirim_oleh
+		LEFT JOIN (
+			SELECT username, COUNT(id) as note_count 
+			FROM crm_followup_notes fn
+			$where_note
+			GROUP BY username
+		) nt ON u.cs_name = nt.username
+		ORDER BY conversion_amount DESC, total_handled DESC";
+
+		$rows = $this->db->query($sql)->result();
+
+		// Calculate conversion rates
+		foreach ($rows as &$r) {
+			$r->total_handled = (int)$r->total_handled;
+			$r->broadcast_count = (int)$r->broadcast_count;
+			$r->respon_positif = (int)$r->respon_positif;
+			$r->komplain_count = (int)$r->komplain_count;
+			$r->conversion_count = (int)$r->conversion_count;
+			$r->conversion_amount = (float)$r->conversion_amount;
+			$r->conversion_rate = $r->total_handled > 0 ? round(($r->conversion_count / $r->total_handled) * 100, 1) : 0;
+		}
+
+		return $rows;
+	}
+
+	public function get_cs_performance_kpis($filters = [])
+	{
+		$rows = $this->get_cs_performance_report($filters);
+		
+		$total_cs = count($rows);
+		$total_handled = 0;
+		$total_conversions = 0;
+		$total_revenue = 0;
+
+		foreach ($rows as $r) {
+			$total_handled += $r->total_handled;
+			$total_conversions += $r->conversion_count;
+			$total_revenue += $r->conversion_amount;
+		}
+
+		return [
+			'total_cs_active' => $total_cs,
+			'total_handled' => $total_handled,
+			'total_conversions' => $total_conversions,
+			'total_revenue' => $total_revenue,
+			'avg_conversion_rate' => $total_handled > 0 ? round(($total_conversions / $total_handled) * 100, 1) : 0
+		];
 	}
 }

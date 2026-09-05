@@ -31,6 +31,56 @@
   <link rel="stylesheet" href="<?= BASE_ASSET; ?>js-scroll/style/jquery.jscrollpane.css" rel="stylesheet" media="all" />
   <link rel="stylesheet" href="<?= BASE_ASSET; ?>flag-icon/css/flag-icon.css" rel="stylesheet" media="all" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700,300italic,400italic,600italic">
+  
+  <!-- Smooth Sidebar & Page Navigation Transition Animations -->
+  <style>
+    /* Page Content Transition Animation */
+    .content-wrapper {
+      animation: fadeInSlide 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes fadeInSlide {
+      from { opacity: 0.3; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Sidebar Menu Styling & Hover Transitions */
+    .sidebar-menu li a {
+      transition: all 0.25s ease-in-out !important;
+      position: relative;
+    }
+    .sidebar-menu li a:hover {
+      background: rgba(255, 255, 255, 0.08) !important;
+      padding-left: 20px !important;
+    }
+    .sidebar-menu li a i.fa {
+      transition: transform 0.25s ease !important;
+    }
+    .sidebar-menu li a:hover i.fa {
+      transform: scale(1.2);
+    }
+    .sidebar-menu .treeview-menu {
+      background: rgba(0, 0, 0, 0.25) !important;
+    }
+    .sidebar-menu .treeview-menu > li > a {
+      padding-left: 20px !important;
+      color: #94a3b8 !important;
+      transition: all 0.2s ease !important;
+    }
+    .sidebar-menu .treeview-menu > li > a:hover {
+      padding-left: 26px !important;
+      color: #ffffff !important;
+    }
+    .sidebar-menu .treeview-menu > li.active > a {
+      font-weight: 700 !important;
+      color: #38bdf8 !important;
+    }
+    .text-indigo { color: #818cf8 !important; }
+    .text-teal { color: #2dd4bf !important; }
+    .text-yellow { color: #facc15 !important; }
+    .text-purple { color: #c084fc !important; }
+    .text-green { color: #4ade80 !important; }
+    .text-blue { color: #60a5fa !important; }
+  </style>
   <?= $this->cc_html->getCssFileTop(); ?>
 
   <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->

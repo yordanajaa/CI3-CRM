@@ -275,14 +275,30 @@ if(!function_exists('display_menu_admin')) {
 		   		$perms = 'menu_'.strtolower(str_replace(' ', '_', $row->label));
 
 		   		$links = explode('/', $row->link);
-
 				$segments = array_slice($ci->uri->segment_array(), 0, count($links));
-				
-		   		if (implode('/', $segments) == implode('/', $links)) {
+				$current_uri = implode('/', $ci->uri->segment_array());
+
+		   		if (!empty($row->link) && $row->link != '#' && implode('/', $segments) == implode('/', $links)) {
 		   			$active = 'active';
 		   		} else {
 		   			$active = '';
 		   		}
+
+				// Auto-expand treeview if child is active
+				if ($row->Count > 0) {
+					$children = $ci->db->query("SELECT link FROM `menu` WHERE parent = " . $row->id . " AND active = 1")->result();
+					foreach ($children as $child) {
+						$c_link = parse_nav_url($child->link);
+						if (!empty($c_link) && $c_link != '#') {
+							$c_path = trim(str_replace(base_url(), '', $c_link), '/');
+							if (!empty($c_path) && strpos($current_uri, $c_path) !== false) {
+								$active = 'active treeview menu-open';
+								break;
+							}
+						}
+					}
+				}
+
 		   		$link = filter_var($row->link, FILTER_VALIDATE_URL) ? $row->link : base_url($row->link);
 		   		if ($row->type == 'label') {
 		   			if ($ci->aauth->is_allowed($perms)) {
@@ -291,17 +307,19 @@ if(!function_exists('display_menu_admin')) {
 		   		} else {
 			        if ($row->Count > 0) {
 			        	if ($ci->aauth->is_allowed($perms)) {
-				        	$ret .= '<li class="'.$active.' "> 
+				        	$ret .= '<li class="'.$active.'"> 
 										        	<a href="'.$link.'">';
 
 							if ($parent) {
-								$ret .= '<i class="fa fa-circle-o '._ent($row->icon_color).'"></i> <span>'._ent($row->label).'</span>
+								$icon = !empty($row->icon) ? _ent($row->icon) : 'fa-circle-o';
+								$ret .= '<i class="fa '.$icon.' '._ent($row->icon_color).'"></i> <span>'._ent($row->label).'</span>
 									            <span class="pull-right-container">
 									              <i class="fa fa-angle-left pull-right"></i>
 									            </span>
 									          </a>';
 							} else {
-								$ret .= '<i class="fa '._ent($row->icon).' '._ent($row->icon_color).'"></i> <span>'._ent($row->label).'</span>
+								$icon = !empty($row->icon) ? _ent($row->icon) : 'fa-folder-o';
+								$ret .= '<i class="fa '.$icon.' '._ent($row->icon_color).'"></i> <span>'._ent($row->label).'</span>
 									            <span class="pull-right-container">
 									              <i class="fa fa-angle-left pull-right"></i>
 									            </span>
@@ -317,12 +335,14 @@ if(!function_exists('display_menu_admin')) {
 										        	<a href="'.$link.'">';
 
 							if ($parent) {
-								$ret .= '<i class="fa fa-circle-o '._ent($row->icon_color).'"></i> <span>'._ent($row->label).'</span>
+								$icon = !empty($row->icon) ? _ent($row->icon) : 'fa-circle-o';
+								$ret .= '<i class="fa '.$icon.' '._ent($row->icon_color).'"></i> <span>'._ent($row->label).'</span>
 									            <span class="pull-right-container"></i>
 									            </span>
 									          </a>';
 							} else {
-								$ret .= '<i class="fa '._ent($row->icon).' '._ent($row->icon_color).'"></i> <span>'._ent($row->label).'</span>
+								$icon = !empty($row->icon) ? _ent($row->icon) : 'fa-folder-o';
+								$ret .= '<i class="fa '.$icon.' '._ent($row->icon_color).'"></i> <span>'._ent($row->label).'</span>
 									            <span class="pull-right-container"></i>
 									            </span>
 									          </a>';
