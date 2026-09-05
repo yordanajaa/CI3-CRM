@@ -601,7 +601,14 @@ window.addEventListener('load', function() {
       return;
     }
 
-    $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Mengirim via WA API...');
+    var phone = rawPhone.replace(/^0/, '62').replace(/[^0-9]/g, '');
+    if (phone.substring(0, 2) !== '62') phone = '62' + phone;
+    var wa_link = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(customMsg);
+
+    // Open WA Web chat directly in new tab for CS
+    window.open(wa_link, '_blank');
+
+    $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Mengirim...');
 
     $.post(_BASE + 'administrator/crm/send_broadcast_ajax', buildPayload({
       label_ids: [label_id],
@@ -620,12 +627,8 @@ window.addEventListener('load', function() {
       }
 
       if (r.mode === 'wa_gateway') {
-        notify('success', 'Pesan WA berhasil dikirim via Fonnte Gateway API ke ' + nama);
+        notify('success', 'Pesan WA terkirim via Fonnte API & WhatsApp terbuka untuk ' + nama);
       } else {
-        var phone = rawPhone.replace(/^0/, '62').replace(/[^0-9]/g, '');
-        if (phone.substring(0, 2) !== '62') phone = '62' + phone;
-        var wa_link = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(customMsg);
-        window.open(wa_link, '_blank');
         notify('success', 'Pesan WA terbuka untuk ' + nama);
       }
     }).fail(function() {
