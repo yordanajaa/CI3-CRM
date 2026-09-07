@@ -207,14 +207,17 @@ class Model_crm extends CI_Model
 			$this->db->where('tfl.tanggal_pengiriman <=', $filters['date_to']);
 		}
 		if (!empty($filters['search'])) {
+			$s = trim((string)$filters['search']);
 			$this->db->group_start();
-			$this->db->like('tfl.customer_nama', $filters['search']);
-			$this->db->or_like('tfl.customer_phone', $filters['search']);
-			$this->db->or_like('tfl.no_pesanan', $filters['search']);
+			$this->db->like('tfl.customer_nama', $s);
+			$this->db->or_like('tfl.customer_phone', $s);
+			$this->db->or_like('tfl.no_pesanan', $s);
+			$this->db->or_like('tfl.nomor_resi', $s);
+			$this->db->or_like('fc.nama_kategori', $s);
 			$this->db->group_end();
 		}
-		// Only show labels whose target date has arrived
-		if (empty($filters['show_future'])) {
+		// Only hide future labels on default view when no search or date filter is active
+		if (empty($filters['show_future']) && empty($filters['search']) && empty($filters['date_from']) && empty($filters['date_to'])) {
 			$this->db->where('tfl.tanggal_label_muncul <=', date('Y-m-d'));
 		}
 
