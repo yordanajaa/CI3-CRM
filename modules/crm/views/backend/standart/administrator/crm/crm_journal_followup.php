@@ -51,23 +51,49 @@
 .badge-tokopedia { background: linear-gradient(135deg, #059669, #10b981); }
 .badge-tiktok { background: linear-gradient(135deg, #09090b, #18181b); }
 
-.status-select { padding: 4px 10px; font-size: 12px; font-weight: 600; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; }
-.btn-wa-sm { background: #25D366; color: #fff; border: none; padding: 5px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; box-shadow: 0 2px 6px rgba(37, 211, 102, 0.2); }
-.btn-wa-sm:hover { background: #128C7E; color: #fff; }
+.status-select { padding: 5px 10px; font-size: 12px; font-weight: 600; border-radius: 8px; border: 1px solid #cbd5e1; background: #f8fafc; color: #1e293b; transition: all 0.2s ease; cursor: pointer; }
+.status-select:hover, .status-select:focus { border-color: #6366f1; background: #ffffff; outline: none; }
+.btn-wa-sm { background: #25D366; color: #fff; border: none; padding: 5px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; box-shadow: 0 2px 6px rgba(37, 211, 102, 0.2); transition: all 0.2s ease; }
+.btn-wa-sm:hover { background: #128C7E; color: #fff; transform: translateY(-1px); }
 .btn-wa-sm.disabled { background: #cbd5e1; color: #94a3b8; cursor: not-allowed; box-shadow: none; }
 
-.filter-section { border-radius: 12px; border: 1px solid #f1f5f9; box-shadow: 0 4px 16px rgba(0,0,0,0.03); }
-.filter-section .form-control { font-size: 12px; height: 36px; border-radius: 8px; }
+.filter-section { border-radius: 12px; border: 1px solid #e2e8f0; background: #fff; box-shadow: 0 4px 16px rgba(0,0,0,0.03); margin-bottom: 18px; }
+.filter-section .form-control { font-size: 12px; height: 38px; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: none; transition: all 0.2s ease; }
+.filter-section .form-control:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12); }
 
-.badge-h-followup {
+.cat-badge {
   display: inline-block;
   padding: 4px 10px;
   border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #e0f2fe;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  white-space: nowrap;
+}
+
+.label-selisih {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 1px 6px;
+}
+
+.badge-h-followup {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 10px;
   font-size: 10.5px;
   font-weight: 700;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.08);
   white-space: nowrap;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
   transition: all 0.3s ease;
 }
 .bh-today { background: linear-gradient(135deg, #2563eb, #3b82f6); color: #fff; }
@@ -81,13 +107,14 @@
 .bh-repeat { background: linear-gradient(135deg, #0284c7, #06b6d4); color: #fff; }
 .bh-done { background: linear-gradient(135deg, #166534, #15803d); color: #fff; }
 
-.table-journal th { background: #f1f5f9; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: #475569; font-weight: 700; }
-.table-journal td { font-size: 13px; vertical-align: middle !important; color: #334155; }
+.table-journal th { background: #f8fafc; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; font-weight: 700; padding: 12px 10px !important; border-bottom: 2px solid #e2e8f0 !important; }
+.table-journal td { font-size: 12.5px; padding: 12px 10px !important; vertical-align: middle !important; color: #1e293b; }
 .table-journal tbody tr { transition: all 0.2s ease; }
 .table-journal tbody tr:hover { background: #f8fafc !important; }
 
-.cat-pill { display: inline-block; padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; margin: 3px; cursor: pointer; border: 1px solid #e2e8f0; background: #fff; color: #64748b; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 2px 6px rgba(0,0,0,0.03); }
-.cat-pill:hover, .cat-pill.active { background: #6366f1; color: #fff; border-color: #6366f1; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25); }
+.cat-pill { display: inline-flex; align-items: center; gap: 4px; padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; margin: 3px; cursor: pointer; border: 1px solid #e2e8f0; background: #fff; color: #475569; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
+.cat-pill:hover { border-color: #6366f1; color: #6366f1; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15); }
+.cat-pill.active { background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); color: #fff; border-color: #4f46e5; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3); }
 
 .modal-backdrop { z-index: 1040 !important; }
 .modal { z-index: 1050 !important; }
@@ -273,15 +300,18 @@
                 $cat_display = $cat_name;
               }
               ?>
-              <span class="label label-info" style="font-size:11px;padding:4px 8px;"><?= $cat_display; ?></span>
+              <span class="cat-badge"><?= $cat_display; ?></span>
             </td>
-            <td style="font-size:12px;"><?= $e->tanggal_pengiriman ? date('d/m/Y', strtotime($e->tanggal_pengiriman)) : '-'; ?></td>
+            <td style="font-size:12px; white-space:nowrap;"><?= $e->tanggal_pengiriman ? date('d/m/Y', strtotime($e->tanggal_pengiriman)) : '-'; ?></td>
             <td style="font-size:12px;" class="cell-target-date" data-label-id="<?= $e->id; ?>" data-target="<?= $e->tanggal_label_muncul; ?>">
               <?php
               $target = $e->tanggal_label_muncul;
               $target_time = strtotime($target);
               $today_time = strtotime(date('Y-m-d'));
               $diff_days = (int)round(($today_time - $target_time) / 86400);
+
+              $ship_time = !empty($e->tanggal_pengiriman) ? strtotime($e->tanggal_pengiriman) : 0;
+              $selisih_hari = ($ship_time > 0) ? (int)round(($target_time - $ship_time) / 86400) : (isset($e->jumlah_hari) ? (int)$e->jumlah_hari : 0);
 
               $st = $e->status_label;
               $bh_cls = 'bh-today';
@@ -292,11 +322,11 @@
                 if ($diff_days > 0) {
                   $bh_cls = 'bh-overdue';
                   $bh_icon = 'fa-exclamation-triangle';
-                  $bh_text = 'Terlewat ' . $diff_days . ' Hari (Pending)';
+                  $bh_text = 'Terlewat ' . $diff_days . ' Hari';
                 } elseif ($diff_days == 0) {
                   $bh_cls = 'bh-today';
                   $bh_icon = 'fa-clock-o';
-                  $bh_text = 'Jadwal Follow-Up Hari Ini';
+                  $bh_text = 'Hari Ini';
                 } else {
                   $bh_cls = 'bh-future';
                   $bh_icon = 'fa-calendar';
@@ -305,11 +335,11 @@
               } elseif ($st === 'Sudah Dikirim') {
                 $bh_cls = 'bh-sent';
                 $bh_icon = 'fa-whatsapp';
-                $bh_text = 'WA Sudah Dikirim';
+                $bh_text = 'WA Terkirim';
               } elseif ($st === 'Direspon') {
                 $bh_cls = 'bh-responded';
                 $bh_icon = 'fa-comments';
-                $bh_text = 'Customer Direspon';
+                $bh_text = 'Direspon';
               } elseif ($st === 'Sudah Konfirmasi Diterima') {
                 $bh_cls = 'bh-confirmed';
                 $bh_icon = 'fa-check-circle';
@@ -321,30 +351,25 @@
               } elseif ($st === 'Komplain') {
                 $bh_cls = 'bh-complaint';
                 $bh_icon = 'fa-warning';
-                $bh_text = 'Ada Komplain';
+                $bh_text = 'Komplain';
               } elseif ($st === 'Tawarkan Repeat Order') {
                 $bh_cls = 'bh-repeat';
                 $bh_icon = 'fa-shopping-cart';
-                $bh_text = 'Penawaran Repeat Order';
+                $bh_text = 'Repeat Order';
               } elseif ($st === 'Selesai') {
                 $bh_cls = 'bh-done';
                 $bh_icon = 'fa-check-square-o';
-                $bh_text = 'Follow-Up Selesai';
+                $bh_text = 'Selesai';
               } else {
                 $bh_cls = 'bh-done';
                 $bh_icon = 'fa-info-circle';
                 $bh_text = htmlspecialchars($st);
               }
               ?>
-              <?php
-              $ship_time = !empty($e->tanggal_pengiriman) ? strtotime($e->tanggal_pengiriman) : 0;
-              $selisih_hari = ($ship_time > 0) ? (int)round(($target_time - $ship_time) / 86400) : (isset($e->jumlah_hari) ? (int)$e->jumlah_hari : 0);
-              ?>
-              <strong><?= date('d/m/Y', strtotime($target)); ?></strong>
-              <span class="label label-primary" style="font-size:10px;background:#3b82f6;color:#fff;border-radius:10px;padding:2px 7px;font-weight:700;margin-left:3px;" title="Selisih <?= $selisih_hari; ?> hari dari Tgl Kirim">
-                +<?= $selisih_hari; ?> Hari
-              </span>
-              <br>
+              <div style="display:flex; align-items:center; gap:4px; flex-wrap:wrap; margin-bottom:3px;">
+                <strong style="color:#1e293b;"><?= date('d/m/Y', strtotime($target)); ?></strong>
+                <span class="label-selisih" title="Selisih <?= $selisih_hari; ?> hari dari Tgl Kirim">(H+<?= $selisih_hari; ?>)</span>
+              </div>
               <span class="badge-h-followup <?= $bh_cls; ?>" id="badge-h-<?= $e->id; ?>" title="Status jadwal follow up">
                 <i class="fa <?= $bh_icon; ?>"></i> <?= $bh_text; ?>
               </span>
@@ -363,17 +388,19 @@
               </span>
             </td>
             <td class="text-center" style="white-space:nowrap;">
-              <?php if (!empty($e->customer_phone)): ?>
-              <button class="btn-wa-sm btn-send-wa <?= $e->is_broadcast_sent ? 'sent-active' : ''; ?>" data-label-id="<?= $e->id; ?>" title="<?= $e->is_broadcast_sent ? 'Sudah pernah dikirim (Klik untuk kirim ulang / follow up susulan)' : 'Kirim WA'; ?>">
-                <i class="fa fa-whatsapp"></i>
-              </button>
-              <?php endif; ?>
-              <button class="btn btn-xs btn-default btn-add-note" data-label-id="<?= $e->id; ?>" data-nama="<?= htmlspecialchars($e->customer_nama); ?>" title="Tambah Catatan">
-                <i class="fa fa-comment"></i>
-              </button>
-              <a href="<?= site_url('administrator/crm/customer_detail?phone=' . urlencode($e->customer_phone)); ?>" class="btn btn-xs btn-info" title="Profile Customer">
-                <i class="fa fa-user"></i>
-              </a>
+              <div style="display:inline-flex; align-items:center; justify-content:center; gap:4px;">
+                <?php if (!empty($e->customer_phone)): ?>
+                <button class="btn-wa-sm btn-send-wa <?= $e->is_broadcast_sent ? 'sent-active' : ''; ?>" data-label-id="<?= $e->id; ?>" title="<?= $e->is_broadcast_sent ? 'Sudah pernah dikirim (Klik untuk kirim ulang / follow up susulan)' : 'Kirim WA'; ?>">
+                  <i class="fa fa-whatsapp"></i>
+                </button>
+                <?php endif; ?>
+                <button class="btn btn-xs btn-default btn-add-note" data-label-id="<?= $e->id; ?>" data-nama="<?= htmlspecialchars($e->customer_nama); ?>" title="Tambah Catatan" style="border-radius:6px; padding:4px 8px;">
+                  <i class="fa fa-comment"></i>
+                </button>
+                <a href="<?= site_url('administrator/crm/customer_detail?phone=' . urlencode($e->customer_phone)); ?>" class="btn btn-xs btn-info" title="Profile Customer" style="border-radius:6px; padding:4px 8px;">
+                  <i class="fa fa-user"></i>
+                </a>
+              </div>
             </td>
           </tr>
           <?php endforeach; endif; ?>
