@@ -171,6 +171,10 @@
 
 <script>
 $(document).ready(function() {
+  var csrf_name = '<?= $this->security->get_csrf_token_name(); ?>';
+  var csrf_hash = '<?= $this->security->get_csrf_hash(); ?>';
+  var _BASE = (typeof BASE_URL !== 'undefined') ? BASE_URL : '<?= base_url(); ?>';
+
   var presetUrls = {
     'fonnte': 'https://api.fonnte.com/send',
     'wablas': 'https://api.wablas.com/api/v2/send-message',
@@ -179,15 +183,27 @@ $(document).ready(function() {
     'custom': ''
   };
 
+  var presetPlaceholders = {
+    'fonnte': 'Token Fonnte (contoh: aqFuf6TkqXjqHxvtRfbL)',
+    'wablas': 'API Key / Secret Token Wablas',
+    'waha': 'API Key WAHA (jika menggunakan otentikasi)',
+    'starsender': 'API Key Starsender',
+    'custom': 'API Key / Bearer Token'
+  };
+
   $('.provider-card').on('click', function() {
     $('.provider-card').removeClass('active');
     $(this).addClass('active');
     var prov = $(this).data('provider');
     $('#config-provider').val(prov);
 
-    if (presetUrls[prov]) {
+    if (presetUrls[prov] !== undefined) {
       $('#config-api-url').val(presetUrls[prov]);
-      $('#url-help-text').text('URL endpoint preset ' + prov.toUpperCase() + ': ' + presetUrls[prov]);
+      $('#url-help-text').text('URL endpoint preset ' + prov.toUpperCase() + ': ' + (presetUrls[prov] || 'Bebas / Custom URL'));
+    }
+
+    if (presetPlaceholders[prov]) {
+      $('#config-api-key').attr('placeholder', presetPlaceholders[prov]);
     }
     
     if (prov === 'custom') {
@@ -200,26 +216,38 @@ $(document).ready(function() {
   // Save config
   $('#btn-save-wa-config').on('click', function() {
     var $btn = $(this);
-    $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Menyimpan...');
+    $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Menyimpan Konfigurasi...');
+
+    var formData = $('#form-wa-config').serializeArray();
+    var payload = {};
+    $.each(formData, function(i, field) {
+      payload[field.name] = field.value;
+    });
+    if (csrf_name && csrf_hash) payload[csrf_name] = csrf_hash;
 
     $.ajax({
-      url: BASE_URL + 'administrator/crm/save_wa_gateway_config_ajax',
+      url: _BASE + 'administrator/crm/save_wa_gateway_config_ajax',
       type: 'POST',
-      data: $('#form-wa-config').serialize(),
+      data: payload,
       dataType: 'json',
       success: function(res) {
-        $btn.prop('disabled', false).html('<i class="fa fa-save"></i> Simpan Konfigurasi WA Gateway');
+        $btn.prop('disabled', false).html('<i class="fa fa-check"></i> Konfigurasi Tersimpan!');
         if (res.success) {
-          if (typeof toastr !== 'undefined') toastr.success(res.message);
-          else alert(res.message);
+          if (typeof toastr !== 'undefined') toastr.success(res.message || 'Konfigurasi WA Gateway berhasil disimpan!');
+          else alert(res.message || 'Konfigurasi berhasil disimpan');
+
+          setTimeout(function() {
+            location.reload();
+          }, 1000);
         } else {
+          $btn.prop('disabled', false).html('<i class="fa fa-save"></i> Simpan Konfigurasi WA Gateway');
           if (typeof toastr !== 'undefined') toastr.error(res.message || 'Gagal menyimpan');
           else alert(res.message || 'Gagal menyimpan');
         }
       },
-      error: function() {
+      error: function(xhr) {
         $btn.prop('disabled', false).html('<i class="fa fa-save"></i> Simpan Konfigurasi WA Gateway');
-        alert('Gagal menghubungi server');
+        alert('Gagal menyimpan konfigurasi: ' + (xhr.statusText || 'Terjadi kesalahan'));
       }
     });
   });
@@ -238,10 +266,13 @@ $(document).ready(function() {
     $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Mengirim cURL API...');
     $('#test-result-box').hide();
 
+    var payload = { phone: phone, message: message };
+    if (csrf_name && csrf_hash) payload[csrf_name] = csrf_hash;
+
     $.ajax({
-      url: BASE_URL + 'administrator/crm/test_wa_gateway_ajax',
+      url: _BASE + 'administrator/crm/test_wa_gateway_ajax',
       type: 'POST',
-      data: { phone: phone, message: message },
+      data: payload,
       dataType: 'json',
       success: function(res) {
         $btn.prop('disabled', false).html('<i class="fa fa-paper-plane"></i> Kirim Pesan Uji Coba Sekarang');
@@ -253,9 +284,9 @@ $(document).ready(function() {
         }
         $('#test-result-box').html(resHtml).slideDown(300);
       },
-      error: function() {
+      error: function(xhr) {
         $btn.prop('disabled', false).html('<i class="fa fa-paper-plane"></i> Kirim Pesan Uji Coba Sekarang');
-        alert('Gagal menghubungi server API');
+        alert('Gagal menghubungi server API: ' + (xhr.statusText || 'Error'));
       }
     });
   });
