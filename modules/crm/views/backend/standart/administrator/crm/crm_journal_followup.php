@@ -234,9 +234,9 @@
             <th>No. HP</th>
             <th>No. Pesanan</th>
             <th>Sumber</th>
-            <th>Kategori H+</th>
+            <th>Kategori Follow-Up</th>
             <th>Tgl Kirim</th>
-            <th>Target Follow-Up</th>
+            <th>Jadwal Follow-Up</th>
             <th>Status</th>
             <th class="text-center">Aksi</th>
           </tr>
@@ -266,11 +266,14 @@
             <td>
               <?php
               $cat_name = htmlspecialchars($e->nama_kategori);
-              if (stripos($cat_name, 'H+') === false && isset($e->jumlah_hari)) {
-                $cat_name .= ' (H+' . $e->jumlah_hari . ')';
+              if (isset($e->jumlah_hari)) {
+                $clean_cat = preg_replace('/\s*\(H\+\d+\)/i', '', $cat_name);
+                $cat_display = $clean_cat . ' (H+' . $e->jumlah_hari . ')';
+              } else {
+                $cat_display = $cat_name;
               }
               ?>
-              <span class="label label-info"><?= $cat_name; ?></span>
+              <span class="label label-info" style="font-size:11px;padding:4px 8px;"><?= $cat_display; ?></span>
             </td>
             <td style="font-size:12px;"><?= $e->tanggal_pengiriman ? date('d/m/Y', strtotime($e->tanggal_pengiriman)) : '-'; ?></td>
             <td style="font-size:12px;" class="cell-target-date" data-label-id="<?= $e->id; ?>" data-target="<?= $e->tanggal_label_muncul; ?>">
@@ -279,7 +282,6 @@
               $target_time = strtotime($target);
               $today_time = strtotime(date('Y-m-d'));
               $diff_days = (int)round(($today_time - $target_time) / 86400);
-              $max_diff = max(0, $diff_days);
 
               $st = $e->status_label;
               $bh_cls = 'bh-today';
@@ -290,53 +292,53 @@
                 if ($diff_days > 0) {
                   $bh_cls = 'bh-overdue';
                   $bh_icon = 'fa-exclamation-triangle';
-                  $bh_text = 'H+' . $diff_days . ' Terlewat (Pending)';
+                  $bh_text = 'Terlewat ' . $diff_days . ' Hari (Pending)';
                 } elseif ($diff_days == 0) {
                   $bh_cls = 'bh-today';
                   $bh_icon = 'fa-clock-o';
-                  $bh_text = 'H+0 Konfirmasi Hari Ini';
+                  $bh_text = 'Jadwal Follow-Up Hari Ini';
                 } else {
                   $bh_cls = 'bh-future';
                   $bh_icon = 'fa-calendar';
-                  $bh_text = 'H-' . abs($diff_days) . ' Mendatang';
+                  $bh_text = abs($diff_days) . ' Hari Lagi';
                 }
               } elseif ($st === 'Sudah Dikirim') {
                 $bh_cls = 'bh-sent';
                 $bh_icon = 'fa-whatsapp';
-                $bh_text = 'H+' . $max_diff . ' WA Terkirim';
+                $bh_text = 'WA Sudah Dikirim';
               } elseif ($st === 'Direspon') {
                 $bh_cls = 'bh-responded';
                 $bh_icon = 'fa-comments';
-                $bh_text = 'H+' . $max_diff . ' Customer Direspon';
+                $bh_text = 'Customer Direspon';
               } elseif ($st === 'Sudah Konfirmasi Diterima') {
                 $bh_cls = 'bh-confirmed';
                 $bh_icon = 'fa-check-circle';
-                $bh_text = 'H+' . $max_diff . ' Barang Diterima';
+                $bh_text = 'Barang Diterima';
               } elseif ($st === 'Belum Respon') {
                 $bh_cls = 'bh-no-response';
                 $bh_icon = 'fa-hourglass-half';
-                $bh_text = 'H+' . $max_diff . ' Belum Respon';
+                $bh_text = 'Belum Respon';
               } elseif ($st === 'Komplain') {
                 $bh_cls = 'bh-complaint';
                 $bh_icon = 'fa-warning';
-                $bh_text = 'H+' . $max_diff . ' Ada Komplain';
+                $bh_text = 'Ada Komplain';
               } elseif ($st === 'Tawarkan Repeat Order') {
                 $bh_cls = 'bh-repeat';
                 $bh_icon = 'fa-shopping-cart';
-                $bh_text = 'H+' . $max_diff . ' Offer Repeat Order';
+                $bh_text = 'Penawaran Repeat Order';
               } elseif ($st === 'Selesai') {
                 $bh_cls = 'bh-done';
                 $bh_icon = 'fa-check-square-o';
-                $bh_text = 'H+' . $max_diff . ' Follow-Up Selesai';
+                $bh_text = 'Follow-Up Selesai';
               } else {
                 $bh_cls = 'bh-done';
                 $bh_icon = 'fa-info-circle';
-                $bh_text = 'H+' . $max_diff . ' ' . htmlspecialchars($st);
+                $bh_text = htmlspecialchars($st);
               }
               ?>
               <strong><?= date('d/m/Y', strtotime($target)); ?></strong>
               <br>
-              <span class="badge-h-followup <?= $bh_cls; ?>" id="badge-h-<?= $e->id; ?>" title="Status H+ setelah follow up ke customer">
+              <span class="badge-h-followup <?= $bh_cls; ?>" id="badge-h-<?= $e->id; ?>" title="Status jadwal follow up">
                 <i class="fa <?= $bh_icon; ?>"></i> <?= $bh_text; ?>
               </span>
             </td>
@@ -507,34 +509,33 @@ window.addEventListener('load', function() {
     
     var diffTime = todayDate.getTime() - targetDate.getTime();
     var diffDays = Math.round(diffTime / (1000 * 3600 * 24));
-    var maxDiff = Math.max(0, diffDays);
 
     var cls = 'bh-done';
     var icon = 'fa-info-circle';
-    var text = 'H+' + maxDiff + ' ' + status;
+    var text = status;
 
     if (status === 'Pending') {
       if (diffDays > 0) {
-        cls = 'bh-overdue'; icon = 'fa-exclamation-triangle'; text = 'H+' + diffDays + ' Terlewat (Pending)';
+        cls = 'bh-overdue'; icon = 'fa-exclamation-triangle'; text = 'Terlewat ' + diffDays + ' Hari (Pending)';
       } else if (diffDays === 0) {
-        cls = 'bh-today'; icon = 'fa-clock-o'; text = 'H+0 Konfirmasi Hari Ini';
+        cls = 'bh-today'; icon = 'fa-clock-o'; text = 'Jadwal Follow-Up Hari Ini';
       } else {
-        cls = 'bh-future'; icon = 'fa-calendar'; text = 'H-' + Math.abs(diffDays) + ' Mendatang';
+        cls = 'bh-future'; icon = 'fa-calendar'; text = Math.abs(diffDays) + ' Hari Lagi';
       }
     } else if (status === 'Sudah Dikirim') {
-      cls = 'bh-sent'; icon = 'fa-whatsapp'; text = 'H+' + maxDiff + ' WA Terkirim';
+      cls = 'bh-sent'; icon = 'fa-whatsapp'; text = 'WA Sudah Dikirim';
     } else if (status === 'Direspon') {
-      cls = 'bh-responded'; icon = 'fa-comments'; text = 'H+' + maxDiff + ' Customer Direspon';
+      cls = 'bh-responded'; icon = 'fa-comments'; text = 'Customer Direspon';
     } else if (status === 'Sudah Konfirmasi Diterima') {
-      cls = 'bh-confirmed'; icon = 'fa-check-circle'; text = 'H+' + maxDiff + ' Barang Diterima';
+      cls = 'bh-confirmed'; icon = 'fa-check-circle'; text = 'Barang Diterima';
     } else if (status === 'Belum Respon') {
-      cls = 'bh-no-response'; icon = 'fa-hourglass-half'; text = 'H+' + maxDiff + ' Belum Respon';
+      cls = 'bh-no-response'; icon = 'fa-hourglass-half'; text = 'Belum Respon';
     } else if (status === 'Komplain') {
-      cls = 'bh-complaint'; icon = 'fa-warning'; text = 'H+' + maxDiff + ' Ada Komplain';
+      cls = 'bh-complaint'; icon = 'fa-warning'; text = 'Ada Komplain';
     } else if (status === 'Tawarkan Repeat Order') {
-      cls = 'bh-repeat'; icon = 'fa-shopping-cart'; text = 'H+' + maxDiff + ' Offer Repeat Order';
+      cls = 'bh-repeat'; icon = 'fa-shopping-cart'; text = 'Penawaran Repeat Order';
     } else if (status === 'Selesai') {
-      cls = 'bh-done'; icon = 'fa-check-square-o'; text = 'H+' + maxDiff + ' Follow-Up Selesai';
+      cls = 'bh-done'; icon = 'fa-check-square-o'; text = 'Follow-Up Selesai';
     }
 
     var $badge = $('#badge-h-' + label_id);
