@@ -336,7 +336,14 @@
                 $bh_text = htmlspecialchars($st);
               }
               ?>
+              <?php
+              $ship_time = !empty($e->tanggal_pengiriman) ? strtotime($e->tanggal_pengiriman) : 0;
+              $selisih_hari = ($ship_time > 0) ? (int)round(($target_time - $ship_time) / 86400) : (isset($e->jumlah_hari) ? (int)$e->jumlah_hari : 0);
+              ?>
               <strong><?= date('d/m/Y', strtotime($target)); ?></strong>
+              <span class="label label-primary" style="font-size:10px;background:#3b82f6;color:#fff;border-radius:10px;padding:2px 7px;font-weight:700;margin-left:3px;" title="Selisih <?= $selisih_hari; ?> hari dari Tgl Kirim">
+                +<?= $selisih_hari; ?> Hari
+              </span>
               <br>
               <span class="badge-h-followup <?= $bh_cls; ?>" id="badge-h-<?= $e->id; ?>" title="Status jadwal follow up">
                 <i class="fa <?= $bh_icon; ?>"></i> <?= $bh_text; ?>

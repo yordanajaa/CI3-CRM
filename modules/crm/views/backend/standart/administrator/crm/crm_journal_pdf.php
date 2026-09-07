@@ -36,7 +36,7 @@ tr:nth-child(even) { background-color: #f8fafc; }
             <th width="10%">Sumber</th>
             <th width="18%">Kategori Follow-Up</th>
             <th width="9%">Tgl Kirim</th>
-            <th width="9%">Target Tag</th>
+            <th width="12%">Jadwal Follow-Up</th>
             <th width="8%">Status</th>
         </tr>
     </thead>
@@ -58,7 +58,16 @@ tr:nth-child(even) { background-color: #f8fafc; }
                 ?>
             </td>
             <td><?= !empty($r->tanggal_pengiriman) ? date('d/m/Y', strtotime($r->tanggal_pengiriman)) : '-'; ?></td>
-            <td><?= !empty($r->tanggal_label_muncul) ? date('d/m/Y', strtotime($r->tanggal_label_muncul)) : '-'; ?></td>
+            <td>
+                <?php
+                $t_str = !empty($r->tanggal_label_muncul) ? date('d/m/Y', strtotime($r->tanggal_label_muncul)) : '-';
+                if (!empty($r->tanggal_pengiriman) && !empty($r->tanggal_label_muncul)) {
+                    $s_days = (int)round((strtotime($r->tanggal_label_muncul) - strtotime($r->tanggal_pengiriman)) / 86400);
+                    $t_str .= ' (+' . $s_days . ' hr)';
+                }
+                echo $t_str;
+                ?>
+            </td>
             <td>
                 <?php
                 $st = strtolower($r->status_label ?? '');

@@ -232,7 +232,7 @@ class Model_crm extends CI_Model
 	 */
 	public function get_categories($active_only = true)
 	{
-		$this->db->order_by('urutan', 'ASC');
+		$this->db->order_by('jumlah_hari', 'ASC');
 		if ($active_only) $this->db->where('is_active', 1);
 		return $this->db->get('crm_followup_categories')->result();
 	}
