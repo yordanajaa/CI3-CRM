@@ -167,6 +167,52 @@
       </div>
     </div>
   </div>
+
+  <!-- Webhook URL Configuration for Incoming Messages -->
+  <div class="row" style="margin-top:5px;">
+    <div class="col-md-12">
+      <div class="box-clean">
+        <div class="box-header">
+          <h3 class="box-title"><i class="fa fa-exchange text-warning"></i> Webhook URL — Terima Balasan WA Customer</h3>
+        </div>
+        <div class="box-body" style="padding:24px;">
+          <div style="background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:16px;margin-bottom:16px;">
+            <p style="font-size:13px;color:#78350f;margin:0 0 10px;font-weight:600;">
+              <i class="fa fa-lightbulb-o" style="color:#f59e0b;"></i> 
+              Copy URL Webhook di bawah dan pasang di pengaturan Webhook provider WhatsApp API Anda agar balasan customer otomatis masuk ke sistem CRM.
+            </p>
+            
+            <div style="margin-bottom:14px;">
+              <label style="font-weight:700;font-size:12px;color:#92400e;margin-bottom:4px;display:block;">
+                <i class="fa fa-whatsapp" style="color:#25D366;"></i> Fonnte Webhook URL:
+              </label>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <input type="text" class="form-control" readonly value="<?= base_url('administrator/crm/fonnte_webhook'); ?>" id="webhook-fonnte-url" style="font-family:monospace;font-size:12px;border-radius:8px;height:38px;background:#fff;flex:1;">
+                <button class="btn btn-sm btn-default btn-copy-webhook" data-target="webhook-fonnte-url" style="border-radius:8px;height:38px;padding:0 14px;"><i class="fa fa-copy"></i> Copy</button>
+              </div>
+              <small class="text-muted" style="font-size:11px;">Paste URL ini di <strong>Fonnte Dashboard → Devices → Webhook URL</strong></small>
+            </div>
+
+            <div>
+              <label style="font-weight:700;font-size:12px;color:#92400e;margin-bottom:4px;display:block;">
+                <i class="fa fa-server" style="color:#6366f1;"></i> WAHA Webhook URL:
+              </label>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <input type="text" class="form-control" readonly value="<?= base_url('administrator/crm/waha_webhook'); ?>" id="webhook-waha-url" style="font-family:monospace;font-size:12px;border-radius:8px;height:38px;background:#fff;flex:1;">
+                <button class="btn btn-sm btn-default btn-copy-webhook" data-target="webhook-waha-url" style="border-radius:8px;height:38px;padding:0 14px;"><i class="fa fa-copy"></i> Copy</button>
+              </div>
+              <small class="text-muted" style="font-size:11px;">Paste URL ini di <strong>WAHA → API → Sessions → Webhook URL</strong></small>
+            </div>
+          </div>
+          
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 16px;font-size:12px;color:#166534;">
+            <i class="fa fa-check-circle" style="color:#22c55e;"></i>
+            <strong>Cara Kerja:</strong> Saat customer membalas pesan WA, provider (Fonnte/WAHA) akan mengirimkan data balasan ke Webhook URL di atas secara otomatis. Sistem CRM akan mencocokkan nomor HP customer dan menyimpan balasan di riwayat chat follow-up.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </section>
 
 <script>
@@ -289,6 +335,17 @@ $(document).ready(function() {
         alert('Gagal menghubungi server API: ' + (xhr.statusText || 'Error'));
       }
     });
+  });
+
+  // Copy Webhook URL
+  $(document).on('click', '.btn-copy-webhook', function() {
+    var targetId = $(this).data('target');
+    var $input = $('#' + targetId);
+    $input.select();
+    document.execCommand('copy');
+    var $btn = $(this);
+    $btn.html('<i class="fa fa-check"></i> Copied!').css('color','#22c55e');
+    setTimeout(function() { $btn.html('<i class="fa fa-copy"></i> Copy').css('color',''); }, 2000);
   });
 });
 </script>

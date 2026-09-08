@@ -280,15 +280,16 @@ class Model_crm extends CI_Model
 	}
 
 	/**
-	 * Add follow-up note (FB-07)
+	 * Add follow-up note (FB-07) — supports sender_type for 2-way chat
 	 */
-	public function add_note($label_id, $catatan, $status_manual = null)
+	public function add_note($label_id, $catatan, $status_manual = null, $sender_type = 'cs')
 	{
 		return $this->db->insert('crm_followup_notes', [
 			'followup_label_id' => $label_id,
 			'username' => get_user_data('username') ?: 'system',
 			'catatan' => $catatan,
 			'status_manual' => $status_manual,
+			'sender_type' => in_array($sender_type, ['cs','customer','system']) ? $sender_type : 'cs',
 			'created_at' => date('Y-m-d H:i:s'),
 		]);
 	}
@@ -296,6 +297,125 @@ class Model_crm extends CI_Model
 	public function get_notes($label_id)
 	{
 		return $this->db->where('followup_label_id', $label_id)->order_by('created_at', 'DESC')->get('crm_followup_notes')->result();
+	}
+
+	/**
+	 * Normalize phone number to 62xxxx format
+	 */
+	public function normalize_phone($phone)
+	{
+		$phone = preg_replace('/[^0-9]/', '', $phone);
+		// Remove @c.us suffix (WAHA format)
+		$phone = preg_replace('/@c\.us$/', '', $phone);
+		// Convert 08xx → 628xx
+		if (substr($phone, 0, 1) === '0') {
+			$phone = '62' . substr($phone, 1);
+		}
+		// Ensure starts with 62
+		if (substr($phone, 0, 2) !== '62') {
+			$phone = '62' . $phone;
+		}
+		return $phone;
+	}
+
+	/**
+	 * Log incoming WhatsApp reply from customer (Webhook)
+	 * Finds matching label(s) by phone, saves reply, auto-updates status to Direspon
+	 */
+	public function log_incoming_reply($phone, $message, $sender_name = '', $raw_data = null)
+	{
+		$phone_normalized = $this->normalize_phone($phone);
+
+		// Find all active labels (non-Selesai) for this phone
+		// Try matching with various phone formats
+		$phone_variants = [
+			$phone_normalized,
+			'0' . substr($phone_normalized, 2), // 08xxx
+			$phone, // original
+		];
+
+		$labels = $this->db
+			->where_in('customer_phone', array_unique($phone_variants))
+			->where_not_in('status_label', ['Selesai'])
+			->order_by('tanggal_label_muncul', 'DESC')
+			->get('crm_transaction_followup_labels')
+			->result();
+
+		$logged_count = 0;
+
+		if (!empty($labels)) {
+			foreach ($labels as $label) {
+				// Insert as customer reply note
+				$this->db->insert('crm_followup_notes', [
+					'followup_label_id' => $label->id,
+					'username' => !empty($sender_name) ? $sender_name : 'Customer',
+					'catatan' => $message,
+					'status_manual' => 'Direspon',
+					'sender_type' => 'customer',
+					'created_at' => date('Y-m-d H:i:s'),
+				]);
+
+				// Auto-update status to Direspon (only if still Pending or Sudah Dikirim)
+				if (in_array($label->status_label, ['Pending', 'Sudah Dikirim', 'Belum Respon'])) {
+					$this->db->where('id', $label->id)->update('crm_transaction_followup_labels', [
+						'status_label' => 'Direspon',
+						'updated_at' => date('Y-m-d H:i:s'),
+					]);
+				}
+
+				$logged_count++;
+			}
+		}
+
+		return $logged_count;
+	}
+
+	/**
+	 * Get unified 2-way chat timeline for a label
+	 * Merges: outgoing WA logs (broadcast_logs) + notes/replies (followup_notes)
+	 */
+	public function get_chat_timeline($label_id)
+	{
+		// Get outgoing WA messages (sent by CS)
+		$outgoing = $this->db->query("
+			SELECT 
+				bl.id, 
+				'outgoing' as direction,
+				bl.isi_pesan_final as message,
+				bl.dikirim_oleh as sender,
+				bl.waktu_kirim as created_at,
+				bl.metode_kirim,
+				bl.status_kirim,
+				'cs' as sender_type
+			FROM crm_broadcast_logs bl
+			WHERE bl.followup_label_id = ?
+		", [$label_id])->result_array();
+
+		// Get notes + incoming customer replies
+		$notes = $this->db->query("
+			SELECT 
+				fn.id,
+				CASE 
+					WHEN fn.sender_type = 'customer' THEN 'incoming'
+					ELSE 'note'
+				END as direction,
+				fn.catatan as message,
+				fn.username as sender,
+				fn.created_at,
+				'' as metode_kirim,
+				'' as status_kirim,
+				fn.sender_type
+			FROM crm_followup_notes fn
+			WHERE fn.followup_label_id = ?
+		", [$label_id])->result_array();
+
+		// Merge and sort by time ASC
+		$timeline = array_merge($outgoing, $notes);
+		usort($timeline, function($a, $b) {
+			return strtotime($a['created_at']) - strtotime($b['created_at']);
+		});
+
+		return $timeline;
 	}
 
 	/**

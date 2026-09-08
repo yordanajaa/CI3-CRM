@@ -642,4 +642,136 @@ class Crm extends Admin
 		if (ob_get_length()) { ob_clean(); }
 		$this->htmlpdf->Output($filename, 'D');
 	}
+
+	// ===== WEBHOOK RECEIVERS (Fonnte & WAHA) =====
+
+	/**
+	 * Fonnte Webhook Receiver
+	 * Fonnte sends: sender, message, name, device, url, member
+	 */
+	public function fonnte_webhook()
+	{
+		header('Content-Type: application/json');
+
+		$sender  = trim($this->input->post('sender') ?: ($this->input->get('sender') ?: ''));
+		$message = trim($this->input->post('message') ?: ($this->input->get('message') ?: ''));
+		$name    = trim($this->input->post('name') ?: ($this->input->get('name') ?: ''));
+
+		// Also try reading raw JSON body
+		if (empty($sender)) {
+			$raw = file_get_contents('php://input');
+			$json = json_decode($raw, true);
+			if ($json) {
+				$sender  = trim($json['sender'] ?? '');
+				$message = trim($json['message'] ?? '');
+				$name    = trim($json['name'] ?? '');
+			}
+		}
+
+		if (empty($sender) || empty($message)) {
+			echo json_encode(['success' => false, 'message' => 'sender or message is empty']);
+			return;
+		}
+
+		// Skip group messages (Fonnte group chats contain @g.us or group id)
+		if (strpos($sender, '@g.us') !== false || strpos($sender, '-') !== false) {
+			echo json_encode(['success' => true, 'message' => 'group message skipped']);
+			return;
+		}
+
+		$count = $this->model_crm->log_incoming_reply($sender, $message, $name);
+
+		echo json_encode([
+			'success' => true,
+			'message' => "Logged {$count} label(s) for reply from {$sender}",
+			'logged' => $count
+		]);
+	}
+
+	/**
+	 * WAHA Webhook Receiver
+	 * WAHA sends JSON: { event: "message", payload: { from, body, notifyName, ... } }
+	 */
+	public function waha_webhook()
+	{
+		header('Content-Type: application/json');
+
+		$raw = file_get_contents('php://input');
+		$json = json_decode($raw, true);
+
+		if (empty($json) || empty($json['event'])) {
+			echo json_encode(['success' => false, 'message' => 'Invalid WAHA payload']);
+			return;
+		}
+
+		// Only process incoming messages (not status updates)
+		if ($json['event'] !== 'message') {
+			echo json_encode(['success' => true, 'message' => 'Event skipped: ' . $json['event']]);
+			return;
+		}
+
+		$payload = $json['payload'] ?? [];
+		$from    = trim($payload['from'] ?? '');
+		$body    = trim($payload['body'] ?? '');
+		$name    = trim($payload['notifyName'] ?? ($payload['_data']['notifyName'] ?? ''));
+
+		// Skip group messages
+		if (strpos($from, '@g.us') !== false) {
+			echo json_encode(['success' => true, 'message' => 'group message skipped']);
+			return;
+		}
+
+		// Remove @c.us suffix
+		$from = str_replace('@c.us', '', $from);
+
+		if (empty($from) || empty($body)) {
+			echo json_encode(['success' => false, 'message' => 'from or body is empty']);
+			return;
+		}
+
+		$count = $this->model_crm->log_incoming_reply($from, $body, $name);
+
+		echo json_encode([
+			'success' => true,
+			'message' => "Logged {$count} label(s) for WAHA reply from {$from}",
+			'logged' => $count
+		]);
+	}
+
+	// ===== CHAT TIMELINE AJAX =====
+
+	/**
+	 * Get unified 2-way chat timeline for a label
+	 */
+	public function get_chat_timeline_ajax()
+	{
+		header('Content-Type: application/json');
+		$label_id = $this->input->get('label_id');
+		if (!$label_id) {
+			echo json_encode(['success' => false, 'message' => 'label_id required']);
+			return;
+		}
+
+		$label = $this->model_crm->get_label($label_id);
+		if (!$label) {
+			echo json_encode(['success' => false, 'message' => 'Label not found']);
+			return;
+		}
+
+		$timeline = $this->model_crm->get_chat_timeline($label_id);
+
+		echo json_encode([
+			'success' => true,
+			'label' => [
+				'id' => $label->id,
+				'customer_nama' => $label->customer_nama,
+				'customer_phone' => $label->customer_phone,
+				'no_pesanan' => $label->no_pesanan,
+				'order_source' => $label->order_source,
+				'status_label' => $label->status_label,
+			],
+			'timeline' => $timeline,
+			'count' => count($timeline)
+		]);
+	}
 }

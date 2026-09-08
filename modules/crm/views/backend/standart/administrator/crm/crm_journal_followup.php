@@ -413,38 +413,195 @@
   </div>
 </section>
 
-<!-- Modal: Add Note -->
-<div class="modal fade" id="modal-note" tabindex="-1">
+<!-- Modal: 2-Way WhatsApp Chat -->
+<style>
+.chat-modal .modal-dialog { max-width: 520px; }
+.chat-modal .modal-content { border-radius: 14px; overflow: hidden; border: none; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+.chat-header { background: linear-gradient(135deg, #075e54 0%, #128c7e 100%); color: #fff; padding: 16px 20px; display: flex; align-items: center; gap: 12px; }
+.chat-header .avatar { width: 42px; height: 42px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; flex-shrink: 0; }
+.chat-header .info { flex: 1; }
+.chat-header .info .name { font-size: 15px; font-weight: 700; }
+.chat-header .info .meta { font-size: 11px; opacity: 0.8; }
+
+.chat-canvas {
+  background: #efeae2;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d4cfc6' fill-opacity='0.15'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  min-height: 320px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding: 16px 14px;
+  scroll-behavior: smooth;
+}
+
+.chat-bubble {
+  max-width: 82%;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 6px;
+  position: relative;
+  word-wrap: break-word;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+}
+.chat-bubble .bubble-time {
+  font-size: 10px;
+  color: rgba(0,0,0,0.4);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+/* Outgoing: CS sent (right, green) */
+.bubble-outgoing {
+  background: #d9fdd3;
+  color: #1a1a1a;
+  margin-left: auto;
+  border-bottom-right-radius: 3px;
+}
+.bubble-outgoing .bubble-sender { display: none; }
+
+/* Incoming: Customer reply (left, white) */
+.bubble-incoming {
+  background: #ffffff;
+  color: #1a1a1a;
+  margin-right: auto;
+  border-bottom-left-radius: 3px;
+}
+.bubble-incoming .bubble-sender {
+  font-size: 11px;
+  font-weight: 700;
+  color: #075e54;
+  margin-bottom: 2px;
+}
+
+/* System note (center, amber) */
+.bubble-note {
+  background: #fef3c7;
+  color: #78350f;
+  margin: 6px auto;
+  text-align: center;
+  border-radius: 8px;
+  font-size: 12px;
+  max-width: 90%;
+  border: 1px solid #fde68a;
+}
+.bubble-note .bubble-sender {
+  font-size: 10px;
+  font-weight: 700;
+  color: #92400e;
+  margin-bottom: 2px;
+}
+
+.chat-footer {
+  background: #f0f2f5;
+  padding: 12px 14px;
+  border-top: 1px solid #e2e8f0;
+}
+.chat-footer .input-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.chat-footer textarea {
+  flex: 1;
+  border: 1px solid #cbd5e1;
+  border-radius: 22px;
+  padding: 10px 16px;
+  font-size: 13px;
+  resize: none;
+  outline: none;
+  max-height: 80px;
+  transition: border-color 0.2s;
+}
+.chat-footer textarea:focus { border-color: #25D366; }
+.chat-footer .btn-send-chat {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #25D366;
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.chat-footer .btn-send-chat:hover { background: #128C7E; transform: scale(1.05); }
+
+.chat-empty {
+  text-align: center;
+  padding: 50px 20px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+.chat-empty i { font-size: 36px; display: block; margin-bottom: 10px; color: #cbd5e1; }
+
+.chat-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  font-size: 12px;
+}
+.chat-status-bar select {
+  flex: 1;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #fff;
+}
+</style>
+
+<div class="modal fade chat-modal" id="modal-note" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
-      <div class="modal-header" style="background:#f8f9fa;border-bottom:2px solid #3498db;">
-        <button type="button" class="close" data-dismiss="modal">&times;</button>
-        <h4 class="modal-title"><i class="fa fa-comments"></i> Catatan & Riwayat Pesan WhatsApp</h4>
-      </div>
-      <div class="modal-body">
-        <p><strong>Customer:</strong> <span id="note-customer-name"></span></p>
-        <div class="form-group">
-          <label>Status:</label>
-          <select class="form-control" id="note-status">
-            <option value="">-- Tidak ubah status --</option>
-            <option value="Direspon">Direspon</option>
-            <option value="Sudah Konfirmasi Diterima">Sudah Konfirmasi Diterima</option>
-            <option value="Belum Respon">Belum Respon</option>
-            <option value="Komplain">Komplain</option>
-            <option value="Tawarkan Repeat Order">Tawarkan Repeat Order</option>
-            <option value="Selesai">Selesai</option>
-          </select>
+      <div class="chat-header">
+        <div class="avatar"><i class="fa fa-user"></i></div>
+        <div class="info">
+          <div class="name" id="note-customer-name">Customer</div>
+          <div class="meta"><i class="fa fa-phone"></i> <span id="chat-phone">-</span> &nbsp;|&nbsp; <i class="fa fa-shopping-bag"></i> <span id="chat-order">-</span></div>
         </div>
-        <div class="form-group">
-          <label>Catatan:</label>
-          <textarea class="form-control" id="note-text" rows="3" placeholder="Tulis catatan follow-up..."></textarea>
+        <button type="button" class="close" data-dismiss="modal" style="color:#fff;opacity:0.8;font-size:22px;">&times;</button>
+      </div>
+
+      <div class="chat-canvas" id="chat-canvas">
+        <div class="chat-empty">
+          <i class="fa fa-comments-o"></i>
+          Memuat riwayat percakapan...
         </div>
-        <input type="hidden" id="note-label-id">
-        <div id="note-history" style="max-height:200px;overflow-y:auto;margin-top:10px;"></div>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-primary" id="btn-save-note"><i class="fa fa-save"></i> Simpan</button>
+
+      <div class="chat-status-bar">
+        <label style="margin:0;font-weight:600;white-space:nowrap;color:#475569;">Status:</label>
+        <select id="note-status">
+          <option value="">-- Tidak ubah --</option>
+          <option value="Direspon">Direspon</option>
+          <option value="Sudah Konfirmasi Diterima">Sudah Konfirmasi Diterima</option>
+          <option value="Belum Respon">Belum Respon</option>
+          <option value="Komplain">Komplain</option>
+          <option value="Tawarkan Repeat Order">Tawarkan Repeat Order</option>
+          <option value="Selesai">Selesai</option>
+        </select>
       </div>
+
+      <div class="chat-footer">
+        <div class="input-row">
+          <textarea id="note-text" rows="1" placeholder="Tulis catatan atau balas pesan..."></textarea>
+          <button class="btn-send-chat" id="btn-save-note" title="Kirim Catatan"><i class="fa fa-paper-plane"></i></button>
+        </div>
+      </div>
+
+      <input type="hidden" id="note-label-id">
     </div>
   </div>
 </div>
@@ -756,7 +913,7 @@ window.addEventListener('load', function() {
     });
   }
 
-  // ===== Open Add Note Modal =====
+  // ===== Open 2-Way Chat Modal =====
   $(document).on('click', '.btn-add-note', function() {
     var lid = $(this).data('label-id');
     var nama = $(this).data('nama');
@@ -764,77 +921,22 @@ window.addEventListener('load', function() {
     $('#note-customer-name').text(nama);
     $('#note-text').val('');
     $('#note-status').val('');
-    $('#note-history').html('<p class="text-muted" style="font-size:11px;"><i class="fa fa-spin fa-spinner"></i> Memuat catatan...</p>');
+    $('#chat-canvas').html('<div class="chat-empty"><i class="fa fa-spinner fa-spin"></i> Memuat riwayat percakapan...</div>');
     
-    $.get(_BASE + 'administrator/crm/get_notes_ajax', { label_id: lid }, function(res) {
+    $.get(_BASE + 'administrator/crm/get_chat_timeline_ajax', { label_id: lid }, function(res) {
       var r = parseRes(res);
-      var totalWa = r.wa_logs ? r.wa_logs.length : 0;
-      var totalNotes = r.notes ? r.notes.length : 0;
-
-      var html = '<hr>';
-      html += '<div style="background:#f1f5f9;border:1px solid #cbd5e1;padding:8px 12px;border-radius:6px;margin-bottom:12px;font-size:12px;display:flex;justify-content:space-between;align-items:center;">';
-      html += '<span><i class="fa fa-comments" style="color:#25D366;font-size:13px;"></i> Total Chat WA: <strong style="color:#15803d;font-size:12px;">' + totalWa + ' Kali</strong></span>';
-      html += '<span><i class="fa fa-commenting-o" style="color:#3b82f6;font-size:13px;"></i> Total Catatan CS: <strong style="color:#1d4ed8;font-size:12px;">' + totalNotes + '</strong></span>';
-      html += '</div>';
-
-      var timeline = [];
-      var waCounter = totalWa;
-
-      if (r.wa_logs && r.wa_logs.length > 0) {
-        $.each(r.wa_logs, function(i, w) {
-          timeline.push({
-            type: 'wa',
-            num: waCounter--,
-            time: w.waktu_kirim || w.created_at,
-            user: w.dikirim_oleh || 'system',
-            method: w.metode_kirim || 'wa_gateway',
-            msg: w.isi_pesan_final || ''
-          });
-        });
-      }
-
-      if (r.notes && r.notes.length > 0) {
-        $.each(r.notes, function(i, n) {
-          timeline.push({
-            type: 'note',
-            time: n.created_at,
-            user: n.username || 'system',
-            status: n.status_manual,
-            msg: n.catatan || ''
-          });
-        });
-      }
-
-      timeline.sort(function(a, b) { return new Date(b.time) - new Date(a.time); });
-
-      if (timeline.length > 0) {
-        $.each(timeline, function(i, item) {
-          var safeMsg = $('<div>').text(item.msg || '').html();
-          if (item.type === 'wa') {
-            html += '<div style="background:#f0fdf4;border-left:4px solid #22c55e;padding:10px 12px;border-radius:6px;margin-bottom:8px;font-size:12px;">';
-            html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
-            html += '<span><i class="fa fa-paper-plane" style="color:#22c55e;"></i> <strong style="color:#15803d;font-size:12px;">Pesan WA Ke-' + item.num + ' Terkirim</strong> <span style="color:#64748b;font-size:11px;">(' + item.user + ')</span></span>';
-            html += '<span class="label" style="background:#22c55e;color:#fff;font-size:10px;"><i class="fa fa-clock-o"></i> ' + item.time + '</span>';
-            html += '</div>';
-            html += '<div style="color:#334155;white-space:pre-wrap;font-size:12px;background:#ffffff;padding:8px 12px;border-radius:6px;border:1px solid #dcfce7;line-height:1.5;">' + safeMsg + '</div>';
-            html += '</div>';
-          } else {
-            html += '<div style="background:#eff6ff;border-left:4px solid #3b82f6;padding:10px 12px;border-radius:6px;margin-bottom:8px;font-size:12px;">';
-            html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
-            html += '<span><i class="fa fa-comment" style="color:#3b82f6;"></i> <strong style="color:#1d4ed8;font-size:12px;">Catatan CS</strong> <span style="color:#64748b;font-size:11px;">(' + item.user + ')</span></span>';
-            html += '<span style="color:#64748b;font-size:11px;"><i class="fa fa-clock-o"></i> ' + item.time + '</span>';
-            html += '</div>';
-            if (item.status) html += '<div style="margin-bottom:4px;"><span class="label label-info">' + item.status + '</span></div>';
-            html += '<div style="color:#334155;white-space:pre-wrap;font-size:12px;background:#ffffff;padding:6px 10px;border-radius:4px;border:1px solid #dbeafe;">' + safeMsg + '</div>';
-            html += '</div>';
-          }
-        });
+      if (r.success) {
+        // Populate header info
+        if (r.label) {
+          $('#chat-phone').text(r.label.customer_phone || '-');
+          $('#chat-order').text(r.label.no_pesanan || '-');
+        }
+        renderChatTimeline(r.timeline || []);
       } else {
-        html += '<p class="text-muted" style="font-size:11px;margin-top:10px;">Belum ada riwayat pengiriman WA atau catatan sebelumnya.</p>';
+        $('#chat-canvas').html('<div class="chat-empty"><i class="fa fa-exclamation-circle"></i> Gagal memuat percakapan.</div>');
       }
-      $('#note-history').html(html);
     }).fail(function() {
-      $('#note-history').html('<p class="text-danger" style="font-size:11px;margin-top:10px;">Gagal memuat riwayat catatan.</p>');
+      $('#chat-canvas').html('<div class="chat-empty"><i class="fa fa-exclamation-circle"></i> Gagal menghubungi server.</div>');
     });
 
     $('.modal-backdrop').remove();
@@ -842,7 +944,70 @@ window.addEventListener('load', function() {
     setTimeout(function() { $('#note-text').focus(); }, 300);
   });
 
-  // ===== Save Note (SIMPAN) =====
+  function renderChatTimeline(timeline) {
+    var canvas = $('#chat-canvas');
+    if (!timeline || timeline.length === 0) {
+      canvas.html('<div class="chat-empty"><i class="fa fa-comments-o"></i> Belum ada percakapan.<br><small style="color:#94a3b8;">Kirim pesan WhatsApp atau tulis catatan untuk memulai.</small></div>');
+      return;
+    }
+
+    var html = '';
+    var lastDate = '';
+    $.each(timeline, function(i, item) {
+      // Date separator
+      var itemDate = (item.created_at || '').substring(0, 10);
+      if (itemDate && itemDate !== lastDate) {
+        lastDate = itemDate;
+        var d = new Date(itemDate + 'T00:00:00');
+        var today = new Date(); today.setHours(0,0,0,0);
+        var dateLabel = '';
+        if (d.getTime() === today.getTime()) {
+          dateLabel = 'Hari Ini';
+        } else {
+          var dd = ('0' + d.getDate()).slice(-2);
+          var mm = ('0' + (d.getMonth()+1)).slice(-2);
+          dateLabel = dd + '/' + mm + '/' + d.getFullYear();
+        }
+        html += '<div style="text-align:center;margin:12px 0 8px;"><span style="background:rgba(255,255,255,0.85);padding:3px 14px;border-radius:8px;font-size:11px;color:#64748b;box-shadow:0 1px 2px rgba(0,0,0,0.06);font-weight:600;">' + dateLabel + '</span></div>';
+      }
+
+      var safeMsg = $('<div>').text(item.message || '').html().replace(/\n/g, '<br>');
+      var timeStr = (item.created_at || '').substring(11, 16);
+
+      if (item.direction === 'outgoing') {
+        // CS sent → right (green bubble)
+        html += '<div class="chat-bubble bubble-outgoing">';
+        html += '<div style="white-space:pre-wrap;">' + safeMsg + '</div>';
+        html += '<div class="bubble-time">';
+        if (item.metode_kirim) html += '<span style="font-size:9px;color:#64748b;">(' + item.metode_kirim + ')</span> ';
+        html += timeStr + ' <i class="fa fa-check" style="color:#53bdeb;font-size:9px;"></i>';
+        html += '</div></div>';
+
+      } else if (item.direction === 'incoming') {
+        // Customer reply → left (white bubble)
+        html += '<div class="chat-bubble bubble-incoming">';
+        html += '<div class="bubble-sender"><i class="fa fa-user-circle"></i> ' + (item.sender || 'Customer') + '</div>';
+        html += '<div style="white-space:pre-wrap;">' + safeMsg + '</div>';
+        html += '<div class="bubble-time">' + timeStr + '</div>';
+        html += '</div>';
+
+      } else {
+        // Internal note → center (amber)
+        html += '<div class="chat-bubble bubble-note">';
+        html += '<div class="bubble-sender"><i class="fa fa-bookmark"></i> ' + (item.sender || 'CS') + '</div>';
+        if (item.status_kirim) html += '<div style="font-size:10px;margin-bottom:2px;"><span style="background:#f59e0b;color:#fff;padding:1px 6px;border-radius:4px;font-size:9px;">' + item.status_kirim + '</span></div>';
+        html += '<div style="white-space:pre-wrap;">' + safeMsg + '</div>';
+        html += '<div class="bubble-time" style="justify-content:center;">' + timeStr + '</div>';
+        html += '</div>';
+      }
+    });
+
+    canvas.html(html);
+    // Scroll to bottom
+    canvas.scrollTop(canvas[0].scrollHeight);
+  }
+
+  // ===== Save Note (Chat Message) =====
   $(document).on('click', '#btn-save-note', function(e) {
     e.preventDefault();
     e.stopPropagation();
@@ -863,7 +1028,7 @@ window.addEventListener('load', function() {
       if ($inlineSelect.length) finalStatus = $inlineSelect.val();
     }
 
-    $btn.prop('disabled', true).html('<i class="fa fa-spin fa-spinner"></i> Menyimpan...');
+    $btn.prop('disabled', true).html('<i class="fa fa-spin fa-spinner"></i>');
 
     $.ajax({
       url: _BASE + 'administrator/crm/update_status_ajax',
@@ -875,7 +1040,7 @@ window.addEventListener('load', function() {
       }),
       success: function(res) {
         var r = parseRes(res);
-        $btn.prop('disabled', false).html('<i class="fa fa-save"></i> Simpan');
+        $btn.prop('disabled', false).html('<i class="fa fa-paper-plane"></i>');
         if (r.success) {
           notify('success', r.message || 'Catatan berhasil disimpan');
           if (finalStatus) {
@@ -885,13 +1050,31 @@ window.addEventListener('load', function() {
             }
             updateBadgeRealtime(lid, finalStatus);
           }
-          $('#modal-note').modal('hide');
+          // Append new bubble in real time
+          if (catatan) {
+            var now = new Date();
+            var timeStr = ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2);
+            var safeMsg = $('<div>').text(catatan).html().replace(/\n/g, '<br>');
+            var newBubble = '<div class="chat-bubble bubble-note">';
+            newBubble += '<div class="bubble-sender"><i class="fa fa-bookmark"></i> CS</div>';
+            if (finalStatus) newBubble += '<div style="font-size:10px;margin-bottom:2px;"><span style="background:#f59e0b;color:#fff;padding:1px 6px;border-radius:4px;font-size:9px;">' + finalStatus + '</span></div>';
+            newBubble += '<div style="white-space:pre-wrap;">' + safeMsg + '</div>';
+            newBubble += '<div class="bubble-time" style="justify-content:center;">' + timeStr + '</div>';
+            newBubble += '</div>';
+
+            var $canvas = $('#chat-canvas');
+            $canvas.find('.chat-empty').remove();
+            $canvas.append(newBubble);
+            $canvas.scrollTop($canvas[0].scrollHeight);
+          }
+          $('#note-text').val('');
+          $('#note-status').val('');
         } else {
           notify('error', r.message || 'Gagal menyimpan catatan');
         }
       },
       error: function(xhr) {
-        $btn.prop('disabled', false).html('<i class="fa fa-save"></i> Simpan');
+        $btn.prop('disabled', false).html('<i class="fa fa-paper-plane"></i>');
         notify('error', 'Terjadi kesalahan saat menyimpan: ' + (xhr.statusText || 'Unknown error'));
       }
     });
