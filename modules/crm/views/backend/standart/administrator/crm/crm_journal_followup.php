@@ -571,6 +571,9 @@
           <div class="name" id="note-customer-name">Customer</div>
           <div class="meta"><i class="fa fa-phone"></i> <span id="chat-phone">-</span> &nbsp;|&nbsp; <i class="fa fa-shopping-bag"></i> <span id="chat-order">-</span></div>
         </div>
+        <button type="button" class="btn-refresh-chat" id="btn-refresh-chat" title="Refresh Chat" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;margin-right:6px;transition:all 0.2s;">
+          <i class="fa fa-refresh"></i>
+        </button>
         <button type="button" class="close" data-dismiss="modal" style="color:#fff;opacity:0.8;font-size:22px;">&times;</button>
       </div>
 
@@ -924,6 +927,50 @@ window.addEventListener('load', function() {
   }
 
   // ===== Open 2-Way Chat Modal =====
+  var chatPollTimer = null;
+  var currentChatLabelId = null;
+
+  function loadChatTimeline(lid, showSpinner) {
+    if (showSpinner) {
+      $('#chat-canvas').html('<div class="chat-empty"><i class="fa fa-spinner fa-spin"></i> Memuat riwayat percakapan...</div>');
+    }
+    $.get(_BASE + 'administrator/crm/get_chat_timeline_ajax', { label_id: lid }, function(res) {
+      var r = parseRes(res);
+      if (r.success) {
+        if (r.label) {
+          $('#chat-phone').text(r.label.customer_phone || '-');
+          $('#chat-order').text(r.label.no_pesanan || '-');
+        }
+        renderChatTimeline(r.timeline || []);
+      } else if (showSpinner) {
+        $('#chat-canvas').html('<div class="chat-empty"><i class="fa fa-exclamation-circle"></i> Gagal memuat percakapan.</div>');
+      }
+    }).fail(function() {
+      if (showSpinner) {
+        $('#chat-canvas').html('<div class="chat-empty"><i class="fa fa-exclamation-circle"></i> Gagal menghubungi server.</div>');
+      }
+    });
+  }
+
+  function startChatPolling(lid) {
+    stopChatPolling();
+    currentChatLabelId = lid;
+    chatPollTimer = setInterval(function() {
+      if ($('#modal-note').hasClass('in') || $('#modal-note').hasClass('show')) {
+        loadChatTimeline(lid, false);
+      } else {
+        stopChatPolling();
+      }
+    }, 15000); // Auto-refresh setiap 15 detik
+  }
+
+  function stopChatPolling() {
+    if (chatPollTimer) {
+      clearInterval(chatPollTimer);
+      chatPollTimer = null;
+    }
+  }
+
   $(document).on('click', '.btn-add-note', function() {
     var lid = $(this).data('label-id');
     var nama = $(this).data('nama');
@@ -931,27 +978,33 @@ window.addEventListener('load', function() {
     $('#note-customer-name').text(nama);
     $('#note-text').val('');
     $('#note-status').val('');
-    $('#chat-canvas').html('<div class="chat-empty"><i class="fa fa-spinner fa-spin"></i> Memuat riwayat percakapan...</div>');
-    
-    $.get(_BASE + 'administrator/crm/get_chat_timeline_ajax', { label_id: lid }, function(res) {
-      var r = parseRes(res);
-      if (r.success) {
-        // Populate header info
-        if (r.label) {
-          $('#chat-phone').text(r.label.customer_phone || '-');
-          $('#chat-order').text(r.label.no_pesanan || '-');
-        }
-        renderChatTimeline(r.timeline || []);
-      } else {
-        $('#chat-canvas').html('<div class="chat-empty"><i class="fa fa-exclamation-circle"></i> Gagal memuat percakapan.</div>');
-      }
-    }).fail(function() {
-      $('#chat-canvas').html('<div class="chat-empty"><i class="fa fa-exclamation-circle"></i> Gagal menghubungi server.</div>');
-    });
+    // Reset toggle to CS mode
+    $('#note-sender-type').val('cs');
+    $('.btn-toggle-sender[data-type="cs"]').css({ border: '2px solid #25D366', background: '#d9fdd3', color: '#15803d' }).addClass('active');
+    $('.btn-toggle-sender[data-type="customer"]').css({ border: '2px solid #e2e8f0', background: '#fff', color: '#64748b' }).removeClass('active');
+    $('#note-text').attr('placeholder', 'Tulis catatan CS...').css('background', '#fff');
+    $('.btn-send-chat').css('background', '#25D366');
+
+    loadChatTimeline(lid, true);
+    startChatPolling(lid);
 
     $('.modal-backdrop').remove();
     $('#modal-note').modal('show');
     setTimeout(function() { $('#note-text').focus(); }, 300);
+  });
+
+  // Refresh button
+  $(document).on('click', '#btn-refresh-chat', function() {
+    var $icon = $(this).find('i');
+    $icon.addClass('fa-spin');
+    var lid = $('#note-label-id').val();
+    loadChatTimeline(lid, false);
+    setTimeout(function() { $icon.removeClass('fa-spin'); }, 1000);
+  });
+
+  // Stop polling when modal closes
+  $(document).on('hidden.bs.modal', '#modal-note', function() {
+    stopChatPolling();
   });
 
   function renderChatTimeline(timeline) {
