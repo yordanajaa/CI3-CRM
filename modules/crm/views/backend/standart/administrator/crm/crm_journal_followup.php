@@ -595,13 +595,23 @@
       </div>
 
       <div class="chat-footer">
+        <!-- Sender Type Toggle -->
+        <div class="sender-toggle" style="display:flex;gap:4px;margin-bottom:8px;">
+          <button type="button" class="btn-toggle-sender active" data-type="cs" style="flex:1;padding:6px 10px;border:2px solid #25D366;background:#d9fdd3;color:#15803d;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;transition:all 0.2s;">
+            <i class="fa fa-headset"></i> Catatan CS
+          </button>
+          <button type="button" class="btn-toggle-sender" data-type="customer" style="flex:1;padding:6px 10px;border:2px solid #e2e8f0;background:#fff;color:#64748b;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;transition:all 0.2s;">
+            <i class="fa fa-user"></i> Balasan Customer
+          </button>
+        </div>
         <div class="input-row">
-          <textarea id="note-text" rows="1" placeholder="Tulis catatan atau balas pesan..."></textarea>
-          <button class="btn-send-chat" id="btn-save-note" title="Kirim Catatan"><i class="fa fa-paper-plane"></i></button>
+          <textarea id="note-text" rows="1" placeholder="Tulis catatan CS..."></textarea>
+          <button class="btn-send-chat" id="btn-save-note" title="Kirim"><i class="fa fa-paper-plane"></i></button>
         </div>
       </div>
 
       <input type="hidden" id="note-label-id">
+      <input type="hidden" id="note-sender-type" value="cs">
     </div>
   </div>
 </div>
@@ -1007,6 +1017,28 @@ window.addEventListener('load', function() {
     canvas.scrollTop(canvas[0].scrollHeight);
   }
 
+  // ===== Sender Type Toggle =====
+  $(document).on('click', '.btn-toggle-sender', function() {
+    var type = $(this).data('type');
+    $('#note-sender-type').val(type);
+    
+    // Visual toggle
+    $('.btn-toggle-sender').css({ border: '2px solid #e2e8f0', background: '#fff', color: '#64748b' });
+    
+    if (type === 'customer') {
+      $(this).css({ border: '2px solid #3b82f6', background: '#eff6ff', color: '#1d4ed8' });
+      $('#note-text').attr('placeholder', 'Ketik balasan customer dari WA...').css('background', '#f0f9ff');
+      $('.btn-send-chat').css('background', '#3b82f6');
+    } else {
+      $(this).css({ border: '2px solid #25D366', background: '#d9fdd3', color: '#15803d' });
+      $('#note-text').attr('placeholder', 'Tulis catatan CS...').css('background', '#fff');
+      $('.btn-send-chat').css('background', '#25D366');
+    }
+    
+    $('.btn-toggle-sender').removeClass('active');
+    $(this).addClass('active');
+  });
+
   // ===== Save Note (Chat Message) =====
   $(document).on('click', '#btn-save-note', function(e) {
     e.preventDefault();
@@ -1016,9 +1048,10 @@ window.addEventListener('load', function() {
     var lid = $('#note-label-id').val();
     var catatan = $.trim($('#note-text').val());
     var status = $('#note-status').val();
+    var senderType = $('#note-sender-type').val() || 'cs';
     
     if (!catatan && !status) { 
-      notify('warning', 'Tulis catatan atau pilih status terlebih dahulu');
+      notify('warning', 'Tulis pesan atau pilih status terlebih dahulu');
       return; 
     }
 
@@ -1026,6 +1059,12 @@ window.addEventListener('load', function() {
     if (!finalStatus) {
       var $inlineSelect = $('.status-select[data-label-id="' + lid + '"]');
       if ($inlineSelect.length) finalStatus = $inlineSelect.val();
+    }
+
+    // Auto-set status to Direspon when recording customer reply
+    if (senderType === 'customer' && !status) {
+      finalStatus = 'Direspon';
+      $('#note-status').val('Direspon');
     }
 
     $btn.prop('disabled', true).html('<i class="fa fa-spin fa-spinner"></i>');
@@ -1036,13 +1075,15 @@ window.addEventListener('load', function() {
       data: buildPayload({
         label_id: lid,
         status: finalStatus || '',
-        catatan: catatan
+        catatan: catatan,
+        sender_type: senderType
       }),
       success: function(res) {
         var r = parseRes(res);
         $btn.prop('disabled', false).html('<i class="fa fa-paper-plane"></i>');
         if (r.success) {
-          notify('success', r.message || 'Catatan berhasil disimpan');
+          var label = senderType === 'customer' ? 'Balasan customer' : 'Catatan';
+          notify('success', label + ' berhasil disimpan');
           if (finalStatus) {
             var $inlineSel = $('.status-select[data-label-id="' + lid + '"]');
             if ($inlineSel.length) {
@@ -1055,12 +1096,24 @@ window.addEventListener('load', function() {
             var now = new Date();
             var timeStr = ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2);
             var safeMsg = $('<div>').text(catatan).html().replace(/\n/g, '<br>');
-            var newBubble = '<div class="chat-bubble bubble-note">';
-            newBubble += '<div class="bubble-sender"><i class="fa fa-bookmark"></i> CS</div>';
-            if (finalStatus) newBubble += '<div style="font-size:10px;margin-bottom:2px;"><span style="background:#f59e0b;color:#fff;padding:1px 6px;border-radius:4px;font-size:9px;">' + finalStatus + '</span></div>';
-            newBubble += '<div style="white-space:pre-wrap;">' + safeMsg + '</div>';
-            newBubble += '<div class="bubble-time" style="justify-content:center;">' + timeStr + '</div>';
-            newBubble += '</div>';
+            var newBubble = '';
+
+            if (senderType === 'customer') {
+              // Customer reply → white bubble LEFT
+              newBubble = '<div class="chat-bubble bubble-incoming">';
+              newBubble += '<div class="bubble-sender"><i class="fa fa-user-circle"></i> Customer</div>';
+              newBubble += '<div style="white-space:pre-wrap;">' + safeMsg + '</div>';
+              newBubble += '<div class="bubble-time">' + timeStr + '</div>';
+              newBubble += '</div>';
+            } else {
+              // CS note → amber bubble CENTER
+              newBubble = '<div class="chat-bubble bubble-note">';
+              newBubble += '<div class="bubble-sender"><i class="fa fa-bookmark"></i> CS</div>';
+              if (finalStatus) newBubble += '<div style="font-size:10px;margin-bottom:2px;"><span style="background:#f59e0b;color:#fff;padding:1px 6px;border-radius:4px;font-size:9px;">' + finalStatus + '</span></div>';
+              newBubble += '<div style="white-space:pre-wrap;">' + safeMsg + '</div>';
+              newBubble += '<div class="bubble-time" style="justify-content:center;">' + timeStr + '</div>';
+              newBubble += '</div>';
+            }
 
             var $canvas = $('#chat-canvas');
             $canvas.find('.chat-empty').remove();
@@ -1070,12 +1123,12 @@ window.addEventListener('load', function() {
           $('#note-text').val('');
           $('#note-status').val('');
         } else {
-          notify('error', r.message || 'Gagal menyimpan catatan');
+          notify('error', r.message || 'Gagal menyimpan');
         }
       },
       error: function(xhr) {
         $btn.prop('disabled', false).html('<i class="fa fa-paper-plane"></i>');
-        notify('error', 'Terjadi kesalahan saat menyimpan: ' + (xhr.statusText || 'Unknown error'));
+        notify('error', 'Terjadi kesalahan: ' + (xhr.statusText || 'Error'));
       }
     });
   });

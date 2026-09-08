@@ -107,6 +107,7 @@ class Crm extends Admin
 		$label_id = $this->input->post('label_id') ?: $this->input->get('label_id');
 		$status = trim($this->input->post('status') ?: $this->input->get('status'));
 		$catatan = trim($this->input->post('catatan') ?: $this->input->get('catatan'));
+		$sender_type = trim($this->input->post('sender_type') ?: 'cs');
 
 		if (!$label_id) {
 			echo json_encode(['success' => false, 'message' => 'Label ID tidak valid']);
@@ -129,13 +130,19 @@ class Crm extends Admin
 			if (!empty($u)) $username = $u;
 		}
 
+		// If sender_type is customer, auto-set status to Direspon
+		if ($sender_type === 'customer' && in_array($existing->status_label, ['Pending', 'Sudah Dikirim', 'Belum Respon'])) {
+			$status = 'Direspon';
+		}
+
 		$res_status = $this->model_crm->update_label_status($label_id, $status, $username);
 		
 		if (!empty($catatan)) {
-			$this->model_crm->add_note($label_id, $catatan, $status);
+			$this->model_crm->add_note($label_id, $catatan, $status, $sender_type);
 		}
 
-		echo json_encode(['success' => true, 'message' => 'Catatan & status berhasil disimpan']);
+		$msg = ($sender_type === 'customer') ? 'Balasan customer berhasil dicatat' : 'Catatan & status berhasil disimpan';
+		echo json_encode(['success' => true, 'message' => $msg]);
 	}
 
 	public function get_wa_link_ajax()
