@@ -54,20 +54,14 @@
  *
  * NOTE: If you change these, also change the error_reporting() code below
  */
-define('ENVIRONMENT', isset($_SERVER['CI_ENV']) ? $_SERVER['CI_ENV'] : 'development');
-// $allowedIp = '111.68.29.32';
-// if ($_SERVER['REMOTE_ADDR'] == $allowedIp) {
-// } else {
-//     define('ENVIRONMENT', isset($_SERVER['CI_ENV']) ? $_SERVER['CI_ENV'] : 'production');
-// }
+// Auto detect environment (development on localhost, production on hosting)
+$is_localhost = isset($_SERVER['HTTP_HOST']) && in_array($_SERVER['HTTP_HOST'], array('localhost', '127.0.0.1', 'ci3_metafora.test'));
+define('ENVIRONMENT', isset($_SERVER['CI_ENV']) ? $_SERVER['CI_ENV'] : ($is_localhost ? 'development' : 'production'));
 
 /*
  *---------------------------------------------------------------
  * ERROR REPORTING
  *---------------------------------------------------------------
- *
- * Different environments will require different levels of error reporting.
- * By default development will show errors but testing and live will hide them.
  */
 
 use Exception as BaseException;
@@ -75,44 +69,39 @@ use Whoops\Handler\PrettyPageHandler;
 use Whoops\Run;
 use Whoops\Handler\JsonResponseHandler;
 
-define('ENABLE_WHOOPS', true);
+// Matikan deprecation & notice PHP 8.1+ secara global
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED & ~E_NOTICE & ~E_STRICT & ~E_WARNING);
 
-require_once 'vendor/autoload.php';
+define('ENABLE_WHOOPS', $is_localhost && version_compare(PHP_VERSION, '8.0.0', '<'));
+
+if (file_exists('vendor/autoload.php') && ENABLE_WHOOPS) {
+    require_once 'vendor/autoload.php';
+}
+
 switch (ENVIRONMENT) {
     case 'development':
-        error_reporting(-1);
-        ini_set('display_errors', 1);
+        if (ENABLE_WHOOPS && class_exists('\Whoops\Run')) {
+            $whoops = new \Whoops\Run;
+            $whoops->pushHandler(new \Whoops\Handler\PrettyPageHandler);
 
-
-        $whoops = new \Whoops\Run;
-        $whoops->pushHandler(new \Whoops\Handler\PrettyPageHandler);
-
-        if (\Whoops\Util\Misc::isAjaxRequest()) {
-            $jsonHandler = new JsonResponseHandler();
-            $jsonHandler->setJsonApi(true);
-            $whoops->pushHandler($jsonHandler);
-        }
-        if (ENABLE_WHOOPS) {
+            if (\Whoops\Util\Misc::isAjaxRequest()) {
+                $jsonHandler = new JsonResponseHandler();
+                $jsonHandler->setJsonApi(true);
+                $whoops->pushHandler($jsonHandler);
+            }
             $whoops->register();
+        } else {
+            ini_set('display_errors', 1);
+            error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED & ~E_NOTICE & ~E_STRICT & ~E_WARNING);
         }
-
         break;
 
     case 'testing':
     case 'production':
-        ini_set('display_errors', 0);
-        if (version_compare(PHP_VERSION, '5.6', '>=')) {
-            error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED & ~E_STRICT & ~E_USER_NOTICE & ~E_USER_DEPRECATED);
-        } else {
-            error_reporting(E_ALL & ~E_NOTICE & ~E_STRICT & ~E_USER_NOTICE);
-        }
-
-        break;
-
     default:
-        header('HTTP/1.1 503 Service Unavailable.', TRUE, 503);
-        echo 'The application environment is not set correctly.';
-        exit(1); // EXIT_ERROR
+        ini_set('display_errors', 0);
+        error_reporting(0);
+        break;
 }
 
 /*
