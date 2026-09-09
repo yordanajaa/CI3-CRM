@@ -743,8 +743,8 @@ class Crm extends Admin
 
 		if (empty($sender) || empty($message)) {
 			echo json_encode([
-				'success' => false,
-				'message' => 'sender or message is empty',
+				'success' => true,
+				'message' => 'Fonnte webhook endpoint is ready and active',
 				'received' => [
 					'sender' => $sender,
 					'message' => $message,
