@@ -692,6 +692,16 @@ class Crm extends Admin
 			$json = [];
 		}
 
+		// Debug log: simpan semua request masuk ke file untuk troubleshooting
+		$log_data = date('Y-m-d H:i:s') . " | IP: " . $this->input->ip_address()
+			. " | METHOD: " . $this->input->method(TRUE)
+			. " | RAW: " . $raw
+			. " | POST: " . json_encode($_POST)
+			. " | GET: " . json_encode($_GET)
+			. "\n";
+		$log_path = APPPATH . 'logs/fonnte_webhook_debug.log';
+		@file_put_contents($log_path, $log_data, FILE_APPEND);
+
 		// Extract sender
 		$sender = '';
 		if ($this->input->post('sender')) {
