@@ -1058,4 +1058,22 @@ class Crm extends Admin
 	{
 		return $this->get_new_messages_ajax();
 	}
+
+	/**
+	 * Debug: Lihat 20 webhook log terakhir di database (untuk troubleshooting Fonnte)
+	 */
+	public function debug_webhook_logs()
+	{
+		header('Content-Type: application/json');
+		$logs = $this->db->order_by('id', 'DESC')->limit(20)->get('crm_webhook_logs')->result();
+		$chat_in = $this->db->where('direction', 'in')->order_by('id', 'DESC')->limit(20)->get('crm_chat_history')->result();
+		echo json_encode([
+			'webhook_logs_count' => count($logs),
+			'webhook_logs' => $logs,
+			'incoming_chats_count' => count($chat_in),
+			'incoming_chats' => $chat_in,
+			'server_time' => date('Y-m-d H:i:s'),
+			'php_version' => PHP_VERSION,
+		], JSON_PRETTY_PRINT);
+	}
 }
