@@ -1005,7 +1005,7 @@ window.addEventListener('load', function() {
       } else {
         stopChatPolling();
       }
-    }, 3000); // Auto-refresh real-time setiap 3 detik
+    }, 1000); // Auto-refresh real-time instant setiap 1 detik
   }
 
   function stopChatPolling() {
