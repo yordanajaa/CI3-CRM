@@ -952,12 +952,22 @@ class Crm extends Admin
 		// Note: Pesan baru HANYA disimpan ke crm_chat_history.
 		// Tidak perlu insert ke crm_followup_notes lagi agar tidak dobel di timeline.
 
-		// Update label status
+		// Update label status & timestamp agar data tetap muncul paling atas di halaman journal
 		if (!$is_internal_note) {
 			$current_status = $label->status_label;
 			if ($current_status === 'Pending') {
 				$this->model_crm->update_label_status($label_id, 'Sudah Dikirim', $username);
+			} else {
+				// Tetap update updated_at agar data naik ke atas daftar setelah interaksi
+				$this->db->where('id', $label_id)->update('crm_transaction_followup_labels', [
+					'updated_at' => date('Y-m-d H:i:s'),
+				]);
 			}
+		} else {
+			// Internal note juga update timestamp agar data naik ke atas
+			$this->db->where('id', $label_id)->update('crm_transaction_followup_labels', [
+				'updated_at' => date('Y-m-d H:i:s'),
+			]);
 		}
 
 		// Generate wa_link for wa_direct mode

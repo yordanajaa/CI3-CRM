@@ -227,9 +227,8 @@ class Model_crm extends CI_Model
 
 		$count = $this->db->count_all_results('', false);
 
-		// Prioritize active work items (Pending, Sudah Dikirim) first, then Direspon, then finished
-		$this->db->order_by("CASE WHEN tfl.status_label = 'Pending' THEN 1 WHEN tfl.status_label = 'Sudah Dikirim' THEN 2 WHEN tfl.status_label = 'Belum Respon' THEN 3 WHEN tfl.status_label = 'Direspon' THEN 4 ELSE 5 END", "ASC", false);
-		$this->db->order_by('tfl.tanggal_label_muncul', 'DESC');
+		// Urutkan berdasarkan interaksi terbaru agar data yang baru di-chat tetap muncul paling atas
+		// Item yang baru saja dibalas/dikirim WA akan selalu tampil di halaman pertama
 		$this->db->order_by('tfl.updated_at', 'DESC');
 		$this->db->order_by('tfl.id', 'DESC');
 		$this->db->limit($limit, $offset);
