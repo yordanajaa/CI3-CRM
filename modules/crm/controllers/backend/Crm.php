@@ -70,9 +70,6 @@ class Crm extends Admin
 
 	public function journal_followup($offset = 0)
 	{
-		// Auto-sync new ERP orders (sales_order & penjualan_marketplace) into CRM labels
-		$this->model_crm->generate_labels_for_new_orders();
-
 		$filters = [
 			'category_id' => $this->input->get('category_id'),
 			'order_source' => $this->input->get('order_source'),
@@ -135,14 +132,46 @@ class Crm extends Admin
 			$status = 'Direspon';
 		}
 
-		$res_status = $this->model_crm->update_label_status($label_id, $status, $username);
-		
-		if (!empty($catatan)) {
+		$api_result = null;
+		$wa_link = null;
+
+		// Handle CS WA Chat reply
+		if ($sender_type === 'cs_chat' && !empty($catatan)) {
+			$config = $this->model_crm->get_wa_gateway_config();
+			if ($config->mode === 'wa_gateway') {
+				$api_res = $this->model_crm->send_wa_via_api($existing->customer_phone, $catatan);
+				$this->model_crm->log_broadcast($label_id, $catatan, 'wa_gateway_api');
+				$api_result = $api_res;
+			} else {
+				$wa_link = $this->model_crm->generate_wa_link($existing->customer_phone, $catatan);
+				$this->model_crm->log_broadcast($label_id, $catatan, 'wa_direct_link');
+			}
+			if ($existing->status_label === 'Pending') {
+				$status = 'Sudah Dikirim';
+			}
+		} elseif (!empty($catatan)) {
 			$this->model_crm->add_note($label_id, $catatan, $status, $sender_type);
 		}
 
-		$msg = ($sender_type === 'customer') ? 'Balasan customer berhasil dicatat' : 'Catatan & status berhasil disimpan';
-		echo json_encode(['success' => true, 'message' => $msg]);
+		$res_status = $this->model_crm->update_label_status($label_id, $status, $username);
+
+		$msg = 'Berhasil disimpan';
+		if ($sender_type === 'customer') {
+			$msg = 'Balasan customer berhasil dicatat';
+		} elseif ($sender_type === 'cs_chat') {
+			$msg = ($api_result && $api_result['success']) ? 'Pesan CS terkirim via WhatsApp API!' : 'Pesan CS berhasil dikirim & dicatat';
+		} else {
+			$msg = 'Catatan & status berhasil disimpan';
+		}
+
+		echo json_encode([
+			'success' => true,
+			'message' => $msg,
+			'status' => $status,
+			'sender_type' => $sender_type,
+			'wa_link' => $wa_link,
+			'api_result' => $api_result
+		]);
 	}
 
 	public function get_wa_link_ajax()
@@ -343,9 +372,6 @@ class Crm extends Admin
 
 	public function dashboard()
 	{
-		// Auto-sync new ERP orders into CRM labels
-		$this->model_crm->generate_labels_for_new_orders();
-
 		$this->data['kpis'] = $this->model_crm->get_dashboard_kpis();
 		$this->data['channels'] = $this->model_crm->get_channel_distribution();
 		$this->data['trend'] = $this->model_crm->get_followup_trend_30days();
@@ -660,37 +686,109 @@ class Crm extends Admin
 	{
 		header('Content-Type: application/json');
 
-		$sender  = trim($this->input->post('sender') ?: ($this->input->get('sender') ?: ''));
-		$message = trim($this->input->post('message') ?: ($this->input->get('message') ?: ''));
-		$name    = trim($this->input->post('name') ?: ($this->input->get('name') ?: ''));
-
-		// Also try reading raw JSON body
-		if (empty($sender)) {
-			$raw = file_get_contents('php://input');
-			$json = json_decode($raw, true);
-			if ($json) {
-				$sender  = trim($json['sender'] ?? '');
-				$message = trim($json['message'] ?? '');
-				$name    = trim($json['name'] ?? '');
-			}
+		$raw  = file_get_contents('php://input');
+		$json = json_decode($raw, true);
+		if (!is_array($json)) {
+			$json = [];
 		}
 
+		// Extract sender
+		$sender = '';
+		if ($this->input->post('sender')) {
+			$sender = $this->input->post('sender');
+		} elseif ($this->input->get('sender')) {
+			$sender = $this->input->get('sender');
+		} elseif (isset($json['sender'])) {
+			$sender = $json['sender'];
+		} elseif (isset($json['from'])) {
+			$sender = $json['from'];
+		} elseif (isset($json['phone'])) {
+			$sender = $json['phone'];
+		} elseif (isset($json['wa_number'])) {
+			$sender = $json['wa_number'];
+		}
+		$sender = trim($sender);
+
+		// Extract message
+		$message = '';
+		if ($this->input->post('message')) {
+			$message = $this->input->post('message');
+		} elseif ($this->input->get('message')) {
+			$message = $this->input->get('message');
+		} elseif (isset($json['message'])) {
+			$message = $json['message'];
+		} elseif (isset($json['body'])) {
+			$message = $json['body'];
+		} elseif (isset($json['text'])) {
+			$message = $json['text'];
+		} elseif (isset($json['caption'])) {
+			$message = $json['caption'];
+		}
+		$message = trim($message);
+
+		// Extract name
+		$name = '';
+		if ($this->input->post('name')) {
+			$name = $this->input->post('name');
+		} elseif ($this->input->get('name')) {
+			$name = $this->input->get('name');
+		} elseif (isset($json['name'])) {
+			$name = $json['name'];
+		} elseif (isset($json['pushname'])) {
+			$name = $json['pushname'];
+		} elseif (isset($json['sender_name'])) {
+			$name = $json['sender_name'];
+		}
+		$name = trim($name);
+
 		if (empty($sender) || empty($message)) {
-			echo json_encode(['success' => false, 'message' => 'sender or message is empty']);
+			echo json_encode([
+				'success' => false,
+				'message' => 'sender or message is empty',
+				'received' => [
+					'sender' => $sender,
+					'message' => $message,
+					'name' => $name
+				]
+			]);
 			return;
 		}
 
-		// Skip group messages (Fonnte group chats contain @g.us or group id)
-		if (strpos($sender, '@g.us') !== false || strpos($sender, '-') !== false) {
+		// Skip group messages (Fonnte group chats contain @g.us or hyphens in ID)
+		if (strpos($sender, '@g.us') !== false || (strpos($sender, '-') !== false && strlen($sender) > 15)) {
 			echo json_encode(['success' => true, 'message' => 'group message skipped']);
 			return;
 		}
 
-		$count = $this->model_crm->log_incoming_reply($sender, $message, $name);
+		$count = $this->model_crm->log_incoming_reply($sender, $message, $name, $raw);
 
 		echo json_encode([
 			'success' => true,
-			'message' => "Logged {$count} label(s) for reply from {$sender}",
+			'message' => 'Berhasil memproses balasan pesan WhatsApp dari ' . $sender,
+			'logged' => $count
+		]);
+	}
+
+	/**
+	 * AJAX endpoint to simulate incoming customer WhatsApp reply on local environment
+	 */
+	public function simulate_customer_reply_ajax()
+	{
+		header('Content-Type: application/json');
+		$phone   = trim($this->input->post('phone') ?: ($this->input->get('phone') ?: ''));
+		$message = trim($this->input->post('message') ?: ($this->input->get('message') ?: ''));
+		$name    = trim($this->input->post('name') ?: ($this->input->get('name') ?: 'Customer'));
+
+		if (empty($phone) || empty($message)) {
+			echo json_encode(['success' => false, 'message' => 'Nomor HP dan isi balasan pesan tidak boleh kosong']);
+			return;
+		}
+
+		$count = $this->model_crm->log_incoming_reply($phone, $message, $name);
+
+		echo json_encode([
+			'success' => true,
+			'message' => "Simulasi Webhook Sukses: Berhasil mencatat balasan customer dari {$phone}!",
 			'logged' => $count
 		]);
 	}
@@ -780,5 +878,165 @@ class Crm extends Admin
 			'timeline' => $timeline,
 			'count' => count($timeline)
 		]);
+	}
+
+	/**
+	 * Dedicated endpoint: Send chat message from CS to customer
+	 * Supports: WA Reply (via Fonnte API) and Internal Note
+	 */
+	public function send_message_ajax()
+	{
+		header('Content-Type: application/json');
+		$label_id = $this->input->post('label_id');
+		$message = trim($this->input->post('message') ?: '');
+		$is_internal_note = (int)($this->input->post('is_internal_note') ?: 0);
+
+		if (!$label_id || empty($message)) {
+			echo json_encode(['success' => false, 'message' => 'Label ID dan pesan tidak boleh kosong']);
+			return;
+		}
+
+		$label = $this->model_crm->get_label($label_id);
+		if (!$label) {
+			echo json_encode(['success' => false, 'message' => 'Label follow-up tidak ditemukan']);
+			return;
+		}
+
+		$username = 'administrator';
+		if (function_exists('get_user_data')) {
+			$u = get_user_data('username');
+			if (!empty($u)) $username = $u;
+		}
+
+		$customer_phone = $this->model_crm->normalize_phone_number($label->customer_phone);
+		$api_result = null;
+		$chat_status = 'sent';
+		$fonnte_response = null;
+
+		if ($is_internal_note) {
+			// Internal note: DO NOT send to Fonnte, just save locally
+			$chat_status = 'delivered'; // Internal notes are always "delivered" locally
+		} else {
+			// Send via Fonnte API
+			$config = $this->model_crm->get_wa_gateway_config();
+			if ($config->mode === 'wa_gateway') {
+				$api_result = $this->model_crm->send_wa_via_api($label->customer_phone, $message);
+				$fonnte_response = json_encode($api_result);
+
+				if ($api_result['success']) {
+					$chat_status = 'sent';
+					// Also log to legacy broadcast_logs for backward compat
+					$this->model_crm->log_broadcast($label_id, $message, 'wa_gateway_api');
+				} else {
+					$chat_status = 'failed';
+				}
+			} else {
+				// wa_direct mode: generate link, mark as sent
+				$chat_status = 'sent';
+				$this->model_crm->log_broadcast($label_id, $message, 'wa_direct_link');
+			}
+		}
+
+		// Insert into crm_chat_history
+		$chat_id = $this->model_crm->insert_chat_message([
+			'label_id' => (int)$label_id,
+			'customer_phone' => $customer_phone,
+			'direction' => 'out',
+			'message' => $message,
+			'sender_cs_name' => $username,
+			'is_internal_note' => $is_internal_note,
+			'status' => $chat_status,
+			'fonnte_response' => $fonnte_response,
+		]);
+
+		// Also insert into legacy crm_followup_notes for backward compat
+		$sender_type = $is_internal_note ? 'cs' : 'cs_chat';
+		$this->model_crm->add_note($label_id, $message, null, $sender_type);
+
+		// Update label status
+		if (!$is_internal_note) {
+			$current_status = $label->status_label;
+			if ($current_status === 'Pending') {
+				$this->model_crm->update_label_status($label_id, 'Sudah Dikirim', $username);
+			}
+		}
+
+		// Generate wa_link for wa_direct mode
+		$wa_link = null;
+		if (!$is_internal_note) {
+			$config = $this->model_crm->get_wa_gateway_config();
+			if ($config->mode !== 'wa_gateway') {
+				$wa_link = $this->model_crm->generate_wa_link($label->customer_phone, $message);
+			}
+		}
+
+		// Build response
+		$response = [
+			'success' => true,
+			'chat_id' => (int)$chat_id,
+			'is_internal_note' => $is_internal_note,
+			'status' => $chat_status,
+			'message' => 'Pesan berhasil disimpan',
+		];
+
+		if (!$is_internal_note && $api_result !== null) {
+			$response['api_result'] = $api_result;
+			if ($api_result['success']) {
+				$response['message'] = 'Pesan WhatsApp berhasil terkirim via Fonnte API!';
+			} else {
+				$response['success'] = true; // Chat saved, but sending failed
+				$response['message'] = 'Pesan tersimpan, tapi gagal terkirim via Fonnte: ' . ($api_result['message'] ?: 'Unknown error');
+				$response['send_error'] = true;
+			}
+		} elseif (!$is_internal_note && $wa_link) {
+			$response['wa_link'] = $wa_link;
+			$response['message'] = 'Pesan tercatat. Silakan kirim via WhatsApp.';
+		} elseif ($is_internal_note) {
+			$response['message'] = 'Catatan internal berhasil disimpan.';
+		}
+
+		echo json_encode($response);
+	}
+
+	/**
+	 * Optimized polling endpoint: Get only NEW messages after last_id
+	 * Client sends last_id → server returns only newer messages
+	 */
+	public function get_new_messages_ajax()
+	{
+		header('Content-Type: application/json');
+		$label_id = $this->input->get('label_id');
+		$last_id = (int)($this->input->get('last_id') ?: 0);
+
+		if (!$label_id) {
+			echo json_encode(['success' => false, 'message' => 'label_id required']);
+			return;
+		}
+
+		$label = $this->model_crm->get_label($label_id);
+		if (!$label) {
+			echo json_encode(['success' => false, 'message' => 'Label not found']);
+			return;
+		}
+
+		$messages = $this->model_crm->get_new_messages($label_id, $last_id);
+
+		echo json_encode([
+			'success' => true,
+			'messages' => $messages,
+			'count' => count($messages),
+			'label' => [
+				'id' => $label->id,
+				'customer_nama' => $label->customer_nama,
+				'customer_phone' => $label->customer_phone,
+				'no_pesanan' => $label->no_pesanan,
+				'status_label' => $label->status_label,
+			],
+		]);
+	}
+
+	public function get_new_messages()
+	{
+		return $this->get_new_messages_ajax();
 	}
 }

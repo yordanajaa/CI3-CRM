@@ -198,7 +198,11 @@ class Model_crm extends CI_Model
 			$this->db->where('tfl.order_source', $filters['order_source']);
 		}
 		if (!empty($filters['status_label'])) {
-			$this->db->where('tfl.status_label', $filters['status_label']);
+			if ($filters['status_label'] === 'belum_direspon') {
+				$this->db->where_in('tfl.status_label', ['Pending', 'Sudah Dikirim', 'Belum Respon']);
+			} else {
+				$this->db->where('tfl.status_label', $filters['status_label']);
+			}
 		}
 		if (!empty($filters['date_from'])) {
 			$this->db->where('tfl.tanggal_pengiriman >=', $filters['date_from']);
@@ -223,7 +227,11 @@ class Model_crm extends CI_Model
 
 		$count = $this->db->count_all_results('', false);
 
+		// Prioritize active work items (Pending, Sudah Dikirim) first, then Direspon, then finished
+		$this->db->order_by("CASE WHEN tfl.status_label = 'Pending' THEN 1 WHEN tfl.status_label = 'Sudah Dikirim' THEN 2 WHEN tfl.status_label = 'Belum Respon' THEN 3 WHEN tfl.status_label = 'Direspon' THEN 4 ELSE 5 END", "ASC", false);
 		$this->db->order_by('tfl.tanggal_label_muncul', 'DESC');
+		$this->db->order_by('tfl.updated_at', 'DESC');
+		$this->db->order_by('tfl.id', 'DESC');
 		$this->db->limit($limit, $offset);
 		$rows = $this->db->get()->result();
 
@@ -300,22 +308,25 @@ class Model_crm extends CI_Model
 	}
 
 	/**
-	 * Normalize phone number to 62xxxx format
+	 * Canonical Phone Number Normalizer (628xxxxxxxxxx)
+	 * Unit-testable: converts 08xx, +628xx, 628xx, 8xx to 628xx
 	 */
+	public function normalize_phone_number($phone)
+	{
+		$digits = preg_replace('/[^0-9]/', '', (string)$phone);
+		if (empty($digits)) return '';
+		if (substr($digits, 0, 1) === '0') {
+			return '62' . substr($digits, 1);
+		}
+		if (substr($digits, 0, 2) !== '62') {
+			return '62' . $digits;
+		}
+		return $digits;
+	}
+
 	public function normalize_phone($phone)
 	{
-		$phone = preg_replace('/[^0-9]/', '', $phone);
-		// Remove @c.us suffix (WAHA format)
-		$phone = preg_replace('/@c\.us$/', '', $phone);
-		// Convert 08xx → 628xx
-		if (substr($phone, 0, 1) === '0') {
-			$phone = '62' . substr($phone, 1);
-		}
-		// Ensure starts with 62
-		if (substr($phone, 0, 2) !== '62') {
-			$phone = '62' . $phone;
-		}
-		return $phone;
+		return $this->normalize_phone_number($phone);
 	}
 
 	/**
@@ -324,93 +335,437 @@ class Model_crm extends CI_Model
 	 */
 	public function log_incoming_reply($phone, $message, $sender_name = '', $raw_data = null)
 	{
-		$phone_normalized = $this->normalize_phone($phone);
+		$clean_input_phone = $this->normalize_phone_number($phone);
+		if (empty($clean_input_phone)) {
+			$clean_input_phone = preg_replace('/[^0-9]/', '', $phone);
+		}
+		$phone_tail = strlen($clean_input_phone) >= 9 ? substr($clean_input_phone, -9) : $clean_input_phone;
 
-		// Find all active labels (non-Selesai) for this phone
-		// Try matching with various phone formats
-		$phone_variants = [
-			$phone_normalized,
-			'0' . substr($phone_normalized, 2), // 08xxx
-			$phone, // original
-		];
+		// 1. Log raw payload into crm_webhook_logs for audit FIRST (before any processing)
+		$this->db->insert('crm_webhook_logs', [
+			'sender' => $clean_input_phone ? $clean_input_phone : $phone,
+			'sender_name' => $sender_name,
+			'message' => $message,
+			'raw_payload' => is_string($raw_data) ? $raw_data : json_encode($raw_data),
+			'processed_count' => 1,
+			'created_at' => date('Y-m-d H:i:s'),
+		]);
+		$webhook_log_id = $this->db->insert_id();
 
-		$labels = $this->db
-			->where_in('customer_phone', array_unique($phone_variants))
-			->where_not_in('status_label', ['Selesai'])
+		// Find active labels for this phone by comparing canonical numbers
+		$all_labels = $this->db
 			->order_by('tanggal_label_muncul', 'DESC')
 			->get('crm_transaction_followup_labels')
 			->result();
 
+		$matched_labels = [];
+		foreach ($all_labels as $lbl) {
+			$clean_db_phone = $this->normalize_phone_number($lbl->customer_phone);
+			if ($clean_db_phone === $clean_input_phone || (!empty($phone_tail) && strlen($clean_db_phone) >= 9 && substr($clean_db_phone, -9) === $phone_tail)) {
+				// Prefer active labels
+				if (!in_array($lbl->status_label, ['Selesai', 'Batal (Retur/Cancelled)'])) {
+					$matched_labels[] = $lbl;
+				}
+			}
+		}
+
+		// Fallback: if all existing labels are Selesai, select the most recent label for this phone
+		if (empty($matched_labels)) {
+			foreach ($all_labels as $lbl) {
+				$clean_db_phone = $this->normalize_phone_number($lbl->customer_phone);
+				if ($clean_db_phone === $clean_input_phone || (!empty($phone_tail) && strlen($clean_db_phone) >= 9 && substr($clean_db_phone, -9) === $phone_tail)) {
+					$matched_labels[] = $lbl;
+					break;
+				}
+			}
+		}
+
+		// Fallback 2: If no label exists at all for this customer phone, check sales_order / penjualan_marketplace
+		if (empty($matched_labels)) {
+			$cust_name = !empty($sender_name) ? $sender_name : '';
+			$so_match = $this->db->query("SELECT id, nama_penerima FROM sales_order WHERE no_telepon LIKE ? ORDER BY id DESC LIMIT 1", ["%{$phone_tail}%"])->row();
+			if ($so_match && !empty($so_match->nama_penerima)) {
+				$cust_name = $so_match->nama_penerima;
+			} else {
+				$mp_match = $this->db->query("SELECT id, nama_penerima FROM penjualan_marketplace WHERE no_telepon LIKE ? ORDER BY id DESC LIMIT 1", ["%{$phone_tail}%"])->row();
+				if ($mp_match && !empty($mp_match->nama_penerima)) {
+					$cust_name = $mp_match->nama_penerima;
+				}
+			}
+
+			if (!empty($cust_name)) {
+				$first_cat = $this->db->query("SELECT id FROM crm_followup_categories WHERE is_active = 1 ORDER BY urutan ASC LIMIT 1")->row();
+				$cat_id = $first_cat ? $first_cat->id : 1;
+
+				$new_label_data = [
+					'order_source' => 'Toko',
+					'order_id' => 0,
+					'order_table' => 'sales_order',
+					'customer_nama' => $cust_name,
+					'customer_phone' => $clean_input_phone,
+					'no_pesanan' => 'WA-INCOMING',
+					'tanggal_pengiriman' => date('Y-m-d'),
+					'followup_category_id' => $cat_id,
+					'tanggal_label_muncul' => date('Y-m-d'),
+					'status_label' => 'Direspon',
+					'handled_by' => 'system',
+					'created_at' => date('Y-m-d H:i:s'),
+					'updated_at' => date('Y-m-d H:i:s'),
+				];
+				$this->db->insert('crm_transaction_followup_labels', $new_label_data);
+				$new_id = $this->db->insert_id();
+
+				$new_label = $this->db->get_where('crm_transaction_followup_labels', ['id' => $new_id])->row();
+				if ($new_label) {
+					$matched_labels[] = $new_label;
+				}
+			}
+		}
+
 		$logged_count = 0;
 
-		if (!empty($labels)) {
-			foreach ($labels as $label) {
-				// Insert as customer reply note
+		if (!empty($matched_labels)) {
+			// If sender_name was provided, narrow matched_labels down to ones matching customer_nama
+			if (count($matched_labels) > 1 && !empty($sender_name)) {
+				$clean_sname = strtolower(trim($sender_name));
+				$filtered = [];
+				foreach ($matched_labels as $lbl) {
+					if (strtolower(trim($lbl->customer_nama)) === $clean_sname) {
+						$filtered[] = $lbl;
+					}
+				}
+				if (!empty($filtered)) {
+					$matched_labels = $filtered;
+				}
+			}
+
+			$primary_label = $matched_labels[0];
+			$cust_username = !empty($primary_label->customer_nama) ? $primary_label->customer_nama : (!empty($sender_name) ? $sender_name : 'Customer');
+
+			// Idempotency check: Skip duplicate insert if same message was logged for this label within 5 minutes
+			$five_mins_ago = date('Y-m-d H:i:s', time() - 300);
+			$dup_check = $this->db->where([
+				'label_id' => $primary_label->id,
+				'direction' => 'in',
+				'message' => $message,
+				'created_at >=' => $five_mins_ago
+			])->count_all_results('crm_chat_history');
+
+			// Also check legacy notes table for backward compat
+			if ($dup_check == 0) {
+				$dup_check = $this->db->where([
+					'followup_label_id' => $primary_label->id,
+					'sender_type' => 'customer',
+					'catatan' => $message,
+					'created_at >=' => $five_mins_ago
+				])->count_all_results('crm_followup_notes');
+			}
+
+			if ($dup_check == 0) {
+				$now = date('Y-m-d H:i:s');
+
+				// Insert into legacy crm_followup_notes for backward compat
 				$this->db->insert('crm_followup_notes', [
-					'followup_label_id' => $label->id,
-					'username' => !empty($sender_name) ? $sender_name : 'Customer',
+					'followup_label_id' => $primary_label->id,
+					'username' => $cust_username,
 					'catatan' => $message,
 					'status_manual' => 'Direspon',
 					'sender_type' => 'customer',
-					'created_at' => date('Y-m-d H:i:s'),
+					'created_at' => $now,
 				]);
 
-				// Auto-update status to Direspon (only if still Pending or Sudah Dikirim)
+				// Insert into new crm_chat_history table
+				$this->insert_chat_message([
+					'label_id' => (int)$primary_label->id,
+					'customer_phone' => $clean_input_phone,
+					'direction' => 'in',
+					'message' => $message,
+					'sender_name' => $cust_username,
+					'is_internal_note' => 0,
+					'status' => 'delivered',
+					'webhook_log_id' => (int)$webhook_log_id,
+					'created_at' => $now,
+				]);
+
+				$logged_count++;
+			}
+
+			// Update status to Direspon for active labels
+			foreach ($matched_labels as $label) {
 				if (in_array($label->status_label, ['Pending', 'Sudah Dikirim', 'Belum Respon'])) {
 					$this->db->where('id', $label->id)->update('crm_transaction_followup_labels', [
 						'status_label' => 'Direspon',
 						'updated_at' => date('Y-m-d H:i:s'),
 					]);
 				}
-
-				$logged_count++;
 			}
+		} else {
+			// Unmatched phone number: Log into crm_unmatched_inbound (Section 4.1 Requirement 26)
+			$this->db->insert('crm_unmatched_inbound', [
+				'sender_phone' => $clean_input_phone,
+				'sender_name' => $sender_name ? $sender_name : 'Unknown Customer',
+				'message' => $message,
+				'raw_payload' => is_string($raw_data) ? $raw_data : json_encode($raw_data),
+				'status' => 'pending',
+				'created_at' => date('Y-m-d H:i:s'),
+			]);
+			$logged_count++;
 		}
 
 		return $logged_count;
 	}
 
+	// ===== 2-WAY CHAT HISTORY (crm_chat_history) =====
+
 	/**
-	 * Get unified 2-way chat timeline for a label
-	 * Merges: outgoing WA logs (broadcast_logs) + notes/replies (followup_notes)
+	 * Insert a message into crm_chat_history
+	 * @param array $data Keys: label_id, customer_phone, direction, message, sender_name, sender_cs_name, is_internal_note, status, fonnte_response, webhook_log_id, created_at
+	 * @return int insert_id
+	 */
+	public function insert_chat_message($data)
+	{
+		$insert = [
+			'label_id' => (int)($data['label_id']),
+			'customer_phone' => isset($data['customer_phone']) ? $data['customer_phone'] : '',
+			'direction' => isset($data['direction']) ? $data['direction'] : 'out',
+			'message' => isset($data['message']) ? $data['message'] : '',
+			'sender_name' => isset($data['sender_name']) ? $data['sender_name'] : null,
+			'sender_cs_name' => isset($data['sender_cs_name']) ? $data['sender_cs_name'] : null,
+			'is_internal_note' => isset($data['is_internal_note']) ? (int)$data['is_internal_note'] : 0,
+			'status' => isset($data['status']) ? $data['status'] : 'sent',
+			'fonnte_response' => isset($data['fonnte_response']) ? $data['fonnte_response'] : null,
+			'webhook_log_id' => isset($data['webhook_log_id']) ? (int)$data['webhook_log_id'] : null,
+			'created_at' => isset($data['created_at']) ? $data['created_at'] : date('Y-m-d H:i:s'),
+		];
+		$this->db->insert('crm_chat_history', $insert);
+		return $this->db->insert_id();
+	}
+
+	/**
+	 * Get new messages after a given ID (optimized polling)
+	 * Only returns messages inserted AFTER last_id, avoiding full refetch.
+	 * @param int $label_id
+	 * @param int $last_id Last message ID the client already has
+	 * @return array
+	 */
+	public function get_new_messages($label_id, $last_id = 0)
+	{
+		$label = $this->get_label($label_id);
+		if (!$label) return [];
+
+		$label_ids = $this->get_related_label_ids($label);
+
+		$this->db->select('id, label_id, customer_phone, direction, message, sender_name, sender_cs_name, is_internal_note, status, created_at')
+			->from('crm_chat_history')
+			->where_in('label_id', $label_ids);
+
+		if ($last_id > 0) {
+			$this->db->where('id >', (int)$last_id);
+		}
+
+		$this->db->order_by('created_at', 'ASC');
+		$this->db->order_by('id', 'ASC');
+		$rows = $this->db->get()->result_array();
+
+		$cust_display_name = !empty($label->customer_nama) ? $label->customer_nama : 'Pelanggan';
+
+		$timeline = [];
+		foreach ($rows as $row) {
+			$direction = 'note';
+			if ($row['is_internal_note']) {
+				$direction = 'note';
+			} elseif ($row['direction'] === 'in') {
+				$direction = 'incoming';
+			} elseif ($row['direction'] === 'out') {
+				$direction = 'outgoing';
+			}
+
+			$sender = '';
+			if ($direction === 'incoming') {
+				$sender = !empty($row['sender_name']) ? $row['sender_name'] : $cust_display_name;
+			} else {
+				$sender = !empty($row['sender_cs_name']) ? $row['sender_cs_name'] : (!empty($row['sender_name']) ? $row['sender_name'] : 'CS Admin');
+			}
+
+			$timeline[] = [
+				'id' => (int)$row['id'],
+				'direction' => $direction,
+				'message' => $row['message'],
+				'sender' => $sender,
+				'sender_type' => $row['is_internal_note'] ? 'cs' : ($row['direction'] === 'in' ? 'customer' : 'cs_chat'),
+				'created_at' => $row['created_at'],
+				'metode_kirim' => ($row['direction'] === 'out' && !$row['is_internal_note']) ? 'wa_gateway_api' : '',
+				'status_kirim' => isset($row['status']) ? $row['status'] : '',
+				'is_internal_note' => (int)$row['is_internal_note'],
+			];
+		}
+
+		return $timeline;
+	}
+
+	/**
+	 * Get all related label IDs for a customer (by phone + name matching)
+	 * @param object $label
+	 * @return array of label IDs
+	 */
+	private function get_related_label_ids($label)
+	{
+		$clean_phone = $this->normalize_phone_number($label->customer_phone);
+		$cust_nama_clean = strtolower(trim(isset($label->customer_nama) ? $label->customer_nama : ''));
+		$phone_tail = strlen($clean_phone) >= 9 ? substr($clean_phone, -9) : $clean_phone;
+
+		$all_labels = $this->db->select('id, customer_phone, customer_nama')->get('crm_transaction_followup_labels')->result();
+		$label_ids = [];
+		foreach ($all_labels as $lbl) {
+			$cp = $this->normalize_phone_number($lbl->customer_phone);
+			if ($cp === $clean_phone || (strlen($cp) >= 9 && !empty($phone_tail) && substr($cp, -9) === $phone_tail)) {
+				$lbl_nama_clean = strtolower(trim(isset($lbl->customer_nama) ? $lbl->customer_nama : ''));
+				if (!empty($cust_nama_clean) && !empty($lbl_nama_clean)) {
+					if ($lbl_nama_clean === $cust_nama_clean) {
+						$label_ids[] = $lbl->id;
+					}
+				} else {
+					$label_ids[] = $lbl->id;
+				}
+			}
+		}
+		if (empty($label_ids)) {
+			$label_ids = [$label->id];
+		}
+		return $label_ids;
+	}
+
+	/**
+	 * Get unified 2-way chat timeline for a label / customer
+	 * Merges: crm_chat_history (new) + legacy broadcast_logs + legacy followup_notes
 	 */
 	public function get_chat_timeline($label_id)
 	{
-		// Get outgoing WA messages (sent by CS)
-		$outgoing = $this->db->query("
-			SELECT 
-				bl.id, 
-				'outgoing' as direction,
-				bl.isi_pesan_final as message,
-				bl.dikirim_oleh as sender,
-				bl.waktu_kirim as created_at,
-				bl.metode_kirim,
-				bl.status_kirim,
-				'cs' as sender_type
-			FROM crm_broadcast_logs bl
-			WHERE bl.followup_label_id = ?
-		", [$label_id])->result_array();
+		$label = $this->get_label($label_id);
+		if (!$label) return [];
 
-		// Get notes + incoming customer replies
-		$notes = $this->db->query("
-			SELECT 
-				fn.id,
-				CASE 
-					WHEN fn.sender_type = 'customer' THEN 'incoming'
-					ELSE 'note'
-				END as direction,
-				fn.catatan as message,
-				fn.username as sender,
-				fn.created_at,
-				'' as metode_kirim,
-				'' as status_kirim,
-				fn.sender_type
-			FROM crm_followup_notes fn
-			WHERE fn.followup_label_id = ?
-		", [$label_id])->result_array();
+		$label_ids = $this->get_related_label_ids($label);
+		$clean_phone = $this->normalize_phone_number($label->customer_phone);
+		$phone_tail = strlen($clean_phone) >= 9 ? substr($clean_phone, -9) : $clean_phone;
 
-		// Merge and sort by time ASC
-		$timeline = array_merge($outgoing, $notes);
+		// Source 1: NEW crm_chat_history table
+		$chat_rows = [];
+		if ($this->db->table_exists('crm_chat_history')) {
+			$chat_rows = $this->db->select('id, direction, message, sender_name, sender_cs_name, is_internal_note, status, created_at')
+				->from('crm_chat_history')
+				->where_in('label_id', $label_ids)
+				->get()->result_array();
+		}
+
+		// Source 2: Legacy broadcast_logs (outgoing)
+		$this->db->select('bl.id, bl.isi_pesan_final as message, bl.dikirim_oleh as sender, bl.waktu_kirim as created_at, bl.metode_kirim, bl.status_kirim')
+			->from('crm_broadcast_logs bl')
+			->where_in('bl.followup_label_id', $label_ids);
+		$legacy_outgoing = $this->db->get()->result_array();
+
+		// Source 3: Legacy followup_notes
+		$legacy_notes = $this->db->select('fn.id, fn.catatan as message, fn.username as sender, fn.created_at, fn.sender_type')
+			->from('crm_followup_notes fn')
+			->where_in('fn.followup_label_id', $label_ids)
+			->get()->result_array();
+
+		$cust_display_name = !empty($label->customer_nama) ? $label->customer_nama : 'Pelanggan';
+
+		// Normalize all items into unified format
+		$raw_timeline = [];
+
+		// New chat_history items
+		foreach ($chat_rows as $row) {
+			$direction = 'note';
+			if ($row['is_internal_note']) {
+				$direction = 'note';
+			} elseif ($row['direction'] === 'in') {
+				$direction = 'incoming';
+			} elseif ($row['direction'] === 'out') {
+				$direction = 'outgoing';
+			}
+
+			$sender = '';
+			if ($direction === 'incoming') {
+				$sender = !empty($row['sender_name']) ? $row['sender_name'] : $cust_display_name;
+			} else {
+				$sender = !empty($row['sender_cs_name']) ? $row['sender_cs_name'] : (!empty($row['sender_name']) ? $row['sender_name'] : 'CS Admin');
+			}
+
+			$raw_timeline[] = [
+				'id' => (int)$row['id'],
+				'direction' => $direction,
+				'message' => $row['message'],
+				'sender' => $sender,
+				'sender_type' => $row['is_internal_note'] ? 'cs' : ($row['direction'] === 'in' ? 'customer' : 'cs_chat'),
+				'created_at' => $row['created_at'],
+				'metode_kirim' => ($row['direction'] === 'out' && !$row['is_internal_note']) ? 'wa_gateway_api' : '',
+				'status_kirim' => isset($row['status']) ? $row['status'] : '',
+				'source' => 'chat_history',
+			];
+		}
+
+		// Legacy outgoing (broadcast_logs)
+		foreach ($legacy_outgoing as $row) {
+			$raw_timeline[] = [
+				'id' => 0,
+				'direction' => 'outgoing',
+				'message' => isset($row['message']) ? $row['message'] : '',
+				'sender' => !empty($row['sender']) ? $row['sender'] : 'CS Admin',
+				'sender_type' => 'cs',
+				'created_at' => $row['created_at'],
+				'metode_kirim' => isset($row['metode_kirim']) ? $row['metode_kirim'] : '',
+				'status_kirim' => isset($row['status_kirim']) ? $row['status_kirim'] : '',
+				'source' => 'broadcast_logs',
+			];
+		}
+
+		// Legacy notes
+		foreach ($legacy_notes as $row) {
+			$stype = isset($row['sender_type']) ? $row['sender_type'] : 'cs';
+			$direction = 'note';
+			if ($stype === 'customer') {
+				$direction = 'incoming';
+			} elseif ($stype === 'cs_chat') {
+				$direction = 'outgoing';
+			}
+
+			$sender = isset($row['sender']) ? $row['sender'] : 'CS Admin';
+			if ($direction === 'incoming') {
+				if (empty($sender) || in_array(strtolower(trim($sender)), array('developer', 'admin', 'system', 'administrator'))) {
+					$sender = $cust_display_name;
+				}
+			} elseif (empty($sender)) {
+				$sender = 'CS Admin';
+			}
+
+			$raw_timeline[] = [
+				'id' => 0,
+				'direction' => $direction,
+				'message' => isset($row['message']) ? $row['message'] : '',
+				'sender' => $sender,
+				'sender_type' => $stype,
+				'created_at' => $row['created_at'],
+				'metode_kirim' => '',
+				'status_kirim' => '',
+				'source' => 'followup_notes',
+			];
+		}
+
+		// Merge and deduplicate by direction + content + timestamp minute
+		$timeline = [];
+		$seen = [];
+
+		foreach ($raw_timeline as $item) {
+			$msg_clean = trim(isset($item['message']) ? $item['message'] : '');
+			if (empty($msg_clean)) continue;
+			$key = md5((isset($item['direction']) ? $item['direction'] : '') . '|' . $msg_clean . '|' . substr(isset($item['created_at']) ? $item['created_at'] : '', 0, 16));
+			if (!isset($seen[$key])) {
+				$seen[$key] = true;
+				$timeline[] = $item;
+			}
+		}
+
 		usort($timeline, function($a, $b) {
 			return strtotime($a['created_at']) - strtotime($b['created_at']);
 		});
@@ -636,10 +991,21 @@ class Model_crm extends CI_Model
 
 		$res_json = json_decode($response, true);
 		$is_ok = ($http_code >= 200 && $http_code < 300);
+		$err_msg = 'API Error (HTTP ' . $http_code . ')';
+
+		if (is_array($res_json)) {
+			if (isset($res_json['status'])) {
+				if ($res_json['status'] === false || $res_json['status'] === 'false' || $res_json['status'] === 0) {
+					$is_ok = false;
+					$reason = !empty($res_json['reason']) ? $res_json['reason'] : (!empty($res_json['detail']) ? $res_json['detail'] : (!empty($res_json['message']) ? $res_json['message'] : 'Gagal terkirim dari Fonnte Gateway'));
+					$err_msg = 'Fonnte Gateway Error: ' . $reason;
+				}
+			}
+		}
 
 		return [
 			'success' => $is_ok,
-			'message' => $is_ok ? 'Pesan WA berhasil dikirim via API' : ('API Error (HTTP ' . $http_code . ')'),
+			'message' => $is_ok ? 'Pesan WA berhasil dikirim via API' : $err_msg,
 			'response' => $res_json ?: $response,
 			'http_code' => $http_code
 		];
@@ -673,6 +1039,11 @@ class Model_crm extends CI_Model
 			$ship_date = $so->tanggal_kirim ?: ($so->tanggal_so ?: substr($so->created_at, 0, 10));
 			$phone = $so->no_telepon ?: ($so->telepon ?: ($so->no_telp ?: ''));
 			$nama = $so->nama_penerima ?: ($so->nama_pelanggan ?: '-');
+			$so_src = strtolower($so->source ?: '');
+			$source = 'Toko';
+			if (strpos($so_src, 'shopee') !== false) $source = 'Shopee';
+			elseif (strpos($so_src, 'tokopedia') !== false) $source = 'Tokopedia';
+			elseif (strpos($so_src, 'tiktok') !== false) $source = 'TikTok Shop';
 
 			foreach ($categories as $cat) {
 				$target = date('Y-m-d', strtotime($ship_date . ' + ' . $cat->jumlah_hari . ' days'));
@@ -680,7 +1051,7 @@ class Model_crm extends CI_Model
 					->count_all_results('crm_transaction_followup_labels');
 				if ($exists == 0) {
 					$this->db->insert('crm_transaction_followup_labels', [
-						'order_source' => 'Toko',
+						'order_source' => $source,
 						'order_id' => $so->id,
 						'order_table' => 'sales_order',
 						'customer_nama' => $nama,
@@ -707,8 +1078,9 @@ class Model_crm extends CI_Model
 			$nama = $mp->nama_penerima ?: '-';
 			$src = strtolower($mp->source ?: '');
 			$source = 'Shopee';
-			if (strpos($src, 'tokopedia') !== false) $source = 'Tokopedia';
+			if (strpos($src, 'tokopedia') !== false || strpos($src, 'pdf') !== false || strpos($src, 'scan') !== false) $source = 'Tokopedia';
 			elseif (strpos($src, 'tiktok') !== false) $source = 'TikTok Shop';
+			elseif (strpos($src, 'lazada') !== false) $source = 'Lazada';
 
 			foreach ($categories as $cat) {
 				$target = date('Y-m-d', strtotime($ship_date . ' + ' . $cat->jumlah_hari . ' days'));
@@ -732,6 +1104,41 @@ class Model_crm extends CI_Model
 				}
 			}
 		}
+
+		// Realtime sync resi, no_pesanan, and order_source for existing labels
+		$this->db->query("
+			UPDATE crm_transaction_followup_labels tfl
+			JOIN sales_order so ON tfl.order_table = 'sales_order' AND tfl.order_id = so.id
+			SET 
+			  tfl.nomor_resi = COALESCE(NULLIF(so.nomor_resi, ''), tfl.nomor_resi),
+			  tfl.no_pesanan = COALESCE(NULLIF(so.no_pesanan, ''), NULLIF(so.nomor_so, ''), tfl.no_pesanan),
+			  tfl.customer_nama = COALESCE(NULLIF(so.nama_penerima, ''), tfl.customer_nama),
+			  tfl.customer_phone = COALESCE(NULLIF(so.no_telepon, ''), tfl.customer_phone),
+			  tfl.order_source = CASE 
+			    WHEN LOWER(so.source) LIKE '%toko%' OR so.source = 'manual' OR so.source IS NULL THEN 'Toko'
+			    WHEN LOWER(so.source) LIKE '%shopee%' THEN 'Shopee'
+			    WHEN LOWER(so.source) LIKE '%tokopedia%' THEN 'Tokopedia'
+			    WHEN LOWER(so.source) LIKE '%tiktok%' THEN 'TikTok Shop'
+			    ELSE 'Toko'
+			  END
+		");
+
+		$this->db->query("
+			UPDATE crm_transaction_followup_labels tfl
+			JOIN penjualan_marketplace mp ON tfl.order_table = 'penjualan_marketplace' AND tfl.order_id = mp.id
+			SET 
+			  tfl.nomor_resi = COALESCE(NULLIF(mp.nomor_resi, ''), tfl.nomor_resi),
+			  tfl.no_pesanan = COALESCE(NULLIF(mp.no_pesanan, ''), NULLIF(mp.nomor_so, ''), tfl.no_pesanan),
+			  tfl.customer_nama = COALESCE(NULLIF(mp.nama_penerima, ''), tfl.customer_nama),
+			  tfl.customer_phone = COALESCE(NULLIF(mp.no_telepon, ''), tfl.customer_phone),
+			  tfl.order_source = CASE 
+			    WHEN LOWER(mp.source) LIKE '%tokopedia%' OR LOWER(mp.source) LIKE '%pdf%' OR LOWER(mp.source) LIKE '%scan%' THEN 'Tokopedia'
+			    WHEN LOWER(mp.source) LIKE '%tiktok%' THEN 'TikTok Shop'
+			    WHEN LOWER(mp.source) LIKE '%lazada%' THEN 'Lazada'
+			    WHEN LOWER(mp.source) LIKE '%shopee%' THEN 'Shopee'
+			    ELSE 'Shopee'
+			  END
+		");
 
 		return $generated;
 	}

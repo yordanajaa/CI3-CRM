@@ -183,8 +183,21 @@
   </div>
 
   <!-- Category Tabs -->
-  <div style="margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 6px;">
-    <a href="<?= site_url('administrator/crm/journal_followup'); ?>" class="cat-pill <?= empty($filters['category_id']) ? 'active' : ''; ?>">Semua</a>
+  <div style="margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+    <a href="<?= site_url('administrator/crm/journal_followup'); ?>" class="cat-pill <?= (empty($filters['category_id']) && empty($filters['status_label'])) ? 'active' : ''; ?>">
+      <i class="fa fa-list"></i> Semua Data
+    </a>
+    
+    <a href="<?= site_url('administrator/crm/journal_followup?status_label=belum_direspon'); ?>" class="cat-pill <?= (($filters['status_label'] ?? '') === 'belum_direspon') ? 'active' : ''; ?>" style="background: linear-gradient(135deg, #d97706, #f59e0b); color:#fff; border:none;">
+      <i class="fa fa-clock-o"></i> Belum Direspon (Pending)
+    </a>
+
+    <a href="<?= site_url('administrator/crm/journal_followup?status_label=Direspon'); ?>" class="cat-pill <?= (($filters['status_label'] ?? '') === 'Direspon') ? 'active' : ''; ?>" style="background: linear-gradient(135deg, #7c3aed, #8b5cf6); color:#fff; border:none;">
+      <i class="fa fa-comments"></i> Customer Direspon
+    </a>
+
+    <div style="width: 1px; height: 22px; background: #cbd5e1; margin: 0 4px;"></div>
+
     <?php foreach ($categories as $cat): ?>
     <?php
     $raw_name = htmlspecialchars($cat->nama_kategori);
@@ -192,7 +205,7 @@
     $clean_name = preg_replace('/^H\+\d+\s*[\—\-]?\s*/i', '', $raw_name);
     $cat_label = $clean_name . ' (H+' . $cat->jumlah_hari . ')';
     ?>
-    <a href="<?= site_url('administrator/crm/journal_followup?category_id=' . $cat->id); ?>" class="cat-pill <?= ($filters['category_id'] == $cat->id) ? 'active' : ''; ?>">
+    <a href="<?= site_url('administrator/crm/journal_followup?category_id=' . $cat->id . (!empty($filters['status_label']) ? '&status_label=' . $filters['status_label'] : '')); ?>" class="cat-pill <?= (($filters['category_id'] ?? '') == $cat->id) ? 'active' : ''; ?>">
       <?= $cat_label; ?>
     </a>
     <?php endforeach; ?>
@@ -218,6 +231,7 @@
           <div class="col-md-2">
             <select name="status_label" class="form-control">
               <option value="">Semua Status</option>
+              <option value="belum_direspon" <?= ($filters['status_label'] ?? '') == 'belum_direspon' ? 'selected' : ''; ?>>Belum Direspon (Pending/Dikirim)</option>
               <option value="Pending" <?= ($filters['status_label'] ?? '') == 'Pending' ? 'selected' : ''; ?>>Pending</option>
               <option value="Sudah Dikirim" <?= ($filters['status_label'] ?? '') == 'Sudah Dikirim' ? 'selected' : ''; ?>>Sudah Dikirim</option>
               <option value="Direspon" <?= ($filters['status_label'] ?? '') == 'Direspon' ? 'selected' : ''; ?>>Direspon</option>
@@ -598,23 +612,23 @@
       </div>
 
       <div class="chat-footer">
-        <!-- Sender Type Toggle -->
-        <div class="sender-toggle" style="display:flex;gap:4px;margin-bottom:8px;">
-          <button type="button" class="btn-toggle-sender active" data-type="cs" style="flex:1;padding:6px 10px;border:2px solid #25D366;background:#d9fdd3;color:#15803d;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;transition:all 0.2s;">
-            <i class="fa fa-headset"></i> Catatan CS
+        <!-- Sender Type Toggle: CS WA Reply vs Internal Note -->
+        <div class="sender-toggle" style="display:flex;gap:6px;margin-bottom:8px;">
+          <button type="button" class="btn-toggle-sender active" data-type="cs_chat" style="flex:1;padding:7px 10px;border:2px solid #25D366;background:#d9fdd3;color:#15803d;border-radius:20px;font-size:11.5px;font-weight:700;cursor:pointer;transition:all 0.2s;">
+            <i class="fa fa-whatsapp"></i> Balasan CS (WA)
           </button>
-          <button type="button" class="btn-toggle-sender" data-type="customer" style="flex:1;padding:6px 10px;border:2px solid #e2e8f0;background:#fff;color:#64748b;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;transition:all 0.2s;">
-            <i class="fa fa-user"></i> Balasan Customer
+          <button type="button" class="btn-toggle-sender" data-type="cs" style="flex:1;padding:7px 10px;border:2px solid #e2e8f0;background:#fff;color:#64748b;border-radius:20px;font-size:11.5px;font-weight:700;cursor:pointer;transition:all 0.2s;">
+            <i class="fa fa-bookmark"></i> Catatan Internal
           </button>
         </div>
         <div class="input-row">
-          <textarea id="note-text" rows="1" placeholder="Tulis catatan CS..."></textarea>
+          <textarea id="note-text" rows="1" placeholder="Ketik balasan CS ke WhatsApp customer..."></textarea>
           <button class="btn-send-chat" id="btn-save-note" title="Kirim"><i class="fa fa-paper-plane"></i></button>
         </div>
       </div>
 
       <input type="hidden" id="note-label-id">
-      <input type="hidden" id="note-sender-type" value="cs">
+      <input type="hidden" id="note-sender-type" value="cs_chat">
     </div>
   </div>
 </div>
@@ -929,27 +943,57 @@ window.addEventListener('load', function() {
   // ===== Open 2-Way Chat Modal =====
   var chatPollTimer = null;
   var currentChatLabelId = null;
+  var lastMessageId = 0;
+  var isFirstLoad = true;
 
   function loadChatTimeline(lid, showSpinner) {
     if (showSpinner) {
       $('#chat-canvas').html('<div class="chat-empty"><i class="fa fa-spinner fa-spin"></i> Memuat riwayat percakapan...</div>');
+      lastMessageId = 0;
+      isFirstLoad = true;
     }
-    $.get(_BASE + 'administrator/crm/get_chat_timeline_ajax', { label_id: lid }, function(res) {
-      var r = parseRes(res);
-      if (r.success) {
-        if (r.label) {
-          $('#chat-phone').text(r.label.customer_phone || '-');
-          $('#chat-order').text(r.label.no_pesanan || '-');
+
+    // First load: get full timeline from get_chat_timeline_ajax
+    // Subsequent loads: use optimized get_new_messages_ajax with last_id
+    if (isFirstLoad) {
+      $.get(_BASE + 'administrator/crm/get_chat_timeline_ajax', { label_id: lid }, function(res) {
+        var r = parseRes(res);
+        if (r.success) {
+          if (r.label) {
+            $('#chat-phone').text(r.label.customer_phone || '-');
+            $('#chat-order').text(r.label.no_pesanan || '-');
+          }
+          renderChatTimeline(r.timeline || []);
+          // Track max ID from timeline for subsequent polling
+          if (r.timeline && r.timeline.length > 0) {
+            for (var i = 0; i < r.timeline.length; i++) {
+              var tid = parseInt(r.timeline[i].id || 0);
+              if (tid > lastMessageId) lastMessageId = tid;
+            }
+          }
+          isFirstLoad = false;
+        } else if (showSpinner) {
+          $('#chat-canvas').html('<div class="chat-empty"><i class="fa fa-exclamation-circle"></i> Gagal memuat percakapan.</div>');
         }
-        renderChatTimeline(r.timeline || []);
-      } else if (showSpinner) {
-        $('#chat-canvas').html('<div class="chat-empty"><i class="fa fa-exclamation-circle"></i> Gagal memuat percakapan.</div>');
-      }
-    }).fail(function() {
-      if (showSpinner) {
-        $('#chat-canvas').html('<div class="chat-empty"><i class="fa fa-exclamation-circle"></i> Gagal menghubungi server.</div>');
-      }
-    });
+      }).fail(function() {
+        if (showSpinner) {
+          $('#chat-canvas').html('<div class="chat-empty"><i class="fa fa-exclamation-circle"></i> Gagal menghubungi server.</div>');
+        }
+      });
+    } else {
+      // Optimized polling: only get new messages after lastMessageId
+      $.get(_BASE + 'administrator/crm/get_new_messages_ajax', { label_id: lid, last_id: lastMessageId }, function(res) {
+        var r = parseRes(res);
+        if (r.success && r.messages && r.messages.length > 0) {
+          appendNewMessages(r.messages);
+          // Update lastMessageId
+          for (var i = 0; i < r.messages.length; i++) {
+            var mid = parseInt(r.messages[i].id || 0);
+            if (mid > lastMessageId) lastMessageId = mid;
+          }
+        }
+      });
+    }
   }
 
   function startChatPolling(lid) {
@@ -961,7 +1005,7 @@ window.addEventListener('load', function() {
       } else {
         stopChatPolling();
       }
-    }, 15000); // Auto-refresh setiap 15 detik
+    }, 3000); // Auto-refresh real-time setiap 3 detik
   }
 
   function stopChatPolling() {
@@ -978,11 +1022,12 @@ window.addEventListener('load', function() {
     $('#note-customer-name').text(nama);
     $('#note-text').val('');
     $('#note-status').val('');
-    // Reset toggle to CS mode
-    $('#note-sender-type').val('cs');
-    $('.btn-toggle-sender[data-type="cs"]').css({ border: '2px solid #25D366', background: '#d9fdd3', color: '#15803d' }).addClass('active');
-    $('.btn-toggle-sender[data-type="customer"]').css({ border: '2px solid #e2e8f0', background: '#fff', color: '#64748b' }).removeClass('active');
-    $('#note-text').attr('placeholder', 'Tulis catatan CS...').css('background', '#fff');
+    
+    // Reset toggle to Balasan CS (WA) mode
+    $('#note-sender-type').val('cs_chat');
+    $('.btn-toggle-sender').css({ border: '2px solid #e2e8f0', background: '#fff', color: '#64748b' }).removeClass('active');
+    $('.btn-toggle-sender[data-type="cs_chat"]').css({ border: '2px solid #25D366', background: '#d9fdd3', color: '#15803d' }).addClass('active');
+    $('#note-text').attr('placeholder', 'Ketik balasan CS ke WhatsApp customer...').css('background', '#fff');
     $('.btn-send-chat').css('background', '#25D366');
 
     loadChatTimeline(lid, true);
@@ -998,6 +1043,7 @@ window.addEventListener('load', function() {
     var $icon = $(this).find('i');
     $icon.addClass('fa-spin');
     var lid = $('#note-label-id').val();
+    isFirstLoad = true; // Force full reload
     loadChatTimeline(lid, false);
     setTimeout(function() { $icon.removeClass('fa-spin'); }, 1000);
   });
@@ -1017,52 +1063,9 @@ window.addEventListener('load', function() {
     var html = '';
     var lastDate = '';
     $.each(timeline, function(i, item) {
-      // Date separator
+      html += renderSingleBubble(item, lastDate);
       var itemDate = (item.created_at || '').substring(0, 10);
-      if (itemDate && itemDate !== lastDate) {
-        lastDate = itemDate;
-        var d = new Date(itemDate + 'T00:00:00');
-        var today = new Date(); today.setHours(0,0,0,0);
-        var dateLabel = '';
-        if (d.getTime() === today.getTime()) {
-          dateLabel = 'Hari Ini';
-        } else {
-          var dd = ('0' + d.getDate()).slice(-2);
-          var mm = ('0' + (d.getMonth()+1)).slice(-2);
-          dateLabel = dd + '/' + mm + '/' + d.getFullYear();
-        }
-        html += '<div style="text-align:center;margin:12px 0 8px;"><span style="background:rgba(255,255,255,0.85);padding:3px 14px;border-radius:8px;font-size:11px;color:#64748b;box-shadow:0 1px 2px rgba(0,0,0,0.06);font-weight:600;">' + dateLabel + '</span></div>';
-      }
-
-      var safeMsg = $('<div>').text(item.message || '').html().replace(/\n/g, '<br>');
-      var timeStr = (item.created_at || '').substring(11, 16);
-
-      if (item.direction === 'outgoing') {
-        // CS sent → right (green bubble)
-        html += '<div class="chat-bubble bubble-outgoing">';
-        html += '<div style="white-space:pre-wrap;">' + safeMsg + '</div>';
-        html += '<div class="bubble-time">';
-        if (item.metode_kirim) html += '<span style="font-size:9px;color:#64748b;">(' + item.metode_kirim + ')</span> ';
-        html += timeStr + ' <i class="fa fa-check" style="color:#53bdeb;font-size:9px;"></i>';
-        html += '</div></div>';
-
-      } else if (item.direction === 'incoming') {
-        // Customer reply → left (white bubble)
-        html += '<div class="chat-bubble bubble-incoming">';
-        html += '<div class="bubble-sender"><i class="fa fa-user-circle"></i> ' + (item.sender || 'Customer') + '</div>';
-        html += '<div style="white-space:pre-wrap;">' + safeMsg + '</div>';
-        html += '<div class="bubble-time">' + timeStr + '</div>';
-        html += '</div>';
-
-      } else {
-        // Internal note → center (amber)
-        html += '<div class="chat-bubble bubble-note">';
-        html += '<div class="bubble-sender"><i class="fa fa-bookmark"></i> ' + (item.sender || 'CS') + '</div>';
-        if (item.status_kirim) html += '<div style="font-size:10px;margin-bottom:2px;"><span style="background:#f59e0b;color:#fff;padding:1px 6px;border-radius:4px;font-size:9px;">' + item.status_kirim + '</span></div>';
-        html += '<div style="white-space:pre-wrap;">' + safeMsg + '</div>';
-        html += '<div class="bubble-time" style="justify-content:center;">' + timeStr + '</div>';
-        html += '</div>';
-      }
+      if (itemDate) lastDate = itemDate;
     });
 
     canvas.html(html);
@@ -1070,29 +1073,119 @@ window.addEventListener('load', function() {
     canvas.scrollTop(canvas[0].scrollHeight);
   }
 
-  // ===== Sender Type Toggle =====
+  function appendNewMessages(messages) {
+    var canvas = $('#chat-canvas');
+    // If canvas shows empty state, clear it first
+    if (canvas.find('.chat-empty').length) {
+      canvas.html('');
+    }
+
+    var lastDateEl = canvas.find('[data-chat-date]:last');
+    var lastDate = lastDateEl.length ? lastDateEl.data('chat-date') : '';
+
+    var html = '';
+    $.each(messages, function(i, item) {
+      html += renderSingleBubble(item, lastDate);
+      var itemDate = (item.created_at || '').substring(0, 10);
+      if (itemDate) lastDate = itemDate;
+    });
+
+    if (html) {
+      canvas.append(html);
+      canvas.scrollTop(canvas[0].scrollHeight);
+    }
+  }
+
+  function renderSingleBubble(item, lastDate) {
+    var html = '';
+    // Date separator
+    var itemDate = (item.created_at || '').substring(0, 10);
+    if (itemDate && itemDate !== lastDate) {
+      var d = new Date(itemDate + 'T00:00:00');
+      var today = new Date(); today.setHours(0,0,0,0);
+      var dateLabel = '';
+      if (d.getTime() === today.getTime()) {
+        dateLabel = 'Hari Ini';
+      } else {
+        var dd = ('0' + d.getDate()).slice(-2);
+        var mm = ('0' + (d.getMonth()+1)).slice(-2);
+        dateLabel = dd + '/' + mm + '/' + d.getFullYear();
+      }
+      html += '<div style="text-align:center;margin:12px 0 8px;" data-chat-date="' + itemDate + '"><span style="background:rgba(255,255,255,0.85);padding:3px 14px;border-radius:8px;font-size:11px;color:#64748b;box-shadow:0 1px 2px rgba(0,0,0,0.06);font-weight:600;">' + dateLabel + '</span></div>';
+    }
+
+    var safeMsg = $('<div>').text(item.message || '').html().replace(/\n/g, '<br>');
+    var timeStr = (item.created_at || '').substring(11, 16);
+    var statusIcon = '';
+
+    if (item.direction === 'outgoing') {
+      // CS sent → right (green bubble)
+      var csSender = item.sender || 'CS Admin';
+
+      // Status icon for sent/failed
+      if (item.status_kirim === 'failed') {
+        statusIcon = '<i class="fa fa-exclamation-circle" style="color:#ef4444;font-size:10px;" title="Gagal terkirim"></i>';
+      } else {
+        statusIcon = '<i class="fa fa-check-circle" style="color:#34d399;font-size:10px;"></i>';
+      }
+
+      html += '<div class="chat-bubble bubble-outgoing">';
+      html += '<div class="bubble-sender-head" style="font-size:11px;font-weight:700;color:#075e54;margin-bottom:3px;"><i class="fa fa-user-circle"></i> ' + $('<div>').text(csSender).html() + '</div>';
+      html += '<div style="white-space:pre-wrap;">' + safeMsg + '</div>';
+
+      // Show error message if failed
+      if (item.status_kirim === 'failed') {
+        html += '<div style="font-size:10px;color:#ef4444;margin-top:4px;padding:3px 6px;background:#fef2f2;border-radius:4px;border:1px solid #fecaca;"><i class="fa fa-warning"></i> Gagal terkirim via Fonnte API</div>';
+      }
+
+      html += '<div class="bubble-time">';
+      if (item.metode_kirim) html += '<span style="font-size:9px;color:#64748b;font-weight:600;">(' + $('<div>').text(item.metode_kirim).html() + ')</span> ';
+      html += timeStr + ' ' + statusIcon;
+      html += '</div></div>';
+
+    } else if (item.direction === 'incoming') {
+      // Customer reply → left (clean WhatsApp style white bubble)
+      var custSender = item.sender || 'Pelanggan';
+      html += '<div class="chat-bubble bubble-incoming">';
+      html += '<div class="bubble-sender-head" style="font-size:11px;font-weight:700;color:#15803d;margin-bottom:3px;"><i class="fa fa-whatsapp" style="color:#25D366;"></i> ' + $('<div>').text(custSender).html() + ' <span style="font-weight:400;font-size:10px;color:#64748b;">(Balasan)</span></div>';
+      html += '<div style="white-space:pre-wrap;">' + safeMsg + '</div>';
+      html += '<div class="bubble-time">' + timeStr + '</div>';
+      html += '</div>';
+
+    } else {
+      // Internal note → center (amber)
+      var noteSender = item.sender || 'CS Admin';
+      html += '<div class="chat-bubble bubble-note">';
+      html += '<div class="bubble-sender" style="font-weight:700;color:#92400e;margin-bottom:3px;"><i class="fa fa-bookmark"></i> Catatan Internal (' + $('<div>').text(noteSender).html() + ')</div>';
+      if (item.status_kirim && item.status_kirim !== 'delivered') html += '<div style="font-size:10px;margin-bottom:2px;"><span style="background:#f59e0b;color:#fff;padding:1px 6px;border-radius:4px;font-size:9px;">' + $('<div>').text(item.status_kirim).html() + '</span></div>';
+      html += '<div style="white-space:pre-wrap;">' + safeMsg + '</div>';
+      html += '<div class="bubble-time" style="justify-content:center;color:#b45309;">' + timeStr + '</div>';
+      html += '</div>';
+    }
+
+    return html;
+  }
+
+  // ===== Sender Type Toggle (CS WA Reply vs Internal Note) =====
   $(document).on('click', '.btn-toggle-sender', function() {
     var type = $(this).data('type');
     $('#note-sender-type').val(type);
     
-    // Visual toggle
-    $('.btn-toggle-sender').css({ border: '2px solid #e2e8f0', background: '#fff', color: '#64748b' });
-    
-    if (type === 'customer') {
-      $(this).css({ border: '2px solid #3b82f6', background: '#eff6ff', color: '#1d4ed8' });
-      $('#note-text').attr('placeholder', 'Ketik balasan customer dari WA...').css('background', '#f0f9ff');
-      $('.btn-send-chat').css('background', '#3b82f6');
-    } else {
-      $(this).css({ border: '2px solid #25D366', background: '#d9fdd3', color: '#15803d' });
-      $('#note-text').attr('placeholder', 'Tulis catatan CS...').css('background', '#fff');
-      $('.btn-send-chat').css('background', '#25D366');
-    }
-    
-    $('.btn-toggle-sender').removeClass('active');
+    $('.btn-toggle-sender').css({ border: '2px solid #e2e8f0', background: '#fff', color: '#64748b' }).removeClass('active');
     $(this).addClass('active');
+
+    if (type === 'cs_chat') {
+      $(this).css({ border: '2px solid #25D366', background: '#d9fdd3', color: '#15803d' });
+      $('#note-text').attr('placeholder', 'Ketik balasan CS ke WhatsApp customer...').css('background', '#fff');
+      $('.btn-send-chat').css('background', '#25D366');
+    } else { // cs note
+      $(this).css({ border: '2px solid #f59e0b', background: '#fef3c7', color: '#92400e' });
+      $('#note-text').attr('placeholder', 'Tulis catatan internal CS (hanya tersimpan di sistem)...').css('background', '#fffbe6');
+      $('.btn-send-chat').css('background', '#f59e0b');
+    }
   });
 
-  // ===== Save Note (Chat Message) =====
+  // ===== Save Note / Chat Message (via send_message_ajax) =====
   $(document).on('click', '#btn-save-note', function(e) {
     e.preventDefault();
     e.stopPropagation();
@@ -1101,80 +1194,92 @@ window.addEventListener('load', function() {
     var lid = $('#note-label-id').val();
     var catatan = $.trim($('#note-text').val());
     var status = $('#note-status').val();
-    var senderType = $('#note-sender-type').val() || 'cs';
+    var senderType = $('#note-sender-type').val() || 'cs_chat';
     
     if (!catatan && !status) { 
       notify('warning', 'Tulis pesan atau pilih status terlebih dahulu');
       return; 
     }
 
-    var finalStatus = status;
-    if (!finalStatus) {
-      var $inlineSelect = $('.status-select[data-label-id="' + lid + '"]');
-      if ($inlineSelect.length) finalStatus = $inlineSelect.val();
+    // If only status change (no message), use the old update_status_ajax
+    if (!catatan && status) {
+      $.post(_BASE + 'administrator/crm/update_status_ajax', buildPayload({
+        label_id: lid,
+        status: status
+      }), function(res) {
+        var r = parseRes(res);
+        if (r.success) {
+          notify('success', 'Status berhasil diperbarui');
+          if (status) {
+            var $inlineSel = $('.status-select[data-label-id="' + lid + '"]');
+            if ($inlineSel.length) $inlineSel.val(status).data('current', status);
+            updateBadgeRealtime(lid, status);
+          }
+          $('#note-status').val('');
+        } else {
+          notify('error', r.message || 'Gagal memperbarui status');
+        }
+      });
+      return;
     }
 
-    // Auto-set status to Direspon when recording customer reply
-    if (senderType === 'customer' && !status) {
-      finalStatus = 'Direspon';
-      $('#note-status').val('Direspon');
-    }
+    var isInternalNote = (senderType === 'cs') ? 1 : 0;
 
     $btn.prop('disabled', true).html('<i class="fa fa-spin fa-spinner"></i>');
 
+    // Use the new send_message_ajax endpoint
     $.ajax({
-      url: _BASE + 'administrator/crm/update_status_ajax',
+      url: _BASE + 'administrator/crm/send_message_ajax',
       type: 'POST',
       data: buildPayload({
         label_id: lid,
-        status: finalStatus || '',
-        catatan: catatan,
-        sender_type: senderType
+        message: catatan,
+        is_internal_note: isInternalNote
       }),
       success: function(res) {
         var r = parseRes(res);
         $btn.prop('disabled', false).html('<i class="fa fa-paper-plane"></i>');
         if (r.success) {
-          var label = senderType === 'customer' ? 'Balasan customer' : 'Catatan';
-          notify('success', label + ' berhasil disimpan');
-          if (finalStatus) {
+          // Show appropriate notification
+          if (r.send_error) {
+            notify('warning', r.message);
+          } else {
+            notify('success', r.message || 'Pesan berhasil dikirim');
+          }
+
+          // Update status if needed
+          if (status) {
             var $inlineSel = $('.status-select[data-label-id="' + lid + '"]');
-            if ($inlineSel.length) {
-              $inlineSel.val(finalStatus).data('current', finalStatus);
+            if ($inlineSel.length) $inlineSel.val(status).data('current', status);
+            updateBadgeRealtime(lid, status);
+          } else if (!isInternalNote) {
+            var $inlineSel = $('.status-select[data-label-id="' + lid + '"]');
+            if ($inlineSel.length && $inlineSel.val() === 'Pending') {
+              $inlineSel.val('Sudah Dikirim').data('current', 'Sudah Dikirim');
+              updateBadgeRealtime(lid, 'Sudah Dikirim');
             }
-            updateBadgeRealtime(lid, finalStatus);
           }
-          // Append new bubble in real time
-          if (catatan) {
-            var now = new Date();
-            var timeStr = ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2);
-            var safeMsg = $('<div>').text(catatan).html().replace(/\n/g, '<br>');
-            var newBubble = '';
 
-            if (senderType === 'customer') {
-              // Customer reply → white bubble LEFT
-              newBubble = '<div class="chat-bubble bubble-incoming">';
-              newBubble += '<div class="bubble-sender"><i class="fa fa-user-circle"></i> Customer</div>';
-              newBubble += '<div style="white-space:pre-wrap;">' + safeMsg + '</div>';
-              newBubble += '<div class="bubble-time">' + timeStr + '</div>';
-              newBubble += '</div>';
-            } else {
-              // CS note → amber bubble CENTER
-              newBubble = '<div class="chat-bubble bubble-note">';
-              newBubble += '<div class="bubble-sender"><i class="fa fa-bookmark"></i> CS</div>';
-              if (finalStatus) newBubble += '<div style="font-size:10px;margin-bottom:2px;"><span style="background:#f59e0b;color:#fff;padding:1px 6px;border-radius:4px;font-size:9px;">' + finalStatus + '</span></div>';
-              newBubble += '<div style="white-space:pre-wrap;">' + safeMsg + '</div>';
-              newBubble += '<div class="bubble-time" style="justify-content:center;">' + timeStr + '</div>';
-              newBubble += '</div>';
-            }
-
-            var $canvas = $('#chat-canvas');
-            $canvas.find('.chat-empty').remove();
-            $canvas.append(newBubble);
-            $canvas.scrollTop($canvas[0].scrollHeight);
+          // Update badge count
+          if (!isInternalNote) {
+            var $cntBadge = $('#badge-count-' + lid);
+            var currCnt = parseInt($cntBadge.attr('data-count') || 0) + 1;
+            $cntBadge.attr('data-count', currCnt).find('.cnt-val').text(currCnt);
+            $cntBadge.css('display', 'inline-block');
           }
+
+          // Open wa_link if wa_direct mode
+          if (r.wa_link && !isInternalNote) {
+            window.open(r.wa_link, '_blank');
+          }
+
+          // Clear input and reload chat
           $('#note-text').val('');
           $('#note-status').val('');
+
+          // Force a full timeline reload to show the new message immediately
+          isFirstLoad = true;
+          loadChatTimeline(lid, false);
         } else {
           notify('error', r.message || 'Gagal menyimpan');
         }
