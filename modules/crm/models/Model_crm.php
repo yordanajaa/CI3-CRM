@@ -610,7 +610,6 @@ class Model_crm extends CI_Model
 	private function get_related_label_ids($label)
 	{
 		$clean_phone = $this->normalize_phone_number($label->customer_phone);
-		$cust_nama_clean = strtolower(trim(isset($label->customer_nama) ? $label->customer_nama : ''));
 		$phone_tail = strlen($clean_phone) >= 9 ? substr($clean_phone, -9) : $clean_phone;
 
 		$all_labels = $this->db->select('id, customer_phone, customer_nama')->get('crm_transaction_followup_labels')->result();
@@ -618,20 +617,13 @@ class Model_crm extends CI_Model
 		foreach ($all_labels as $lbl) {
 			$cp = $this->normalize_phone_number($lbl->customer_phone);
 			if ($cp === $clean_phone || (strlen($cp) >= 9 && !empty($phone_tail) && substr($cp, -9) === $phone_tail)) {
-				$lbl_nama_clean = strtolower(trim(isset($lbl->customer_nama) ? $lbl->customer_nama : ''));
-				if (!empty($cust_nama_clean) && !empty($lbl_nama_clean)) {
-					if ($lbl_nama_clean === $cust_nama_clean) {
-						$label_ids[] = $lbl->id;
-					}
-				} else {
-					$label_ids[] = $lbl->id;
-				}
+				$label_ids[] = (int)$lbl->id;
 			}
 		}
 		if (empty($label_ids)) {
-			$label_ids = [$label->id];
+			$label_ids = [(int)$label->id];
 		}
-		return $label_ids;
+		return array_unique($label_ids);
 	}
 
 	/**
