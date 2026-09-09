@@ -949,9 +949,8 @@ class Crm extends Admin
 			'fonnte_response' => $fonnte_response,
 		]);
 
-		// Also insert into legacy crm_followup_notes for backward compat
-		$sender_type = $is_internal_note ? 'cs' : 'cs_chat';
-		$this->model_crm->add_note($label_id, $message, null, $sender_type);
+		// Note: Pesan baru HANYA disimpan ke crm_chat_history.
+		// Tidak perlu insert ke crm_followup_notes lagi agar tidak dobel di timeline.
 
 		// Update label status
 		if (!$is_internal_note) {
