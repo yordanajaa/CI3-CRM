@@ -53,96 +53,9 @@ class Dashboard extends Admin
 
 		$items = [];
 		$total_count = 0;
-
-		// Jika karyawan biasa: Tampilkan HANYA Notifikasi Pribadi miliknya sendiri
-		if ($is_karyawan_only && !$is_manager) {
-			$karyawan_id = $is_karyawan_only->id;
-
-			if ($this->db->table_exists('hr_absensi')) {
-				$my_absensi = $this->db->select('id, tanggal, waktu_masuk, status_kehadiran, alasan_terlambat, terlambat_menit, file_surat')
-					->from('hr_absensi')
-					->where('karyawan_id', $karyawan_id)
-					->order_by('id', 'DESC')
-					->limit(5)
-					->get()->result();
-
-				foreach ($my_absensi as $ab) {
-					$st = $ab->status_kehadiran;
-					$icon = 'fa-clock-o';
-					$bg = 'text-blue';
-					if (in_array($st, ['Telat', 'Telat (Lupa Absen)', 'Telat (Lupa Absen Pulang)', 'Hadir (Lupa Absen Pulang)', 'Lupa Absen Pulang'])) {
-						$icon = 'fa-warning';
-						$bg = 'text-yellow';
-					} elseif (in_array($st, ['Izin', 'Sakit', 'Cuti', 'Izin Khusus', 'Sakit (Dengan Surat)', 'Sakit (Tanpa Surat)'])) {
-						$icon = 'fa-file-text-o';
-						$bg = 'text-purple';
-					} elseif ($st == 'Alpha') {
-						$icon = 'fa-times-circle';
-						$bg = 'text-red';
-					}
-
-					$sub = 'Status: ' . $st;
-					if ($ab->terlambat_menit > 0) {
-						$sub .= ' (' . $ab->terlambat_menit . ' menit)';
-					} elseif (!empty($ab->alasan_terlambat)) {
-						$sub .= ' (' . $ab->alasan_terlambat . ')';
-					}
-
-					$items[] = [
-						'type' => 'personal_absensi',
-						'title' => 'Presensi Anda: ' . date('d/m/Y', strtotime($ab->tanggal)),
-						'subtitle' => $sub,
-						'url' => site_url('administrator/hr_profile'),
-						'icon' => $icon,
-						'icon_bg' => $bg,
-						'date' => date('d/m', strtotime($ab->tanggal))
-					];
-				}
-				$total_count = count($items);
-			}
-
-			return $this->response([
-				'success' => true,
-				'header_title' => 'Notifikasi Saya',
-				'footer_url' => site_url('administrator/hr_profile'),
-				'footer_label' => 'Lihat Profile & Presensi',
-				'total_count' => $total_count,
-				'items' => $items
-			]);
-		}
-
-		// 1. Purchase Order Pending Approval (status = 'submitted')
-		if ($this->db->table_exists('purchase_order')) {
-			$threshold = (float) get_option('po_approval_threshold', 50000000);
-
-			$pos = $this->db->select('po.id, po.nomor_po, po.created_at, po.total, po.kurs, s.nama_supplier')
-				->from('purchase_order po')
-				->join('supplier s', 's.id = po.supplier_id', 'left')
-				->where('po.status', 'submitted')
-				->order_by('po.id', 'DESC')
-				->limit(10)
-				->get()->result();
-
-			foreach ($pos as $po) {
-				$total_idr = (float)$po->total * (float)($po->kurs ?: 1);
-				$is_high_value = ($total_idr >= $threshold);
-
-				$items[] = [
-					'type' => 'po',
-					'title' => ($is_high_value ? '⚠️ PO High-Value: ' : 'PO Pending Approval: ') . $po->nomor_po,
-					'subtitle' => ($po->nama_supplier ? $po->nama_supplier . ' - ' : '') . 'Rp ' . number_format($total_idr, 0, ',', '.') . ($is_high_value ? ' (Butuh Approval Manajer)' : ''),
-					'url' => site_url('administrator/purchase_order/view/' . $po->id),
-					'icon' => $is_high_value ? 'fa-shield' : 'fa-shopping-cart',
-					'icon_bg' => $is_high_value ? 'text-red' : 'text-aqua',
-					'date' => date('d/m H:i', strtotime($po->created_at))
-				];
-			}
-			$total_count = $this->db->where('status', 'submitted')->count_all_results('purchase_order');
-		}
-
-		// 2. Incoming WhatsApp Messages (crm_chat_history)
-		$wa_items = [];
 		$wa_unread_count = 0;
+
+		// 1. Incoming WhatsApp Messages (Visible to CS / Admin / All Staff)
 		if ($this->db->table_exists('crm_chat_history')) {
 			$incoming_chats = $this->db->select('c.id, c.label_id, c.customer_phone, c.message, c.sender_name, c.status, c.created_at, l.customer_nama, l.no_pesanan')
 				->from('crm_chat_history c')
@@ -166,7 +79,7 @@ class Dashboard extends Admin
 					$preview = mb_substr($preview, 0, 40) . '...';
 				}
 
-				$wa_items[] = [
+				$items[] = [
 					'id' => (int)$chat->id,
 					'type' => 'incoming_wa',
 					'title' => '💬 WA: ' . $cust_name,
@@ -183,19 +96,100 @@ class Dashboard extends Admin
 				'is_internal_note' => 0,
 				'status !=' => 'read'
 			])->count_all_results('crm_chat_history');
+			
+			$total_count += $wa_unread_count;
 		}
 
-		$total_count += $wa_unread_count;
-		$items = array_merge($wa_items, $items);
+		// 2. Purchase Order Pending Approval (For Managers / Admins)
+		if ($is_manager && $this->db->table_exists('purchase_order')) {
+			$threshold = (float) get_option('po_approval_threshold', 50000000);
+
+			$pos = $this->db->select('po.id, po.nomor_po, po.created_at, po.total, po.kurs, s.nama_supplier')
+				->from('purchase_order po')
+				->join('supplier s', 's.id = po.supplier_id', 'left')
+				->where('po.status', 'submitted')
+				->order_by('po.id', 'DESC')
+				->limit(10)
+				->get()->result();
+
+			foreach ($pos as $po) {
+				$total_idr = (float)$po->total * (float)($po->kurs ?: 1);
+				$is_high_value = ($total_idr >= $threshold);
+
+				$items[] = [
+					'id' => (int)$po->id,
+					'type' => 'po',
+					'title' => ($is_high_value ? '⚠️ PO High-Value: ' : 'PO Pending Approval: ') . $po->nomor_po,
+					'subtitle' => ($po->nama_supplier ? $po->nama_supplier . ' - ' : '') . 'Rp ' . number_format($total_idr, 0, ',', '.') . ($is_high_value ? ' (Butuh Approval Manajer)' : ''),
+					'url' => site_url('administrator/purchase_order/view/' . $po->id),
+					'icon' => $is_high_value ? 'fa-shield' : 'fa-shopping-cart',
+					'icon_bg' => $is_high_value ? 'text-red' : 'text-aqua',
+					'date' => date('d/m H:i', strtotime($po->created_at))
+				];
+			}
+			$po_count = $this->db->where('status', 'submitted')->count_all_results('purchase_order');
+			$total_count += $po_count;
+		}
+
+		// 3. Personal Presensi (For Employees)
+		if ($is_karyawan_only && $this->db->table_exists('hr_absensi')) {
+			$karyawan_id = $is_karyawan_only->id;
+			$my_absensi = $this->db->select('id, tanggal, waktu_masuk, status_kehadiran, alasan_terlambat, terlambat_menit, file_surat')
+				->from('hr_absensi')
+				->where('karyawan_id', $karyawan_id)
+				->order_by('id', 'DESC')
+				->limit(3)
+				->get()->result();
+
+			foreach ($my_absensi as $ab) {
+				$st = $ab->status_kehadiran;
+				$icon = 'fa-clock-o';
+				$bg = 'text-blue';
+				if (in_array($st, ['Telat', 'Telat (Lupa Absen)', 'Telat (Lupa Absen Pulang)', 'Hadir (Lupa Absen Pulang)', 'Lupa Absen Pulang'])) {
+					$icon = 'fa-warning';
+					$bg = 'text-yellow';
+				} elseif (in_array($st, ['Izin', 'Sakit', 'Cuti', 'Izin Khusus', 'Sakit (Dengan Surat)', 'Sakit (Tanpa Surat)'])) {
+					$icon = 'fa-file-text-o';
+					$bg = 'text-purple';
+				} elseif ($st == 'Alpha') {
+					$icon = 'fa-times-circle';
+					$bg = 'text-red';
+				}
+
+				$sub = 'Status: ' . $st;
+				if ($ab->terlambat_menit > 0) {
+					$sub .= ' (' . $ab->terlambat_menit . ' menit)';
+				} elseif (!empty($ab->alasan_terlambat)) {
+					$sub .= ' (' . $ab->alasan_terlambat . ')';
+				}
+
+				$items[] = [
+					'id' => (int)$ab->id,
+					'type' => 'personal_absensi',
+					'title' => 'Presensi Anda: ' . date('d/m/Y', strtotime($ab->tanggal)),
+					'subtitle' => $sub,
+					'url' => site_url('administrator/hr_profile'),
+					'icon' => $icon,
+					'icon_bg' => $bg,
+					'date' => date('d/m', strtotime($ab->tanggal))
+				];
+			}
+		}
 
 		$header_title = 'Notifikasi & Pesan WA';
 		$footer_url = site_url('administrator/crm/journal_followup');
 		$footer_label = 'Lihat Journal Chat WA';
 
-		if ($total_count === 0 || ($wa_unread_count === 0 && !empty($items))) {
-			$header_title = 'Notifikasi';
-			$footer_url = site_url('administrator/purchase_order');
-			$footer_label = 'Lihat Kelola Purchase Order';
+		if ($wa_unread_count === 0) {
+			if ($is_manager) {
+				$header_title = 'Notifikasi Approval';
+				$footer_url = site_url('administrator/purchase_order');
+				$footer_label = 'Lihat Kelola Purchase Order';
+			} else {
+				$header_title = 'Notifikasi Saya';
+				$footer_url = site_url('administrator/hr_profile');
+				$footer_label = 'Lihat Profile & Presensi';
+			}
 		}
 
 		return $this->response([
