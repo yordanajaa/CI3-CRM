@@ -357,6 +357,10 @@ class Model_crm extends CI_Model
 	 */
 	public function log_incoming_reply($phone, $message, $sender_name = '', $raw_data = null)
 	{
+		if (stripos($message, 'Sent via fonnte.com') !== false || stripos($message, 'fonnte.com') !== false) {
+			return 0;
+		}
+
 		$clean_input_phone = $this->normalize_phone_number($phone);
 		if (empty($clean_input_phone)) {
 			$clean_input_phone = preg_replace('/[^0-9]/', '', $phone);
@@ -465,6 +469,22 @@ class Model_crm extends CI_Model
 			$cust_username = !empty($primary_label->customer_nama) ? $primary_label->customer_nama : (!empty($sender_name) ? $sender_name : 'Customer');
 
 			// Idempotency check: Skip duplicate insert if same message was logged for this label within 5 minutes
+			// Or if CS sent an outgoing message matching this text in the last 3 minutes
+			$three_mins_ago = date('Y-m-d H:i:s', time() - 180);
+			$clean_check_msg = trim(str_replace(['> _Sent via fonnte.com_', '_Sent via fonnte.com_', 'Sent via fonnte.com'], '', $message));
+
+			$cs_outgoing_exists = $this->db->query("
+				SELECT id FROM crm_chat_history 
+				WHERE label_id = ? AND created_at >= ? 
+				  AND (direction = 'out' OR is_internal_note = 0)
+				  AND (message = ? OR message LIKE ?)
+				LIMIT 1
+			", [$primary_label->id, $three_mins_ago, $clean_check_msg, '%' . $this->db->escape_like_str($clean_check_msg) . '%'])->num_rows();
+
+			if ($cs_outgoing_exists > 0) {
+				return 0; // Skip echo of CS outgoing message
+			}
+
 			$five_mins_ago = date('Y-m-d H:i:s', time() - 300);
 			$dup_check = $this->db->where([
 				'label_id' => $primary_label->id,

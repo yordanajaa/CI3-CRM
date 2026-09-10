@@ -621,8 +621,26 @@
             <i class="fa fa-bookmark"></i> Catatan Internal
           </button>
         </div>
-        <div class="input-row">
-          <textarea id="note-text" rows="1" placeholder="Ketik balasan CS ke WhatsApp customer..."></textarea>
+
+        <!-- Attachment Panel (Hidden by Default) -->
+        <div id="attach-panel" style="display:none;margin-bottom:8px;padding:10px;background:#ffffff;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11.5px;font-weight:700;color:#334155;"><i class="fa fa-paperclip" style="color:#0284c7;"></i> Kirim Lampiran (Foto, PDF, Dokumen, Voice Note):</span>
+            <button type="button" id="btn-close-attach" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:14px;">&times;</button>
+          </div>
+          <input type="url" id="note-file-url" class="form-control" placeholder="https://domain.com/file.pdf atau https://domain.com/foto.jpg" style="font-size:12px;border-radius:6px;height:34px;margin-bottom:6px;">
+          <div style="display:flex;gap:4px;flex-wrap:wrap;">
+            <button type="button" class="btn btn-xs btn-default btn-attach-preset" data-type="foto" style="font-size:10px;border-radius:4px;"><i class="fa fa-picture-o" style="color:#3b82f6;"></i> 📷 Foto</button>
+            <button type="button" class="btn btn-xs btn-default btn-attach-preset" data-type="pdf" style="font-size:10px;border-radius:4px;"><i class="fa fa-file-pdf-o" style="color:#ef4444;"></i> 📄 PDF/Dokumen</button>
+            <button type="button" class="btn btn-xs btn-default btn-attach-preset" data-type="vn" style="font-size:10px;border-radius:4px;"><i class="fa fa-microphone" style="color:#10b981;"></i> 🎙️ Voice Note / Audio</button>
+          </div>
+        </div>
+
+        <div class="input-row" style="display:flex;gap:6px;align-items:center;">
+          <button type="button" class="btn-attach-chat" id="btn-toggle-attach" title="Kirim File / Gambar / PDF / Voice Note" style="width:38px;height:38px;border-radius:50%;border:1px solid #cbd5e1;background:#fff;color:#475569;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;flex-shrink:0;transition:all 0.2s;">
+            <i class="fa fa-paperclip"></i>
+          </button>
+          <textarea id="note-text" rows="1" placeholder="Ketik balasan CS ke WhatsApp customer..." style="flex:1;"></textarea>
           <button class="btn-send-chat" id="btn-save-note" title="Kirim"><i class="fa fa-paper-plane"></i></button>
         </div>
       </div>
@@ -1143,6 +1161,11 @@ window.addEventListener('load', function() {
   }
 
   function renderSingleBubble(item, lastDate) {
+    // Skip duplicate echo bubbles of outgoing messages sent via Fonnte
+    if (item.direction === 'incoming' && item.message && (item.message.indexOf('Sent via fonnte.com') !== -1 || item.message.indexOf('fonnte.com') !== -1)) {
+      return '';
+    }
+
     var html = '';
     // Date separator
     var itemDate = (item.created_at || '').substring(0, 10);
@@ -1212,6 +1235,29 @@ window.addEventListener('load', function() {
     return html;
   }
 
+  // ===== Attachment Panel Events =====
+  $(document).on('click', '#btn-toggle-attach', function() {
+    $('#attach-panel').slideToggle(200);
+    setTimeout(function() { $('#note-file-url').focus(); }, 250);
+  });
+
+  $(document).on('click', '#btn-close-attach', function() {
+    $('#attach-panel').slideUp(150);
+  });
+
+  $(document).on('click', '.btn-attach-preset', function() {
+    var type = $(this).data('type');
+    var placeholder = '';
+    if (type === 'foto') {
+      placeholder = 'https://domain.com/foto.jpg';
+    } else if (type === 'pdf') {
+      placeholder = 'https://domain.com/dokumen.pdf';
+    } else if (type === 'vn') {
+      placeholder = 'https://domain.com/audio.mp3';
+    }
+    $('#note-file-url').val(placeholder).focus();
+  });
+
   // ===== Sender Type Toggle (CS WA Reply vs Internal Note) =====
   $(document).on('click', '.btn-toggle-sender', function() {
     var type = $(this).data('type');
@@ -1239,16 +1285,17 @@ window.addEventListener('load', function() {
     var $btn = $(this);
     var lid = $('#note-label-id').val();
     var catatan = $.trim($('#note-text').val());
+    var fileUrl = $.trim($('#note-file-url').val());
     var status = $('#note-status').val();
     var senderType = $('#note-sender-type').val() || 'cs_chat';
     
-    if (!catatan && !status) { 
-      notify('warning', 'Tulis pesan atau pilih status terlebih dahulu');
+    if (!catatan && !fileUrl && !status) { 
+      notify('warning', 'Tulis pesan, pilih lampiran file, atau pilih status terlebih dahulu');
       return; 
     }
 
-    // If only status change (no message), use the old update_status_ajax
-    if (!catatan && status) {
+    // If only status change (no message/file), use the old update_status_ajax
+    if (!catatan && !fileUrl && status) {
       $.post(_BASE + 'administrator/crm/update_status_ajax', buildPayload({
         label_id: lid,
         status: status
@@ -1273,13 +1320,14 @@ window.addEventListener('load', function() {
 
     $btn.prop('disabled', true).html('<i class="fa fa-spin fa-spinner"></i>');
 
-    // Use the new send_message_ajax endpoint
+    // Use the send_message_ajax endpoint with optional file_url
     $.ajax({
       url: _BASE + 'administrator/crm/send_message_ajax',
       type: 'POST',
       data: buildPayload({
         label_id: lid,
         message: catatan,
+        file_url: fileUrl,
         is_internal_note: isInternalNote
       }),
       success: function(res) {
@@ -1319,8 +1367,10 @@ window.addEventListener('load', function() {
             window.open(r.wa_link, '_blank');
           }
 
-          // Clear input and reload chat
+          // Clear inputs and reload chat
           $('#note-text').val('');
+          $('#note-file-url').val('');
+          $('#attach-panel').slideUp(150);
           $('#note-status').val('');
 
           // Force a full timeline reload to show the new message immediately

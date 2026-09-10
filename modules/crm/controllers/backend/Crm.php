@@ -786,6 +786,22 @@ class Crm extends Admin
 			return;
 		}
 
+		// Skip outgoing message echoes sent by Fonnte / system
+		$location  = strtolower($this->input->post('location') ?: (isset($json['location']) ? $json['location'] : ''));
+		$direction = strtolower($this->input->post('direction') ?: (isset($json['direction']) ? $json['direction'] : ''));
+		$from_me   = $this->input->post('from_me') ?: (isset($json['from_me']) ? $json['from_me'] : null);
+
+		if (
+			in_array($location, ['outgoing', 'device', 'sent', 'out']) ||
+			in_array($direction, ['outgoing', 'sent', 'out']) ||
+			$from_me === true || $from_me === 1 || $from_me === '1' || $from_me === 'true' ||
+			stripos($message, 'Sent via fonnte.com') !== false ||
+			stripos($message, 'fonnte.com') !== false
+		) {
+			echo json_encode(['success' => true, 'message' => 'Outgoing message echo skipped', 'skipped' => true]);
+			return;
+		}
+
 		// Skip group messages (Fonnte group chats contain @g.us or hyphens in ID)
 		if (strpos($sender, '@g.us') !== false || (strpos($sender, '-') !== false && strlen($sender) > 15)) {
 			echo json_encode(['success' => true, 'message' => 'group message skipped']);
@@ -921,10 +937,15 @@ class Crm extends Admin
 		header('Content-Type: application/json');
 		$label_id = $this->input->post('label_id');
 		$message = trim($this->input->post('message') ?: '');
+		$file_url = trim($this->input->post('file_url') ?: '');
 		$is_internal_note = (int)($this->input->post('is_internal_note') ?: 0);
 
+		if (empty($message) && !empty($file_url)) {
+			$message = '[Lampiran Media/Dokumen]: ' . $file_url;
+		}
+
 		if (!$label_id || empty($message)) {
-			echo json_encode(['success' => false, 'message' => 'Label ID dan pesan tidak boleh kosong']);
+			echo json_encode(['success' => false, 'message' => 'Label ID dan pesan atau file attachment tidak boleh kosong']);
 			return;
 		}
 
@@ -945,6 +966,11 @@ class Crm extends Admin
 		$chat_status = 'sent';
 		$fonnte_response = null;
 
+		$message_to_save = $message;
+		if (!empty($file_url) && strpos($message_to_save, $file_url) === false) {
+			$message_to_save .= "\n\n[Lampiran File]: " . $file_url;
+		}
+
 		if ($is_internal_note) {
 			// Internal note: DO NOT send to Fonnte, just save locally
 			$chat_status = 'delivered'; // Internal notes are always "delivered" locally
@@ -952,20 +978,20 @@ class Crm extends Admin
 			// Send via Fonnte API
 			$config = $this->model_crm->get_wa_gateway_config();
 			if ($config->mode === 'wa_gateway') {
-				$api_result = $this->model_crm->send_wa_via_api($label->customer_phone, $message);
+				$api_result = $this->model_crm->send_wa_via_api($label->customer_phone, $message, $file_url);
 				$fonnte_response = json_encode($api_result);
 
 				if ($api_result['success']) {
 					$chat_status = 'sent';
 					// Also log to legacy broadcast_logs for backward compat
-					$this->model_crm->log_broadcast($label_id, $message, 'wa_gateway_api');
+					$this->model_crm->log_broadcast($label_id, $message_to_save, 'wa_gateway_api');
 				} else {
 					$chat_status = 'failed';
 				}
 			} else {
 				// wa_direct mode: generate link, mark as sent
 				$chat_status = 'sent';
-				$this->model_crm->log_broadcast($label_id, $message, 'wa_direct_link');
+				$this->model_crm->log_broadcast($label_id, $message_to_save, 'wa_direct_link');
 			}
 		}
 
@@ -974,7 +1000,7 @@ class Crm extends Admin
 			'label_id' => (int)$label_id,
 			'customer_phone' => $customer_phone,
 			'direction' => 'out',
-			'message' => $message,
+			'message' => $message_to_save,
 			'sender_cs_name' => $username,
 			'is_internal_note' => $is_internal_note,
 			'status' => $chat_status,
