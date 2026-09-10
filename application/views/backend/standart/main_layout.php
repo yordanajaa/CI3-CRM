@@ -316,7 +316,30 @@ $(document).ready(function(){
       }
    });
 
-   // Approval Notification Loader
+   // Web Audio API Synth Chime for Ultra-Realtime WA Notification Sound
+   function playNotifChime() {
+      try {
+         var AudioCtx = window.AudioContext || window.webkitAudioContext;
+         if (!AudioCtx) return;
+         var ctx = new AudioCtx();
+         if (ctx.state === 'suspended') {
+            ctx.resume();
+         }
+         var osc = ctx.createOscillator();
+         var gain = ctx.createGain();
+         osc.type = 'sine';
+         osc.frequency.setValueAtTime(659.25, ctx.currentTime);
+         osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.12);
+         gain.gain.setValueAtTime(0.2, ctx.currentTime);
+         gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+         osc.connect(gain);
+         gain.connect(ctx.destination);
+         osc.start();
+         osc.stop(ctx.currentTime + 0.35);
+      } catch(e) {}
+   }
+
+   // Instant Real-Time Notification Loader (3-second polling)
    var lastNotifiedWaId = 0;
    function loadApprovalNotifications() {
       $.ajax({
@@ -349,16 +372,18 @@ $(document).ready(function(){
                         var itemId = parseInt(item.id);
                         if (itemId > maxWaId) maxWaId = itemId;
 
-                        // Trigger real-time Toastr popup for NEW incoming WhatsApp message
+                        // Trigger instant Toastr popup & audio sound chime for NEW incoming WhatsApp message
                         if (lastNotifiedWaId > 0 && itemId > lastNotifiedWaId) {
+                           playNotifChime();
                            if (typeof toastr !== 'undefined') {
                               toastr.info(
                                  '<b>' + item.title + '</b><br>' + item.subtitle,
-                                 'WhatsApp Masuk',
+                                 '💬 Pesan WhatsApp Masuk',
                                  {
-                                    timeOut: 8000,
+                                    timeOut: 10000,
                                     extendedTimeOut: 3000,
                                     closeButton: true,
+                                    progressBar: true,
                                     onclick: function() { window.location.href = item.url; }
                                  }
                               );
@@ -396,7 +421,7 @@ $(document).ready(function(){
 
    if ($('#notif-approval-menu').length > 0) {
       loadApprovalNotifications();
-      setInterval(loadApprovalNotifications, 15000);
+      setInterval(loadApprovalNotifications, 3000); // Poll every 3 seconds for instant real-time notifications
    }
 });
 </script>
