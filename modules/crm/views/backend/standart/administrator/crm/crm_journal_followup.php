@@ -845,8 +845,8 @@
             </button>
             <textarea id="note-text" class="wa-textarea" rows="1" placeholder="Ketik pesan"></textarea>
           </div>
-          <button class="wa-send-btn" id="btn-save-note" title="Kirim Pesan">
-            <i class="fa fa-paper-plane"></i>
+          <button class="wa-send-btn" id="btn-save-note" title="Kirim Pesan / Rekam Voice Note">
+            <i class="fa fa-microphone" id="wa-send-icon"></i>
           </button>
         </div>
       </div>
@@ -1570,6 +1570,20 @@ window.addEventListener('load', function() {
     $('#wa-attachment-chip').hide();
   });
 
+  // Dynamic icon toggle for send button (Microphone when empty vs Plane when text/file present)
+  $(document).on('input change keyup', '#note-text, #note-file-url', function() {
+    var text = $.trim($('#note-text').val());
+    var file = $.trim($('#note-file-url').val());
+    var $icon = $('#wa-send-icon');
+    if (text || file) {
+      $icon.removeClass('fa-microphone').addClass('fa-paper-plane');
+      $('#btn-save-note').attr('title', 'Kirim Pesan');
+    } else {
+      $icon.removeClass('fa-paper-plane').addClass('fa-microphone');
+      $('#btn-save-note').attr('title', 'Kirim Pesan / Rekam Voice Note');
+    }
+  });
+
   // ===== Sender Type Toggle (CS WA Reply vs Internal Note) =====
   $(document).on('click', '.btn-toggle-sender', function() {
     var type = $(this).data('type');
@@ -1644,7 +1658,8 @@ window.addEventListener('load', function() {
       }),
       success: function(res) {
         var r = parseRes(res);
-        $btn.prop('disabled', false).html('<i class="fa fa-paper-plane"></i>');
+        var currIconClass = ($('#note-text').val() || $('#note-file-url').val()) ? 'fa-paper-plane' : 'fa-microphone';
+        $btn.prop('disabled', false).html('<i class="fa ' + currIconClass + '" id="wa-send-icon"></i>');
         if (r.success) {
           // Show appropriate notification
           if (r.send_error) {
@@ -1685,6 +1700,7 @@ window.addEventListener('load', function() {
           $('#wa-attachment-chip').hide();
           $('#wa-url-input-container').slideUp(150);
           $('#note-status').val('');
+          $('#wa-send-icon').removeClass('fa-paper-plane').addClass('fa-microphone');
 
           // Force a full timeline reload to show the new message immediately
           isFirstLoad = true;
@@ -1697,7 +1713,8 @@ window.addEventListener('load', function() {
         notify('error', 'Terjadi kesalahan: ' + (xhr.statusText || 'Error'));
       },
       complete: function() {
-        $btn.prop('disabled', false).html('<i class="fa fa-paper-plane"></i>');
+        var currIconClass = ($('#note-text').val() || $('#note-file-url').val()) ? 'fa-paper-plane' : 'fa-microphone';
+        $btn.prop('disabled', false).html('<i class="fa ' + currIconClass + '" id="wa-send-icon"></i>');
       }
     });
   });
