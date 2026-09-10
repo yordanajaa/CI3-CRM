@@ -1096,6 +1096,24 @@ window.addEventListener('load', function() {
     }
   }
 
+  function formatChatMessage(msg) {
+    if (!msg) return '';
+    var text = $('<div>').text(msg).html();
+    
+    var urlRegex = /(https?:\/\/[^\s<]+)/gi;
+    text = text.replace(urlRegex, function(url) {
+      var cleanUrl = url.trim();
+      var isImg = /\.(jpeg|jpg|gif|png|webp)(\?.*)?$/i.test(cleanUrl);
+      if (isImg) {
+        return '<br><a href="' + cleanUrl + '" target="_blank" style="display:inline-block;margin-top:4px;"><img src="' + cleanUrl + '" style="max-width:240px;max-height:200px;border-radius:8px;border:1px solid #cbd5e1;box-shadow:0 2px 6px rgba(0,0,0,0.1);display:block;"></a>';
+      } else {
+        return '<a href="' + cleanUrl + '" target="_blank" style="color:#2563eb;text-decoration:underline;word-break:break-all;"><i class="fa fa-external-link"></i> ' + cleanUrl + '</a>';
+      }
+    });
+
+    return text.replace(/\n/g, '<br>');
+  }
+
   function renderSingleBubble(item, lastDate) {
     var html = '';
     // Date separator
@@ -1114,7 +1132,7 @@ window.addEventListener('load', function() {
       html += '<div style="text-align:center;margin:12px 0 8px;" data-chat-date="' + itemDate + '"><span style="background:rgba(255,255,255,0.85);padding:3px 14px;border-radius:8px;font-size:11px;color:#64748b;box-shadow:0 1px 2px rgba(0,0,0,0.06);font-weight:600;">' + dateLabel + '</span></div>';
     }
 
-    var safeMsg = $('<div>').text(item.message || '').html().replace(/\n/g, '<br>');
+    var formattedMsg = formatChatMessage(item.message || '');
     var timeStr = (item.created_at || '').substring(11, 16);
     var statusIcon = '';
 
@@ -1131,7 +1149,7 @@ window.addEventListener('load', function() {
 
       html += '<div class="chat-bubble bubble-outgoing">';
       html += '<div class="bubble-sender-head" style="font-size:11px;font-weight:700;color:#075e54;margin-bottom:3px;"><i class="fa fa-user-circle"></i> ' + $('<div>').text(csSender).html() + '</div>';
-      html += '<div style="white-space:pre-wrap;">' + safeMsg + '</div>';
+      html += '<div>' + formattedMsg + '</div>';
 
       // Show error message if failed
       if (item.status_kirim === 'failed') {
@@ -1147,8 +1165,8 @@ window.addEventListener('load', function() {
       // Customer reply → left (clean WhatsApp style white bubble)
       var custSender = item.sender || 'Pelanggan';
       html += '<div class="chat-bubble bubble-incoming">';
-      html += '<div class="bubble-sender-head" style="font-size:11px;font-weight:700;color:#15803d;margin-bottom:3px;"><i class="fa fa-whatsapp" style="color:#25D366;"></i> ' + $('<div>').text(custSender).html() + ' <span style="font-weight:400;font-size:10px;color:#64748b;">(Balasan)</span></div>';
-      html += '<div style="white-space:pre-wrap;">' + safeMsg + '</div>';
+      html += '<div class="bubble-sender-head" style="font-size:11px;font-weight:700;color:#15803d;margin-bottom:3px;"><i class="fa fa-whatsapp" style="color:#25D366;"></i> ' + $('<div>').text(custSender).html() + '</div>';
+      html += '<div>' + formattedMsg + '</div>';
       html += '<div class="bubble-time">' + timeStr + '</div>';
       html += '</div>';
 
@@ -1158,7 +1176,7 @@ window.addEventListener('load', function() {
       html += '<div class="chat-bubble bubble-note">';
       html += '<div class="bubble-sender" style="font-weight:700;color:#92400e;margin-bottom:3px;"><i class="fa fa-bookmark"></i> Catatan Internal (' + $('<div>').text(noteSender).html() + ')</div>';
       if (item.status_kirim && item.status_kirim !== 'delivered') html += '<div style="font-size:10px;margin-bottom:2px;"><span style="background:#f59e0b;color:#fff;padding:1px 6px;border-radius:4px;font-size:9px;">' + $('<div>').text(item.status_kirim).html() + '</span></div>';
-      html += '<div style="white-space:pre-wrap;">' + safeMsg + '</div>';
+      html += '<div>' + formattedMsg + '</div>';
       html += '<div class="bubble-time" style="justify-content:center;color:#b45309;">' + timeStr + '</div>';
       html += '</div>';
     }
