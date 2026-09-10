@@ -1603,12 +1603,24 @@ window.addEventListener('load', function() {
     }
   });
 
+  // Enter key to send (Shift+Enter for newline)
+  $(document).on('keydown', '#note-text', function(e) {
+    if (e.keyCode === 13 && !e.shiftKey) {
+      e.preventDefault();
+      $('#btn-save-note').trigger('click');
+    }
+  });
+
   // ===== Save Note / Chat Message (via send_message_ajax) =====
   $(document).on('click', '#btn-save-note', function(e) {
     e.preventDefault();
     e.stopPropagation();
 
     var $btn = $(this);
+    if ($btn.prop('disabled') || $btn.hasClass('is-sending')) {
+      return false;
+    }
+
     var lid = $('#note-label-id').val();
     var catatan = $.trim($('#note-text').val());
     var fileUrl = $.trim($('#note-file-url').val());
@@ -1622,6 +1634,7 @@ window.addEventListener('load', function() {
 
     // If only status change (no message/file), use the old update_status_ajax
     if (!catatan && !fileUrl && status) {
+      $btn.prop('disabled', true).addClass('is-sending');
       $.post(_BASE + 'administrator/crm/update_status_ajax', buildPayload({
         label_id: lid,
         status: status
@@ -1638,13 +1651,15 @@ window.addEventListener('load', function() {
         } else {
           notify('error', r.message || 'Gagal memperbarui status');
         }
+      }).always(function() {
+        $btn.prop('disabled', false).removeClass('is-sending');
       });
       return;
     }
 
     var isInternalNote = (senderType === 'cs') ? 1 : 0;
 
-    $btn.prop('disabled', true).html('<i class="fa fa-spin fa-spinner"></i>');
+    $btn.prop('disabled', true).addClass('is-sending').html('<i class="fa fa-spin fa-spinner"></i>');
 
     // Use the send_message_ajax endpoint with optional file_url
     $.ajax({
@@ -1714,7 +1729,7 @@ window.addEventListener('load', function() {
       },
       complete: function() {
         var currIconClass = ($('#note-text').val() || $('#note-file-url').val()) ? 'fa-paper-plane' : 'fa-microphone';
-        $btn.prop('disabled', false).html('<i class="fa ' + currIconClass + '" id="wa-send-icon"></i>');
+        $btn.prop('disabled', false).removeClass('is-sending').html('<i class="fa ' + currIconClass + '" id="wa-send-icon"></i>');
       }
     });
   });
