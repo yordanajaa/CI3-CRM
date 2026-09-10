@@ -1108,9 +1108,20 @@ window.addEventListener('load', function() {
       var isDoc = /\.(pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar|txt|csv)(\?.*)?$/i.test(cleanUrl);
 
       if (isImg) {
-        return '<br><a href="' + cleanUrl + '" target="_blank" style="display:inline-block;margin-top:4px;"><img src="' + cleanUrl + '" style="max-width:240px;max-height:200px;border-radius:8px;border:1px solid #cbd5e1;box-shadow:0 2px 6px rgba(0,0,0,0.1);display:block;"></a>';
+        return '<div style="margin-top:6px;display:inline-block;max-width:260px;">' +
+                 '<a href="' + cleanUrl + '" target="_blank" style="display:block;">' +
+                   '<img src="' + cleanUrl + '" alt="Foto" style="max-width:100%;max-height:220px;border-radius:10px;border:1px solid #cbd5e1;box-shadow:0 3px 8px rgba(0,0,0,0.12);display:block;margin-bottom:6px;object-fit:cover;">' +
+                 '</a>' +
+                 '<a href="' + cleanUrl + '" target="_blank" download style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;background:#3b82f6;color:#ffffff;border-radius:6px;font-weight:700;font-size:11px;text-decoration:none;box-shadow:0 2px 4px rgba(59,130,246,0.3);">' +
+                   '<i class="fa fa-download"></i> Lihat / Unduh Foto' +
+                 '</a>' +
+               '</div>';
       } else if (isAudio) {
-        return '<div style="margin-top:6px;"><div style="font-size:10px;font-weight:700;color:#475569;margin-bottom:2px;"><i class="fa fa-microphone"></i> Pesan Suara / Voice Note:</div><audio controls src="' + cleanUrl + '" style="max-width:240px;height:36px;border-radius:20px;outline:none;"></audio></div>';
+        return '<div style="margin-top:6px;">' +
+                 '<div style="font-size:10px;font-weight:700;color:#475569;margin-bottom:3px;"><i class="fa fa-microphone" style="color:#25D366;"></i> Pesan Suara / Voice Note:</div>' +
+                 '<audio controls src="' + cleanUrl + '" style="max-width:240px;height:36px;border-radius:20px;outline:none;"></audio>' +
+                 '<div style="margin-top:3px;"><a href="' + cleanUrl + '" target="_blank" download style="font-size:10px;color:#3b82f6;font-weight:600;text-decoration:none;"><i class="fa fa-download"></i> Unduh Suara</a></div>' +
+               '</div>';
       } else if (isDoc) {
         var docIcon = 'fa-file-text-o';
         if (/\.pdf/i.test(cleanUrl)) docIcon = 'fa-file-pdf-o';
@@ -1118,7 +1129,11 @@ window.addEventListener('load', function() {
         else if (/\.(xls|xlsx)/i.test(cleanUrl)) docIcon = 'fa-file-excel-o';
         else if (/\.(zip|rar)/i.test(cleanUrl)) docIcon = 'fa-file-archive-o';
 
-        return '<div style="margin-top:6px;"><a href="' + cleanUrl + '" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;color:#0f172a;font-weight:700;font-size:11px;text-decoration:none;box-shadow:0 1px 3px rgba(0,0,0,0.05);"><i class="fa ' + docIcon + '" style="font-size:14px;color:#2563eb;"></i> Buka / Unduh Dokumen</a></div>';
+        return '<div style="margin-top:6px;">' +
+                 '<a href="' + cleanUrl + '" target="_blank" download style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:#0284c7;color:#ffffff;border-radius:8px;font-weight:700;font-size:11.5px;text-decoration:none;box-shadow:0 2px 6px rgba(2,132,199,0.3);">' +
+                   '<i class="fa ' + docIcon + '" style="font-size:14px;color:#fff;"></i> Lihat / Unduh Dokumen' +
+                 '</a>' +
+               '</div>';
       } else {
         return '<a href="' + cleanUrl + '" target="_blank" style="color:#2563eb;text-decoration:underline;word-break:break-all;"><i class="fa fa-external-link"></i> ' + cleanUrl + '</a>';
       }
