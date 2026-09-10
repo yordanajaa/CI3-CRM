@@ -1225,10 +1225,18 @@ class Model_crm extends CI_Model
 	public function get_journal_stats()
 	{
 		$today = date('Y-m-d');
+		$row = $this->db->query("
+			SELECT 
+				SUM(CASE WHEN status_label = 'Pending' AND tanggal_label_muncul <= ? THEN 1 ELSE 0 END) AS total_pending,
+				SUM(CASE WHEN status_label = 'Pending' AND tanggal_label_muncul < ? THEN 1 ELSE 0 END) AS overdue,
+				SUM(CASE WHEN status_label = 'Pending' AND tanggal_label_muncul = ? THEN 1 ELSE 0 END) AS today
+			FROM crm_transaction_followup_labels
+		", [$today, $today, $today])->row();
+
 		return [
-			'total_pending' => $this->db->where(['status_label' => 'Pending', 'tanggal_label_muncul <=' => $today])->count_all_results('crm_transaction_followup_labels'),
-			'overdue' => $this->db->where(['status_label' => 'Pending', 'tanggal_label_muncul <' => $today])->count_all_results('crm_transaction_followup_labels'),
-			'today' => $this->db->where(['status_label' => 'Pending', 'tanggal_label_muncul' => $today])->count_all_results('crm_transaction_followup_labels'),
+			'total_pending' => $row ? (int)$row->total_pending : 0,
+			'overdue' => $row ? (int)$row->overdue : 0,
+			'today' => $row ? (int)$row->today : 0,
 		];
 	}
 
