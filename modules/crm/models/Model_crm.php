@@ -187,52 +187,75 @@ class Model_crm extends CI_Model
 	 */
 	public function get_journal_entries($filters = [], $limit = 25, $offset = 0)
 	{
-		$this->db->select('tfl.*, fc.nama_kategori, fc.kode_kategori, fc.jumlah_hari, (SELECT COUNT(*) FROM crm_broadcast_logs bl WHERE bl.followup_label_id = tfl.id) AS total_wa_sent');
-		$this->db->from('crm_transaction_followup_labels tfl');
-		$this->db->join('crm_followup_categories fc', 'tfl.followup_category_id = fc.id');
+		$apply_where = function() use ($filters) {
+			$this->db->from('crm_transaction_followup_labels tfl');
+			$this->db->join('crm_followup_categories fc', 'tfl.followup_category_id = fc.id');
 
-		if (!empty($filters['category_id'])) {
-			$this->db->where('tfl.followup_category_id', $filters['category_id']);
-		}
-		if (!empty($filters['order_source'])) {
-			$this->db->where('tfl.order_source', $filters['order_source']);
-		}
-		if (!empty($filters['status_label'])) {
-			if ($filters['status_label'] === 'belum_direspon') {
-				$this->db->where_in('tfl.status_label', ['Pending', 'Sudah Dikirim', 'Belum Respon']);
-			} else {
-				$this->db->where('tfl.status_label', $filters['status_label']);
+			if (!empty($filters['category_id'])) {
+				$this->db->where('tfl.followup_category_id', $filters['category_id']);
 			}
-		}
-		if (!empty($filters['date_from'])) {
-			$this->db->where('tfl.tanggal_pengiriman >=', $filters['date_from']);
-		}
-		if (!empty($filters['date_to'])) {
-			$this->db->where('tfl.tanggal_pengiriman <=', $filters['date_to']);
-		}
-		if (!empty($filters['search'])) {
-			$s = trim((string)$filters['search']);
-			$this->db->group_start();
-			$this->db->like('tfl.customer_nama', $s);
-			$this->db->or_like('tfl.customer_phone', $s);
-			$this->db->or_like('tfl.no_pesanan', $s);
-			$this->db->or_like('tfl.nomor_resi', $s);
-			$this->db->or_like('fc.nama_kategori', $s);
-			$this->db->group_end();
-		}
-		// Only hide future labels on default view when no search or date filter is active
-		if (empty($filters['show_future']) && empty($filters['search']) && empty($filters['date_from']) && empty($filters['date_to'])) {
-			$this->db->where('tfl.tanggal_label_muncul <=', date('Y-m-d'));
-		}
+			if (!empty($filters['order_source'])) {
+				$this->db->where('tfl.order_source', $filters['order_source']);
+			}
+			if (!empty($filters['status_label'])) {
+				if ($filters['status_label'] === 'belum_direspon') {
+					$this->db->where_in('tfl.status_label', ['Pending', 'Sudah Dikirim', 'Belum Respon']);
+				} else {
+					$this->db->where('tfl.status_label', $filters['status_label']);
+				}
+			}
+			if (!empty($filters['date_from'])) {
+				$this->db->where('tfl.tanggal_pengiriman >=', $filters['date_from']);
+			}
+			if (!empty($filters['date_to'])) {
+				$this->db->where('tfl.tanggal_pengiriman <=', $filters['date_to']);
+			}
+			if (!empty($filters['search'])) {
+				$s = trim((string)$filters['search']);
+				$this->db->group_start();
+				$this->db->like('tfl.customer_nama', $s);
+				$this->db->or_like('tfl.customer_phone', $s);
+				$this->db->or_like('tfl.no_pesanan', $s);
+				$this->db->or_like('tfl.nomor_resi', $s);
+				$this->db->or_like('fc.nama_kategori', $s);
+				$this->db->group_end();
+			}
+			if (empty($filters['show_future']) && empty($filters['search']) && empty($filters['date_from']) && empty($filters['date_to'])) {
+				$this->db->where('tfl.tanggal_label_muncul <=', date('Y-m-d'));
+			}
+		};
 
-		$count = $this->db->count_all_results('', false);
+		// 1. Fast count query (NO subselects)
+		$this->db->select('COUNT(tfl.id) as total_count');
+		$apply_where();
+		$count_row = $this->db->get()->row();
+		$count = $count_row ? (int)$count_row->total_count : 0;
 
-		// Urutkan berdasarkan interaksi terbaru agar data yang baru di-chat tetap muncul paling atas
-		// Item yang baru saja dibalas/dikirim WA akan selalu tampil di halaman pertama
+		// 2. Fast paginated rows query
+		$this->db->select('tfl.*, fc.nama_kategori, fc.kode_kategori, fc.jumlah_hari, 0 AS total_wa_sent');
+		$apply_where();
 		$this->db->order_by('tfl.updated_at', 'DESC');
 		$this->db->order_by('tfl.id', 'DESC');
 		$this->db->limit($limit, $offset);
 		$rows = $this->db->get()->result();
+
+		// Calculate total_wa_sent for the 25 paginated rows only
+		if (!empty($rows)) {
+			$lids = array_map(function($r) { return $r->id; }, $rows);
+			$counts_raw = $this->db->select('followup_label_id, COUNT(*) as cnt')
+				->from('crm_broadcast_logs')
+				->where_in('followup_label_id', $lids)
+				->group_by('followup_label_id')
+				->get()->result_array();
+			
+			$cnt_map = [];
+			foreach ($counts_raw as $cr) {
+				$cnt_map[$cr['followup_label_id']] = (int)$cr['cnt'];
+			}
+			foreach ($rows as &$r) {
+				$r->total_wa_sent = isset($cnt_map[$r->id]) ? $cnt_map[$r->id] : 0;
+			}
+		}
 
 		return ['rows' => $rows, 'total' => $count];
 	}
