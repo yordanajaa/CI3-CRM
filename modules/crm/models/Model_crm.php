@@ -1018,12 +1018,25 @@ class Model_crm extends CI_Model
 
 		if ($provider === 'fonnte') {
 			$headers[] = 'Authorization: ' . $api_key;
+			
+			// Clean message caption when sending media/files so Fonnte delivers native WhatsApp media attachments
+			$clean_message = $message;
+			if (!empty($file_url)) {
+				if (strpos($clean_message, '[Lampiran') === 0 || strpos($clean_message, '[Pesan Suara]') === 0) {
+					$clean_message = trim(preg_replace('/^\[[^\]]+\]:\s*https?:\/\/[^\s]+/i', '', $clean_message));
+				}
+			}
+
 			$post_data = [
 				'target' => $phone,
-				'message' => $message,
+				'message' => $clean_message,
 			];
 			if (!empty($file_url)) {
 				$post_data['url'] = $file_url;
+				$filename = pathinfo(parse_url($file_url, PHP_URL_PATH), PATHINFO_BASENAME);
+				if (!empty($filename)) {
+					$post_data['filename'] = $filename;
+				}
 			}
 			$target_url = (empty($api_url) || strpos($api_url, 'send-message') !== false) ? 'https://api.fonnte.com/send' : $api_url;
 			curl_setopt($ch, CURLOPT_URL, $target_url);
