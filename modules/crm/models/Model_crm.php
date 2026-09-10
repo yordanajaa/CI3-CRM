@@ -669,6 +669,11 @@ class Model_crm extends CI_Model
 
 		$timeline = [];
 		foreach ($rows as $row) {
+			// Skip Fonnte outgoing echo falsely logged as incoming
+			if ($row['direction'] === 'in' && !empty($row['message']) && (stripos($row['message'], 'Sent via fonnte.com') !== false || stripos($row['message'], 'fonnte.com') !== false)) {
+				continue;
+			}
+
 			$direction = 'note';
 			if ($row['is_internal_note']) {
 				$direction = 'note';
@@ -854,6 +859,12 @@ class Model_crm extends CI_Model
 		foreach ($raw_timeline as $item) {
 			$msg_clean = trim(isset($item['message']) ? $item['message'] : '');
 			if (empty($msg_clean)) continue;
+
+			// Filter out incoming echoes containing Fonnte signature
+			if ($item['direction'] === 'incoming' && (stripos($msg_clean, 'Sent via fonnte.com') !== false || stripos($msg_clean, 'fonnte.com') !== false)) {
+				continue;
+			}
+
 			$key = md5((isset($item['direction']) ? $item['direction'] : '') . '|' . $msg_clean . '|' . substr(isset($item['created_at']) ? $item['created_at'] : '', 0, 16));
 			if (!isset($seen[$key])) {
 				$seen[$key] = true;

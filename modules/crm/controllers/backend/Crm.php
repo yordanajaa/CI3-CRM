@@ -174,6 +174,50 @@ class Crm extends Admin
 		]);
 	}
 
+	/**
+	 * AJAX endpoint to upload local file attachments (Photos, PDFs, Documents, Voice Notes)
+	 */
+	public function upload_attachment_ajax()
+	{
+		header('Content-Type: application/json');
+
+		if (empty($_FILES['file']['name'])) {
+			echo json_encode(['success' => false, 'message' => 'Tidak ada file yang dipilih']);
+			return;
+		}
+
+		$upload_dir = FCPATH . 'uploads/crm_attachments/';
+		if (!is_dir($upload_dir)) {
+			@mkdir($upload_dir, 0777, true);
+		}
+
+		$orig_name = $_FILES['file']['name'];
+		$file_ext  = strtolower(pathinfo($orig_name, PATHINFO_EXTENSION));
+		$allowed   = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'zip', 'rar', 'mp3', 'ogg', 'wav', 'm4a', 'aac', 'opus'];
+
+		if (!in_array($file_ext, $allowed)) {
+			echo json_encode(['success' => false, 'message' => 'Format file (.' . $file_ext . ') tidak didukung. Harap pilih gambar, PDF, dokumen Office, ZIP, atau audio.']);
+			return;
+		}
+
+		$new_name    = 'crm_' . date('Ymd_His') . '_' . rand(1000, 9999) . '.' . $file_ext;
+		$target_path = $upload_dir . $new_name;
+
+		$tmp_file = isset($_FILES['file']['tmp_name']) ? $_FILES['file']['tmp_name'] : '';
+		if (!empty($tmp_file) && move_uploaded_file($tmp_file, $target_path)) {
+			$file_url = base_url('uploads/crm_attachments/' . $new_name);
+			echo json_encode([
+				'success'   => true,
+				'file_url'  => $file_url,
+				'file_name' => $orig_name,
+				'file_ext'  => $file_ext,
+				'message'   => 'File berhasil diunggah'
+			]);
+		} else {
+			echo json_encode(['success' => false, 'message' => 'Gagal mengunggah file ke folder uploads/crm_attachments']);
+		}
+	}
+
 	public function get_wa_link_ajax()
 	{
 		header('Content-Type: application/json');

@@ -509,44 +509,177 @@
   margin-bottom: 2px;
 }
 
-.chat-footer {
+.wa-chat-footer {
   background: #f0f2f5;
-  padding: 12px 14px;
+  padding: 10px 14px;
   border-top: 1px solid #e2e8f0;
+  position: relative;
 }
-.chat-footer .input-row {
+
+.wa-input-pill-container {
   display: flex;
-  gap: 8px;
   align-items: flex-end;
+  gap: 8px;
 }
-.chat-footer textarea {
+
+.wa-input-pill {
   flex: 1;
+  background: #ffffff;
   border: 1px solid #cbd5e1;
-  border-radius: 22px;
-  padding: 10px 16px;
-  font-size: 13px;
-  resize: none;
-  outline: none;
-  max-height: 80px;
-  transition: border-color 0.2s;
+  border-radius: 24px;
+  padding: 4px 10px 4px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  min-height: 42px;
 }
-.chat-footer textarea:focus { border-color: #25D366; }
-.chat-footer .btn-send-chat {
+.wa-input-pill:focus-within {
+  border-color: #00a884;
+  box-shadow: 0 0 0 2px rgba(0,168,132,0.15);
+}
+
+.wa-icon-btn {
+  background: none;
+  border: none;
+  color: #54656f;
+  font-size: 19px;
+  cursor: pointer;
+  padding: 2px 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+.wa-icon-btn:hover {
+  color: #111b21;
+  background: #f0f2f5;
+}
+
+.wa-textarea {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  resize: none;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #111b21;
+  padding: 4px 0;
+  max-height: 90px;
+  font-family: inherit;
+}
+
+.wa-send-btn {
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: #25D366;
-  color: #fff;
+  background: #00a884;
+  color: #ffffff;
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 18px;
   cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,168,132,0.35);
   transition: all 0.2s;
   flex-shrink: 0;
 }
-.chat-footer .btn-send-chat:hover { background: #128C7E; transform: scale(1.05); }
+.wa-send-btn:hover {
+  background: #008f6f;
+  transform: scale(1.05);
+}
+
+/* Emoji Popover */
+.wa-emoji-popover {
+  position: absolute;
+  bottom: 65px;
+  left: 14px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  display: none;
+  z-index: 1050;
+  width: 280px;
+}
+.wa-emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  font-size: 20px;
+  text-align: center;
+}
+.wa-emoji-item {
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: background 0.15s;
+  user-select: none;
+}
+.wa-emoji-item:hover {
+  background: #f1f5f9;
+}
+
+/* Attachment Menu Popover */
+.wa-attach-popover {
+  position: absolute;
+  bottom: 65px;
+  left: 14px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  display: none;
+  z-index: 1050;
+  width: 240px;
+}
+.wa-attach-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.wa-attach-menu-item:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+.wa-attach-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 13px;
+}
+
+/* Active Attachment Chip */
+.wa-attachment-chip {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #0284c7;
+}
 
 .chat-empty {
   text-align: center;
@@ -611,37 +744,110 @@
         </select>
       </div>
 
-      <div class="chat-footer">
+      <div class="chat-footer wa-chat-footer">
         <!-- Sender Type Toggle: CS WA Reply vs Internal Note -->
         <div class="sender-toggle" style="display:flex;gap:6px;margin-bottom:8px;">
-          <button type="button" class="btn-toggle-sender active" data-type="cs_chat" style="flex:1;padding:7px 10px;border:2px solid #25D366;background:#d9fdd3;color:#15803d;border-radius:20px;font-size:11.5px;font-weight:700;cursor:pointer;transition:all 0.2s;">
+          <button type="button" class="btn-toggle-sender active" data-type="cs_chat" style="flex:1;padding:6px 10px;border:2px solid #00a884;background:#d9fdd3;color:#005c4b;border-radius:20px;font-size:11.5px;font-weight:700;cursor:pointer;transition:all 0.2s;">
             <i class="fa fa-whatsapp"></i> Balasan CS (WA)
           </button>
-          <button type="button" class="btn-toggle-sender" data-type="cs" style="flex:1;padding:7px 10px;border:2px solid #e2e8f0;background:#fff;color:#64748b;border-radius:20px;font-size:11.5px;font-weight:700;cursor:pointer;transition:all 0.2s;">
+          <button type="button" class="btn-toggle-sender" data-type="cs" style="flex:1;padding:6px 10px;border:2px solid #e2e8f0;background:#fff;color:#64748b;border-radius:20px;font-size:11.5px;font-weight:700;cursor:pointer;transition:all 0.2s;">
             <i class="fa fa-bookmark"></i> Catatan Internal
           </button>
         </div>
 
-        <!-- Attachment Panel (Hidden by Default) -->
-        <div id="attach-panel" style="display:none;margin-bottom:8px;padding:10px;background:#ffffff;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-            <span style="font-size:11.5px;font-weight:700;color:#334155;"><i class="fa fa-paperclip" style="color:#0284c7;"></i> Kirim Lampiran (Foto, PDF, Dokumen, Voice Note):</span>
-            <button type="button" id="btn-close-attach" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:14px;">&times;</button>
+        <!-- Emoji Popover -->
+        <div class="wa-emoji-popover" id="wa-emoji-popover">
+          <div style="font-size:11px;font-weight:700;color:#64748b;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
+            <span>Pilih Emoji:</span>
+            <button type="button" id="btn-close-emoji" style="background:none;border:none;color:#94a3b8;cursor:pointer;">&times;</button>
           </div>
-          <input type="url" id="note-file-url" class="form-control" placeholder="https://domain.com/file.pdf atau https://domain.com/foto.jpg" style="font-size:12px;border-radius:6px;height:34px;margin-bottom:6px;">
-          <div style="display:flex;gap:4px;flex-wrap:wrap;">
-            <button type="button" class="btn btn-xs btn-default btn-attach-preset" data-type="foto" style="font-size:10px;border-radius:4px;"><i class="fa fa-picture-o" style="color:#3b82f6;"></i> 📷 Foto</button>
-            <button type="button" class="btn btn-xs btn-default btn-attach-preset" data-type="pdf" style="font-size:10px;border-radius:4px;"><i class="fa fa-file-pdf-o" style="color:#ef4444;"></i> 📄 PDF/Dokumen</button>
-            <button type="button" class="btn btn-xs btn-default btn-attach-preset" data-type="vn" style="font-size:10px;border-radius:4px;"><i class="fa fa-microphone" style="color:#10b981;"></i> 🎙️ Voice Note / Audio</button>
+          <div class="wa-emoji-grid">
+            <span class="wa-emoji-item">😊</span>
+            <span class="wa-emoji-item">😂</span>
+            <span class="wa-emoji-item">👍</span>
+            <span class="wa-emoji-item">🙏</span>
+            <span class="wa-emoji-item">❤️</span>
+            <span class="wa-emoji-item">📦</span>
+            <span class="wa-emoji-item">🚚</span>
+            <span class="wa-emoji-item">📄</span>
+            <span class="wa-emoji-item">💼</span>
+            <span class="wa-emoji-item">📌</span>
+            <span class="wa-emoji-item">✔️</span>
+            <span class="wa-emoji-item">❌</span>
+            <span class="wa-emoji-item">🎉</span>
+            <span class="wa-emoji-item">💡</span>
+            <span class="wa-emoji-item">🔥</span>
+            <span class="wa-emoji-item">💯</span>
+            <span class="wa-emoji-item">👏</span>
+            <span class="wa-emoji-item">🤝</span>
+            <span class="wa-emoji-item">📞</span>
+            <span class="wa-emoji-item">💬</span>
+            <span class="wa-emoji-item">⚡</span>
+            <span class="wa-emoji-item">🏼</span>
+            <span class="wa-emoji-item">🏽</span>
+            <span class="wa-emoji-item">⭐</span>
           </div>
         </div>
 
-        <div class="input-row" style="display:flex;gap:6px;align-items:center;">
-          <button type="button" class="btn-attach-chat" id="btn-toggle-attach" title="Kirim File / Gambar / PDF / Voice Note" style="width:38px;height:38px;border-radius:50%;border:1px solid #cbd5e1;background:#fff;color:#475569;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;flex-shrink:0;transition:all 0.2s;">
-            <i class="fa fa-paperclip"></i>
+        <!-- Attachment Popover Menu -->
+        <div class="wa-attach-popover" id="wa-attach-popover">
+          <div style="font-size:11px;font-weight:700;color:#64748b;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;padding:0 4px;">
+            <span>Lampirkan Berkas:</span>
+            <button type="button" id="btn-close-attach-pop" style="background:none;border:none;color:#94a3b8;cursor:pointer;">&times;</button>
+          </div>
+          <div class="wa-attach-menu-item" id="wa-opt-doc">
+            <div class="wa-attach-icon" style="background:#7f66ff;"><i class="fa fa-file-text-o"></i></div>
+            <div>Dokumen & PDF</div>
+          </div>
+          <div class="wa-attach-menu-item" id="wa-opt-img">
+            <div class="wa-attach-icon" style="background:#007bfc;"><i class="fa fa-picture-o"></i></div>
+            <div>Foto & Gambar</div>
+          </div>
+          <div class="wa-attach-menu-item" id="wa-opt-audio">
+            <div class="wa-attach-icon" style="background:#ff2e74;"><i class="fa fa-microphone"></i></div>
+            <div>Voice Note / Audio</div>
+          </div>
+          <div class="wa-attach-menu-item" id="wa-opt-url">
+            <div class="wa-attach-icon" style="background:#0284c7;"><i class="fa fa-link"></i></div>
+            <div>Tempel URL / Link</div>
+          </div>
+        </div>
+
+        <!-- URL Input Container (Hidden by default) -->
+        <div id="wa-url-input-container" style="display:none;margin-bottom:8px;">
+          <div style="display:flex;gap:6px;">
+            <input type="url" id="note-file-url" class="form-control" placeholder="Tempelkan URL file (https://...)" style="font-size:12px;border-radius:8px;height:34px;">
+            <button type="button" class="btn btn-sm btn-default" id="btn-close-url-input" style="border-radius:8px;">&times;</button>
+          </div>
+        </div>
+
+        <!-- Active Attachment Chip -->
+        <div class="wa-attachment-chip" id="wa-attachment-chip">
+          <div style="display:flex;align-items:center;gap:6px;overflow:hidden;">
+            <i class="fa fa-paperclip" style="font-size:14px;"></i>
+            <span id="wa-attach-filename" style="font-weight:700;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;max-width:240px;">file.pdf</span>
+            <span id="wa-upload-spinner" style="display:none;"><i class="fa fa-spin fa-spinner"></i> Mengunggah...</span>
+          </div>
+          <button type="button" id="btn-remove-attachment" style="background:none;border:none;color:#ef4444;cursor:pointer;font-weight:700;font-size:14px;">&times;</button>
+        </div>
+
+        <!-- Hidden Native File Upload Input -->
+        <input type="file" id="chat-file-upload" style="display:none;" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,audio/*">
+
+        <!-- WhatsApp Input Bar (Paperclip - Emoji - Input Textarea - Send Button) -->
+        <div class="wa-input-pill-container">
+          <div class="wa-input-pill">
+            <button type="button" class="wa-icon-btn" id="btn-toggle-attach" title="Kirim File / Dokumen / Foto">
+              <i class="fa fa-paperclip"></i>
+            </button>
+            <button type="button" class="wa-icon-btn" id="btn-toggle-emoji" title="Pilih Emoji">
+              <i class="fa fa-smile-o"></i>
+            </button>
+            <textarea id="note-text" class="wa-textarea" rows="1" placeholder="Ketik pesan"></textarea>
+          </div>
+          <button class="wa-send-btn" id="btn-save-note" title="Kirim Pesan">
+            <i class="fa fa-paper-plane"></i>
           </button>
-          <textarea id="note-text" rows="1" placeholder="Ketik balasan CS ke WhatsApp customer..." style="flex:1;"></textarea>
-          <button class="btn-send-chat" id="btn-save-note" title="Kirim"><i class="fa fa-paper-plane"></i></button>
         </div>
       </div>
 
@@ -1235,27 +1441,133 @@ window.addEventListener('load', function() {
     return html;
   }
 
-  // ===== Attachment Panel Events =====
-  $(document).on('click', '#btn-toggle-attach', function() {
-    $('#attach-panel').slideToggle(200);
-    setTimeout(function() { $('#note-file-url').focus(); }, 250);
+  // ===== WhatsApp Input Bar Events =====
+  
+  // Toggle Attachment Popover Menu
+  $(document).on('click', '#btn-toggle-attach', function(e) {
+    e.stopPropagation();
+    $('#wa-emoji-popover').hide();
+    $('#wa-attach-popover').fadeToggle(150);
   });
 
-  $(document).on('click', '#btn-close-attach', function() {
-    $('#attach-panel').slideUp(150);
+  $(document).on('click', '#btn-close-attach-pop', function() {
+    $('#wa-attach-popover').fadeOut(100);
   });
 
-  $(document).on('click', '.btn-attach-preset', function() {
-    var type = $(this).data('type');
-    var placeholder = '';
-    if (type === 'foto') {
-      placeholder = 'https://domain.com/foto.jpg';
-    } else if (type === 'pdf') {
-      placeholder = 'https://domain.com/dokumen.pdf';
-    } else if (type === 'vn') {
-      placeholder = 'https://domain.com/audio.mp3';
+  // Toggle Emoji Popover
+  $(document).on('click', '#btn-toggle-emoji', function(e) {
+    e.stopPropagation();
+    $('#wa-attach-popover').hide();
+    $('#wa-emoji-popover').fadeToggle(150);
+  });
+
+  $(document).on('click', '#btn-close-emoji', function() {
+    $('#wa-emoji-popover').fadeOut(100);
+  });
+
+  // Emoji Click Handler
+  $(document).on('click', '.wa-emoji-item', function() {
+    var emoji = $(this).text();
+    var $txt = $('#note-text');
+    var val = $txt.val();
+    $txt.val(val + emoji).focus();
+  });
+
+  // Close popovers on click outside
+  $(document).on('click', function(e) {
+    if (!$(e.target).closest('#wa-attach-popover, #btn-toggle-attach').length) {
+      $('#wa-attach-popover').fadeOut(100);
     }
-    $('#note-file-url').val(placeholder).focus();
+    if (!$(e.target).closest('#wa-emoji-popover, #btn-toggle-emoji').length) {
+      $('#wa-emoji-popover').fadeOut(100);
+    }
+  });
+
+  // Attachment Menu Options -> Trigger File Upload Input
+  $(document).on('click', '#wa-opt-doc', function() {
+    $('#wa-attach-popover').hide();
+    $('#chat-file-upload').attr('accept', '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.txt,.csv').click();
+  });
+
+  $(document).on('click', '#wa-opt-img', function() {
+    $('#wa-attach-popover').hide();
+    $('#chat-file-upload').attr('accept', 'image/*').click();
+  });
+
+  $(document).on('click', '#wa-opt-audio', function() {
+    $('#wa-attach-popover').hide();
+    $('#chat-file-upload').attr('accept', 'audio/*,.mp3,.ogg,.wav,.m4a,.aac,.opus').click();
+  });
+
+  $(document).on('click', '#wa-opt-url', function() {
+    $('#wa-attach-popover').hide();
+    $('#wa-url-input-container').slideDown(150);
+    setTimeout(function() { $('#note-file-url').focus(); }, 200);
+  });
+
+  $(document).on('click', '#btn-close-url-input', function() {
+    $('#wa-url-input-container').slideUp(150);
+  });
+
+  // When URL input changes manually
+  $(document).on('input change', '#note-file-url', function() {
+    var url = $.trim($(this).val());
+    if (url) {
+      var fname = url.substring(url.lastIndexOf('/') + 1) || 'Link File';
+      $('#wa-attach-filename').text(fname + ' (' + url + ')');
+      $('#wa-attachment-chip').css('display', 'flex');
+    } else {
+      $('#wa-attachment-chip').hide();
+    }
+  });
+
+  // Handle Native Local File Upload Selection
+  $(document).on('change', '#chat-file-upload', function() {
+    var file = this.files[0];
+    if (!file) return;
+
+    $('#wa-attach-filename').text(file.name);
+    $('#wa-upload-spinner').show();
+    $('#wa-attachment-chip').css('display', 'flex');
+
+    var formData = new FormData();
+    formData.append('file', file);
+    if (typeof csrf_token_name !== 'undefined' && typeof csrf_cookie_name !== 'undefined') {
+      formData.append(csrf_token_name, $.cookie(csrf_cookie_name));
+    }
+
+    $.ajax({
+      url: _BASE + 'administrator/crm/upload_attachment_ajax',
+      type: 'POST',
+      data: formData,
+      contentType: false,
+      processData: false,
+      success: function(res) {
+        var r = parseRes(res);
+        $('#wa-upload-spinner').hide();
+        if (r.success && r.file_url) {
+          $('#note-file-url').val(r.file_url);
+          $('#wa-attach-filename').html('<i class="fa fa-check-circle" style="color:#10b981;"></i> ' + (r.file_name || file.name));
+          notify('success', 'File berhasil diunggah dan siap dikirim!');
+        } else {
+          $('#wa-attachment-chip').hide();
+          notify('error', r.message || 'Gagal mengunggah file');
+        }
+      },
+      error: function() {
+        $('#wa-upload-spinner').hide();
+        $('#wa-attachment-chip').hide();
+        notify('error', 'Gagal mengunggah file ke server');
+      }
+    });
+
+    $(this).val(''); // Reset file input
+  });
+
+  // Remove Attachment
+  $(document).on('click', '#btn-remove-attachment', function() {
+    $('#note-file-url').val('');
+    $('#wa-attachment-chip').hide();
   });
 
   // ===== Sender Type Toggle (CS WA Reply vs Internal Note) =====
@@ -1267,13 +1579,13 @@ window.addEventListener('load', function() {
     $(this).addClass('active');
 
     if (type === 'cs_chat') {
-      $(this).css({ border: '2px solid #25D366', background: '#d9fdd3', color: '#15803d' });
-      $('#note-text').attr('placeholder', 'Ketik balasan CS ke WhatsApp customer...').css('background', '#fff');
-      $('.btn-send-chat').css('background', '#25D366');
+      $(this).css({ border: '2px solid #00a884', background: '#d9fdd3', color: '#005c4b' });
+      $('#note-text').attr('placeholder', 'Ketik pesan...').css('background', '#fff');
+      $('.wa-send-btn').css('background', '#00a884');
     } else { // cs note
       $(this).css({ border: '2px solid #f59e0b', background: '#fef3c7', color: '#92400e' });
       $('#note-text').attr('placeholder', 'Tulis catatan internal CS (hanya tersimpan di sistem)...').css('background', '#fffbe6');
-      $('.btn-send-chat').css('background', '#f59e0b');
+      $('.wa-send-btn').css('background', '#f59e0b');
     }
   });
 
@@ -1290,7 +1602,7 @@ window.addEventListener('load', function() {
     var senderType = $('#note-sender-type').val() || 'cs_chat';
     
     if (!catatan && !fileUrl && !status) { 
-      notify('warning', 'Tulis pesan, pilih lampiran file, atau pilih status terlebih dahulu');
+      notify('warning', 'Ketik pesan, pilih lampiran file, atau pilih status terlebih dahulu');
       return; 
     }
 
@@ -1370,7 +1682,8 @@ window.addEventListener('load', function() {
           // Clear inputs and reload chat
           $('#note-text').val('');
           $('#note-file-url').val('');
-          $('#attach-panel').slideUp(150);
+          $('#wa-attachment-chip').hide();
+          $('#wa-url-input-container').slideUp(150);
           $('#note-status').val('');
 
           // Force a full timeline reload to show the new message immediately
