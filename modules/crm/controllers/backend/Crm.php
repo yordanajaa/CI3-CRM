@@ -719,7 +719,7 @@ class Crm extends Admin
 		}
 		$sender = trim($sender);
 
-		// Extract message
+		// Extract message or caption
 		$message = '';
 		if ($this->input->post('message')) {
 			$message = $this->input->post('message');
@@ -735,6 +735,27 @@ class Crm extends Admin
 			$message = $json['caption'];
 		}
 		$message = trim($message);
+
+		// Extract media / document URL if present (Fonnte photo/document payload)
+		$media_url = '';
+		if ($this->input->post('url')) {
+			$media_url = $this->input->post('url');
+		} elseif ($this->input->get('url')) {
+			$media_url = $this->input->get('url');
+		} elseif (isset($json['url'])) {
+			$media_url = $json['url'];
+		} elseif (isset($json['file'])) {
+			$media_url = $json['file'];
+		} elseif (isset($json['filename'])) {
+			$media_url = $json['filename'];
+		}
+		$media_url = trim($media_url);
+
+		if (empty($message) && !empty($media_url)) {
+			$message = '[Lampiran Media/Dokumen]: ' . $media_url;
+		} elseif (!empty($media_url) && strpos($message, $media_url) === false) {
+			$message .= "\n\n[Lampiran File]: " . $media_url;
+		}
 
 		// Extract name
 		$name = '';
@@ -758,7 +779,8 @@ class Crm extends Admin
 				'received' => [
 					'sender' => $sender,
 					'message' => $message,
-					'name' => $name
+					'name' => $name,
+					'url' => $media_url
 				]
 			]);
 			return;

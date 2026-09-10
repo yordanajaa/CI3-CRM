@@ -956,7 +956,7 @@ class Model_crm extends CI_Model
 	/**
 	 * Send WhatsApp message directly via Gateway API (cURL)
 	 */
-	public function send_wa_via_api($phone, $message)
+	public function send_wa_via_api($phone, $message, $file_url = '')
 	{
 		$config = $this->get_wa_gateway_config();
 
@@ -986,6 +986,9 @@ class Model_crm extends CI_Model
 				'target' => $phone,
 				'message' => $message,
 			];
+			if (!empty($file_url)) {
+				$post_data['url'] = $file_url;
+			}
 			$target_url = (empty($api_url) || strpos($api_url, 'send-message') !== false) ? 'https://api.fonnte.com/send' : $api_url;
 			curl_setopt($ch, CURLOPT_URL, $target_url);
 			curl_setopt($ch, CURLOPT_POST, true);
