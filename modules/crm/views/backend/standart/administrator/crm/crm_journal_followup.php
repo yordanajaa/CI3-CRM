@@ -1104,8 +1104,21 @@ window.addEventListener('load', function() {
     text = text.replace(urlRegex, function(url) {
       var cleanUrl = url.trim();
       var isImg = /\.(jpeg|jpg|gif|png|webp)(\?.*)?$/i.test(cleanUrl);
+      var isAudio = /\.(mp3|ogg|wav|m4a|aac|opus)(\?.*)?$/i.test(cleanUrl) || cleanUrl.indexOf('/audio/') !== -1 || cleanUrl.indexOf('/voice/') !== -1;
+      var isDoc = /\.(pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar|txt|csv)(\?.*)?$/i.test(cleanUrl);
+
       if (isImg) {
         return '<br><a href="' + cleanUrl + '" target="_blank" style="display:inline-block;margin-top:4px;"><img src="' + cleanUrl + '" style="max-width:240px;max-height:200px;border-radius:8px;border:1px solid #cbd5e1;box-shadow:0 2px 6px rgba(0,0,0,0.1);display:block;"></a>';
+      } else if (isAudio) {
+        return '<div style="margin-top:6px;"><div style="font-size:10px;font-weight:700;color:#475569;margin-bottom:2px;"><i class="fa fa-microphone"></i> Pesan Suara / Voice Note:</div><audio controls src="' + cleanUrl + '" style="max-width:240px;height:36px;border-radius:20px;outline:none;"></audio></div>';
+      } else if (isDoc) {
+        var docIcon = 'fa-file-text-o';
+        if (/\.pdf/i.test(cleanUrl)) docIcon = 'fa-file-pdf-o';
+        else if (/\.(doc|docx)/i.test(cleanUrl)) docIcon = 'fa-file-word-o';
+        else if (/\.(xls|xlsx)/i.test(cleanUrl)) docIcon = 'fa-file-excel-o';
+        else if (/\.(zip|rar)/i.test(cleanUrl)) docIcon = 'fa-file-archive-o';
+
+        return '<div style="margin-top:6px;"><a href="' + cleanUrl + '" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;color:#0f172a;font-weight:700;font-size:11px;text-decoration:none;box-shadow:0 1px 3px rgba(0,0,0,0.05);"><i class="fa ' + docIcon + '" style="font-size:14px;color:#2563eb;"></i> Buka / Unduh Dokumen</a></div>';
       } else {
         return '<a href="' + cleanUrl + '" target="_blank" style="color:#2563eb;text-decoration:underline;word-break:break-all;"><i class="fa fa-external-link"></i> ' + cleanUrl + '</a>';
       }
