@@ -508,6 +508,54 @@ class Model_crm extends CI_Model
 				'status' => 'pending',
 				'created_at' => date('Y-m-d H:i:s'),
 			]);
+
+			// Auto-create a label in crm_transaction_followup_labels so CS can see & reply in UI
+			$first_cat = $this->db->query("SELECT id FROM crm_followup_categories WHERE is_active = 1 ORDER BY urutan ASC LIMIT 1")->row();
+			$cat_id = $first_cat ? $first_cat->id : 1;
+			$cust_name = !empty($sender_name) ? $sender_name : ('Customer (' . $clean_input_phone . ')');
+
+			$new_label_data = [
+				'order_source' => 'WhatsApp',
+				'order_id' => 0,
+				'order_table' => 'crm_unmatched_inbound',
+				'customer_nama' => $cust_name,
+				'customer_phone' => $clean_input_phone,
+				'no_pesanan' => 'WA-CHAT',
+				'tanggal_pengiriman' => date('Y-m-d'),
+				'followup_category_id' => $cat_id,
+				'tanggal_label_muncul' => date('Y-m-d'),
+				'status_label' => 'Direspon',
+				'handled_by' => 'system',
+				'created_at' => date('Y-m-d H:i:s'),
+				'updated_at' => date('Y-m-d H:i:s'),
+			];
+			$this->db->insert('crm_transaction_followup_labels', $new_label_data);
+			$new_id = $this->db->insert_id();
+
+			$now = date('Y-m-d H:i:s');
+			if ($new_id) {
+				$this->db->insert('crm_followup_notes', [
+					'followup_label_id' => $new_id,
+					'username' => $cust_name,
+					'catatan' => $message,
+					'status_manual' => 'Direspon',
+					'sender_type' => 'customer',
+					'created_at' => $now,
+				]);
+
+				$this->insert_chat_message([
+					'label_id' => (int)$new_id,
+					'customer_phone' => $clean_input_phone,
+					'direction' => 'in',
+					'message' => $message,
+					'sender_name' => $cust_name,
+					'is_internal_note' => 0,
+					'status' => 'delivered',
+					'webhook_log_id' => (int)$webhook_log_id,
+					'created_at' => $now,
+				]);
+			}
+
 			$logged_count++;
 		}
 
