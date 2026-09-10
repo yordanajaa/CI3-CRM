@@ -1106,6 +1106,14 @@ class Model_crm extends CI_Model
 		$categories = $this->get_categories(true);
 		$generated = 0;
 
+		$existing_raw = $this->db->select('order_table, order_id, followup_category_id')
+			->get('crm_transaction_followup_labels')->result_array();
+		$existing_set = [];
+		foreach ($existing_raw as $er) {
+			$key = $er['order_table'] . '_' . $er['order_id'] . '_' . $er['followup_category_id'];
+			$existing_set[$key] = true;
+		}
+
 		// Process sales_order
 		$so_rows = $this->db->query("SELECT so.*, p.nama_pelanggan, p.telepon, p.no_telp 
 			FROM sales_order so LEFT JOIN pelanggan p ON so.pelanggan_id = p.id 
@@ -1122,10 +1130,9 @@ class Model_crm extends CI_Model
 			elseif (strpos($so_src, 'tiktok') !== false) $source = 'TikTok Shop';
 
 			foreach ($categories as $cat) {
-				$target = date('Y-m-d', strtotime($ship_date . ' + ' . $cat->jumlah_hari . ' days'));
-				$exists = $this->db->where(['order_table' => 'sales_order', 'order_id' => $so->id, 'followup_category_id' => $cat->id])
-					->count_all_results('crm_transaction_followup_labels');
-				if ($exists == 0) {
+				$key = 'sales_order_' . $so->id . '_' . $cat->id;
+				if (!isset($existing_set[$key])) {
+					$target = date('Y-m-d', strtotime($ship_date . ' + ' . $cat->jumlah_hari . ' days'));
 					$this->db->insert('crm_transaction_followup_labels', [
 						'order_source' => $source,
 						'order_id' => $so->id,
@@ -1139,6 +1146,7 @@ class Model_crm extends CI_Model
 						'followup_category_id' => $cat->id,
 						'tanggal_label_muncul' => $target,
 					]);
+					$existing_set[$key] = true;
 					$generated++;
 				}
 			}
@@ -1159,10 +1167,9 @@ class Model_crm extends CI_Model
 			elseif (strpos($src, 'lazada') !== false) $source = 'Lazada';
 
 			foreach ($categories as $cat) {
-				$target = date('Y-m-d', strtotime($ship_date . ' + ' . $cat->jumlah_hari . ' days'));
-				$exists = $this->db->where(['order_table' => 'penjualan_marketplace', 'order_id' => $mp->id, 'followup_category_id' => $cat->id])
-					->count_all_results('crm_transaction_followup_labels');
-				if ($exists == 0) {
+				$key = 'penjualan_marketplace_' . $mp->id . '_' . $cat->id;
+				if (!isset($existing_set[$key])) {
+					$target = date('Y-m-d', strtotime($ship_date . ' + ' . $cat->jumlah_hari . ' days'));
 					$this->db->insert('crm_transaction_followup_labels', [
 						'order_source' => $source,
 						'order_id' => $mp->id,
@@ -1176,6 +1183,7 @@ class Model_crm extends CI_Model
 						'followup_category_id' => $cat->id,
 						'tanggal_label_muncul' => $target,
 					]);
+					$existing_set[$key] = true;
 					$generated++;
 				}
 			}
