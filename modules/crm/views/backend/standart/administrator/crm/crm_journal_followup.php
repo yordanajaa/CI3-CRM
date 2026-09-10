@@ -1733,6 +1733,30 @@ window.addEventListener('load', function() {
       }
     });
   });
+
+  // Auto-open chat modal if label_id URL query parameter is present (from notification click)
+  var urlParams = new URLSearchParams(window.location.search);
+  var targetLabelId = urlParams.get('label_id');
+  if (targetLabelId) {
+    var $btnTarget = $('.btn-add-note[data-label-id="' + targetLabelId + '"]');
+    if ($btnTarget.length) {
+      setTimeout(function() { $btnTarget.trigger('click'); }, 300);
+    } else {
+      $.get(_BASE + 'administrator/crm/get_wa_link_ajax', { label_id: targetLabelId }, function(res) {
+        var r = parseRes(res);
+        if (r.success) {
+          $('#note-label-id').val(targetLabelId);
+          $('#note-customer-name').text(r.nama || 'Customer');
+          $('#chat-phone').text(r.phone || '-');
+          $('#chat-order').text(r.no_pesanan || '-');
+          loadChatTimeline(targetLabelId, true);
+          startChatPolling(targetLabelId);
+          $('.modal-backdrop').remove();
+          $('#modal-note').modal('show');
+        }
+      });
+    }
+  }
 });
 </script>
 

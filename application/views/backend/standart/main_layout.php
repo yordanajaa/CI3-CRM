@@ -317,6 +317,7 @@ $(document).ready(function(){
    });
 
    // Approval Notification Loader
+   var lastNotifiedWaId = 0;
    function loadApprovalNotifications() {
       $.ajax({
          url: BASE_URL + 'administrator/dashboard/get_notifications',
@@ -342,7 +343,29 @@ $(document).ready(function(){
 
                var html = '';
                if (res.items && res.items.length > 0) {
+                  var maxWaId = 0;
                   $.each(res.items, function(i, item) {
+                     if (item.type === 'incoming_wa' && item.id) {
+                        var itemId = parseInt(item.id);
+                        if (itemId > maxWaId) maxWaId = itemId;
+
+                        // Trigger real-time Toastr popup for NEW incoming WhatsApp message
+                        if (lastNotifiedWaId > 0 && itemId > lastNotifiedWaId) {
+                           if (typeof toastr !== 'undefined') {
+                              toastr.info(
+                                 '<b>' + item.title + '</b><br>' + item.subtitle,
+                                 'WhatsApp Masuk',
+                                 {
+                                    timeOut: 8000,
+                                    extendedTimeOut: 3000,
+                                    closeButton: true,
+                                    onclick: function() { window.location.href = item.url; }
+                                 }
+                              );
+                           }
+                        }
+                     }
+
                      html += '<li style="border-bottom: 1px solid #f4f4f4;">';
                      html += '  <a href="' + item.url + '" style="display: flex; align-items: flex-start; padding: 10px 15px; color: #333; text-decoration: none; transition: background 0.2s;" onmouseover="this.style.background=\'#f9f9f9\'" onmouseout="this.style.background=\'transparent\'">';
                      html += '    <div style="margin-right: 12px; font-size: 18px; line-height: 1;" class="' + item.icon_bg + '"><i class="fa ' + item.icon + '"></i></div>';
@@ -354,6 +377,14 @@ $(document).ready(function(){
                      html += '  </a>';
                      html += '</li>';
                   });
+
+                  if (maxWaId > 0) {
+                     if (lastNotifiedWaId === 0) {
+                        lastNotifiedWaId = maxWaId; // Baseline on first load
+                     } else if (maxWaId > lastNotifiedWaId) {
+                        lastNotifiedWaId = maxWaId;
+                     }
+                  }
                } else {
                   html = '<li style="text-align: center; padding: 25px 15px; color: #7f8c8d; font-size: 13px;"><i class="fa fa-check-circle-o text-green" style="font-size: 24px; display: block; margin-bottom: 5px;"></i> Tidak ada notifikasi baru</li>';
                }
@@ -365,7 +396,7 @@ $(document).ready(function(){
 
    if ($('#notif-approval-menu').length > 0) {
       loadApprovalNotifications();
-      setInterval(loadApprovalNotifications, 30000);
+      setInterval(loadApprovalNotifications, 15000);
    }
 });
 </script>

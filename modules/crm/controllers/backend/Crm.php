@@ -957,6 +957,14 @@ class Crm extends Admin
 
 		$timeline = $this->model_crm->get_chat_timeline($label_id);
 
+		// Mark incoming messages for this label as read
+		if ($this->db->table_exists('crm_chat_history')) {
+			$this->db->where('label_id', (int)$label_id)
+				->where('direction', 'in')
+				->where('status !=', 'read')
+				->update('crm_chat_history', ['status' => 'read']);
+		}
+
 		echo json_encode([
 			'success' => true,
 			'label' => [
@@ -1131,6 +1139,14 @@ class Crm extends Admin
 		}
 
 		$messages = $this->model_crm->get_new_messages($label_id, $last_id);
+
+		// Mark incoming messages for this label as read
+		if (!empty($messages) && $this->db->table_exists('crm_chat_history')) {
+			$this->db->where('label_id', (int)$label_id)
+				->where('direction', 'in')
+				->where('status !=', 'read')
+				->update('crm_chat_history', ['status' => 'read']);
+		}
 
 		echo json_encode([
 			'success' => true,

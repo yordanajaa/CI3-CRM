@@ -140,11 +140,69 @@ class Dashboard extends Admin
 			$total_count = $this->db->where('status', 'submitted')->count_all_results('purchase_order');
 		}
 
+		// 2. Incoming WhatsApp Messages (crm_chat_history)
+		$wa_items = [];
+		$wa_unread_count = 0;
+		if ($this->db->table_exists('crm_chat_history')) {
+			$incoming_chats = $this->db->select('c.id, c.label_id, c.customer_phone, c.message, c.sender_name, c.status, c.created_at, l.customer_nama, l.no_pesanan')
+				->from('crm_chat_history c')
+				->join('crm_transaction_followup_labels l', 'l.id = c.label_id', 'left')
+				->where('c.direction', 'in')
+				->where('c.is_internal_note', 0)
+				->where('c.status !=', 'read')
+				->order_by('c.id', 'DESC')
+				->limit(10)
+				->get()->result();
+
+			foreach ($incoming_chats as $chat) {
+				// Skip Fonnte echo falsely logged as incoming
+				if (!empty($chat->message) && (stripos($chat->message, 'Sent via fonnte.com') !== false || stripos($chat->message, 'fonnte.com') !== false)) {
+					continue;
+				}
+
+				$cust_name = !empty($chat->sender_name) ? $chat->sender_name : (!empty($chat->customer_nama) ? $chat->customer_nama : $chat->customer_phone);
+				$preview = trim(strip_tags($chat->message));
+				if (mb_strlen($preview) > 40) {
+					$preview = mb_substr($preview, 0, 40) . '...';
+				}
+
+				$wa_items[] = [
+					'id' => (int)$chat->id,
+					'type' => 'incoming_wa',
+					'title' => '💬 WA: ' . $cust_name,
+					'subtitle' => $preview ? $preview : '[Pesan / Media]',
+					'url' => site_url('administrator/crm/journal_followup?label_id=' . $chat->label_id),
+					'icon' => 'fa-whatsapp',
+					'icon_bg' => 'text-green',
+					'date' => date('d/m H:i', strtotime($chat->created_at))
+				];
+			}
+
+			$wa_unread_count = $this->db->where([
+				'direction' => 'in',
+				'is_internal_note' => 0,
+				'status !=' => 'read'
+			])->count_all_results('crm_chat_history');
+		}
+
+		$total_count += $wa_unread_count;
+		$items = array_merge($wa_items, $items);
+
+		$header_title = 'Notifikasi & Pesan WA';
+		$footer_url = site_url('administrator/crm/journal_followup');
+		$footer_label = 'Lihat Journal Chat WA';
+
+		if ($total_count === 0 || ($wa_unread_count === 0 && !empty($items))) {
+			$header_title = 'Notifikasi';
+			$footer_url = site_url('administrator/purchase_order');
+			$footer_label = 'Lihat Kelola Purchase Order';
+		}
+
 		return $this->response([
 			'success' => true,
-			'header_title' => 'Approval PO Pending',
-			'footer_url' => site_url('administrator/purchase_order'),
-			'footer_label' => 'Lihat Kelola Purchase Order',
+			'header_title' => $header_title,
+			'footer_url' => $footer_url,
+			'footer_label' => $footer_label,
 			'total_count' => $total_count,
 			'items' => $items
 		]);
