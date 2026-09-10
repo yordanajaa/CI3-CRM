@@ -553,10 +553,18 @@ class Model_crm extends CI_Model
 		if (!$label) return [];
 
 		$label_ids = $this->get_related_label_ids($label);
+		$clean_phone = $this->normalize_phone_number($label->customer_phone);
+		$phone_tail = strlen($clean_phone) >= 9 ? substr($clean_phone, -9) : $clean_phone;
 
 		$this->db->select('id, label_id, customer_phone, direction, message, sender_name, sender_cs_name, is_internal_note, status, created_at')
-			->from('crm_chat_history')
-			->where_in('label_id', $label_ids);
+			->from('crm_chat_history');
+
+		$this->db->group_start();
+		$this->db->where_in('label_id', $label_ids);
+		if (!empty($phone_tail)) {
+			$this->db->or_like('customer_phone', $phone_tail);
+		}
+		$this->db->group_end();
 
 		if ($last_id > 0) {
 			$this->db->where('id >', (int)$last_id);
@@ -642,10 +650,17 @@ class Model_crm extends CI_Model
 		// Source 1: NEW crm_chat_history table
 		$chat_rows = [];
 		if ($this->db->table_exists('crm_chat_history')) {
-			$chat_rows = $this->db->select('id, direction, message, sender_name, sender_cs_name, is_internal_note, status, created_at')
-				->from('crm_chat_history')
-				->where_in('label_id', $label_ids)
-				->get()->result_array();
+			$this->db->select('id, direction, message, sender_name, sender_cs_name, is_internal_note, status, created_at')
+				->from('crm_chat_history');
+
+			$this->db->group_start();
+			$this->db->where_in('label_id', $label_ids);
+			if (!empty($phone_tail)) {
+				$this->db->or_like('customer_phone', $phone_tail);
+			}
+			$this->db->group_end();
+
+			$chat_rows = $this->db->get()->result_array();
 		}
 
 		// Source 2: Legacy broadcast_logs (outgoing)
