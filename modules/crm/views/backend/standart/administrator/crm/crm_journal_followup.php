@@ -1285,8 +1285,10 @@ window.addEventListener('load', function() {
         }
       },
       error: function(xhr) {
-        $btn.prop('disabled', false).html('<i class="fa fa-paper-plane"></i>');
         notify('error', 'Terjadi kesalahan: ' + (xhr.statusText || 'Error'));
+      },
+      complete: function() {
+        $btn.prop('disabled', false).html('<i class="fa fa-paper-plane"></i>');
       }
     });
   });

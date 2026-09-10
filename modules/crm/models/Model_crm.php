@@ -786,9 +786,7 @@ class Model_crm extends CI_Model
 
 			$sender = isset($row['sender']) ? $row['sender'] : 'CS Admin';
 			if ($direction === 'incoming') {
-				if (empty($sender) || in_array(strtolower(trim($sender)), array('developer', 'admin', 'system', 'administrator'))) {
-					$sender = $cust_display_name;
-				}
+				$sender = $cust_display_name . ' (Balasan)';
 			} elseif (empty($sender)) {
 				$sender = 'CS Admin';
 			}
@@ -1028,7 +1026,8 @@ class Model_crm extends CI_Model
 		curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-		curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+		curl_setopt($ch, CURLOPT_TIMEOUT, 10);
 
 		$response = curl_exec($ch);
 		$err = curl_error($ch);
