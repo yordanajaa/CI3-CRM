@@ -1324,27 +1324,53 @@ window.addEventListener('load', function() {
     if (!msg) return '';
     var text = $('<div>').text(msg).html();
     
-    var urlRegex = /(https?:\/\/[^\s<]+)/gi;
+    // Match URLs (https, http, data URIs, and relative uploads paths)
+    var urlRegex = /(https?:\/\/[^\s<]+|data:audio\/[^\s<]+|(?:\/|\b)uploads\/[^\s<]+)/gi;
+    
     text = text.replace(urlRegex, function(url) {
       var cleanUrl = url.trim();
       var isImg = /\.(jpeg|jpg|gif|png|webp)(\?.*)?$/i.test(cleanUrl);
-      var isAudio = /\.(mp3|ogg|wav|m4a|aac|opus)(\?.*)?$/i.test(cleanUrl) || cleanUrl.indexOf('/audio/') !== -1 || cleanUrl.indexOf('/voice/') !== -1;
+      var isAudio = /\.(mp3|ogg|wav|m4a|aac|opus|webm|3gp|amr)(\?.*)?$/i.test(cleanUrl) 
+                 || /data:audio\//i.test(cleanUrl)
+                 || /\/(audio|voice)\//i.test(cleanUrl)
+                 || /\b(voice_|audio_|record_|vn_)/i.test(cleanUrl);
       var isDoc = /\.(pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar|txt|csv)(\?.*)?$/i.test(cleanUrl);
 
-      if (isImg) {
+      var fullUrl = cleanUrl;
+      if (fullUrl.indexOf('http') !== 0 && fullUrl.indexOf('data:') !== 0) {
+        fullUrl = _BASE + fullUrl.replace(/^\//, '');
+      }
+
+      if (isAudio) {
+        return '<div class="wa-vn-container" style="margin-top:8px;background:#f0fdf4;border:1px solid #bbf7d0;padding:10px 14px;border-radius:14px;box-shadow:0 2px 6px rgba(0,0,0,0.05);max-width:280px;">' +
+                 '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' +
+                   '<div style="width:28px;height:28px;border-radius:50%;background:#00a884;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">' +
+                     '<i class="fa fa-microphone"></i>' +
+                   '</div>' +
+                   '<div style="font-size:11.5px;font-weight:700;color:#065f46;">Pesan Suara / Voice Note</div>' +
+                 '</div>' +
+                 '<audio controls preload="metadata" style="width:100%;height:38px;border-radius:20px;outline:none;display:block;">' +
+                   '<source src="' + fullUrl + '" type="audio/mpeg">' +
+                   '<source src="' + fullUrl + '" type="audio/ogg">' +
+                   '<source src="' + fullUrl + '" type="audio/wav">' +
+                   '<source src="' + fullUrl + '" type="audio/mp4">' +
+                   '<source src="' + fullUrl + '" type="audio/webm">' +
+                   'Browser Anda tidak mendukung elemen audio.' +
+                 '</audio>' +
+                 '<div style="margin-top:6px;display:flex;align-items:center;justify-content:space-between;font-size:10.5px;">' +
+                   '<a href="' + fullUrl + '" target="_blank" download style="color:#0284c7;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">' +
+                     '<i class="fa fa-play-circle" style="font-size:13px;color:#00a884;"></i> Putar / Unduh Suara' +
+                   '</a>' +
+                 '</div>' +
+               '</div>';
+      } else if (isImg) {
         return '<div style="margin-top:6px;display:inline-block;max-width:260px;">' +
-                 '<a href="' + cleanUrl + '" target="_blank" style="display:block;">' +
-                   '<img src="' + cleanUrl + '" alt="Foto" style="max-width:100%;max-height:220px;border-radius:10px;border:1px solid #cbd5e1;box-shadow:0 3px 8px rgba(0,0,0,0.12);display:block;margin-bottom:6px;object-fit:cover;">' +
+                 '<a href="' + fullUrl + '" target="_blank" style="display:block;">' +
+                   '<img src="' + fullUrl + '" alt="Foto" style="max-width:100%;max-height:220px;border-radius:10px;border:1px solid #cbd5e1;box-shadow:0 3px 8px rgba(0,0,0,0.12);display:block;margin-bottom:6px;object-fit:cover;">' +
                  '</a>' +
-                 '<a href="' + cleanUrl + '" target="_blank" download style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;background:#3b82f6;color:#ffffff;border-radius:6px;font-weight:700;font-size:11px;text-decoration:none;box-shadow:0 2px 4px rgba(59,130,246,0.3);">' +
+                 '<a href="' + fullUrl + '" target="_blank" download style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;background:#3b82f6;color:#ffffff;border-radius:6px;font-weight:700;font-size:11px;text-decoration:none;box-shadow:0 2px 4px rgba(59,130,246,0.3);">' +
                    '<i class="fa fa-download"></i> Lihat / Unduh Foto' +
                  '</a>' +
-               '</div>';
-      } else if (isAudio) {
-        return '<div style="margin-top:6px;">' +
-                 '<div style="font-size:10px;font-weight:700;color:#475569;margin-bottom:3px;"><i class="fa fa-microphone" style="color:#25D366;"></i> Pesan Suara / Voice Note:</div>' +
-                 '<audio controls src="' + cleanUrl + '" style="max-width:240px;height:36px;border-radius:20px;outline:none;"></audio>' +
-                 '<div style="margin-top:3px;"><a href="' + cleanUrl + '" target="_blank" download style="font-size:10px;color:#3b82f6;font-weight:600;text-decoration:none;"><i class="fa fa-download"></i> Unduh Suara</a></div>' +
                '</div>';
       } else if (isDoc) {
         var docIcon = 'fa-file-text-o';
@@ -1354,14 +1380,18 @@ window.addEventListener('load', function() {
         else if (/\.(zip|rar)/i.test(cleanUrl)) docIcon = 'fa-file-archive-o';
 
         return '<div style="margin-top:6px;">' +
-                 '<a href="' + cleanUrl + '" target="_blank" download style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:#0284c7;color:#ffffff;border-radius:8px;font-weight:700;font-size:11.5px;text-decoration:none;box-shadow:0 2px 6px rgba(2,132,199,0.3);">' +
+                 '<a href="' + fullUrl + '" target="_blank" download style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:#0284c7;color:#ffffff;border-radius:8px;font-weight:700;font-size:11.5px;text-decoration:none;box-shadow:0 2px 6px rgba(2,132,199,0.3);">' +
                    '<i class="fa ' + docIcon + '" style="font-size:14px;color:#fff;"></i> Lihat / Unduh Dokumen' +
                  '</a>' +
                '</div>';
       } else {
-        return '<a href="' + cleanUrl + '" target="_blank" style="color:#2563eb;text-decoration:underline;word-break:break-all;"><i class="fa fa-external-link"></i> ' + cleanUrl + '</a>';
+        return '<a href="' + fullUrl + '" target="_blank" style="color:#2563eb;text-decoration:underline;word-break:break-all;"><i class="fa fa-external-link"></i> ' + cleanUrl + '</a>';
       }
     });
+
+    // Remove text header tags like "[Lampiran Media/Dokumen]:" when media player is rendered
+    text = text.replace(/\[Lampiran Media\/Dokumen\]:\s*/gi, '');
+    text = text.replace(/\[Lampiran File\]:\s*/gi, '');
 
     return text.replace(/\n/g, '<br>');
   }
@@ -1628,6 +1658,12 @@ window.addEventListener('load', function() {
     var senderType = $('#note-sender-type').val() || 'cs_chat';
     
     if (!catatan && !fileUrl && !status) { 
+      // If microphone icon clicked while text is empty, trigger Voice Note / Audio picker directly
+      if ($('#wa-send-icon').hasClass('fa-microphone')) {
+        $('#wa-attach-popover').hide();
+        $('#chat-file-upload').attr('accept', 'audio/*,.mp3,.ogg,.wav,.m4a,.aac,.opus,.webm').click();
+        return;
+      }
       notify('warning', 'Ketik pesan, pilih lampiran file, atau pilih status terlebih dahulu');
       return; 
     }

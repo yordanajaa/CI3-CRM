@@ -3,6 +3,11 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 class Model_crm extends CI_Model
 {
+	public function __construct()
+	{
+		parent::__construct();
+		@$this->db->query("SET NAMES utf8mb4");
+	}
 	/**
 	 * Get consolidated customer list from sales_order + penjualan_marketplace
 	 * Grouped by phone number (primary key for customer identity)

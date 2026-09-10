@@ -977,7 +977,7 @@ class Crm extends Admin
 			],
 			'timeline' => $timeline,
 			'count' => count($timeline)
-		]);
+		], JSON_UNESCAPED_UNICODE);
 	}
 
 	/**
@@ -993,11 +993,16 @@ class Crm extends Admin
 		$is_internal_note = (int)($this->input->post('is_internal_note') ?: 0);
 
 		if (empty($message) && !empty($file_url)) {
-			$message = '[Lampiran Media/Dokumen]: ' . $file_url;
+			$ext = strtolower(pathinfo(parse_url($file_url, PHP_URL_PATH), PATHINFO_EXTENSION));
+			if (in_array($ext, ['mp3', 'ogg', 'wav', 'm4a', 'aac', 'opus', 'webm', '3gp', 'amr']) || strpos($file_url, 'voice') !== false || strpos($file_url, 'audio') !== false) {
+				$message = '[Pesan Suara]: ' . $file_url;
+			} else {
+				$message = '[Lampiran Media/Dokumen]: ' . $file_url;
+			}
 		}
 
 		if (!$label_id || empty($message)) {
-			echo json_encode(['success' => false, 'message' => 'Label ID dan pesan atau file attachment tidak boleh kosong']);
+			echo json_encode(['success' => false, 'message' => 'Label ID dan pesan atau file attachment tidak boleh kosong'], JSON_UNESCAPED_UNICODE);
 			return;
 		}
 
@@ -1114,7 +1119,7 @@ class Crm extends Admin
 			$response['message'] = 'Catatan internal berhasil disimpan.';
 		}
 
-		echo json_encode($response);
+		echo json_encode($response, JSON_UNESCAPED_UNICODE);
 	}
 
 	/**
@@ -1159,7 +1164,7 @@ class Crm extends Admin
 				'no_pesanan' => $label->no_pesanan,
 				'status_label' => $label->status_label,
 			],
-		]);
+		], JSON_UNESCAPED_UNICODE);
 	}
 
 	public function get_new_messages()
