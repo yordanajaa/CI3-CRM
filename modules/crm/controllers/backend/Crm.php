@@ -175,6 +175,63 @@ class Crm extends Admin
 	}
 
 	/**
+	 * AJAX endpoint to add manual follow-up label entry
+	 */
+	public function add_manual_label_ajax()
+	{
+		header('Content-Type: application/json');
+
+		$nama = trim($this->input->post('customer_nama') ?: '');
+		$phone = trim($this->input->post('customer_phone') ?: '');
+		$no_pesanan = trim($this->input->post('no_pesanan') ?: '');
+		$source = trim($this->input->post('order_source') ?: 'Toko');
+		$tanggal_kirim = trim($this->input->post('tanggal_pengiriman') ?: date('Y-m-d'));
+		$cat_mode = trim($this->input->post('cat_mode') ?: 'all');
+
+		if (empty($nama) || empty($phone)) {
+			echo json_encode(['success' => false, 'message' => 'Nama Customer dan Nomor WhatsApp wajib diisi']);
+			return;
+		}
+
+		$clean_phone = $this->model_crm->normalize_phone_number($phone);
+		if (empty($no_pesanan)) {
+			$no_pesanan = 'MANUAL-' . date('YmdHis') . '-' . rand(100, 999);
+		}
+
+		$categories = $this->model_crm->get_categories(true);
+		if ($cat_mode !== 'all') {
+			$cat_id = (int)$cat_mode;
+			$categories = array_filter($categories, function($c) use ($cat_id) { return (int)$c->id === $cat_id; });
+		}
+
+		$inserted = 0;
+		$now = date('Y-m-d H:i:s');
+		foreach ($categories as $cat) {
+			$target = date('Y-m-d', strtotime($tanggal_kirim . ' + ' . $cat->jumlah_hari . ' days'));
+			$this->db->insert('crm_transaction_followup_labels', [
+				'order_source' => $source,
+				'order_id' => 0,
+				'order_table' => 'manual_entry',
+				'customer_nama' => $nama,
+				'customer_phone' => $clean_phone,
+				'no_pesanan' => $no_pesanan,
+				'tanggal_pengiriman' => $tanggal_kirim,
+				'followup_category_id' => $cat->id,
+				'tanggal_label_muncul' => $target,
+				'status_label' => 'Pending',
+				'created_at' => $now,
+				'updated_at' => $now,
+			]);
+			$inserted++;
+		}
+
+		echo json_encode([
+			'success' => true,
+			'message' => 'Berhasil menambahkan ' . $inserted . ' label follow-up manual untuk ' . $nama,
+		]);
+	}
+
+	/**
 	 * AJAX endpoint to upload local file attachments (Photos, PDFs, Documents, Voice Notes)
 	 */
 	public function upload_attachment_ajax()
@@ -193,7 +250,7 @@ class Crm extends Admin
 
 		$orig_name = $_FILES['file']['name'];
 		$file_ext  = strtolower(pathinfo($orig_name, PATHINFO_EXTENSION));
-		$allowed   = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'zip', 'rar', 'mp3', 'ogg', 'wav', 'm4a', 'aac', 'opus'];
+		$allowed   = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'zip', 'rar', 'mp3', 'ogg', 'wav', 'm4a', 'aac', 'opus', 'webm', '3gp', 'amr'];
 
 		if (!in_array($file_ext, $allowed)) {
 			echo json_encode(['success' => false, 'message' => 'Format file (.' . $file_ext . ') tidak didukung. Harap pilih gambar, PDF, dokumen Office, ZIP, atau audio.']);

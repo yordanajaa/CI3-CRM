@@ -18,9 +18,29 @@
 .table-log td { font-size: 13px; vertical-align: middle !important; }
 
 @media (max-width: 767px) {
-  .crm-header { padding: 18px 15px; text-align: center; }
-  .crm-header h2 { font-size: 18px; }
-  .crm-header .text-right { text-align: center !important; margin-top: 15px; }
+  .content { padding: 10px 8px !important; }
+  .crm-header { padding: 16px 14px; text-align: center; border-radius: 10px; margin-bottom: 14px; }
+  .crm-header h2 { font-size: 17px; }
+  .crm-header p { font-size: 11px; }
+  .crm-header .text-right { text-align: center !important; margin-top: 10px; }
+  .crm-header .text-right .btn { font-size: 12px; padding: 8px 16px; width: 100%; }
+
+  .proc-card { padding: 14px 12px; margin-bottom: 10px; border-radius: 8px; }
+  .proc-card .proc-title { font-size: 13px; }
+  .proc-card .proc-desc { font-size: 11px; }
+
+  .box-header .box-title { font-size: 12px; }
+  .box-tools .btn { font-size: 10px; }
+
+  .table-log th { font-size: 10px; padding: 6px 4px !important; white-space: nowrap; }
+  .table-log td { font-size: 11px; padding: 6px 4px !important; }
+  .badge-mode { font-size: 9px; padding: 2px 7px; }
+}
+
+@media (max-width: 480px) {
+  .crm-header h2 { font-size: 15px; }
+  .proc-card .proc-title { font-size: 12px; }
+  .table-log th, .table-log td { font-size: 9.5px; padding: 5px 3px !important; }
 }
 </style>
 

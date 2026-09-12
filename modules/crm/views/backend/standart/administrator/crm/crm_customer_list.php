@@ -50,10 +50,31 @@
 .btn-wa:hover { background: #128C7E; color: #fff; }
 
 @media (max-width: 767px) {
-  .crm-header { padding: 20px 16px; text-align: center; }
-  .crm-header h2 { font-size: 18px; }
-  .table-crm td, .table-crm th { font-size: 12px; padding: 8px 6px !important; }
-  .badge-source { font-size: 10px; padding: 2px 6px; }
+  .content { padding: 10px 8px !important; }
+  .crm-header { padding: 18px 14px; text-align: center; border-radius: 12px; margin-bottom: 14px; }
+  .crm-header h2 { font-size: 17px; }
+  .crm-header p { font-size: 11.5px; }
+
+  .box-body { padding: 10px !important; }
+  .input-group .form-control { font-size: 12px; height: 36px; }
+  .col-md-4 .btn { font-size: 11px; padding: 5px 10px; margin-bottom: 4px; }
+
+  .table-crm th { font-size: 10px; padding: 8px 4px !important; white-space: nowrap; }
+  .table-crm td { font-size: 11px; padding: 8px 4px !important; }
+  .badge-source { font-size: 9.5px; padding: 2px 7px; }
+  .pending-badge { font-size: 10px; padding: 2px 8px; }
+  .btn-wa { font-size: 10px; padding: 3px 8px; }
+
+  .stat-card { padding: 14px; margin-bottom: 10px; }
+  .stat-card .stat-num { font-size: 20px; }
+  .stat-card .stat-label { font-size: 9.5px; }
+}
+
+@media (max-width: 480px) {
+  .crm-header h2 { font-size: 15px; }
+  .col-md-4 { display: flex; flex-wrap: wrap; gap: 4px; }
+  .col-md-4 .btn { flex: 1; min-width: 45%; font-size: 10px; }
+  .table-crm th, .table-crm td { font-size: 10px; padding: 6px 3px !important; }
 }
 </style>
 

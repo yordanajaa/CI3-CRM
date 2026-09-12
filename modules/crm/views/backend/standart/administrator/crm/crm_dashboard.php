@@ -147,38 +147,61 @@
 }
 
 /* Mobile Responsiveness & Fluid Layout */
+@media (max-width: 991px) {
+  .crm-dash-header .row { text-align: center; }
+  .crm-dash-header .col-md-4.text-right { text-align: center !important; margin-top: 12px; }
+}
+
 @media (max-width: 767px) {
+  .content { padding: 10px 8px !important; }
   .crm-dash-header {
-    padding: 20px 18px;
+    padding: 18px 14px;
     text-align: center;
+    border-radius: 10px;
+    margin-bottom: 16px;
   }
-  .crm-dash-header h2 {
-    font-size: 20px;
-  }
+  .crm-dash-header h2 { font-size: 18px; }
+  .crm-dash-header p { font-size: 12px; }
   .crm-dash-header .text-right {
     text-align: center !important;
-    margin-top: 15px;
+    margin-top: 12px;
+  }
+  .crm-dash-header .text-right .btn {
+    font-size: 11px;
+    padding: 6px 12px;
+    margin-bottom: 4px;
   }
   .kpi-card {
-    padding: 15px;
-    margin-bottom: 12px;
+    padding: 14px 12px;
+    margin-bottom: 10px;
+    border-radius: 10px;
   }
-  .kpi-card .kpi-value {
-    font-size: 20px;
-  }
-  .kpi-card .kpi-label {
-    font-size: 10px;
-  }
+  .kpi-card .kpi-icon { width: 38px; height: 38px; font-size: 16px; margin-bottom: 8px; }
+  .kpi-card .kpi-value { font-size: 18px; }
+  .kpi-card .kpi-label { font-size: 9.5px; }
   .chart-box {
-    padding: 15px;
-    margin-bottom: 15px;
+    padding: 14px 12px;
+    margin-bottom: 14px;
+    border-radius: 10px;
   }
   .chart-box .chart-title {
-    font-size: 14px;
+    font-size: 13px;
     flex-direction: column;
     align-items: flex-start;
-    gap: 6px;
+    gap: 4px;
   }
+  .leader-table th { font-size: 10px; padding: 6px 4px !important; }
+  .leader-table td { font-size: 11.5px; padding: 8px 4px !important; }
+  .avatar-circle { width: 30px; height: 30px; font-size: 12px; margin-right: 6px !important; }
+  .badge-urgent { font-size: 10px; padding: 2px 8px; }
+}
+
+@media (max-width: 480px) {
+  .crm-dash-header h2 { font-size: 16px; }
+  .crm-dash-header .text-right { display: flex; flex-direction: column; gap: 6px; }
+  .crm-dash-header .text-right .btn { width: 100%; }
+  .kpi-card .kpi-value { font-size: 16px; }
+  .kpi-card .kpi-label { font-size: 9px; }
 }
 </style>
 

@@ -52,9 +52,42 @@
 .btn-indigo { background: #4f46e5; color: #fff; border: none; font-weight: 700; border-radius: 8px; transition: all 0.2s; }
 .btn-indigo:hover { background: #4338ca; color: #fff; }
 
+@media (max-width: 991px) {
+  .crm-banner { flex-direction: column; text-align: center; }
+  .crm-banner .btn-area { margin-top: 10px; justify-content: center; }
+}
+
 @media (max-width: 767px) {
-  .crm-banner { padding: 18px 16px; text-align: center; justify-content: center; }
-  .crm-banner .btn-area { margin-top: 12px; }
+  .content { padding: 10px 8px !important; }
+  .crm-banner { padding: 16px 14px; text-align: center; justify-content: center; border-radius: 10px; margin-bottom: 14px; }
+  .crm-banner .title-area h2 { font-size: 17px; }
+  .crm-banner .title-area p { font-size: 11px; }
+  .crm-banner .btn-area { margin-top: 10px; flex-wrap: wrap; justify-content: center; }
+  .crm-banner .btn-area .btn { font-size: 10.5px; padding: 5px 10px; }
+
+  .box-clean { border-radius: 10px; margin-bottom: 14px; }
+  .box-clean .box-header { padding: 12px 14px; }
+  .box-clean .box-title { font-size: 13px; }
+  .box-clean .box-body { padding: 14px !important; }
+
+  .box-body .row { margin-left: -4px; margin-right: -4px; }
+  .box-body .row > [class*="col-"] { padding-left: 4px; padding-right: 4px; margin-bottom: 8px; }
+  .box-body .form-control { font-size: 12px; height: 36px; }
+  .box-body label { font-size: 11px !important; }
+
+  #recipients-list { max-height: 200px; padding: 10px; font-size: 11.5px; }
+  #btn-execute-broadcast { font-size: 13px !important; padding: 10px !important; border-radius: 8px !important; }
+
+  .table-log th { font-size: 9.5px; padding: 6px 4px !important; }
+  .table-log td { font-size: 10.5px; padding: 6px 4px !important; }
+  .badge-source { font-size: 9px; padding: 2px 6px; }
+}
+
+@media (max-width: 480px) {
+  .crm-banner .title-area h2 { font-size: 15px; }
+  .crm-banner .btn-area { flex-direction: column; width: 100%; }
+  .crm-banner .btn-area .btn { width: 100%; }
+  .table-log th, .table-log td { font-size: 9.5px; padding: 5px 3px !important; }
 }
 </style>
 

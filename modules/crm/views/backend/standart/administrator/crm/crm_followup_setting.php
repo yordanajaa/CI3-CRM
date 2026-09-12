@@ -32,12 +32,39 @@
 .var-tag { display: inline-block; background: #e2e8f0; color: #334155; padding: 2px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; font-family: monospace; margin: 3px 2px; cursor: pointer; transition: all 0.2s ease; }
 .var-tag:hover { background: #6366f1; color: #fff; transform: translateY(-1px); }
 
+@media (max-width: 991px) {
+  .col-md-7, .col-md-5 { width: 100%; }
+}
+
 @media (max-width: 767px) {
-  .crm-header { padding: 20px 16px; text-align: center; }
-  .crm-header h2 { font-size: 18px; }
-  .crm-header .text-right { text-align: center !important; margin-top: 16px; }
-  .cat-card { padding: 15px; margin-bottom: 12px; }
+  .content { padding: 10px 8px !important; }
+  .crm-header { padding: 18px 14px; text-align: center; border-radius: 12px; margin-bottom: 14px; }
+  .crm-header h2 { font-size: 17px; }
+  .crm-header p { font-size: 11.5px; }
+  .crm-header .text-right { text-align: center !important; margin-top: 10px; }
+  .crm-header .text-right .btn { font-size: 11px; }
+
+  .cat-card { padding: 14px 12px; margin-bottom: 10px; border-radius: 10px; }
   .cat-card .cat-title { font-size: 14px; }
+  .cat-card .cat-code { font-size: 10px; }
+  .cat-card .cat-days { font-size: 12px; padding: 3px 10px; }
+  .cat-card .cat-template { font-size: 11px; padding: 10px 12px; max-height: 100px; }
+  .cat-card .col-md-8, .cat-card .col-md-4 { width: 100%; }
+  .cat-card .col-md-4 { text-align: left !important; margin-top: 8px; }
+
+  .var-tag { font-size: 10px; padding: 2px 8px; margin: 2px; }
+
+  .box-body { padding: 14px !important; }
+  .box-body .form-control { font-size: 12px; }
+  .box-body label { font-size: 12px; }
+  .box-footer { padding: 10px 14px !important; }
+  .box-footer .btn { font-size: 12px; }
+}
+
+@media (max-width: 480px) {
+  .crm-header h2 { font-size: 15px; }
+  .cat-card .cat-title { font-size: 13px; }
+  .cat-card .btn { font-size: 10px; padding: 3px 8px; }
 }
 </style>
 

@@ -21,13 +21,33 @@
 .trophy-bronze { color: #d97706; font-size: 16px; }
 
 @media (max-width: 767px) {
-  .crm-header { padding: 18px 15px; text-align: center; }
-  .crm-header h2 { font-size: 18px; }
-  .crm-header .text-right { text-align: center !important; margin-top: 15px; }
-  .stat-card { padding: 12px 10px; margin-bottom: 10px; }
-  .stat-card .num { font-size: 20px; }
-  .stat-card .lbl { font-size: 10px; }
-  .table-cs th, .table-cs td { font-size: 12px; }
+  .content { padding: 10px 8px !important; }
+  .crm-header { padding: 16px 14px; text-align: center; border-radius: 10px; margin-bottom: 14px; }
+  .crm-header h2 { font-size: 17px; }
+  .crm-header p { font-size: 11px; }
+  .crm-header .text-right { text-align: center !important; margin-top: 10px; }
+  .crm-header .text-right .btn { font-size: 10.5px; padding: 5px 10px; margin-bottom: 4px; }
+
+  .stat-card { padding: 12px 10px; margin-bottom: 8px; border-radius: 8px; }
+  .stat-card .num { font-size: 18px; }
+  .stat-card .lbl { font-size: 9px; }
+
+  .box-body { padding: 10px !important; }
+  .box-header .box-title { font-size: 12px; }
+  .form-control { font-size: 12px; }
+
+  .table-cs th { font-size: 9.5px; padding: 6px 3px !important; white-space: nowrap; }
+  .table-cs td { font-size: 10.5px; padding: 6px 3px !important; }
+  .table-cs .badge, .table-cs .label { font-size: 9.5px !important; padding: 2px 6px !important; }
+  .table-cs td[style*="font-size:14px"] { font-size: 11px !important; }
+}
+
+@media (max-width: 480px) {
+  .crm-header h2 { font-size: 15px; }
+  .crm-header .text-right { display: flex; flex-direction: column; gap: 4px; }
+  .crm-header .text-right .btn, .crm-header .text-right a { width: 100%; }
+  .stat-card .num { font-size: 16px; }
+  .table-cs th, .table-cs td { font-size: 9px; padding: 5px 2px !important; }
 }
 </style>
 

@@ -44,9 +44,37 @@
 .provider-card .p-title { font-weight: 800; font-size: 15px; color: #1e293b; }
 .provider-card .p-desc { font-size: 11px; color: #64748b; margin-top: 4px; }
 
+@media (max-width: 991px) {
+  .col-md-7, .col-md-5 { width: 100%; }
+}
+
 @media (max-width: 767px) {
-  .crm-header { padding: 20px 16px; text-align: center; }
-  .crm-header h2 { font-size: 18px; }
+  .content { padding: 10px 8px !important; }
+  .crm-header { padding: 18px 14px; text-align: center; border-radius: 12px; margin-bottom: 14px; }
+  .crm-header h2 { font-size: 17px; }
+  .crm-header p { font-size: 11px; }
+  .crm-header .text-right { text-align: center !important; margin-top: 10px; }
+  .crm-header .text-right .btn { font-size: 11px; }
+
+  .box-clean { border-radius: 10px; margin-bottom: 14px; }
+  .box-clean .box-header { padding: 12px 14px; }
+  .box-clean .box-title { font-size: 13px; }
+  .box-clean .box-body { padding: 14px !important; }
+
+  .provider-card { padding: 12px 10px; margin-bottom: 8px; }
+  .provider-card .p-title { font-size: 13px; }
+  .provider-card .p-desc { font-size: 10px; }
+
+  .form-control { font-size: 12px !important; }
+  label { font-size: 11.5px !important; }
+  .btn-block { font-size: 13px !important; }
+
+  #test-result-box pre { font-size: 9px !important; max-height: 100px !important; overflow-x: auto; }
+}
+
+@media (max-width: 480px) {
+  .crm-header h2 { font-size: 15px; }
+  .provider-card .p-title { font-size: 12px; }
 }
 </style>
 

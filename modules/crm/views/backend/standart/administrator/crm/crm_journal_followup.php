@@ -120,15 +120,102 @@
 .modal { z-index: 1050 !important; }
 .modal-dialog { z-index: 1060 !important; }
 
-@media (max-width: 767px) {
-  .crm-header { padding: 20px 16px; text-align: center; }
-  .crm-header h2 { font-size: 18px; }
-  .crm-header .text-right { text-align: center !important; margin-top: 16px; }
-  .stat-box { padding: 12px 10px; margin-bottom: 10px; }
-  .stat-box .num { font-size: 22px; }
-  .stat-box .lbl { font-size: 9px; }
+@media (max-width: 991px) {
+  .crm-header > div { flex-direction: column; align-items: center; text-align: center; }
+  .crm-header > div > div:last-child { justify-content: center; margin-top: 12px; }
   .filter-section .col-md-2 { margin-bottom: 8px; }
-  .cat-pill { padding: 5px 12px; font-size: 11px; }
+}
+
+@media (max-width: 767px) {
+  .content { padding: 10px 8px !important; }
+  .crm-header { padding: 18px 14px; text-align: center; border-radius: 12px; margin-bottom: 14px; }
+  .crm-header h2 { font-size: 17px; }
+  .crm-header p { font-size: 11.5px; }
+  .crm-header .text-right { text-align: center !important; margin-top: 12px; }
+  .crm-header > div > div:last-child .btn { font-size: 10.5px; padding: 5px 10px; margin-bottom: 4px; }
+
+  .stat-box { padding: 12px 10px; margin-bottom: 8px; border-radius: 10px; }
+  .stat-box .num { font-size: 20px; }
+  .stat-box .lbl { font-size: 9px; }
+  .row > .col-md-4 { width: 33.333%; float: left; padding-left: 4px; padding-right: 4px; }
+
+  .cat-pill { padding: 5px 10px; font-size: 10.5px; margin: 2px; }
+
+  .filter-section { margin-bottom: 12px; }
+  .filter-section .box-body { padding: 10px; }
+  .filter-section .col-md-2 { margin-bottom: 6px; }
+  .filter-section .form-control { font-size: 11px; height: 34px; }
+
+  .box-header { padding: 10px 12px !important; }
+  .box-header .box-title { font-size: 13px; }
+  .box-header .box-tools .btn { font-size: 10px; padding: 4px 8px; }
+
+  .table-journal th { font-size: 10px; padding: 8px 4px !important; white-space: nowrap; }
+  .table-journal td { font-size: 11px; padding: 8px 4px !important; }
+  .status-select { font-size: 10.5px; padding: 3px 6px; }
+  .badge-source { font-size: 9.5px; padding: 2px 8px; }
+  .cat-badge { font-size: 10px; padding: 2px 7px; }
+  .badge-h-followup { font-size: 9.5px; padding: 2px 7px; }
+  .label-selisih { font-size: 9.5px; padding: 1px 5px; }
+  .btn-wa-sm { font-size: 10px; padding: 4px 8px; }
+  .time-log-wa { font-size: 10px !important; }
+  .badge-wa-count { font-size: 9px !important; padding: 2px 6px !important; }
+
+  /* Chat Modal mobile full-screen */
+  .chat-modal .modal-dialog { max-width: 100%; margin: 6px; width: auto; }
+  .chat-modal .modal-content { border-radius: 10px; }
+  .chat-header { padding: 10px 12px; gap: 8px; }
+  .chat-header .avatar { width: 36px; height: 36px; font-size: 15px; }
+  .chat-header .info .name { font-size: 13.5px; }
+  .chat-header .info .meta { font-size: 10px; }
+  .chat-canvas { min-height: 260px; max-height: 55vh; padding: 10px 8px; }
+  .chat-bubble { max-width: 88%; font-size: 12.5px; padding: 7px 10px; }
+  .chat-bubble .bubble-time { font-size: 9px; }
+  .chat-status-bar { padding: 6px 10px; font-size: 11px; }
+  .chat-status-bar select { font-size: 11px; padding: 4px 6px; }
+
+  .wa-chat-footer { padding: 8px 10px; }
+  .sender-toggle { gap: 4px !important; margin-bottom: 6px !important; }
+  .sender-toggle .btn-toggle-sender { font-size: 10.5px !important; padding: 5px 8px !important; }
+
+  .wa-emoji-popover { width: 290px; left: 6px; bottom: 58px; padding: 8px; }
+  .wa-emoji-container { max-height: 180px; }
+  .wa-emoji-grid { grid-template-columns: repeat(7, 1fr); gap: 2px; font-size: 19px; }
+  .wa-emoji-item { padding: 4px 1px; }
+  .wa-emoji-category-title { font-size: 9.5px; margin: 6px 0 3px 2px; }
+
+  .wa-attach-popover { width: 220px; left: 6px; bottom: 58px; }
+
+  .wa-input-pill-container { gap: 5px !important; }
+  .wa-input-pill { padding: 3px 6px 3px 8px; min-height: 38px; gap: 5px; }
+  .wa-textarea { font-size: 13px; }
+  .wa-icon-btn { font-size: 17px; padding: 2px 4px; }
+  .wa-send-btn { width: 38px; height: 38px; font-size: 16px; }
+  .wa-mic-btn { width: 38px; height: 38px; font-size: 16px; }
+
+  #wa-mic-recording-bar { padding: 6px 10px !important; border-radius: 20px !important; margin-bottom: 6px !important; flex-wrap: wrap; gap: 6px; }
+  #wa-mic-recording-bar > div { gap: 6px !important; }
+  #wa-mic-recording-bar span { font-size: 11px !important; }
+  #wa-mic-recording-bar .btn { font-size: 10.5px !important; padding: 3px 10px !important; }
+
+  .wa-attachment-chip { padding: 6px 8px; font-size: 11px; border-radius: 8px; }
+
+  /* WA Preview Modal */
+  #modal-wa-preview .modal-dialog { margin: 6px; }
+  #modal-wa-preview .modal-body { padding: 12px; }
+  #modal-wa-preview .modal-body textarea { font-size: 12px; }
+  #modal-wa-preview .modal-footer .btn { font-size: 12px; padding: 6px 14px; }
+}
+
+@media (max-width: 480px) {
+  .crm-header h2 { font-size: 15px; }
+  .crm-header > div > div:last-child { flex-direction: column; width: 100%; }
+  .crm-header > div > div:last-child .btn { width: 100%; }
+  .stat-box .num { font-size: 18px; }
+  .cat-pill { font-size: 10px; padding: 4px 8px; }
+  .table-journal th, .table-journal td { font-size: 10px; padding: 6px 3px !important; }
+  .wa-emoji-popover { width: calc(100vw - 40px); left: 6px; }
+  .wa-emoji-grid { grid-template-columns: repeat(6, 1fr); font-size: 18px; }
 }
 </style>
 
@@ -140,6 +227,7 @@
         <p>Pantau tahapan after sales — Konfirmasi Pengiriman, H+3 Cek Sampai, H+7 Experience, Custom H+n</p>
       </div>
       <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <button class="btn btn-sm" style="background:#0284c7;color:#fff;border:none;border-radius:8px;font-weight:600;padding:7px 14px;" id="btn-open-manual-add" title="Tambah Data Follow-Up Manual Baru"><i class="fa fa-plus-circle"></i> Tambah Data Manual</button>
         <button class="btn btn-sm" style="background:#8e44ad;color:#fff;border:none;border-radius:8px;font-weight:600;padding:7px 14px;" id="btn-sync-cron" title="Pindai transaksi baru & buat label H+"><i class="fa fa-refresh"></i> Sync Label H+</button>
         
         <div class="btn-group">
@@ -324,8 +412,13 @@
               $today_time = strtotime(date('Y-m-d'));
               $diff_days = (int)round(($today_time - $target_time) / 86400);
 
-              $ship_time = !empty($e->tanggal_pengiriman) ? strtotime($e->tanggal_pengiriman) : 0;
-              $selisih_hari = ($ship_time > 0) ? (int)round(($target_time - $ship_time) / 86400) : (isset($e->jumlah_hari) ? (int)$e->jumlah_hari : 0);
+              if (!empty($e->tanggal_pengiriman)) {
+                $dt_ship = new DateTime($e->tanggal_pengiriman);
+                $dt_target = new DateTime($target);
+                $selisih_hari = (int)$dt_ship->diff($dt_target)->format('%r%a');
+              } else {
+                $selisih_hari = isset($e->jumlah_hari) ? (int)$e->jumlah_hari : 0;
+              }
 
               $st = $e->status_label;
               $bh_cls = 'bh-today';
@@ -594,6 +687,29 @@
   transform: scale(1.05);
 }
 
+.wa-mic-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #075e54;
+  border: 1px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.wa-mic-btn:hover {
+  background: #ffe4e6;
+  color: #e11d48;
+  border-color: #fecdd3;
+  transform: scale(1.05);
+}
+
 /* Emoji Popover */
 .wa-emoji-popover {
   position: absolute;
@@ -601,29 +717,46 @@
   left: 14px;
   background: #ffffff;
   border: 1px solid #cbd5e1;
-  border-radius: 12px;
-  padding: 10px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  border-radius: 14px;
+  padding: 10px 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.18);
   display: none;
   z-index: 1050;
-  width: 280px;
+  width: 330px;
+}
+.wa-emoji-container {
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.wa-emoji-category-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #64748b;
+  margin: 8px 0 4px 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 .wa-emoji-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 6px;
-  font-size: 20px;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  font-size: 21px;
   text-align: center;
 }
 .wa-emoji-item {
   cursor: pointer;
-  padding: 4px;
-  border-radius: 6px;
-  transition: background 0.15s;
+  padding: 5px 2px;
+  border-radius: 8px;
+  transition: background 0.15s, transform 0.1s;
   user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .wa-emoji-item:hover {
-  background: #f1f5f9;
+  background: #e2e8f0;
+  transform: scale(1.2);
 }
 
 /* Attachment Menu Popover */
@@ -755,37 +888,150 @@
           </button>
         </div>
 
-        <!-- Emoji Popover -->
+        <!-- Emoji Popover (Banyak Emoji Lengkap) -->
         <div class="wa-emoji-popover" id="wa-emoji-popover">
-          <div style="font-size:11px;font-weight:700;color:#64748b;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
-            <span>Pilih Emoji:</span>
-            <button type="button" id="btn-close-emoji" style="background:none;border:none;color:#94a3b8;cursor:pointer;">&times;</button>
+          <div style="font-size:11.5px;font-weight:700;color:#334155;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f1f5f9;padding-bottom:6px;">
+            <span><i class="fa fa-smile-o" style="color:#f59e0b;"></i> Pilih Emoji WhatsApp:</span>
+            <button type="button" id="btn-close-emoji" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:18px;line-height:1;">&times;</button>
           </div>
-          <div class="wa-emoji-grid">
-            <span class="wa-emoji-item">😊</span>
-            <span class="wa-emoji-item">😂</span>
-            <span class="wa-emoji-item">👍</span>
-            <span class="wa-emoji-item">🙏</span>
-            <span class="wa-emoji-item">❤️</span>
-            <span class="wa-emoji-item">📦</span>
-            <span class="wa-emoji-item">🚚</span>
-            <span class="wa-emoji-item">📄</span>
-            <span class="wa-emoji-item">💼</span>
-            <span class="wa-emoji-item">📌</span>
-            <span class="wa-emoji-item">✔️</span>
-            <span class="wa-emoji-item">❌</span>
-            <span class="wa-emoji-item">🎉</span>
-            <span class="wa-emoji-item">💡</span>
-            <span class="wa-emoji-item">🔥</span>
-            <span class="wa-emoji-item">💯</span>
-            <span class="wa-emoji-item">👏</span>
-            <span class="wa-emoji-item">🤝</span>
-            <span class="wa-emoji-item">📞</span>
-            <span class="wa-emoji-item">💬</span>
-            <span class="wa-emoji-item">⚡</span>
-            <span class="wa-emoji-item">🏼</span>
-            <span class="wa-emoji-item">🏽</span>
-            <span class="wa-emoji-item">⭐</span>
+          <div class="wa-emoji-container">
+            <div class="wa-emoji-category-title" style="margin-top:2px;">Ekspresi & Wajah</div>
+            <div class="wa-emoji-grid">
+              <span class="wa-emoji-item">😊</span>
+              <span class="wa-emoji-item">😀</span>
+              <span class="wa-emoji-item">😁</span>
+              <span class="wa-emoji-item">😂</span>
+              <span class="wa-emoji-item">🤣</span>
+              <span class="wa-emoji-item">😃</span>
+              <span class="wa-emoji-item">😄</span>
+              <span class="wa-emoji-item">😅</span>
+              <span class="wa-emoji-item">😆</span>
+              <span class="wa-emoji-item">😉</span>
+              <span class="wa-emoji-item">😋</span>
+              <span class="wa-emoji-item">😎</span>
+              <span class="wa-emoji-item">😍</span>
+              <span class="wa-emoji-item">😘</span>
+              <span class="wa-emoji-item">🥰</span>
+              <span class="wa-emoji-item">😗</span>
+              <span class="wa-emoji-item">😙</span>
+              <span class="wa-emoji-item">😚</span>
+              <span class="wa-emoji-item">☺️</span>
+              <span class="wa-emoji-item">🙂</span>
+              <span class="wa-emoji-item">🤗</span>
+              <span class="wa-emoji-item">🤩</span>
+              <span class="wa-emoji-item">🤔</span>
+              <span class="wa-emoji-item">🤨</span>
+              <span class="wa-emoji-item">😐</span>
+              <span class="wa-emoji-item">😑</span>
+              <span class="wa-emoji-item">😶</span>
+              <span class="wa-emoji-item">🙄</span>
+              <span class="wa-emoji-item">😏</span>
+              <span class="wa-emoji-item">😣</span>
+              <span class="wa-emoji-item">😥</span>
+              <span class="wa-emoji-item">😮</span>
+              <span class="wa-emoji-item">🤐</span>
+              <span class="wa-emoji-item">😯</span>
+              <span class="wa-emoji-item">😪</span>
+              <span class="wa-emoji-item">😫</span>
+              <span class="wa-emoji-item">😴</span>
+              <span class="wa-emoji-item">😌</span>
+              <span class="wa-emoji-item">😛</span>
+              <span class="wa-emoji-item">😜</span>
+              <span class="wa-emoji-item">😝</span>
+              <span class="wa-emoji-item">🤤</span>
+            </div>
+
+            <div class="wa-emoji-category-title">Tangan & Gestur</div>
+            <div class="wa-emoji-grid">
+              <span class="wa-emoji-item">👍</span>
+              <span class="wa-emoji-item">👎</span>
+              <span class="wa-emoji-item">👌</span>
+              <span class="wa-emoji-item">✌️</span>
+              <span class="wa-emoji-item">🤞</span>
+              <span class="wa-emoji-item">🤟</span>
+              <span class="wa-emoji-item">🤘</span>
+              <span class="wa-emoji-item">🤙</span>
+              <span class="wa-emoji-item">👈</span>
+              <span class="wa-emoji-item">👉</span>
+              <span class="wa-emoji-item">👆</span>
+              <span class="wa-emoji-item">👇</span>
+              <span class="wa-emoji-item">☝️</span>
+              <span class="wa-emoji-item">✋</span>
+              <span class="wa-emoji-item">🤚</span>
+              <span class="wa-emoji-item">🖐️</span>
+              <span class="wa-emoji-item">👋</span>
+              <span class="wa-emoji-item">💪</span>
+              <span class="wa-emoji-item">✍️</span>
+              <span class="wa-emoji-item">🙏</span>
+              <span class="wa-emoji-item">🤝</span>
+              <span class="wa-emoji-item">👏</span>
+              <span class="wa-emoji-item">🙌</span>
+              <span class="wa-emoji-item">🤲</span>
+            </div>
+
+            <div class="wa-emoji-category-title">Bisnis, Toko & Pengiriman</div>
+            <div class="wa-emoji-grid">
+              <span class="wa-emoji-item">📦</span>
+              <span class="wa-emoji-item">🚚</span>
+              <span class="wa-emoji-item">🚛</span>
+              <span class="wa-emoji-item">🛍️</span>
+              <span class="wa-emoji-item">🛒</span>
+              <span class="wa-emoji-item">💰</span>
+              <span class="wa-emoji-item">💵</span>
+              <span class="wa-emoji-item">💳</span>
+              <span class="wa-emoji-item">🧾</span>
+              <span class="wa-emoji-item">🏷️</span>
+              <span class="wa-emoji-item">💼</span>
+              <span class="wa-emoji-item">📄</span>
+              <span class="wa-emoji-item">📑</span>
+              <span class="wa-emoji-item">📋</span>
+              <span class="wa-emoji-item">📌</span>
+              <span class="wa-emoji-item">📍</span>
+              <span class="wa-emoji-item">✉️</span>
+              <span class="wa-emoji-item">📧</span>
+              <span class="wa-emoji-item">📞</span>
+              <span class="wa-emoji-item">📱</span>
+              <span class="wa-emoji-item">💬</span>
+              <span class="wa-emoji-item">⏰</span>
+              <span class="wa-emoji-item">⏳</span>
+              <span class="wa-emoji-item">📅</span>
+              <span class="wa-emoji-item">🗓️</span>
+              <span class="wa-emoji-item">🔍</span>
+              <span class="wa-emoji-item">📢</span>
+              <span class="wa-emoji-item">🎁</span>
+            </div>
+
+            <div class="wa-emoji-category-title">Simbol & Bintang</div>
+            <div class="wa-emoji-grid">
+              <span class="wa-emoji-item">⭐</span>
+              <span class="wa-emoji-item">🌟</span>
+              <span class="wa-emoji-item">✨</span>
+              <span class="wa-emoji-item">💫</span>
+              <span class="wa-emoji-item">🔥</span>
+              <span class="wa-emoji-item">💥</span>
+              <span class="wa-emoji-item">💯</span>
+              <span class="wa-emoji-item">❤️</span>
+              <span class="wa-emoji-item">💖</span>
+              <span class="wa-emoji-item">💕</span>
+              <span class="wa-emoji-item">✔️</span>
+              <span class="wa-emoji-item">❌</span>
+              <span class="wa-emoji-item">❗</span>
+              <span class="wa-emoji-item">❓</span>
+              <span class="wa-emoji-item">⚠️</span>
+              <span class="wa-emoji-item">🔴</span>
+              <span class="wa-emoji-item">🟢</span>
+              <span class="wa-emoji-item">🔵</span>
+              <span class="wa-emoji-item">👑</span>
+              <span class="wa-emoji-item">💎</span>
+              <span class="wa-emoji-item">🎉</span>
+              <span class="wa-emoji-item">🎊</span>
+              <span class="wa-emoji-item">💡</span>
+              <span class="wa-emoji-item">⚡</span>
+              <span class="wa-emoji-item">🚀</span>
+              <span class="wa-emoji-item">🏆</span>
+              <span class="wa-emoji-item">🎯</span>
+              <span class="wa-emoji-item">🥇</span>
+            </div>
           </div>
         </div>
 
@@ -832,7 +1078,18 @@
         </div>
 
         <!-- Hidden Native File Upload Input -->
-        <input type="file" id="chat-file-upload" style="display:none;" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,audio/*">
+        <input type="file" id="chat-file-upload" style="display:none;" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar">
+
+        <!-- WhatsApp Reply Quote Preview Bar -->
+        <div id="wa-reply-preview-bar" style="display:none;background:#f0fdf4;border-left:4px solid #00a884;padding:6px 12px;margin-bottom:8px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,0.05);position:relative;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div style="font-weight:700;font-size:11.5px;color:#00a884;">
+              <i class="fa fa-reply"></i> Membalas: <span id="wa-reply-sender-name">Nama</span>
+            </div>
+            <button type="button" id="btn-cancel-reply" style="background:none;border:none;color:#ef4444;font-size:14px;font-weight:700;cursor:pointer;padding:0 4px;" title="Batal Balas">&times;</button>
+          </div>
+          <div id="wa-reply-text-preview" style="font-size:11px;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;max-width:92%;">Pesan...</div>
+        </div>
 
         <!-- WhatsApp Input Bar (Paperclip - Emoji - Input Textarea - Send Button) -->
         <div class="wa-input-pill-container">
@@ -845,8 +1102,8 @@
             </button>
             <textarea id="note-text" class="wa-textarea" rows="1" placeholder="Ketik pesan"></textarea>
           </div>
-          <button class="wa-send-btn" id="btn-save-note" title="Kirim Pesan / Rekam Voice Note">
-            <i class="fa fa-microphone" id="wa-send-icon"></i>
+          <button type="button" class="wa-send-btn" id="btn-save-note" title="Kirim Pesan (✈️)">
+            <i class="fa fa-paper-plane" id="wa-send-icon"></i>
           </button>
         </div>
       </div>
@@ -888,6 +1145,76 @@
   </div>
 </div>
 
+<!-- Modal: Tambah Follow-Up Manual -->
+<div class="modal fade" id="modal-manual-add" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content" style="border-radius:12px;overflow:hidden;border:none;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+      <div class="modal-header" style="background:#0284c7;color:#fff;padding:14px 18px;">
+        <button type="button" class="close" data-dismiss="modal" style="color:#fff;opacity:0.9;">&times;</button>
+        <h4 class="modal-title" style="font-weight:700;font-size:15px;"><i class="fa fa-plus-circle"></i> Tambah Follow-Up Manual Baru</h4>
+      </div>
+      <form id="form-manual-add">
+        <div class="modal-body" style="padding:18px;">
+          <div class="form-group">
+            <label style="font-size:12px;color:#334155;font-weight:600;">Nama Customer <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="customer_nama" placeholder="Contoh: Budi Santoso" required style="border-radius:8px;height:38px;">
+          </div>
+          <div class="form-group">
+            <label style="font-size:12px;color:#334155;font-weight:600;">Nomor WhatsApp / Telepon <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="customer_phone" placeholder="Contoh: 081234567890" required style="border-radius:8px;height:38px;">
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label style="font-size:12px;color:#334155;font-weight:600;">No. Pesanan / Resi (Opsional)</label>
+                <input type="text" class="form-control" name="no_pesanan" placeholder="Contoh: INV-20260901" style="border-radius:8px;height:38px;">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label style="font-size:12px;color:#334155;font-weight:600;">Sumber Order</label>
+                <select class="form-control" name="order_source" style="border-radius:8px;height:38px;">
+                  <option value="Toko">Toko</option>
+                  <option value="WhatsApp">WhatsApp</option>
+                  <option value="Shopee">Shopee</option>
+                  <option value="Tokopedia">Tokopedia</option>
+                  <option value="TikTok Shop">TikTok Shop</option>
+                  <option value="Lazada">Lazada</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label style="font-size:12px;color:#334155;font-weight:600;">Tanggal Kirim / Transaksi</label>
+                <input type="date" class="form-control" name="tanggal_pengiriman" value="<?= date('Y-m-d'); ?>" required style="border-radius:8px;height:38px;">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label style="font-size:12px;color:#334155;font-weight:600;">Kategori Label</label>
+                <select class="form-control" name="cat_mode" style="border-radius:8px;height:38px;">
+                  <option value="all">Semua Kategori (H+0 s/d H+30)</option>
+                  <?php foreach ($categories as $c): ?>
+                  <option value="<?= $c->id; ?>"><?= htmlspecialchars($c->nama_kategori); ?> (H+<?= $c->jumlah_hari; ?>)</option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer" style="background:#f8fafc;padding:12px 18px;">
+          <button type="button" class="btn btn-default" data-dismiss="modal" style="border-radius:8px;">Batal</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-manual-add" style="background:#0284c7;border:none;border-radius:8px;font-weight:700;padding:8px 20px;">
+            <i class="fa fa-save"></i> Simpan Follow-Up
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <script>
 window.addEventListener('load', function() {
   var csrf_name = '<?= $this->security->get_csrf_token_name(); ?>';
@@ -897,6 +1224,7 @@ window.addEventListener('load', function() {
   // Move modals to body to prevent container z-index overlay issues
   if ($('#modal-note').length) $('#modal-note').appendTo('body');
   if ($('#modal-wa-preview').length) $('#modal-wa-preview').appendTo('body');
+  if ($('#modal-manual-add').length) $('#modal-manual-add').appendTo('body');
 
   $('.modal-backdrop').remove();
   $('body').removeClass('modal-open');
@@ -1393,6 +1721,14 @@ window.addEventListener('load', function() {
     text = text.replace(/\[Lampiran Media\/Dokumen\]:\s*/gi, '');
     text = text.replace(/\[Lampiran File\]:\s*/gi, '');
 
+    // Render WhatsApp quote blocks
+    text = text.replace(/(?:^|<br>)(?:&gt;|>)\s*\*Membalas ([^*]+)\*:\s*(?:&quot;|")([^"\n<]+)(?:&quot;|")(?:\s*<br>|\s*\n)?/gi, function(m, qSender, qText) {
+      return '<div style="background:rgba(0,168,132,0.12);border-left:3.5px solid #00a884;padding:4px 8px;border-radius:6px;font-size:11px;margin-bottom:6px;color:#1e293b;">' +
+               '<div style="font-weight:700;color:#00a884;font-size:10.5px;"><i class="fa fa-reply"></i> Membalas ' + $('<div>').text(qSender).html() + '</div>' +
+               '<div style="color:#475569;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px;">' + $('<div>').text(qText).html() + '</div>' +
+             '</div>';
+    });
+
     return text.replace(/\n/g, '<br>');
   }
 
@@ -1422,6 +1758,7 @@ window.addEventListener('load', function() {
     var formattedMsg = formatChatMessage(item.message || '');
     var timeStr = (item.created_at || '').substring(11, 16);
     var statusIcon = '';
+    var rawMsg = $('<div>').text(item.message || '').html();
 
     if (item.direction === 'outgoing') {
       // CS sent → right (green bubble)
@@ -1434,8 +1771,11 @@ window.addEventListener('load', function() {
         statusIcon = '<i class="fa fa-check-circle" style="color:#34d399;font-size:10px;"></i>';
       }
 
-      html += '<div class="chat-bubble bubble-outgoing">';
-      html += '<div class="bubble-sender-head" style="font-size:11px;font-weight:700;color:#075e54;margin-bottom:3px;"><i class="fa fa-user-circle"></i> ' + $('<div>').text(csSender).html() + '</div>';
+      html += '<div class="chat-bubble bubble-outgoing" style="position:relative;">';
+      html += '<div class="bubble-sender-head" style="font-size:11px;font-weight:700;color:#075e54;margin-bottom:3px;display:flex;align-items:center;justify-content:space-between;">' +
+                '<span><i class="fa fa-user-circle"></i> ' + $('<div>').text(csSender).html() + '</span>' +
+                '<button type="button" class="btn-reply-msg" data-sender="' + $('<div>').text(csSender).html() + '" data-msg="' + rawMsg + '" style="background:none;border:none;color:#047857;font-size:10px;font-weight:700;cursor:pointer;padding:0 2px;" title="Balas pesan ini"><i class="fa fa-reply"></i> Balas</button>' +
+              '</div>';
       html += '<div>' + formattedMsg + '</div>';
 
       // Show error message if failed
@@ -1451,8 +1791,11 @@ window.addEventListener('load', function() {
     } else if (item.direction === 'incoming') {
       // Customer reply → left (clean WhatsApp style white bubble)
       var custSender = item.sender || 'Pelanggan';
-      html += '<div class="chat-bubble bubble-incoming">';
-      html += '<div class="bubble-sender-head" style="font-size:11px;font-weight:700;color:#15803d;margin-bottom:3px;"><i class="fa fa-whatsapp" style="color:#25D366;"></i> ' + $('<div>').text(custSender).html() + '</div>';
+      html += '<div class="chat-bubble bubble-incoming" style="position:relative;">';
+      html += '<div class="bubble-sender-head" style="font-size:11px;font-weight:700;color:#15803d;margin-bottom:3px;display:flex;align-items:center;justify-content:space-between;">' +
+                '<span><i class="fa fa-whatsapp" style="color:#25D366;"></i> ' + $('<div>').text(custSender).html() + '</span>' +
+                '<button type="button" class="btn-reply-msg" data-sender="' + $('<div>').text(custSender).html() + '" data-msg="' + rawMsg + '" style="background:none;border:none;color:#166534;font-size:10px;font-weight:700;cursor:pointer;padding:0 2px;" title="Balas pesan ini"><i class="fa fa-reply"></i> Balas</button>' +
+              '</div>';
       html += '<div>' + formattedMsg + '</div>';
       html += '<div class="bubble-time">' + timeStr + '</div>';
       html += '</div>';
@@ -1460,8 +1803,11 @@ window.addEventListener('load', function() {
     } else {
       // Internal note → center (amber)
       var noteSender = item.sender || 'CS Admin';
-      html += '<div class="chat-bubble bubble-note">';
-      html += '<div class="bubble-sender" style="font-weight:700;color:#92400e;margin-bottom:3px;"><i class="fa fa-bookmark"></i> Catatan Internal (' + $('<div>').text(noteSender).html() + ')</div>';
+      html += '<div class="chat-bubble bubble-note" style="position:relative;">';
+      html += '<div class="bubble-sender" style="font-weight:700;color:#92400e;margin-bottom:3px;display:flex;align-items:center;justify-content:space-between;">' +
+                '<span><i class="fa fa-bookmark"></i> Catatan Internal (' + $('<div>').text(noteSender).html() + ')</span>' +
+                '<button type="button" class="btn-reply-msg" data-sender="' + $('<div>').text(noteSender).html() + '" data-msg="' + rawMsg + '" style="background:none;border:none;color:#b45309;font-size:10px;font-weight:700;cursor:pointer;padding:0 2px;" title="Balas pesan ini"><i class="fa fa-reply"></i> Balas</button>' +
+              '</div>';
       if (item.status_kirim && item.status_kirim !== 'delivered') html += '<div style="font-size:10px;margin-bottom:2px;"><span style="background:#f59e0b;color:#fff;padding:1px 6px;border-radius:4px;font-size:9px;">' + $('<div>').text(item.status_kirim).html() + '</span></div>';
       html += '<div>' + formattedMsg + '</div>';
       html += '<div class="bubble-time" style="justify-content:center;color:#b45309;">' + timeStr + '</div>';
@@ -1600,18 +1946,10 @@ window.addEventListener('load', function() {
     $('#wa-attachment-chip').hide();
   });
 
-  // Dynamic icon toggle for send button (Microphone when empty vs Plane when text/file present)
-  $(document).on('input change keyup', '#note-text, #note-file-url', function() {
-    var text = $.trim($('#note-text').val());
-    var file = $.trim($('#note-file-url').val());
-    var $icon = $('#wa-send-icon');
-    if (text || file) {
-      $icon.removeClass('fa-microphone').addClass('fa-paper-plane');
-      $('#btn-save-note').attr('title', 'Kirim Pesan');
-    } else {
-      $icon.removeClass('fa-paper-plane').addClass('fa-microphone');
-      $('#btn-save-note').attr('title', 'Kirim Pesan / Rekam Voice Note');
-    }
+  // Dedicated Mic Recording Button Click Handler
+  $(document).on('click', '#btn-start-mic-rec', function(e) {
+    e.preventDefault();
+    startMicRecording();
   });
 
   // ===== Sender Type Toggle (CS WA Reply vs Internal Note) =====
@@ -1641,6 +1979,166 @@ window.addEventListener('load', function() {
     }
   });
 
+  // ===== In-Browser Microphone Voice Recording (Web MediaRecorder API) =====
+  var mediaRecorder = null;
+  var audioChunks = [];
+  var recTimerInterval = null;
+  var recSeconds = 0;
+
+  function dateStr() {
+    var dt = new Date();
+    return dt.getFullYear() + ('0' + (dt.getMonth()+1)).slice(-2) + ('0' + dt.getDate()).slice(-2) + '_' + ('0' + dt.getHours()).slice(-2) + ('0' + dt.getMinutes()).slice(-2) + ('0' + dt.getSeconds()).slice(-2);
+  }
+
+  function startMicRecording() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      $('#chat-file-upload').attr('accept', 'audio/*,.mp3,.ogg,.wav,.m4a,.aac,.opus,.webm').click();
+      return;
+    }
+
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+      audioChunks = [];
+      var mimeType = 'audio/webm';
+      if (!MediaRecorder.isTypeSupported('audio/webm')) {
+        if (MediaRecorder.isTypeSupported('audio/ogg')) mimeType = 'audio/ogg';
+        else if (MediaRecorder.isTypeSupported('audio/mp4')) mimeType = 'audio/mp4';
+        else mimeType = '';
+      }
+
+      try {
+        mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType: mimeType }) : new MediaRecorder(stream);
+      } catch(e) {
+        mediaRecorder = new MediaRecorder(stream);
+      }
+
+      mediaRecorder.ondataavailable = function(e) {
+        if (e.data && e.data.size > 0) {
+          audioChunks.push(e.data);
+        }
+      };
+
+      mediaRecorder.start(100);
+
+      recSeconds = 0;
+      $('#wa-rec-timer').text('00:00');
+      $('#wa-mic-recording-bar').css('display', 'flex');
+      $('.wa-input-pill-container').slideUp(150);
+
+      recTimerInterval = setInterval(function() {
+        recSeconds++;
+        var m = ('0' + Math.floor(recSeconds / 60)).slice(-2);
+        var s = ('0' + (recSeconds % 60)).slice(-2);
+        $('#wa-rec-timer').text(m + ':' + s);
+      }, 1000);
+
+    }).catch(function(err) {
+      notify('info', 'Izin mikrofon tidak diberikan. Membuka pemilih berkas audio...');
+      $('#chat-file-upload').attr('accept', 'audio/*,.mp3,.ogg,.wav,.m4a,.aac,.opus,.webm').click();
+    });
+  }
+
+  function stopAndSendMicRecording() {
+    if (!mediaRecorder || mediaRecorder.state === 'inactive') return;
+
+    clearInterval(recTimerInterval);
+    recTimerInterval = null;
+
+    mediaRecorder.onstop = function() {
+      if (mediaRecorder.stream) {
+        mediaRecorder.stream.getTracks().forEach(function(track) { track.stop(); });
+      }
+
+      var blobType = mediaRecorder.mimeType || 'audio/webm';
+      var audioBlob = new Blob(audioChunks, { type: blobType });
+      var ext = 'webm';
+      if (blobType.indexOf('ogg') !== -1) ext = 'ogg';
+      else if (blobType.indexOf('mp4') !== -1 || blobType.indexOf('m4a') !== -1) ext = 'm4a';
+      else if (blobType.indexOf('wav') !== -1) ext = 'wav';
+
+      var filename = 'voice_rec_' + dateStr() + '.' + ext;
+      var file = new File([audioBlob], filename, { type: blobType });
+
+      notify('info', 'Mengunggah pesan suara...');
+      var formData = new FormData();
+      formData.append('file', file);
+      if (csrf_name && csrf_hash) formData.append(csrf_name, csrf_hash);
+
+      $.ajax({
+        url: _BASE + 'administrator/crm/upload_attachment_ajax',
+        type: 'POST',
+        data: formData,
+        contentType: false,
+        processData: false,
+        success: function(res) {
+          var r = parseRes(res);
+          if (r.success && r.file_url) {
+            var lid = $('#note-label-id').val();
+            var status = $('#note-status').val();
+            var senderType = $('#note-sender-type').val() || 'cs_chat';
+            var isInternalNote = (senderType === 'cs') ? 1 : 0;
+
+            $.ajax({
+              url: _BASE + 'administrator/crm/send_message_ajax',
+              type: 'POST',
+              data: buildPayload({
+                label_id: lid,
+                message: '[Pesan Suara]: ' + r.file_url,
+                file_url: r.file_url,
+                is_internal_note: isInternalNote
+              }),
+              success: function(sres) {
+                var sr = parseRes(sres);
+                if (sr.success) {
+                  notify('success', 'Pesan suara berhasil dikirim!');
+                  isFirstLoad = true;
+                  loadChatTimeline(lid, false);
+                } else {
+                  notify('error', sr.message || 'Gagal mengirim pesan suara');
+                }
+              }
+            });
+          } else {
+            notify('error', r.message || 'Gagal mengunggah pesan suara');
+          }
+        },
+        error: function() {
+          notify('error', 'Gagal mengunggah rekaman suara');
+        },
+        complete: function() {
+          $('#wa-mic-recording-bar').hide();
+          $('.wa-input-pill-container').slideDown(150);
+        }
+      });
+    };
+
+    mediaRecorder.stop();
+  }
+
+  function cancelMicRecording() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.onstop = function() {
+        if (mediaRecorder.stream) {
+          mediaRecorder.stream.getTracks().forEach(function(track) { track.stop(); });
+        }
+      };
+      mediaRecorder.stop();
+    }
+    clearInterval(recTimerInterval);
+    recTimerInterval = null;
+    audioChunks = [];
+    $('#wa-mic-recording-bar').hide();
+    $('.wa-input-pill-container').slideDown(150);
+    notify('info', 'Perekaman suara dibatalkan');
+  }
+
+  $(document).on('click', '#btn-cancel-recording', function() {
+    cancelMicRecording();
+  });
+
+  $(document).on('click', '#btn-stop-send-recording', function() {
+    stopAndSendMicRecording();
+  });
+
   // ===== Save Note / Chat Message (via send_message_ajax) =====
   $(document).on('click', '#btn-save-note', function(e) {
     e.preventDefault();
@@ -1658,12 +2156,6 @@ window.addEventListener('load', function() {
     var senderType = $('#note-sender-type').val() || 'cs_chat';
     
     if (!catatan && !fileUrl && !status) { 
-      // If microphone icon clicked while text is empty, trigger Voice Note / Audio picker directly
-      if ($('#wa-send-icon').hasClass('fa-microphone')) {
-        $('#wa-attach-popover').hide();
-        $('#chat-file-upload').attr('accept', 'audio/*,.mp3,.ogg,.wav,.m4a,.aac,.opus,.webm').click();
-        return;
-      }
       notify('warning', 'Ketik pesan, pilih lampiran file, atau pilih status terlebih dahulu');
       return; 
     }
@@ -1693,6 +2185,13 @@ window.addEventListener('load', function() {
       return;
     }
 
+    var replySender = $('#wa-reply-preview-bar').is(':visible') ? $.trim($('#wa-reply-sender-name').text()) : '';
+    var replyText = $('#wa-reply-preview-bar').is(':visible') ? $.trim($('#wa-reply-text-preview').text()) : '';
+
+    if (replySender && replyText && catatan) {
+      catatan = '> *Membalas ' + replySender + '*: "' + replyText + '"\n\n' + catatan;
+    }
+
     var isInternalNote = (senderType === 'cs') ? 1 : 0;
 
     $btn.prop('disabled', true).addClass('is-sending').html('<i class="fa fa-spin fa-spinner"></i>');
@@ -1709,9 +2208,13 @@ window.addEventListener('load', function() {
       }),
       success: function(res) {
         var r = parseRes(res);
-        var currIconClass = ($('#note-text').val() || $('#note-file-url').val()) ? 'fa-paper-plane' : 'fa-microphone';
-        $btn.prop('disabled', false).html('<i class="fa ' + currIconClass + '" id="wa-send-icon"></i>');
+        $btn.prop('disabled', false).html('<i class="fa fa-paper-plane" id="wa-send-icon"></i>');
         if (r.success) {
+          // Hide reply preview bar
+          $('#wa-reply-preview-bar').slideUp(100);
+          $('#wa-reply-sender-name').text('');
+          $('#wa-reply-text-preview').text('');
+
           // Show appropriate notification
           if (r.send_error) {
             notify('warning', r.message);
@@ -1751,7 +2254,6 @@ window.addEventListener('load', function() {
           $('#wa-attachment-chip').hide();
           $('#wa-url-input-container').slideUp(150);
           $('#note-status').val('');
-          $('#wa-send-icon').removeClass('fa-paper-plane').addClass('fa-microphone');
 
           // Force a full timeline reload to show the new message immediately
           isFirstLoad = true;
@@ -1764,8 +2266,7 @@ window.addEventListener('load', function() {
         notify('error', 'Terjadi kesalahan: ' + (xhr.statusText || 'Error'));
       },
       complete: function() {
-        var currIconClass = ($('#note-text').val() || $('#note-file-url').val()) ? 'fa-paper-plane' : 'fa-microphone';
-        $btn.prop('disabled', false).removeClass('is-sending').html('<i class="fa ' + currIconClass + '" id="wa-send-icon"></i>');
+        $btn.prop('disabled', false).removeClass('is-sending').html('<i class="fa fa-paper-plane" id="wa-send-icon"></i>');
       }
     });
   });
@@ -1793,6 +2294,65 @@ window.addEventListener('load', function() {
       });
     }
   }
+
+  // ===== Reply Message Event Handlers =====
+  $(document).on('click', '.btn-reply-msg', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    var sender = $(this).attr('data-sender') || 'Pesan';
+    var rawMsg = $(this).attr('data-msg') || '';
+    
+    // Clean rawMsg for quote preview
+    var cleanMsg = rawMsg.replace(/\[Lampiran[^\]]+\]:\s*/gi, '').replace(/https?:\/\/[^\s]+/gi, '[Lampiran File]').trim();
+    if (cleanMsg.length > 70) cleanMsg = cleanMsg.substring(0, 70) + '...';
+    if (!cleanMsg) cleanMsg = '[Lampiran File]';
+
+    $('#wa-reply-sender-name').text(sender);
+    $('#wa-reply-text-preview').text(cleanMsg);
+    $('#wa-reply-preview-bar').slideDown(150);
+
+    $('#note-text').focus();
+  });
+
+  $(document).on('click', '#btn-cancel-reply', function() {
+    $('#wa-reply-preview-bar').slideUp(100);
+    $('#wa-reply-sender-name').text('');
+    $('#wa-reply-text-preview').text('');
+  });
+
+  // ===== Manual Follow-Up Add Event Handlers =====
+  $(document).on('click', '#btn-open-manual-add', function() {
+    $('.modal-backdrop').remove();
+    $('#modal-manual-add').modal('show');
+  });
+
+  $(document).on('submit', '#form-manual-add', function(e) {
+    e.preventDefault();
+    var $btn = $('#btn-submit-manual-add');
+    $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Menyimpan...');
+
+    $.ajax({
+      url: _BASE + 'administrator/crm/add_manual_label_ajax',
+      type: 'POST',
+      data: buildPayload($(this).serialize()),
+      success: function(res) {
+        var r = parseRes(res);
+        $btn.prop('disabled', false).html('<i class="fa fa-save"></i> Simpan Follow-Up');
+        if (r.success) {
+          notify('success', r.message || 'Data follow-up manual berhasil ditambahkan!');
+          $('#modal-manual-add').modal('hide');
+          $('#form-manual-add')[0].reset();
+          setTimeout(function() { location.reload(); }, 1200);
+        } else {
+          notify('error', r.message || 'Gagal menambahkan data');
+        }
+      },
+      error: function() {
+        $btn.prop('disabled', false).html('<i class="fa fa-save"></i> Simpan Follow-Up');
+        notify('error', 'Gagal menghubungi server');
+      }
+    });
+  });
 });
 </script>
 

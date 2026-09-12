@@ -92,13 +92,49 @@
 .table-crm th { background: #f1f5f9; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: #475569; font-weight: 700; }
 .table-crm td { font-size: 13px; vertical-align: middle !important; color: #334155; }
 
+@media (max-width: 991px) {
+  .profile-header .col-md-1 { display: none; }
+  .profile-header .text-right { text-align: center !important; margin-top: 12px; }
+}
+
 @media (max-width: 767px) {
-  .profile-header { padding: 20px 16px; text-align: center; }
-  .profile-header .name { font-size: 20px; }
-  .profile-header .text-right { text-align: center !important; margin-top: 16px; }
-  .summary-card { padding: 12px; margin-bottom: 10px; }
-  .summary-card .num { font-size: 20px; }
+  .content { padding: 10px 8px !important; }
+  .profile-header { padding: 18px 14px; text-align: center; border-radius: 12px; margin-bottom: 14px; }
+  .profile-header .name { font-size: 19px; }
+  .profile-header .phone { font-size: 13px; }
+  .profile-header .col-md-1 { display: none; }
+  .profile-header .text-right { text-align: center !important; margin-top: 10px; }
+  .profile-header .text-right .btn { font-size: 10.5px; padding: 5px 10px; margin-bottom: 4px; }
+  .profile-header div[style*="margin-top: 8px"] { margin-top: 8px; }
+
+  .summary-card { padding: 12px 10px; margin-bottom: 8px; border-radius: 10px; }
+  .summary-card .num { font-size: 18px; }
   .summary-card .lbl { font-size: 9px; }
+
+  .box-header { padding: 10px 12px !important; }
+  .box-header .box-title { font-size: 13px; }
+
+  .table-crm th { font-size: 10px; padding: 8px 4px !important; white-space: nowrap; }
+  .table-crm td { font-size: 11px; padding: 8px 4px !important; }
+  .badge-source { font-size: 9.5px; padding: 2px 7px; }
+  .badge-status { font-size: 9px; padding: 3px 8px; }
+
+  .trx-detail-panel td { padding: 10px 12px !important; }
+  .trx-detail-panel .col-md-7, .trx-detail-panel .col-md-5 { width: 100%; margin-bottom: 10px; }
+  .trx-detail-panel h5 { font-size: 13px; }
+
+  .timeline-fu { padding-left: 18px; }
+  .tl-item { padding: 8px 10px; }
+  .tl-item .tl-title { font-size: 12px; }
+  .tl-item .tl-date { font-size: 10px; }
+}
+
+@media (max-width: 480px) {
+  .profile-header .name { font-size: 17px; }
+  .profile-header .text-right { display: flex; flex-direction: column; gap: 4px; }
+  .profile-header .text-right .btn { width: 100%; }
+  .summary-card .num { font-size: 16px; }
+  .table-crm th, .table-crm td { font-size: 10px; padding: 6px 3px !important; }
 }
 </style>
 

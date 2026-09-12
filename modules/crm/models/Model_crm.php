@@ -192,6 +192,9 @@ class Model_crm extends CI_Model
 	 */
 	public function get_journal_entries($filters = [], $limit = 25, $offset = 0)
 	{
+		// Auto-sync dates for all labels to guarantee order ship date & H+n category alignment
+		$this->sync_label_dates_if_needed();
+
 		$apply_where = function() use ($filters) {
 			$this->db->from('crm_transaction_followup_labels tfl');
 			$this->db->join('crm_followup_categories fc', 'tfl.followup_category_id = fc.id');
@@ -1018,18 +1021,10 @@ class Model_crm extends CI_Model
 
 		if ($provider === 'fonnte') {
 			$headers[] = 'Authorization: ' . $api_key;
-			
-			// Clean message caption when sending media/files so Fonnte delivers native WhatsApp media attachments
-			$clean_message = $message;
-			if (!empty($file_url)) {
-				if (strpos($clean_message, '[Lampiran') === 0 || strpos($clean_message, '[Pesan Suara]') === 0) {
-					$clean_message = trim(preg_replace('/^\[[^\]]+\]:\s*https?:\/\/[^\s]+/i', '', $clean_message));
-				}
-			}
 
 			$post_data = [
 				'target' => $phone,
-				'message' => $clean_message,
+				'message' => $message,
 			];
 			if (!empty($file_url)) {
 				$post_data['url'] = $file_url;
@@ -1151,6 +1146,44 @@ class Model_crm extends CI_Model
 	}
 
 	/**
+	 * Auto-sync label dates to match actual order dates & category days H+n
+	 */
+	public function sync_label_dates_if_needed()
+	{
+		// Sync sales_order dates
+		$this->db->query("
+			UPDATE crm_transaction_followup_labels tfl
+			JOIN sales_order so ON tfl.order_table = 'sales_order' AND tfl.order_id = so.id
+			JOIN crm_followup_categories fc ON tfl.followup_category_id = fc.id
+			SET 
+			  tfl.tanggal_pengiriman = COALESCE(NULLIF(so.tanggal_kirim, ''), NULLIF(so.tanggal_so, ''), DATE(so.created_at), tfl.tanggal_pengiriman),
+			  tfl.tanggal_label_muncul = DATE_ADD(COALESCE(NULLIF(so.tanggal_kirim, ''), NULLIF(so.tanggal_so, ''), DATE(so.created_at), tfl.tanggal_pengiriman), INTERVAL fc.jumlah_hari DAY)
+			WHERE tfl.tanggal_label_muncul != DATE_ADD(COALESCE(NULLIF(so.tanggal_kirim, ''), NULLIF(so.tanggal_so, ''), DATE(so.created_at), tfl.tanggal_pengiriman), INTERVAL fc.jumlah_hari DAY)
+			   OR tfl.tanggal_pengiriman != COALESCE(NULLIF(so.tanggal_kirim, ''), NULLIF(so.tanggal_so, ''), DATE(so.created_at), tfl.tanggal_pengiriman)
+		");
+
+		// Sync penjualan_marketplace dates
+		$this->db->query("
+			UPDATE crm_transaction_followup_labels tfl
+			JOIN penjualan_marketplace mp ON tfl.order_table = 'penjualan_marketplace' AND tfl.order_id = mp.id
+			JOIN crm_followup_categories fc ON tfl.followup_category_id = fc.id
+			SET 
+			  tfl.tanggal_pengiriman = COALESCE(NULLIF(mp.tanggal_so, ''), DATE(mp.created_at), tfl.tanggal_pengiriman),
+			  tfl.tanggal_label_muncul = DATE_ADD(COALESCE(NULLIF(mp.tanggal_so, ''), DATE(mp.created_at), tfl.tanggal_pengiriman), INTERVAL fc.jumlah_hari DAY)
+			WHERE tfl.tanggal_label_muncul != DATE_ADD(COALESCE(NULLIF(mp.tanggal_so, ''), DATE(mp.created_at), tfl.tanggal_pengiriman), INTERVAL fc.jumlah_hari DAY)
+			   OR tfl.tanggal_pengiriman != COALESCE(NULLIF(mp.tanggal_so, ''), DATE(mp.created_at), tfl.tanggal_pengiriman)
+		");
+
+		// Global safety sync for any remaining labels
+		$this->db->query("
+			UPDATE crm_transaction_followup_labels tfl
+			JOIN crm_followup_categories fc ON tfl.followup_category_id = fc.id
+			SET tfl.tanggal_label_muncul = DATE_ADD(tfl.tanggal_pengiriman, INTERVAL fc.jumlah_hari DAY)
+			WHERE tfl.tanggal_label_muncul != DATE_ADD(tfl.tanggal_pengiriman, INTERVAL fc.jumlah_hari DAY)
+		");
+	}
+
+	/**
 	 * CRON: Generate follow-up labels for new shipped orders (FB-01)
 	 */
 	public function generate_labels_for_new_orders()
@@ -1241,15 +1274,18 @@ class Model_crm extends CI_Model
 			}
 		}
 
-		// Realtime sync resi, no_pesanan, and order_source for existing labels
+		// Realtime sync resi, no_pesanan, tanggal_pengiriman, tanggal_label_muncul and order_source for existing labels
 		$this->db->query("
 			UPDATE crm_transaction_followup_labels tfl
 			JOIN sales_order so ON tfl.order_table = 'sales_order' AND tfl.order_id = so.id
+			JOIN crm_followup_categories fc ON tfl.followup_category_id = fc.id
 			SET 
 			  tfl.nomor_resi = COALESCE(NULLIF(so.nomor_resi, ''), tfl.nomor_resi),
 			  tfl.no_pesanan = COALESCE(NULLIF(so.no_pesanan, ''), NULLIF(so.nomor_so, ''), tfl.no_pesanan),
 			  tfl.customer_nama = COALESCE(NULLIF(so.nama_penerima, ''), tfl.customer_nama),
 			  tfl.customer_phone = COALESCE(NULLIF(so.no_telepon, ''), tfl.customer_phone),
+			  tfl.tanggal_pengiriman = COALESCE(NULLIF(so.tanggal_kirim, ''), NULLIF(so.tanggal_so, ''), DATE(so.created_at), tfl.tanggal_pengiriman),
+			  tfl.tanggal_label_muncul = DATE_ADD(COALESCE(NULLIF(so.tanggal_kirim, ''), NULLIF(so.tanggal_so, ''), DATE(so.created_at), tfl.tanggal_pengiriman), INTERVAL fc.jumlah_hari DAY),
 			  tfl.order_source = CASE 
 			    WHEN LOWER(so.source) LIKE '%toko%' OR so.source = 'manual' OR so.source IS NULL THEN 'Toko'
 			    WHEN LOWER(so.source) LIKE '%shopee%' THEN 'Shopee'
@@ -1262,11 +1298,14 @@ class Model_crm extends CI_Model
 		$this->db->query("
 			UPDATE crm_transaction_followup_labels tfl
 			JOIN penjualan_marketplace mp ON tfl.order_table = 'penjualan_marketplace' AND tfl.order_id = mp.id
+			JOIN crm_followup_categories fc ON tfl.followup_category_id = fc.id
 			SET 
 			  tfl.nomor_resi = COALESCE(NULLIF(mp.nomor_resi, ''), tfl.nomor_resi),
 			  tfl.no_pesanan = COALESCE(NULLIF(mp.no_pesanan, ''), NULLIF(mp.nomor_so, ''), tfl.no_pesanan),
 			  tfl.customer_nama = COALESCE(NULLIF(mp.nama_penerima, ''), tfl.customer_nama),
 			  tfl.customer_phone = COALESCE(NULLIF(mp.no_telepon, ''), tfl.customer_phone),
+			  tfl.tanggal_pengiriman = COALESCE(NULLIF(mp.tanggal_so, ''), DATE(mp.created_at), tfl.tanggal_pengiriman),
+			  tfl.tanggal_label_muncul = DATE_ADD(COALESCE(NULLIF(mp.tanggal_so, ''), DATE(mp.created_at), tfl.tanggal_pengiriman), INTERVAL fc.jumlah_hari DAY),
 			  tfl.order_source = CASE 
 			    WHEN LOWER(mp.source) LIKE '%tokopedia%' OR LOWER(mp.source) LIKE '%pdf%' OR LOWER(mp.source) LIKE '%scan%' THEN 'Tokopedia'
 			    WHEN LOWER(mp.source) LIKE '%tiktok%' THEN 'TikTok Shop'
@@ -1274,6 +1313,13 @@ class Model_crm extends CI_Model
 			    WHEN LOWER(mp.source) LIKE '%shopee%' THEN 'Shopee'
 			    ELSE 'Shopee'
 			  END
+		");
+
+		// Global safety sync for any remaining custom/manual labels
+		$this->db->query("
+			UPDATE crm_transaction_followup_labels tfl
+			JOIN crm_followup_categories fc ON tfl.followup_category_id = fc.id
+			SET tfl.tanggal_label_muncul = DATE_ADD(tfl.tanggal_pengiriman, INTERVAL fc.jumlah_hari DAY)
 		");
 
 		return $generated;
