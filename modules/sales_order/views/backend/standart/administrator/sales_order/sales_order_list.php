@@ -190,10 +190,31 @@ $status_display = [
                               <td class="text-center"><?= $no++; ?></td>
                               <td><strong class="text-primary"><a href="<?= site_url('administrator/sales_order/view/' . $so->id); ?>"><?= _ent($so->nomor_so); ?></a></strong></td>
                               <td><i class="fa fa-calendar text-muted"></i> <?= date('d/m/Y', strtotime($so->tanggal_so)); ?></td>
-                              <td>
-                                 <strong><?= _ent($so->nama_pelanggan); ?></strong><br>
-                                 <small><span class="label label-info" style="font-size:9px;"><?= strtoupper(_ent($so->tipe_pelanggan ?? 'UMUM')); ?></span></small>
-                              </td>
+                               <td>
+                                  <?php
+                                     $customer_name = !empty($so->nama_pelanggan) 
+                                         ? $so->nama_pelanggan 
+                                         : (!empty($so->nama_penerima) 
+                                             ? $so->nama_penerima 
+                                             : (!empty($so->username_pembeli) 
+                                                 ? $so->username_pembeli 
+                                                 : (!empty($so->no_telepon) 
+                                                     ? $so->no_telepon 
+                                                     : 'Pelanggan Umum')));
+                                     $customer_phone = !empty($so->no_telepon) ? $so->no_telepon : ($so->telp_pelanggan ?? '');
+                                  ?>
+                                  <strong style="color:#1e293b; font-size:13px;"><?= _ent($customer_name); ?></strong>
+                                  <?php if (!empty($so->username_pembeli) && $so->username_pembeli != $customer_name): ?>
+                                     <small class="text-muted">(@<?= _ent($so->username_pembeli); ?>)</small>
+                                  <?php endif; ?>
+                                  <br>
+                                  <small>
+                                     <span class="label label-info" style="font-size:9px; font-weight:600;"><?= strtoupper(_ent($so->tipe_pelanggan ?? 'RETAIL')); ?></span>
+                                     <?php if (!empty($customer_phone)): ?>
+                                        <span class="text-muted" style="font-size:11px; margin-left:4px;"><i class="fa fa-phone"></i> <?= _ent($customer_phone); ?></span>
+                                     <?php endif; ?>
+                                  </small>
+                               </td>
                               <td><i class="fa fa-bank text-muted"></i> <?= _ent(isset($so->nama_gudang) ? $so->nama_gudang : '-'); ?></td>
                               <td class="text-right"><strong class="text-success" style="font-size:13px;">Rp <?= number_format($so->total, 0, ',', '.'); ?></strong></td>
                                <td class="text-center">
@@ -257,15 +278,20 @@ $status_display = [
                               </td>
                            </tr>
                            <?php endforeach; ?>
-                        <?php else: ?>
-                           <tr>
-                              <td colspan="9" class="text-center text-muted" style="padding:40px;">
-                                 <i class="fa fa-shopping-cart fa-3x" style="color:#e0e0e0; margin-bottom:10px;"></i><br>
-                                 <span style="font-size:16px;">Belum ada data Sales Order.</span><br>
-                                 <small>Silakan buat Sales Order baru melalui tombol di kanan atas.</small>
-                              </td>
-                           </tr>
-                        <?php endif; ?>
+                         <?php else: ?>
+                            <tr>
+                               <td colspan="9" class="text-center text-muted" style="padding:40px;">
+                                  <i class="fa fa-shopping-cart fa-3x" style="color:#cbd5e1; margin-bottom:10px;"></i><br>
+                                  <span style="font-size:16px; font-weight:600; color:#475569;">Tidak ada data Sales Order Offline untuk filter ini.</span><br>
+                                  <small class="text-muted" style="display:inline-block; margin-top:6px;">
+                                     Jika pelanggan bertransaksi melalui <strong>Shopee, Tokopedia, atau TikTok Shop</strong>, silakan cek di menu: 
+                                     <a href="<?= site_url('administrator/penjualan_marketplace'); ?>" class="btn btn-xs btn-info btn-flat" style="border-radius:3px; margin-left:3px; font-weight:600;">
+                                        <i class="fa fa-shopping-bag"></i> Penjualan Register All (Marketplace)
+                                     </a>
+                                  </small>
+                               </td>
+                            </tr>
+                         <?php endif; ?>
                      </tbody>
                   </table>
                </div>

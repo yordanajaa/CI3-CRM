@@ -120,9 +120,48 @@
 .modal { z-index: 1050 !important; }
 .modal-dialog { z-index: 1060 !important; }
 
+/* ===== Animations & Micro-Interactions ===== */
+@keyframes crmFadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.crm-header, .stat-box, .filter-section, .box {
+  animation: crmFadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.btn:active, .btn-wa-sm:active {
+  transform: scale(0.97) !important;
+}
+
+.table-responsive {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f8fafc;
+}
+.table-responsive::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+.table-responsive::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 4px;
+}
+.table-responsive::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
 @media (max-width: 991px) {
   .crm-header > div { flex-direction: column; align-items: center; text-align: center; }
-  .crm-header > div > div:last-child { justify-content: center; margin-top: 12px; }
+  .crm-header > div > div:last-child { justify-content: center; margin-top: 12px; width: 100%; }
   .filter-section .col-md-2 { margin-bottom: 8px; }
 }
 
@@ -132,7 +171,7 @@
   .crm-header h2 { font-size: 17px; }
   .crm-header p { font-size: 11.5px; }
   .crm-header .text-right { text-align: center !important; margin-top: 12px; }
-  .crm-header > div > div:last-child .btn { font-size: 10.5px; padding: 5px 10px; margin-bottom: 4px; }
+  .crm-header > div > div:last-child .btn { font-size: 10.5px; padding: 6px 10px; margin-bottom: 4px; flex: 1; min-width: 120px; justify-content: center; }
 
   .stat-box { padding: 12px 10px; margin-bottom: 8px; border-radius: 10px; }
   .stat-box .num { font-size: 20px; }
@@ -242,6 +281,7 @@
           </ul>
         </div>
 
+        <a href="<?= site_url('administrator/crm/chat'); ?>" class="btn btn-sm" style="background:linear-gradient(135deg, #075e54, #128c7e);color:#fff;border:none;border-radius:8px;font-weight:700;padding:7px 14px;box-shadow:0 4px 12px rgba(18,140,126,0.35);"><i class="fa fa-whatsapp"></i> Live Chat WA Center</a>
         <a href="<?= site_url('administrator/crm/broadcast'); ?>" class="btn btn-sm" style="background:#25D366;color:#fff;border:none;border-radius:8px;font-weight:600;padding:7px 14px;"><i class="fa fa-bullhorn"></i> Broadcast WA</a>
         <a href="<?= site_url('administrator/crm/followup_setting'); ?>" class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:8px;font-weight:600;padding:7px 14px;"><i class="fa fa-cogs"></i> Settings</a>
       </div>
@@ -272,6 +312,9 @@
 
   <!-- Category Tabs -->
   <div style="margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+    <a href="<?= site_url('administrator/crm/chat'); ?>" class="cat-pill" style="background: #075e54; color: #fff; border: 1px solid #128c7e; font-weight: 700;">
+      <i class="fa fa-whatsapp"></i> Buka WhatsApp Live Chat Center
+    </a>
     <a href="<?= site_url('administrator/crm/journal_followup'); ?>" class="cat-pill <?= (empty($filters['category_id']) && empty($filters['status_label'])) ? 'active' : ''; ?>">
       <i class="fa fa-list"></i> Semua Data
     </a>
@@ -497,16 +540,16 @@
             <td class="text-center" style="white-space:nowrap;">
               <div style="display:inline-flex; align-items:center; justify-content:center; gap:4px;">
                 <?php if (!empty($e->customer_phone)): ?>
-                <button class="btn-wa-sm btn-send-wa <?= $e->is_broadcast_sent ? 'sent-active' : ''; ?>" data-label-id="<?= $e->id; ?>" title="<?= $e->is_broadcast_sent ? 'Sudah pernah dikirim (Klik untuk kirim ulang / follow up susulan)' : 'Kirim WA'; ?>">
-                  <i class="fa fa-whatsapp"></i>
+                <button class="btn-wa-sm btn-send-wa <?= $e->is_broadcast_sent ? 'sent-active' : ''; ?>" data-label-id="<?= $e->id; ?>" title="<?= $e->is_broadcast_sent ? 'Kirim ulang WA' : 'Kirim WA'; ?>">
+                  <i class="fa fa-whatsapp"></i> Kirim WA
                 </button>
-                <?php endif; ?>
-                <button class="btn btn-xs btn-default btn-add-note" data-label-id="<?= $e->id; ?>" data-nama="<?= htmlspecialchars($e->customer_nama); ?>" title="Tambah Catatan" style="border-radius:6px; padding:4px 8px;">
-                  <i class="fa fa-comment"></i>
-                </button>
-                <a href="<?= site_url('administrator/crm/customer_detail?phone=' . urlencode($e->customer_phone)); ?>" class="btn btn-xs btn-info" title="Profile Customer" style="border-radius:6px; padding:4px 8px;">
-                  <i class="fa fa-user"></i>
+                <a href="<?= site_url('administrator/crm/chat?phone=' . urlencode($e->customer_phone)); ?>" class="btn btn-xs" style="background:#075e54; color:#fff; border-radius:6px; padding:5px 10px; font-weight:600; font-size:11px;" title="Buka Live Chat">
+                  <i class="fa fa-comments"></i> Chat
                 </a>
+                <?php endif; ?>
+                <button class="btn btn-xs btn-default btn-add-note" data-label-id="<?= $e->id; ?>" data-nama="<?= htmlspecialchars($e->customer_nama); ?>" title="Tambah Catatan" style="border-radius:6px; padding:5px 8px; font-size:11px;">
+                  <i class="fa fa-pencil"></i>
+                </button>
               </div>
             </td>
           </tr>
@@ -1129,8 +1172,16 @@
         </div>
         <div class="form-group">
           <label style="font-weight:700;font-size:13px;color:#334155;"><i class="fa fa-pencil-square-o" style="color:#25D366;"></i> Isi Pesan WhatsApp (Bisa Diubah):</label>
-          <textarea class="form-control" id="wa-preview-message" rows="8" style="font-family:inherit;font-size:13px;line-height:1.6;border-radius:8px;border:1px solid #cbd5e1;padding:12px;" placeholder="Isi pesan WhatsApp..."></textarea>
-          <small class="text-muted" style="font-size:11px;margin-top:6px;display:block;"><i class="fa fa-info-circle" style="color:#3b82f6;"></i> Anda dapat mengedit atau menyesuaikan pesan di atas sebelum diarahkan ke WhatsApp Web / Aplikasi.</small>
+          <textarea class="form-control" id="wa-preview-message" rows="6" style="font-family:inherit;font-size:13px;line-height:1.6;border-radius:8px;border:1px solid #cbd5e1;padding:12px;" placeholder="Isi pesan WhatsApp..."></textarea>
+        </div>
+        <div class="form-group" style="margin-top:10px;">
+          <label style="font-weight:700;font-size:12px;color:#334155;"><i class="fa fa-paperclip" style="color:#0284c7;"></i> Lampiran File / Dokumen / Foto (Opsional):</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="text" id="wa-preview-file-url" class="form-control input-sm" placeholder="URL file atau klik Unggah File..." style="border-radius:8px;font-size:12px;">
+            <button type="button" class="btn btn-sm btn-default" id="btn-browse-preview-file" style="border-radius:8px;white-space:nowrap;font-weight:600;"><i class="fa fa-folder-open"></i> Unggah File</button>
+          </div>
+          <input type="file" id="input-file-preview-modal" style="display:none;" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.mp3,.wav,.ogg,.m4a">
+          <small id="preview-file-status" class="text-muted" style="font-size:11px;margin-top:4px;display:block;"><i class="fa fa-info-circle" style="color:#3b82f6;"></i> Dukungan format: Foto (JPG/PNG), Dokumen (PDF/Word/Excel), ZIP/RAR, & Voice Note (MP3/WAV).</small>
         </div>
         <input type="hidden" id="wa-preview-label-id">
         <input type="hidden" id="wa-preview-raw-phone">
@@ -1216,10 +1267,11 @@
 </div>
 
 <script>
-window.addEventListener('load', function() {
+$(document).ready(function() {
   var csrf_name = '<?= $this->security->get_csrf_token_name(); ?>';
   var csrf_hash = '<?= $this->security->get_csrf_hash(); ?>';
-  var _BASE = (typeof BASE_URL !== 'undefined') ? BASE_URL : '<?= base_url(); ?>';
+  var rawBase = (typeof BASE_URL !== 'undefined') ? BASE_URL : '<?= base_url(); ?>';
+  var _BASE = rawBase.replace(/\/+$/, '') + '/';
 
   // Move modals to body to prevent container z-index overlay issues
   if ($('#modal-note').length) $('#modal-note').appendTo('body');
@@ -1318,7 +1370,7 @@ window.addEventListener('load', function() {
   // ===== Status Change Inline =====
   $(document).on('change', '.status-select', function() {
     var $sel = $(this);
-    var label_id = $sel.data('label-id');
+    var label_id = $sel.attr('data-label-id');
     var status = $sel.val();
     updateBadgeRealtime(label_id, status);
     $.post(_BASE + 'administrator/crm/update_status_ajax', buildPayload({ label_id: label_id, status: status }), function(res) {
@@ -1335,14 +1387,21 @@ window.addEventListener('load', function() {
   });
 
   // ===== Single WA Send (With Preview & Edit Modal) =====
-  $(document).on('click', '.btn-send-wa', function() {
+  $(document).on('click', '.btn-send-wa', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
     var $btn = $(this);
-    var label_id = $btn.data('label-id');
+    var label_id = $btn.attr('data-label-id');
 
-    $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
+    if (!label_id) {
+      notify('error', 'Label ID tidak ditemukan');
+      return;
+    }
+
+    $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Loading...');
 
     $.get(_BASE + 'administrator/crm/get_wa_link_ajax', { label_id: label_id }, function(res) {
-      $btn.prop('disabled', false).html('<i class="fa fa-whatsapp"></i>');
+      $btn.prop('disabled', false).html('<i class="fa fa-whatsapp"></i> Kirim WA');
       var r = parseRes(res);
       if (r.success) {
         $('#wa-preview-label-id').val(label_id);
@@ -1351,6 +1410,8 @@ window.addEventListener('load', function() {
         $('#wa-preview-raw-phone').val(r.phone || '');
         $('#wa-preview-order').text(r.no_pesanan || '-');
         $('#wa-preview-message').val(r.message_preview || '');
+        $('#wa-preview-file-url').val('');
+        $('#preview-file-status').html('<i class="fa fa-info-circle" style="color:#3b82f6;"></i> Dukungan format: Foto (JPG/PNG), Dokumen (PDF/Word/Excel), ZIP/RAR, & Voice Note (MP3/WAV).');
 
         $('.modal-backdrop').remove();
         $('#modal-wa-preview').modal('show');
@@ -1359,8 +1420,47 @@ window.addEventListener('load', function() {
         notify('error', r.message || 'Gagal memuat pratinjau pesan WA');
       }
     }).fail(function() {
-      $btn.prop('disabled', false).html('<i class="fa fa-whatsapp"></i>');
+      $btn.prop('disabled', false).html('<i class="fa fa-whatsapp"></i> Kirim WA');
       notify('error', 'Gagal menghubungi server');
+    });
+  });
+
+  // Modal Preview File Upload Browse & Handler
+  $(document).on('click', '#btn-browse-preview-file', function() {
+    $('#input-file-preview-modal').click();
+  });
+
+  $(document).on('change', '#input-file-preview-modal', function() {
+    var file = this.files[0];
+    if (!file) return;
+
+    var formData = new FormData();
+    formData.append('file', file);
+    if (csrf_name && csrf_hash) formData.append(csrf_name, csrf_hash);
+
+    $('#preview-file-status').html('<i class="fa fa-spinner fa-spin" style="color:#0284c7;"></i> Mengunggah file ' + file.name + '...');
+
+    $.ajax({
+      url: _BASE + 'administrator/crm/upload_attachment_ajax',
+      type: 'POST',
+      data: formData,
+      contentType: false,
+      processData: false,
+      success: function(res) {
+        var r = parseRes(res);
+        if (r.success && r.file_url) {
+          $('#wa-preview-file-url').val(r.file_url);
+          $('#preview-file-status').html('<i class="fa fa-check-circle" style="color:#10b981;"></i> Berhasil mengunggah: <strong>' + (r.file_name || file.name) + '</strong>');
+          notify('success', 'File ' + file.name + ' berhasil diunggah!');
+        } else {
+          $('#preview-file-status').html('<i class="fa fa-exclamation-circle" style="color:#ef4444;"></i> ' + (r.message || 'Gagal mengunggah file'));
+          notify('error', r.message || 'Gagal mengunggah file');
+        }
+      },
+      error: function() {
+        $('#preview-file-status').html('<i class="fa fa-exclamation-circle" style="color:#ef4444;"></i> Gagal mengunggah file ke server');
+        notify('error', 'Gagal mengunggah file ke server');
+      }
     });
   });
 
@@ -1372,8 +1472,10 @@ window.addEventListener('load', function() {
     var rawPhone = $('#wa-preview-raw-phone').val();
     var nama = $('#wa-preview-name').text();
 
-    if (!customMsg) {
-      notify('warning', 'Pesan WA tidak boleh kosong');
+    var customFileUrl = $.trim($('#wa-preview-file-url').val());
+
+    if (!customMsg && !customFileUrl) {
+      notify('warning', 'Pesan WA atau lampiran file tidak boleh kosong');
       return;
     }
 
@@ -1381,7 +1483,8 @@ window.addEventListener('load', function() {
 
     $.post(_BASE + 'administrator/crm/send_broadcast_ajax', buildPayload({
       label_ids: [label_id],
-      custom_message: customMsg
+      custom_message: customMsg,
+      file_url: customFileUrl
     }), function(res) {
       $btn.prop('disabled', false).html('<i class="fa fa-paper-plane"></i> Kirim via WhatsApp');
       var r = parseRes(res);
@@ -1419,7 +1522,11 @@ window.addEventListener('load', function() {
       } else {
         var phone = rawPhone.replace(/^0/, '62').replace(/[^0-9]/g, '');
         if (phone.substring(0, 2) !== '62') phone = '62' + phone;
-        var wa_link = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(customMsg);
+        var sendMsg = customMsg;
+        if (customFileUrl && sendMsg.indexOf(customFileUrl) === -1) {
+          sendMsg += "\n\n[Lampiran File]: " + customFileUrl;
+        }
+        var wa_link = 'https://api.whatsapp.com/send?phone=' + phone + '&text=' + encodeURIComponent(sendMsg);
         window.open(wa_link, '_blank');
         notify('success', 'Membuka WhatsApp Web untuk ' + nama);
       }
@@ -1497,6 +1604,7 @@ window.addEventListener('load', function() {
   var currentChatLabelId = null;
   var lastMessageId = 0;
   var isFirstLoad = true;
+  var isSendingChat = false;
 
   function loadChatTimeline(lid, showSpinner) {
     if (showSpinner) {
@@ -1552,12 +1660,13 @@ window.addEventListener('load', function() {
     stopChatPolling();
     currentChatLabelId = lid;
     chatPollTimer = setInterval(function() {
+      if (isSendingChat) return; // Skip polling while sending
       if ($('#modal-note').hasClass('in') || $('#modal-note').hasClass('show')) {
         loadChatTimeline(lid, false);
       } else {
         stopChatPolling();
       }
-    }, 1000); // Auto-refresh real-time instant setiap 1 detik
+    }, 1500); // Auto-refresh setiap 1.5 detik
   }
 
   function stopChatPolling() {
@@ -1568,8 +1677,8 @@ window.addEventListener('load', function() {
   }
 
   $(document).on('click', '.btn-add-note', function() {
-    var lid = $(this).data('label-id');
-    var nama = $(this).data('nama');
+    var lid = $(this).attr('data-label-id');
+    var nama = $(this).attr('data-nama');
     $('#note-label-id').val(lid);
     $('#note-customer-name').text(nama);
     $('#note-text').val('');
@@ -1652,49 +1761,57 @@ window.addEventListener('load', function() {
     if (!msg) return '';
     var text = $('<div>').text(msg).html();
     
-    // Match URLs (https, http, data URIs, and relative uploads paths)
-    var urlRegex = /(https?:\/\/[^\s<]+|data:audio\/[^\s<]+|(?:\/|\b)uploads\/[^\s<]+)/gi;
+    // Pre-detect context labels before URL processing (for URLs without extensions)
+    var contextType = '';
+    if (/\[Foto\]/i.test(text)) contextType = 'image';
+    else if (/\[Video\]/i.test(text)) contextType = 'video';
+    else if (/\[Dokumen PDF\]/i.test(text)) contextType = 'pdf';
+    else if (/\[Dokumen\]|\[Dokumen Arsip\]/i.test(text)) contextType = 'document';
+
+    // Match URLs (https, http, and relative uploads paths)
+    var urlRegex = /(https?:\/\/[^\s<]+|(?:\/|\b)uploads\/[^\s<]+)/gi;
     
     text = text.replace(urlRegex, function(url) {
       var cleanUrl = url.trim();
-      var isImg = /\.(jpeg|jpg|gif|png|webp)(\?.*)?$/i.test(cleanUrl);
-      var isAudio = /\.(mp3|ogg|wav|m4a|aac|opus|webm|3gp|amr)(\?.*)?$/i.test(cleanUrl) 
-                 || /data:audio\//i.test(cleanUrl)
-                 || /\/(audio|voice)\//i.test(cleanUrl)
-                 || /\b(voice_|audio_|record_|vn_)/i.test(cleanUrl);
-      var isDoc = /\.(pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar|txt|csv)(\?.*)?$/i.test(cleanUrl);
+      // Detect by file extension first
+      var isImg = /\.(jpeg|jpg|gif|png|webp|bmp|svg)(\?.*)?$/i.test(cleanUrl);
+      var isVideo = /\.(mp4|avi|mov|mkv|3gp|webm)(\?.*)?$/i.test(cleanUrl);
+      var isDoc = /\.(pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar|txt|csv|mp3|ogg|wav|m4a|aac)(\?.*)?$/i.test(cleanUrl);
+
+      // Fallback: use context label if extension not detected (e.g. Fonnte storage URL)
+      if (!isImg && !isVideo && !isDoc && contextType) {
+        if (contextType === 'image') isImg = true;
+        else if (contextType === 'video') isVideo = true;
+        else if (contextType === 'pdf' || contextType === 'document') isDoc = true;
+      }
+
+      // Fallback 2: detect Fonnte/WA storage URL patterns
+      if (!isImg && !isVideo && !isDoc) {
+        if (/storage\.fonnte\.com/i.test(cleanUrl) || /mmg\.whatsapp\.net/i.test(cleanUrl)) {
+          isImg = true;
+        }
+      }
 
       var fullUrl = cleanUrl;
-      if (fullUrl.indexOf('http') !== 0 && fullUrl.indexOf('data:') !== 0) {
+      if (fullUrl.indexOf('http') !== 0) {
         fullUrl = _BASE + fullUrl.replace(/^\//, '');
       }
 
-      if (isAudio) {
-        return '<div class="wa-vn-container" style="margin-top:8px;background:#f0fdf4;border:1px solid #bbf7d0;padding:10px 14px;border-radius:14px;box-shadow:0 2px 6px rgba(0,0,0,0.05);max-width:280px;">' +
-                 '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' +
-                   '<div style="width:28px;height:28px;border-radius:50%;background:#00a884;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">' +
-                     '<i class="fa fa-microphone"></i>' +
-                   '</div>' +
-                   '<div style="font-size:11.5px;font-weight:700;color:#065f46;">Pesan Suara / Voice Note</div>' +
-                 '</div>' +
-                 '<audio controls preload="metadata" style="width:100%;height:38px;border-radius:20px;outline:none;display:block;">' +
-                   '<source src="' + fullUrl + '" type="audio/mpeg">' +
-                   '<source src="' + fullUrl + '" type="audio/ogg">' +
-                   '<source src="' + fullUrl + '" type="audio/wav">' +
-                   '<source src="' + fullUrl + '" type="audio/mp4">' +
-                   '<source src="' + fullUrl + '" type="audio/webm">' +
-                   'Browser Anda tidak mendukung elemen audio.' +
-                 '</audio>' +
-                 '<div style="margin-top:6px;display:flex;align-items:center;justify-content:space-between;font-size:10.5px;">' +
-                   '<a href="' + fullUrl + '" target="_blank" download style="color:#0284c7;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">' +
-                     '<i class="fa fa-play-circle" style="font-size:13px;color:#00a884;"></i> Putar / Unduh Suara' +
-                   '</a>' +
-                 '</div>' +
+      if (isVideo) {
+        return '<div style="margin-top:6px;display:inline-block;max-width:280px;">' +
+                 '<video controls preload="metadata" style="max-width:100%;max-height:220px;border-radius:10px;border:1px solid #cbd5e1;box-shadow:0 3px 8px rgba(0,0,0,0.12);display:block;margin-bottom:6px;">' +
+                   '<source src="' + fullUrl + '" type="video/mp4">' +
+                   '<source src="' + fullUrl + '" type="video/webm">' +
+                   'Browser tidak mendukung video.' +
+                 '</video>' +
+                 '<a href="' + fullUrl + '" target="_blank" download style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;background:#7c3aed;color:#ffffff;border-radius:6px;font-weight:700;font-size:11px;text-decoration:none;box-shadow:0 2px 4px rgba(124,58,237,0.3);">' +
+                   '<i class="fa fa-download"></i> Unduh Video' +
+                 '</a>' +
                '</div>';
       } else if (isImg) {
         return '<div style="margin-top:6px;display:inline-block;max-width:260px;">' +
                  '<a href="' + fullUrl + '" target="_blank" style="display:block;">' +
-                   '<img src="' + fullUrl + '" alt="Foto" style="max-width:100%;max-height:220px;border-radius:10px;border:1px solid #cbd5e1;box-shadow:0 3px 8px rgba(0,0,0,0.12);display:block;margin-bottom:6px;object-fit:cover;">' +
+                   '<img src="' + fullUrl + '" alt="Foto" style="max-width:100%;max-height:220px;border-radius:10px;border:1px solid #cbd5e1;box-shadow:0 3px 8px rgba(0,0,0,0.12);display:block;margin-bottom:6px;object-fit:cover;" onerror="this.style.display=\'none\';this.parentElement.nextElementSibling.style.display=\'inline-flex\';">' +
                  '</a>' +
                  '<a href="' + fullUrl + '" target="_blank" download style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;background:#3b82f6;color:#ffffff;border-radius:6px;font-weight:700;font-size:11px;text-decoration:none;box-shadow:0 2px 4px rgba(59,130,246,0.3);">' +
                    '<i class="fa fa-download"></i> Lihat / Unduh Foto' +
@@ -1717,9 +1834,16 @@ window.addEventListener('load', function() {
       }
     });
 
-    // Remove text header tags like "[Lampiran Media/Dokumen]:" when media player is rendered
+    // Remove all media label tags after URL rendering (clean display)
     text = text.replace(/\[Lampiran Media\/Dokumen\]:\s*/gi, '');
     text = text.replace(/\[Lampiran File\]:\s*/gi, '');
+    text = text.replace(/\[Foto\]:\s*/gi, '');
+    text = text.replace(/\[Video\]:\s*/gi, '');
+    text = text.replace(/\[Voice Note\]:\s*/gi, '');
+    text = text.replace(/\[Pesan Suara\]:\s*/gi, '');
+    text = text.replace(/\[Dokumen PDF\]:\s*/gi, '');
+    text = text.replace(/\[Dokumen\]:\s*/gi, '');
+    text = text.replace(/\[Dokumen Arsip\]:\s*/gi, '');
 
     // Render WhatsApp quote blocks
     text = text.replace(/(?:^|<br>)(?:&gt;|>)\s*\*Membalas ([^*]+)\*:\s*(?:&quot;|")([^"\n<]+)(?:&quot;|")(?:\s*<br>|\s*\n)?/gi, function(m, qSender, qText) {
@@ -1908,9 +2032,7 @@ window.addEventListener('load', function() {
 
     var formData = new FormData();
     formData.append('file', file);
-    if (typeof csrf_token_name !== 'undefined' && typeof csrf_cookie_name !== 'undefined') {
-      formData.append(csrf_token_name, $.cookie(csrf_cookie_name));
-    }
+    if (csrf_name && csrf_hash) formData.append(csrf_name, csrf_hash);
 
     $.ajax({
       url: _BASE + 'administrator/crm/upload_attachment_ajax',
@@ -2195,6 +2317,7 @@ window.addEventListener('load', function() {
     var isInternalNote = (senderType === 'cs') ? 1 : 0;
 
     $btn.prop('disabled', true).addClass('is-sending').html('<i class="fa fa-spin fa-spinner"></i>');
+    isSendingChat = true;
 
     // Use the send_message_ajax endpoint with optional file_url
     $.ajax({
@@ -2266,6 +2389,7 @@ window.addEventListener('load', function() {
         notify('error', 'Terjadi kesalahan: ' + (xhr.statusText || 'Error'));
       },
       complete: function() {
+        isSendingChat = false;
         $btn.prop('disabled', false).removeClass('is-sending').html('<i class="fa fa-paper-plane" id="wa-send-icon"></i>');
       }
     });
@@ -2347,12 +2471,13 @@ window.addEventListener('load', function() {
           notify('error', r.message || 'Gagal menambahkan data');
         }
       },
-      error: function() {
+      error: function(xhr) {
         $btn.prop('disabled', false).html('<i class="fa fa-save"></i> Simpan Follow-Up');
-        notify('error', 'Gagal menghubungi server');
+        notify('error', 'Terjadi kesalahan: ' + (xhr.statusText || 'Error'));
       }
     });
   });
+
 });
 </script>
 

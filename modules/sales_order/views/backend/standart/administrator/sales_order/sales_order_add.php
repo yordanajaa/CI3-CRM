@@ -10,13 +10,27 @@ if ($is_edit && isset($so->subtotal) && $so->subtotal > 0 && isset($so->diskon_t
 }
 ?>
 <style>
-.form-card { border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 2px 6px rgba(0,0,0,0.04); background: #fff; margin-bottom: 20px; }
-.form-card .box-header { padding: 15px 20px; border-bottom: 1px solid #f1f5f9; background: #fafafa; border-radius: 8px 8px 0 0; }
+@keyframes soFadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.form-card {
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+  background: #fff;
+  margin-bottom: 20px;
+  animation: soFadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.form-card .box-header { padding: 15px 20px; border-bottom: 1px solid #f1f5f9; background: #fafafa; border-radius: 12px 12px 0 0; }
 .form-card .box-title { font-weight: 700; font-size: 15px; color: #1e293b; }
 .form-card .box-body { padding: 20px; }
 .form-group label { font-weight: 600; font-size: 13px; color: #475569; margin-bottom: 6px; }
-.form-control { border-radius: 6px; border: 1px solid #cbd5e1; padding: 8px 12px; font-size: 13px; transition: border-color .2s; }
+.form-control { border-radius: 8px; border: 1px solid #cbd5e1; padding: 8px 12px; font-size: 13px; transition: border-color .2s; }
 .form-control:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+.table-responsive { -webkit-overflow-scrolling: touch; }
 </style>
 
 <section class="content-header">
@@ -40,15 +54,48 @@ if ($is_edit && isset($so->subtotal) && $so->subtotal > 0 && isset($so->diskon_t
          <div class="box-body">
             <div class="row">
                <div class="col-md-4">
-                  <div class="form-group"><label>Pelanggan <span class="text-danger">*</span></label>
+                  <div class="form-group">
+                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <label style="margin:0;"><i class="fa fa-user text-primary"></i> Pelanggan <span class="text-danger">*</span></label>
+                        <?php if (is_allowed('pelanggan_add', false)): ?>
+                           <a href="<?= site_url('administrator/pelanggan/add'); ?>" target="_blank" class="text-primary pull-right" style="font-size:11px; font-weight:600;">
+                              <i class="fa fa-plus-circle"></i> + Pelanggan Baru
+                           </a>
+                        <?php endif; ?>
+                     </div>
                      <select class="form-control chosen" name="pelanggan_id" id="pelanggan_id" required>
                         <option value="">-- Pilih Pelanggan --</option>
                         <?php foreach($pelanggans as $p): ?>
-                           <option value="<?= $p->id; ?>" data-tipe="<?= $p->tipe_pelanggan; ?>" <?= ($is_edit && $so->pelanggan_id == $p->id) ? 'selected' : ''; ?>>
-                              <?= _ent($p->kode_pelanggan.' - '.$p->nama_pelanggan); ?>
+                           <?php 
+                              $t_badge = strtoupper($p->tipe_pelanggan ?: 'RETAIL');
+                              $telp_fmt = !empty($p->no_telp) ? ' ('.$p->no_telp.')' : '';
+                           ?>
+                           <option value="<?= $p->id; ?>" 
+                                   data-kode="<?= _ent($p->kode_pelanggan); ?>"
+                                   data-nama="<?= _ent($p->nama_pelanggan); ?>"
+                                   data-tipe="<?= _ent($p->tipe_pelanggan); ?>"
+                                   data-telp="<?= _ent($p->no_telp); ?>"
+                                   data-alamat="<?= _ent($p->alamat); ?>"
+                                   <?= ($is_edit && $so->pelanggan_id == $p->id) ? 'selected' : ''; ?>>
+                              <?= _ent($p->kode_pelanggan.' - '.$p->nama_pelanggan . ' [' . $t_badge . ']' . $telp_fmt); ?>
                            </option>
                         <?php endforeach; ?>
                      </select>
+
+                     <!-- Live Customer Info Preview Card -->
+                     <div id="customer_info_card" style="display:none; margin-top:10px; padding:10px 14px; background:#f0f9ff; border:1px solid #bae6fd; border-radius:6px;">
+                        <div>
+                           <strong id="card_cust_nama" style="font-size:14px; color:#0369a1;">-</strong>
+                           <span id="card_cust_tipe" class="label label-info" style="font-size:10px; margin-left:6px; vertical-align:middle;">RETAIL</span>
+                           <div style="font-size:12px; color:#0284c7; margin-top:4px;">
+                              <i class="fa fa-phone"></i> <span id="card_cust_telp">-</span> | 
+                              <i class="fa fa-id-card-o"></i> Kode: <span id="card_cust_kode">-</span>
+                           </div>
+                           <div style="font-size:11px; color:#334155; margin-top:3px;">
+                              <i class="fa fa-map-marker"></i> <span id="card_cust_alamat">-</span>
+                           </div>
+                        </div>
+                     </div>
                   </div>
                </div>
                <div class="col-md-4">
@@ -520,7 +567,29 @@ $(document).ready(function(){
       load_produk_by_gudang(gid);
    });
 
+   function render_customer_card() {
+      var $opt = $('#pelanggan_id option:selected');
+      var val = $('#pelanggan_id').val();
+      if (!val) {
+         $('#customer_info_card').slideUp(150);
+         return;
+      }
+      var kode = $opt.data('kode') || '-';
+      var nama = $opt.data('nama') || $opt.text();
+      var tipe = ($opt.data('tipe') || 'RETAIL').toUpperCase();
+      var telp = $opt.data('telp') || '-';
+      var alamat = $opt.data('alamat') || 'Alamat pengiriman belum diatur';
+
+      $('#card_cust_nama').text(nama);
+      $('#card_cust_kode').text(kode);
+      $('#card_cust_tipe').text(tipe);
+      $('#card_cust_telp').text(telp);
+      $('#card_cust_alamat').text(alamat);
+      $('#customer_info_card').slideDown(150);
+   }
+
    $('#pelanggan_id').on('change',function(){
+      render_customer_card();
       var tipe = $(this).find(':selected').data('tipe') || '';
       $('.item-row').each(function(){
          var pid = $(this).find('.produk-select').val();
@@ -531,6 +600,7 @@ $(document).ready(function(){
          }
       });
    });
+   render_customer_card();
 
    $('#btn_save').click(function(){
       var btn = $(this);

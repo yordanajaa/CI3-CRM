@@ -55,7 +55,7 @@
  * NOTE: If you change these, also change the error_reporting() code below
  */
 // Auto detect environment (development on localhost, production on hosting)
-$is_localhost = isset($_SERVER['HTTP_HOST']) && in_array($_SERVER['HTTP_HOST'], array('localhost', '127.0.0.1', 'ci3_metafora.test'));
+$is_localhost = isset($_SERVER['SERVER_NAME']) && in_array($_SERVER['SERVER_NAME'], array('localhost', '127.0.0.1', 'ci3_metafora.test'));
 define('ENVIRONMENT', isset($_SERVER['CI_ENV']) ? $_SERVER['CI_ENV'] : ($is_localhost ? 'development' : 'production'));
 
 /*

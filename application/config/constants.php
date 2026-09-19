@@ -44,6 +44,6 @@ $base = $http . (isset($_SERVER['SERVER_NAME']) ? $_SERVER['SERVER_NAME'] : 'loc
 
 defined('BASE_URL')             OR define('BASE_URL', $base);
 defined('BASE_ASSET')           OR define('BASE_ASSET', BASE_URL . 'asset/');
-defined('VERSION')              OR define('VERSION', '3.0.0');
+defined('VERSION')              OR define('VERSION', '3.0.6');
 defined('EXTENSION_PATH')       OR define('EXTENSION_PATH', FCPATH . 'cc-content/extensions/'); 
 defined('ADMIN_NAMESPACE_URL')  OR define('ADMIN_NAMESPACE_URL', 'administrator'); 

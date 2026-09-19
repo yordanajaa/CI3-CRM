@@ -1,12 +1,46 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
 <style>
-.crm-header { background: linear-gradient(135deg, #065f46 0%, #047857 50%, #059669 100%); color: #fff; padding: 25px 30px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(4, 120, 87, 0.2); }
+@keyframes crmFadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.crm-header {
+  background: linear-gradient(135deg, #065f46 0%, #047857 50%, #059669 100%);
+  color: #fff;
+  padding: 25px 30px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 10px 25px rgba(4, 120, 87, 0.2);
+  animation: crmFadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
 .crm-header h2 { margin: 0 0 5px 0; font-weight: 800; font-size: 22px; }
 .crm-header p { margin: 0; opacity: 0.85; font-size: 13px; }
 
-.stat-card { background: #fff; border-radius: 10px; padding: 18px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); text-align: center; margin-bottom: 15px; }
+.stat-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 18px 20px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  text-align: center;
+  margin-bottom: 15px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: crmFadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
 .stat-card .num { font-size: 26px; font-weight: 800; }
 .stat-card .lbl { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+
+.box {
+  animation: crmFadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 10px !important;
+}
+.table-responsive {
+  -webkit-overflow-scrolling: touch;
+}
 .sc-emerald .num { color: #059669; }
 .sc-blue .num { color: #2563eb; }
 .sc-amber .num { color: #d97706; }

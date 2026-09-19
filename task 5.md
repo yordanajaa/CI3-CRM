@@ -1,0 +1,5 @@
+- [x] rekam data transaksi customer per produk, data recency (terakhir kali dia beli sudah berapa lama, frequency : berapa kali dia beli produk itu, monetary : total biaya yang dia keluarkan untuk produk itu)
+- [x] menghitung nilai kuantitatif pembagian rfm
+- [x] urutkan data recency, frequency, monetary, lalu bagi data dengan percentil 20%, 40%, 60%, 80%
+- [x] system mengelompokan tiap customer kedalam segment market seperti dalam spreadsheet
+- [x] dan sistem bisa broadcast ke customer segment yang dipilih

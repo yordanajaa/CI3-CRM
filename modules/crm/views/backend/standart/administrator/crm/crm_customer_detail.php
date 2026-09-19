@@ -1,5 +1,10 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
 <style>
+@keyframes crmFadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .profile-header {
   background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #312e81 100%);
   color: #fff;
@@ -9,6 +14,7 @@
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25);
   position: relative;
   overflow: hidden;
+  animation: crmFadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .profile-header::after {
   content: '';
@@ -30,11 +36,19 @@
   text-align: center;
   margin-bottom: 16px;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: crmFadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .summary-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 24px rgba(0,0,0,0.08);
   border-color: #cbd5e1;
+}
+
+.box {
+  animation: crmFadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.table-responsive {
+  -webkit-overflow-scrolling: touch;
 }
 .summary-card .num { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
 .summary-card .lbl { font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; margin-top: 4px; }
@@ -162,8 +176,14 @@
       <div class="col-md-4 text-right" style="padding-top: 10px;">
         <a href="<?= site_url('administrator/crm'); ?>" class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);"><i class="fa fa-arrow-left"></i> Kembali</a>
         <a href="<?= site_url('administrator/sales_order/add'); ?>" class="btn btn-sm" style="background:#f39c12;color:#fff;border:none;" title="Buat Sales Order Repeat Order"><i class="fa fa-cart-plus"></i> Repeat Order</a>
-        <?php if (!empty($summary['phone'])): ?>
-        <a href="https://wa.me/<?= preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $summary['phone'])); ?>" target="_blank" class="btn btn-sm" style="background:#25D366;color:#fff;border:none;"><i class="fa fa-whatsapp"></i> Chat WA</a>
+        <?php if (!empty($summary['phone'])):
+          $top_phone = preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $summary['phone']));
+          if (substr($top_phone, 0, 2) !== '62') $top_phone = '62' . $top_phone;
+          $top_act = !empty($summary['rfm']['action']) ? $summary['rfm']['action'] : 'Terima kasih telah berbelanja bersama kami.';
+          $top_msg = "Halo Kak " . $summary['nama'] . ",\n\nSalam dari Metafora! " . $top_act . "\n\nAda yang bisa kami bantu hari ini?";
+          $top_wa_url = 'https://api.whatsapp.com/send?phone=' . $top_phone . '&text=' . rawurlencode($top_msg);
+        ?>
+        <a href="<?= $top_wa_url; ?>" target="_blank" class="btn btn-sm" style="background:#25D366;color:#fff;border:none;font-weight:700;border-radius:6px;" title="Buka Chat WhatsApp Langsung"><i class="fa fa-whatsapp"></i> Chat WA</a>
         <?php endif; ?>
       </div>
     </div>
@@ -209,7 +229,146 @@
     </div>
   </div>
 
-  <!-- Transaction History (FA-01, FA-02) -->
+  <!-- RFM Customer Intelligence Card (rfm magang.xlsx) -->
+  <?php if (isset($summary['rfm'])): $rfm = $summary['rfm']; $badge = $rfm['badge']; ?>
+  <div class="box box-solid" style="border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,0.06);border:1px solid #e2e8f0;margin-bottom:20px;overflow:hidden;">
+    <div class="box-header" style="background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%);color:#fff;padding:16px 20px;">
+      <h3 class="box-title" style="font-weight:800;font-size:16px;color:#fff;">
+        <i class="fa fa-line-chart" style="color:#38bdf8;"></i> Intelijen Segmentasi RFM (Recency, Frequency, Monetary)
+      </h3>
+      <div class="box-tools pull-right">
+        <span class="badge" style="background:<?= $badge['bg']; ?>;color:<?= $badge['color']; ?>;font-size:13px;font-weight:800;padding:6px 14px;border-radius:20px;border:1px solid <?= $badge['border']; ?>;">
+          <i class="fa <?= $badge['icon']; ?>"></i> <?= htmlspecialchars($rfm['segment']); ?>
+        </span>
+      </div>
+    </div>
+    <div class="box-body" style="padding:22px;background:#ffffff;">
+      <div class="row">
+        <!-- RFM Scores -->
+        <div class="col-md-4" style="border-right:1px solid #f1f5f9;padding-right:20px;">
+          <h5 style="font-weight:800;color:#1e293b;margin-top:0;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">
+            <i class="fa fa-dashboard" style="color:#6366f1;"></i> Skor Perilaku Pelanggan
+          </h5>
+          <div style="margin-top:14px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px;">
+              <span><i class="fa fa-clock-o text-info"></i> Recency (R):</span>
+              <span class="label label-info" style="font-size:11px;font-weight:700;"><?= $rfm['r_score']; ?>/5 — <?= $rfm['r_label']; ?></span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px;">
+              <span><i class="fa fa-refresh text-success"></i> Frequency (F):</span>
+              <span class="label label-success" style="font-size:11px;font-weight:700;"><?= $rfm['f_score']; ?>/5 — <?= $rfm['f_label']; ?></span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px;">
+              <span><i class="fa fa-money text-warning"></i> Monetary (M):</span>
+              <span class="label label-warning" style="font-size:11px;font-weight:700;"><?= $rfm['m_score']; ?>/5 — <?= $rfm['m_label']; ?></span>
+            </div>
+            <hr style="margin:10px 0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-weight:700;color:#475569;font-size:12px;">Kode Matriks RFM:</span>
+              <span style="font-weight:900;font-size:18px;letter-spacing:2px;color:#0f172a;background:#f1f5f9;padding:2px 10px;border-radius:6px;"><?= $rfm['rfm_display']; ?></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- RFM Goal & Action Strategy -->
+        <div class="col-md-5" style="border-right:1px solid #f1f5f9;padding-left:20px;padding-right:20px;">
+          <h5 style="font-weight:800;color:#1e293b;margin-top:0;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">
+            <i class="fa fa-bullseye" style="color:#ec4899;"></i> Strategi & Tindakan Follow-Up
+          </h5>
+          <div style="margin-top:12px;">
+            <div style="margin-bottom:12px;">
+              <strong style="color:#0284c7;font-size:12px;display:block;margin-bottom:2px;"><i class="fa fa-flag"></i> Target / Goal:</strong>
+              <div style="font-size:13px;color:#334155;background:#f0f9ff;padding:8px 12px;border-radius:8px;border-left:3px solid #0284c7;">
+                <?= htmlspecialchars($rfm['goal']); ?>
+              </div>
+            </div>
+            <div>
+              <strong style="color:#d97706;font-size:12px;display:block;margin-bottom:2px;"><i class="fa fa-magic"></i> Rekomendasi Action:</strong>
+              <div style="font-size:13px;color:#334155;background:#fffbeb;padding:8px 12px;border-radius:8px;border-left:3px solid #d97706;">
+                <?= htmlspecialchars($rfm['action']); ?>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Action Button -->
+        <div class="col-md-3 text-center" style="display:flex;flex-direction:column;justify-content:center;align-items:center;padding-left:15px;">
+          <div style="font-size:12px;color:#64748b;font-weight:700;margin-bottom:10px;text-transform:uppercase;">Aksi Cepat CS</div>
+          <?php if (!empty($summary['phone'])):
+            $wa_phone = preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $summary['phone']));
+            if (substr($wa_phone, 0, 2) !== '62') $wa_phone = '62' . $wa_phone;
+            $wa_msg = "Halo Kak " . $summary['nama'] . ",\n\nSalam dari Metafora! " . $rfm['action'] . "\n\nAda yang bisa kami bantu hari ini?";
+            $wa_url = "https://api.whatsapp.com/send?phone=" . $wa_phone . "&text=" . rawurlencode($wa_msg);
+          ?>
+          <a href="<?= $wa_url; ?>" target="_blank" class="btn btn-block" style="background:#25D366;color:#fff;font-weight:700;border-radius:10px;padding:10px 14px;box-shadow:0 4px 12px rgba(37,211,102,0.3);font-size:12px;white-space:normal;">
+            <i class="fa fa-whatsapp fa-lg"></i><br>Kirim WA Sesuai Strategi RFM
+          </a>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
+  </div>
+  <?php endif; ?>
+
+  <!-- Product-Level RFM Analysis Section -->
+  <div class="box box-solid" style="border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,0.06);border:1px solid #e2e8f0;margin-bottom:20px;overflow:hidden;">
+    <div class="box-header" style="background:#ffffff;border-bottom:1px solid #f1f5f9;padding:16px 20px;">
+      <h3 class="box-title" style="font-weight:800;font-size:15px;color:#1e293b;">
+        <i class="fa fa-shopping-basket" style="color:#8b5cf6;"></i> Analisis RFM Per Produk (Recency, Frequency, Monetary)
+      </h3>
+      <small class="text-muted" style="display:block;margin-top:3px;font-size:12px;">Rekam data transaksi per produk: tanggal beli terakhir, jumlah frekuensi order/qty, dan total biaya yang dikeluarkan.</small>
+    </div>
+    <div class="box-body table-responsive no-padding">
+      <table class="table table-hover table-striped" style="margin:0;font-size:12.5px;">
+        <thead>
+          <tr style="background:#f8fafc;color:#475569;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;">
+            <th style="width:40px;padding:12px 14px;">#</th>
+            <th style="min-width:220px;padding:12px 14px;">Produk & SKU</th>
+            <th style="width:200px;padding:12px 14px;"><i class="fa fa-clock-o text-info"></i> Recency (Beli Terakhir)</th>
+            <th style="width:180px;padding:12px 14px;"><i class="fa fa-refresh text-success"></i> Frequency (Order & Qty)</th>
+            <th style="width:180px;padding:12px 14px;" class="text-right"><i class="fa fa-money text-warning"></i> Monetary (Total Biaya)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php if (empty($product_rfm)): ?>
+          <tr><td colspan="5" class="text-center" style="padding:30px;color:#94a3b8;"><i class="fa fa-info-circle fa-2x"></i><br>Belum ada rincian transaksi produk untuk pelanggan ini.</td></tr>
+          <?php else: 
+            $p_no = 1;
+            $cust_total_spend = max(1, $summary['total_spend']);
+            foreach ($product_rfm as $pr):
+              $p_pct = round(($pr->total_spend / $cust_total_spend) * 100, 1);
+          ?>
+          <tr>
+            <td style="padding:12px 14px;vertical-align:middle;font-weight:700;color:#64748b;"><?= $p_no++; ?></td>
+            <td style="padding:12px 14px;vertical-align:middle;">
+              <strong style="color:#0f172a;"><?= htmlspecialchars($pr->nama_produk); ?></strong><br>
+              <small class="text-muted"><i class="fa fa-barcode"></i> SKU: <?= htmlspecialchars($pr->kode_produk); ?></small>
+            </td>
+            <td style="padding:12px 14px;vertical-align:middle;">
+              <strong style="color:#1e293b;"><?= date('d/m/Y', strtotime($pr->last_bought_date)); ?></strong><br>
+              <span class="label" style="background:#e0f2fe;color:#0369a1;font-weight:700;font-size:10.5px;padding:3px 8px;border-radius:10px;display:inline-block;margin-top:2px;">
+                <i class="fa fa-history"></i> <?= $pr->recency_days; ?> hari lalu
+              </span>
+            </td>
+            <td style="padding:12px 14px;vertical-align:middle;">
+              <span class="badge" style="background:#dcfce7;color:#15803d;font-weight:800;font-size:11.5px;padding:4px 10px;border-radius:10px;">
+                <?= $pr->order_count; ?>x Order
+              </span>
+              <small style="color:#475569;font-weight:600;margin-left:4px;">(<?= number_format($pr->total_qty); ?> pcs)</small>
+            </td>
+            <td style="padding:12px 14px;vertical-align:middle;" class="text-right">
+              <strong style="color:#16a34a;font-size:14px;">Rp <?= number_format($pr->total_spend, 0, ',', '.'); ?></strong>
+              <div class="progress" style="height:4px;margin:4px 0 0 0;background:#e2e8f0;border-radius:2px;">
+                <div class="progress-bar" role="progressbar" style="width:<?= min(100, max(5, $p_pct)); ?>%;background:#16a34a;"></div>
+              </div>
+              <small class="text-muted" style="font-size:10px;"><?= $p_pct; ?>% dari total belanja</small>
+            </td>
+          </tr>
+          <?php endforeach; endif; ?>
+        </tbody>
+      </table>
+    </div>
+  </div>
   <div class="box box-primary">
     <div class="box-header with-border">
       <h3 class="box-title"><i class="fa fa-history"></i> Riwayat Transaksi (<?= count($transactions); ?>)</h3>

@@ -1,4 +1,17 @@
-<?php /* invoice_view.php */ $status_c=['draft'=>'default','sent'=>'info','partial'=>'warning','paid'=>'success','overdue'=>'danger','cancelled'=>'danger']; ?>
+<style>
+@keyframes invoiceFadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.box-primary {
+  border-radius: 12px !important;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.04) !important;
+  animation: invoiceFadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.table-responsive { -webkit-overflow-scrolling: touch; }
+</style>
+
 <section class="content-header">
    <h1>Detail Invoice <small><?= _ent($invoice->nomor_invoice); ?></small></h1>
    <ol class="breadcrumb"><li><a href="<?= base_url('administrator/invoice'); ?>"><i class="fa fa-file-text-o"></i> Invoice</a></li><li class="active">Detail</li></ol>

@@ -25,79 +25,724 @@ class Model_crm extends CI_Model
 	}
 
 	/**
-	 * Get consolidated customer list from sales_order + penjualan_marketplace
-	 * Grouped by phone number (primary key for customer identity)
+	 * RFM 125-Rule Matrix Lookup (Source: rfm magang.xlsx)
 	 */
-	public function get_customers($filter = '', $limit = 25, $offset = 0)
+	public function get_rfm_matrix()
 	{
-		$sql = "SELECT 
-			customer_phone,
-			customer_nama,
-			COUNT(DISTINCT CONCAT(order_table, '-', order_id)) as total_orders,
-			GROUP_CONCAT(DISTINCT order_source SEPARATOR ', ') as sumber_penjualan,
-			MAX(tanggal_pengiriman) as last_order_date,
-			SUM(CASE WHEN status_label = 'Pending' THEN 1 ELSE 0 END) as pending_followups
-		FROM crm_transaction_followup_labels
-		WHERE customer_phone IS NOT NULL AND customer_phone != ''";
-
-		if (!empty($filter)) {
-			$filter = $this->db->escape_like_str($filter);
-			$sql .= " AND (customer_nama LIKE '%{$filter}%' OR customer_phone LIKE '%{$filter}%')";
+		$custom = $this->db->get_where('cc_options', ['option_name' => 'rfm_matrix_custom'])->row();
+		if ($custom && !empty($custom->option_value)) {
+			$json = json_decode($custom->option_value, true);
+			if (is_array($json) && count($json) > 0) {
+				return $json;
+			}
 		}
 
-		$sql .= " GROUP BY customer_phone, customer_nama ORDER BY last_order_date DESC";
-		
-		$count_sql = "SELECT COUNT(*) as cnt FROM ({$sql}) as sub";
-		$count = $this->get_query_count($count_sql);
+		return [
+			'555' => ['r' => 5, 'f' => 5, 'm' => 5, 'segment' => 'Champions', 'goal' => 'Pertahankan loyalitas dan beri apresiasi', 'action' => 'Berikan hadiah eksklusif, early access, dan testimoni program'],
+			'554' => ['r' => 5, 'f' => 5, 'm' => 4, 'segment' => 'Champions', 'goal' => 'Pertahankan loyalitas dan beri apresiasi', 'action' => 'Berikan hadiah eksklusif, early access, dan testimoni program'],
+			'553' => ['r' => 5, 'f' => 5, 'm' => 3, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'552' => ['r' => 5, 'f' => 5, 'm' => 2, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'551' => ['r' => 5, 'f' => 5, 'm' => 1, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'545' => ['r' => 5, 'f' => 4, 'm' => 5, 'segment' => 'Champions', 'goal' => 'Pertahankan loyalitas dan beri apresiasi', 'action' => 'Berikan hadiah eksklusif, early access, dan testimoni program'],
+			'544' => ['r' => 5, 'f' => 4, 'm' => 4, 'segment' => 'Champions', 'goal' => 'Pertahankan loyalitas dan beri apresiasi', 'action' => 'Berikan hadiah eksklusif, early access, dan testimoni program'],
+			'543' => ['r' => 5, 'f' => 4, 'm' => 3, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'542' => ['r' => 5, 'f' => 4, 'm' => 2, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'541' => ['r' => 5, 'f' => 4, 'm' => 1, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'535' => ['r' => 5, 'f' => 3, 'm' => 5, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'534' => ['r' => 5, 'f' => 3, 'm' => 4, 'segment' => 'Potential Loyalist', 'goal' => 'Dorong jadi loyal customer', 'action' => 'Follow up rutin, edukasi produk, dan masuk grup WA konsultasi'],
+			'533' => ['r' => 5, 'f' => 3, 'm' => 3, 'segment' => 'Potential Loyalist', 'goal' => 'Dorong jadi loyal customer', 'action' => 'Follow up rutin, edukasi produk, dan masuk grup WA konsultasi'],
+			'532' => ['r' => 5, 'f' => 3, 'm' => 2, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'531' => ['r' => 5, 'f' => 3, 'm' => 1, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'525' => ['r' => 5, 'f' => 2, 'm' => 5, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'524' => ['r' => 5, 'f' => 2, 'm' => 4, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'523' => ['r' => 5, 'f' => 2, 'm' => 3, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'522' => ['r' => 5, 'f' => 2, 'm' => 2, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'521' => ['r' => 5, 'f' => 2, 'm' => 1, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'515' => ['r' => 5, 'f' => 1, 'm' => 5, 'segment' => 'New Customers', 'goal' => 'Bina jadi pembeli ulang', 'action' => 'Reminder, konsultasi awal, dan edukasi cara konsumsi'],
+			'514' => ['r' => 5, 'f' => 1, 'm' => 4, 'segment' => 'New Customers', 'goal' => 'Bina jadi pembeli ulang', 'action' => 'Reminder, konsultasi awal, dan edukasi cara konsumsi'],
+			'513' => ['r' => 5, 'f' => 1, 'm' => 3, 'segment' => 'New Customers', 'goal' => 'Bina jadi pembeli ulang', 'action' => 'Reminder, konsultasi awal, dan edukasi cara konsumsi'],
+			'512' => ['r' => 5, 'f' => 1, 'm' => 2, 'segment' => 'New Customers', 'goal' => 'Bina jadi pembeli ulang', 'action' => 'Reminder, konsultasi awal, dan edukasi cara konsumsi'],
+			'511' => ['r' => 5, 'f' => 1, 'm' => 1, 'segment' => 'New Customers', 'goal' => 'Bina jadi pembeli ulang', 'action' => 'Reminder, konsultasi awal, dan edukasi cara konsumsi'],
+			'455' => ['r' => 4, 'f' => 5, 'm' => 5, 'segment' => 'Loyal Customers', 'goal' => 'Naikkan frekuensi atau AOV', 'action' => 'Tawarkan bundling, loyalty reward, dan referral program'],
+			'454' => ['r' => 4, 'f' => 5, 'm' => 4, 'segment' => 'Loyal Customers', 'goal' => 'Naikkan frekuensi atau AOV', 'action' => 'Tawarkan bundling, loyalty reward, dan referral program'],
+			'453' => ['r' => 4, 'f' => 5, 'm' => 3, 'segment' => 'Loyal Customers', 'goal' => 'Naikkan frekuensi atau AOV', 'action' => 'Tawarkan bundling, loyalty reward, dan referral program'],
+			'452' => ['r' => 4, 'f' => 5, 'm' => 2, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'451' => ['r' => 4, 'f' => 5, 'm' => 1, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'445' => ['r' => 4, 'f' => 4, 'm' => 5, 'segment' => 'Loyal Customers', 'goal' => 'Naikkan frekuensi atau AOV', 'action' => 'Tawarkan bundling, loyalty reward, dan referral program'],
+			'444' => ['r' => 4, 'f' => 4, 'm' => 4, 'segment' => 'Loyal Customers', 'goal' => 'Naikkan frekuensi atau AOV', 'action' => 'Tawarkan bundling, loyalty reward, dan referral program'],
+			'443' => ['r' => 4, 'f' => 4, 'm' => 3, 'segment' => 'Loyal Customers', 'goal' => 'Naikkan frekuensi atau AOV', 'action' => 'Tawarkan bundling, loyalty reward, dan referral program'],
+			'442' => ['r' => 4, 'f' => 4, 'm' => 2, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'441' => ['r' => 4, 'f' => 4, 'm' => 1, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'435' => ['r' => 4, 'f' => 3, 'm' => 5, 'segment' => 'Big Spenders', 'goal' => 'Pertahankan nilai belanja 4', 'action' => 'Berikan penawaran VIP, diskon eksklusif, dan layanan personal'],
+			'434' => ['r' => 4, 'f' => 3, 'm' => 4, 'segment' => 'Potential Loyalist', 'goal' => 'Dorong jadi loyal customer', 'action' => 'Follow up rutin, edukasi produk, dan masuk grup WA konsultasi'],
+			'433' => ['r' => 4, 'f' => 3, 'm' => 3, 'segment' => 'Potential Loyalist', 'goal' => 'Dorong jadi loyal customer', 'action' => 'Follow up rutin, edukasi produk, dan masuk grup WA konsultasi'],
+			'432' => ['r' => 4, 'f' => 3, 'm' => 2, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'431' => ['r' => 4, 'f' => 3, 'm' => 1, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'425' => ['r' => 4, 'f' => 2, 'm' => 5, 'segment' => 'Big Spenders', 'goal' => 'Pertahankan nilai belanja 4', 'action' => 'Berikan penawaran VIP, diskon eksklusif, dan layanan personal'],
+			'424' => ['r' => 4, 'f' => 2, 'm' => 4, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'423' => ['r' => 4, 'f' => 2, 'm' => 3, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'422' => ['r' => 4, 'f' => 2, 'm' => 2, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'421' => ['r' => 4, 'f' => 2, 'm' => 1, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'415' => ['r' => 4, 'f' => 1, 'm' => 5, 'segment' => 'New Customers', 'goal' => 'Bina jadi pembeli ulang', 'action' => 'Reminder, konsultasi awal, dan edukasi cara konsumsi'],
+			'414' => ['r' => 4, 'f' => 1, 'm' => 4, 'segment' => 'New Customers', 'goal' => 'Bina jadi pembeli ulang', 'action' => 'Reminder, konsultasi awal, dan edukasi cara konsumsi'],
+			'413' => ['r' => 4, 'f' => 1, 'm' => 3, 'segment' => 'New Customers', 'goal' => 'Bina jadi pembeli ulang', 'action' => 'Reminder, konsultasi awal, dan edukasi cara konsumsi'],
+			'412' => ['r' => 4, 'f' => 1, 'm' => 2, 'segment' => 'New Customers', 'goal' => 'Bina jadi pembeli ulang', 'action' => 'Reminder, konsultasi awal, dan edukasi cara konsumsi'],
+			'411' => ['r' => 4, 'f' => 1, 'm' => 1, 'segment' => 'New Customers', 'goal' => 'Bina jadi pembeli ulang', 'action' => 'Reminder, konsultasi awal, dan edukasi cara konsumsi'],
+			'355' => ['r' => 3, 'f' => 5, 'm' => 5, 'segment' => 'Loyal Customers', 'goal' => 'Naikkan frekuensi atau AOV', 'action' => 'Tawarkan bundling, loyalty reward, dan referral program'],
+			'354' => ['r' => 3, 'f' => 5, 'm' => 4, 'segment' => 'Loyal Customers', 'goal' => 'Naikkan frekuensi atau AOV', 'action' => 'Tawarkan bundling, loyalty reward, dan referral program'],
+			'353' => ['r' => 3, 'f' => 5, 'm' => 3, 'segment' => 'Loyal Customers', 'goal' => 'Naikkan frekuensi atau AOV', 'action' => 'Tawarkan bundling, loyalty reward, dan referral program'],
+			'352' => ['r' => 3, 'f' => 5, 'm' => 2, 'segment' => 'Frequent Low Value', 'goal' => 'Upsell ke paket besar', 'action' => 'Tawarkan paket hemat, diskon volume, dan tesimoni produk'],
+			'351' => ['r' => 3, 'f' => 5, 'm' => 1, 'segment' => 'Frequent Low Value', 'goal' => 'Upsell ke paket besar', 'action' => 'Tawarkan paket hemat, diskon volume, dan tesimoni produk'],
+			'345' => ['r' => 3, 'f' => 4, 'm' => 5, 'segment' => 'Loyal Customers', 'goal' => 'Naikkan frekuensi atau AOV', 'action' => 'Tawarkan bundling, loyalty reward, dan referral program'],
+			'344' => ['r' => 3, 'f' => 4, 'm' => 4, 'segment' => 'Loyal Customers', 'goal' => 'Naikkan frekuensi atau AOV', 'action' => 'Tawarkan bundling, loyalty reward, dan referral program'],
+			'343' => ['r' => 3, 'f' => 4, 'm' => 3, 'segment' => 'Loyal Customers', 'goal' => 'Naikkan frekuensi atau AOV', 'action' => 'Tawarkan bundling, loyalty reward, dan referral program'],
+			'342' => ['r' => 3, 'f' => 4, 'm' => 2, 'segment' => 'Frequent Low Value', 'goal' => 'Upsell ke paket besar', 'action' => 'Tawarkan paket hemat, diskon volume, dan tesimoni produk'],
+			'341' => ['r' => 3, 'f' => 4, 'm' => 1, 'segment' => 'Frequent Low Value', 'goal' => 'Upsell ke paket besar', 'action' => 'Tawarkan paket hemat, diskon volume, dan tesimoni produk'],
+			'335' => ['r' => 3, 'f' => 3, 'm' => 5, 'segment' => 'Big Spenders', 'goal' => 'Pertahankan nilai belanja 4', 'action' => 'Berikan penawaran VIP, diskon eksklusif, dan layanan personal'],
+			'334' => ['r' => 3, 'f' => 3, 'm' => 4, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'333' => ['r' => 3, 'f' => 3, 'm' => 3, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'332' => ['r' => 3, 'f' => 3, 'm' => 2, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'331' => ['r' => 3, 'f' => 3, 'm' => 1, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'325' => ['r' => 3, 'f' => 2, 'm' => 5, 'segment' => 'Big Spenders', 'goal' => 'Pertahankan nilai belanja 4', 'action' => 'Berikan penawaran VIP, diskon eksklusif, dan layanan personal'],
+			'324' => ['r' => 3, 'f' => 2, 'm' => 4, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'323' => ['r' => 3, 'f' => 2, 'm' => 3, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'322' => ['r' => 3, 'f' => 2, 'm' => 2, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'321' => ['r' => 3, 'f' => 2, 'm' => 1, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'315' => ['r' => 3, 'f' => 1, 'm' => 5, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'314' => ['r' => 3, 'f' => 1, 'm' => 4, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'313' => ['r' => 3, 'f' => 1, 'm' => 3, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'312' => ['r' => 3, 'f' => 1, 'm' => 2, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'311' => ['r' => 3, 'f' => 1, 'm' => 1, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'255' => ['r' => 2, 'f' => 5, 'm' => 5, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'254' => ['r' => 2, 'f' => 5, 'm' => 4, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'253' => ['r' => 2, 'f' => 5, 'm' => 3, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'252' => ['r' => 2, 'f' => 5, 'm' => 2, 'segment' => 'Frequent Low Value', 'goal' => 'Upsell ke paket besar', 'action' => 'Tawarkan paket hemat, diskon volume, dan tesimoni produk'],
+			'251' => ['r' => 2, 'f' => 5, 'm' => 1, 'segment' => 'Frequent Low Value', 'goal' => 'Upsell ke paket besar', 'action' => 'Tawarkan paket hemat, diskon volume, dan tesimoni produk'],
+			'245' => ['r' => 2, 'f' => 4, 'm' => 5, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'244' => ['r' => 2, 'f' => 4, 'm' => 4, 'segment' => 'At Risk Customers', 'goal' => 'Tarik kembali ke aktif', 'action' => 'Kirim campaign reaktivasi + bonus spesial jika beli ulang'],
+			'243' => ['r' => 2, 'f' => 4, 'm' => 3, 'segment' => 'At Risk Customers', 'goal' => 'Tarik kembali ke aktif', 'action' => 'Kirim campaign reaktivasi + bonus spesial jika beli ulang'],
+			'242' => ['r' => 2, 'f' => 4, 'm' => 2, 'segment' => 'Frequent Low Value', 'goal' => 'Upsell ke paket besar', 'action' => 'Tawarkan paket hemat, diskon volume, dan tesimoni produk'],
+			'241' => ['r' => 2, 'f' => 4, 'm' => 1, 'segment' => 'Frequent Low Value', 'goal' => 'Upsell ke paket besar', 'action' => 'Tawarkan paket hemat, diskon volume, dan tesimoni produk'],
+			'235' => ['r' => 2, 'f' => 3, 'm' => 5, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'234' => ['r' => 2, 'f' => 3, 'm' => 4, 'segment' => 'At Risk Customers', 'goal' => 'Tarik kembali ke aktif', 'action' => 'Kirim campaign reaktivasi + bonus spesial jika beli ulang'],
+			'233' => ['r' => 2, 'f' => 3, 'm' => 3, 'segment' => 'At Risk Customers', 'goal' => 'Tarik kembali ke aktif', 'action' => 'Kirim campaign reaktivasi + bonus spesial jika beli ulang'],
+			'232' => ['r' => 2, 'f' => 3, 'm' => 2, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'231' => ['r' => 2, 'f' => 3, 'm' => 1, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'225' => ['r' => 2, 'f' => 2, 'm' => 5, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'224' => ['r' => 2, 'f' => 2, 'm' => 4, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'223' => ['r' => 2, 'f' => 2, 'm' => 3, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'222' => ['r' => 2, 'f' => 2, 'm' => 2, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'221' => ['r' => 2, 'f' => 2, 'm' => 1, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'215' => ['r' => 2, 'f' => 1, 'm' => 5, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'214' => ['r' => 2, 'f' => 1, 'm' => 4, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'213' => ['r' => 2, 'f' => 1, 'm' => 3, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'212' => ['r' => 2, 'f' => 1, 'm' => 2, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'211' => ['r' => 2, 'f' => 1, 'm' => 1, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'155' => ['r' => 1, 'f' => 5, 'm' => 5, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'154' => ['r' => 1, 'f' => 5, 'm' => 4, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'153' => ['r' => 1, 'f' => 5, 'm' => 3, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'152' => ['r' => 1, 'f' => 5, 'm' => 2, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'151' => ['r' => 1, 'f' => 5, 'm' => 1, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'145' => ['r' => 1, 'f' => 4, 'm' => 5, 'segment' => "Can't Lose Them", 'goal' => 'Cegah churn', 'action' => 'Follow up personal, beri hadiah loyalitas & tanya feedback langsung'],
+			'144' => ['r' => 1, 'f' => 4, 'm' => 4, 'segment' => 'At Risk Customers', 'goal' => 'Tarik kembali ke aktif', 'action' => 'Kirim campaign reaktivasi + bonus spesial jika beli ulang'],
+			'143' => ['r' => 1, 'f' => 4, 'm' => 3, 'segment' => 'At Risk Customers', 'goal' => 'Tarik kembali ke aktif', 'action' => 'Kirim campaign reaktivasi + bonus spesial jika beli ulang'],
+			'142' => ['r' => 1, 'f' => 4, 'm' => 2, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'141' => ['r' => 1, 'f' => 4, 'm' => 1, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'135' => ['r' => 1, 'f' => 3, 'm' => 5, 'segment' => "Can't Lose Them", 'goal' => 'Cegah churn', 'action' => 'Follow up personal, beri hadiah loyalitas & tanya feedback langsung'],
+			'134' => ['r' => 1, 'f' => 3, 'm' => 4, 'segment' => 'At Risk Customers', 'goal' => 'Tarik kembali ke aktif', 'action' => 'Kirim campaign reaktivasi + bonus spesial jika beli ulang'],
+			'133' => ['r' => 1, 'f' => 3, 'm' => 3, 'segment' => 'At Risk Customers', 'goal' => 'Tarik kembali ke aktif', 'action' => 'Kirim campaign reaktivasi + bonus spesial jika beli ulang'],
+			'132' => ['r' => 1, 'f' => 3, 'm' => 2, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'131' => ['r' => 1, 'f' => 3, 'm' => 1, 'segment' => 'Need Attention', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			'125' => ['r' => 1, 'f' => 2, 'm' => 5, 'segment' => 'Hibernating', 'goal' => 'Aktifkan kembali', 'action' => 'Kirim broadcast promo besar + story hasil customer lain'],
+			'124' => ['r' => 1, 'f' => 2, 'm' => 4, 'segment' => 'Hibernating', 'goal' => 'Aktifkan kembali', 'action' => 'Kirim broadcast promo besar + story hasil customer lain'],
+			'123' => ['r' => 1, 'f' => 2, 'm' => 3, 'segment' => 'Hibernating', 'goal' => 'Aktifkan kembali', 'action' => 'Kirim broadcast promo besar + story hasil customer lain'],
+			'122' => ['r' => 1, 'f' => 2, 'm' => 2, 'segment' => 'Hibernating', 'goal' => 'Aktifkan kembali', 'action' => 'Kirim broadcast promo besar + story hasil customer lain'],
+			'121' => ['r' => 1, 'f' => 2, 'm' => 1, 'segment' => 'Hibernating', 'goal' => 'Aktifkan kembali', 'action' => 'Kirim broadcast promo besar + story hasil customer lain'],
+			'115' => ['r' => 1, 'f' => 1, 'm' => 5, 'segment' => 'Hibernating', 'goal' => 'Aktifkan kembali', 'action' => 'Kirim broadcast promo besar + story hasil customer lain'],
+			'114' => ['r' => 1, 'f' => 1, 'm' => 4, 'segment' => 'Hibernating', 'goal' => 'Aktifkan kembali', 'action' => 'Kirim broadcast promo besar + story hasil customer lain'],
+			'113' => ['r' => 1, 'f' => 1, 'm' => 3, 'segment' => 'Hibernating', 'goal' => 'Aktifkan kembali', 'action' => 'Kirim broadcast promo besar + story hasil customer lain'],
+			'112' => ['r' => 1, 'f' => 1, 'm' => 2, 'segment' => 'Hibernating', 'goal' => 'Aktifkan kembali', 'action' => 'Kirim broadcast promo besar + story hasil customer lain'],
+			'111' => ['r' => 1, 'f' => 1, 'm' => 1, 'segment' => 'Hibernating', 'goal' => 'Aktifkan kembali', 'action' => 'Kirim broadcast promo besar + story hasil customer lain'],
+		];
+	}
 
-		$sql .= " LIMIT {$limit} OFFSET {$offset}";
+	public function save_rfm_matrix_custom($matrix)
+	{
+		$json = json_encode($matrix, JSON_UNESCAPED_UNICODE);
+		$existing = $this->db->get_where('cc_options', ['option_name' => 'rfm_matrix_custom'])->row();
+		if ($existing) {
+			$this->db->where('id', $existing->id)->update('cc_options', ['option_value' => $json]);
+		} else {
+			$this->db->insert('cc_options', [
+				'option_name'  => 'rfm_matrix_custom',
+				'option_value' => $json
+			]);
+		}
+		return true;
+	}
+
+	public function get_rfm_badge_style($segment)
+	{
+		$segment = trim((string)$segment);
+		$styles = [
+			'Champions' => ['bg' => '#fef3c7', 'color' => '#92400e', 'border' => '#fde68a', 'icon' => 'fa-trophy', 'badge' => 'label-warning'],
+			'Loyal Customers' => ['bg' => '#dcfce7', 'color' => '#166534', 'border' => '#bbf7d0', 'icon' => 'fa-diamond', 'badge' => 'label-success'],
+			'Potential Loyalist' => ['bg' => '#e0e7ff', 'color' => '#3730a3', 'border' => '#c7d2fe', 'icon' => 'fa-star', 'badge' => 'label-primary'],
+			'New Customers' => ['bg' => '#e0f2fe', 'color' => '#075985', 'border' => '#bae6fd', 'icon' => 'fa-user-plus', 'badge' => 'label-info'],
+			'Big Spenders' => ['bg' => '#f3e8ff', 'color' => '#6b21a8', 'border' => '#e9d5ff', 'icon' => 'fa-credit-card', 'badge' => 'label-primary'],
+			'Frequent Low Value' => ['bg' => '#f1f5f9', 'color' => '#475569', 'border' => '#e2e8f0', 'icon' => 'fa-shopping-basket', 'badge' => 'label-default'],
+			'Need Attention' => ['bg' => '#ffedd5', 'color' => '#9a3412', 'border' => '#fed7aa', 'icon' => 'fa-bell', 'badge' => 'label-warning'],
+			'At Risk Customers' => ['bg' => '#fee2e2', 'color' => '#991b1b', 'border' => '#fca5a5', 'icon' => 'fa-exclamation-triangle', 'badge' => 'label-danger'],
+			"Can't Lose Them" => ['bg' => '#fce7f3', 'color' => '#9d174d', 'border' => '#fbcfe8', 'icon' => 'fa-heart', 'badge' => 'label-danger'],
+			'Hibernating' => ['bg' => '#f3f4f6', 'color' => '#1f2937', 'border' => '#e5e7eb', 'icon' => 'fa-moon-o', 'badge' => 'label-default'],
+		];
+
+		foreach ($styles as $name => $style) {
+			if (strcasecmp($name, $segment) === 0 || strpos(strtolower($name), strtolower(substr($segment, 0, 5))) !== false) {
+				return $style;
+			}
+		}
+
+		return ['bg' => '#e2e8f0', 'color' => '#334155', 'border' => '#cbd5e1', 'icon' => 'fa-tag', 'badge' => 'label-default'];
+	}
+
+	/**
+	 * Calculate quantitative percentile thresholds (20%, 40%, 60%, 80%) across all active customers
+	/**
+	 * Calculate quantitative percentile thresholds (20%, 40%, 60%, 80%) across active customers (optionally filtered by product)
+	 */
+	public function get_rfm_percentile_thresholds($product_filter = '')
+	{
+		static $cached_thresholds = [];
+		$cache_key = md5((string)$product_filter);
+		if (isset($cached_thresholds[$cache_key])) {
+			return $cached_thresholds[$cache_key];
+		}
+
+		if (!empty($product_filter)) {
+			$p_esc = $this->db->escape_like_str($product_filter);
+			$sql = "
+				SELECT 
+					c_data.no_telepon,
+					DATEDIFF(CURRENT_DATE(), MAX(c_data.last_date)) as days_since_last,
+					COUNT(DISTINCT c_data.order_id) as total_orders,
+					SUM(c_data.subtotal) as total_spend
+				FROM (
+					SELECT 
+						so.no_telepon, 
+						so.tanggal_so as last_date, 
+						CONCAT('so_', so.id) as order_id, 
+						soi.subtotal 
+					FROM sales_order_item soi
+					JOIN sales_order so ON soi.so_id = so.id
+					LEFT JOIN produk p ON soi.produk_id = p.id
+					WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
+					AND (p.nama_produk LIKE '%{$p_esc}%' OR soi.catatan LIKE '%{$p_esc}%')
+
+					UNION ALL
+
+					SELECT 
+						pm.no_telepon, 
+						pm.tanggal_so as last_date, 
+						CONCAT('pm_', pm.id) as order_id, 
+						pmi.subtotal 
+					FROM penjualan_marketplace_item pmi
+					JOIN penjualan_marketplace pm ON pmi.penjualan_marketplace_id = pm.id
+					LEFT JOIN produk p ON pmi.produk_id = p.id
+					WHERE pm.no_telepon IS NOT NULL AND pm.no_telepon != ''
+					AND (p.nama_produk LIKE '%{$p_esc}%' OR pmi.catatan LIKE '%{$p_esc}%')
+				) c_data
+				GROUP BY c_data.no_telepon
+			";
+		} else {
+			$sql = "
+				SELECT 
+					c_data.no_telepon,
+					DATEDIFF(CURRENT_DATE(), MAX(c_data.last_date)) as days_since_last,
+					COUNT(DISTINCT c_data.order_id) as total_orders,
+					SUM(c_data.total) as total_spend
+				FROM (
+					SELECT no_telepon, tanggal_so as last_date, CONCAT('so_', id) as order_id, total 
+					FROM sales_order 
+					WHERE no_telepon IS NOT NULL AND no_telepon != ''
+					
+					UNION ALL
+					
+					SELECT no_telepon, tanggal_so as last_date, CONCAT('pm_', id) as order_id, total 
+					FROM penjualan_marketplace 
+					WHERE no_telepon IS NOT NULL AND no_telepon != ''
+				) c_data
+				GROUP BY c_data.no_telepon
+			";
+		}
+
 		$rows = $this->db->query($sql)->result();
+		if (empty($rows)) {
+			$cached_thresholds[$cache_key] = [
+				'r' => [20 => 30, 40 => 60, 60 => 90, 80 => 180],
+				'f' => [20 => 2, 40 => 4, 60 => 7, 80 => 10],
+				'm' => [20 => 300000, 40 => 1000000, 60 => 2500000, 80 => 5000000]
+			];
+			return $cached_thresholds[$cache_key];
+		}
 
-		return ['rows' => $rows, 'total' => $count];
+		$r_vals = [];
+		$f_vals = [];
+		$m_vals = [];
+
+		foreach ($rows as $r) {
+			$r_vals[] = (int)$r->days_since_last;
+			$f_vals[] = (int)$r->total_orders;
+			$m_vals[] = (float)$r->total_spend;
+		}
+
+		$calc_p = function($arr, $percentile) {
+			sort($arr);
+			$count = count($arr);
+			if ($count === 0) return 0;
+			if ($count === 1) return $arr[0];
+			$index = ($percentile / 100.0) * ($count - 1);
+			$lower = (int)floor($index);
+			$fraction = $index - $lower;
+			if ($lower >= $count - 1) return $arr[$count - 1];
+			return $arr[$lower] + $fraction * ($arr[$lower + 1] - $arr[$lower]);
+		};
+
+		$r_p20 = $calc_p($r_vals, 20);
+		$r_p40 = $calc_p($r_vals, 40);
+		$r_p60 = $calc_p($r_vals, 60);
+		$r_p80 = $calc_p($r_vals, 80);
+
+		$f_p20 = $calc_p($f_vals, 20);
+		$f_p40 = $calc_p($f_vals, 40);
+		$f_p60 = $calc_p($f_vals, 60);
+		$f_p80 = $calc_p($f_vals, 80);
+
+		$m_p20 = $calc_p($m_vals, 20);
+		$m_p40 = $calc_p($m_vals, 40);
+		$m_p60 = $calc_p($m_vals, 60);
+		$m_p80 = $calc_p($m_vals, 80);
+
+		$cached_thresholds = [
+			'r' => [
+				20 => $r_p20 ?: 30,
+				40 => max($r_p40, ($r_p20 ?: 30) + 1),
+				60 => max($r_p60, ($r_p40 ?: 60) + 1),
+				80 => max($r_p80, ($r_p60 ?: 90) + 1)
+			],
+			'f' => [
+				20 => $f_p20 ?: 2,
+				40 => max($f_p40, ($f_p20 ?: 2) + 1),
+				60 => max($f_p60, ($f_p40 ?: 4) + 1),
+				80 => max($f_p80, ($f_p60 ?: 7) + 1)
+			],
+			'm' => [
+				20 => $m_p20 ?: 300000,
+				40 => max($m_p40, ($m_p20 ?: 300000) + 100000),
+				60 => max($m_p60, ($m_p40 ?: 1000000) + 100000),
+				80 => max($m_p80, ($m_p60 ?: 2500000) + 100000)
+			]
+		];
+
+		return $cached_thresholds;
+	}
+
+	/**
+	 * Calculate RFM Score and Segment for a customer using percentile quantiles (20%, 40%, 60%, 80%)
+	 */
+	public function calculate_rfm($last_order_date = null, $total_orders = 0, $total_spend = 0.0, $thresholds = null)
+	{
+		if ($thresholds === null) {
+			$thresholds = $this->get_rfm_percentile_thresholds();
+		}
+
+		$t_r = $thresholds['r'];
+		$t_f = $thresholds['f'];
+		$t_m = $thresholds['m'];
+
+		// 1. Recency (R) score (1 to 5) - percentile 20%, 40%, 60%, 80%
+		$r_score = 1;
+		$r_label = 'Sangat lama';
+		$days_since_last = null;
+		if (!empty($last_order_date) && $last_order_date !== '0000-00-00') {
+			$ts_last = strtotime($last_order_date);
+			if ($ts_last && $ts_last > 0) {
+				$days_since_last = (int)floor((time() - $ts_last) / 86400);
+				if ($days_since_last <= $t_r[20]) {
+					$r_score = 5; $r_label = 'Sangat baru';
+				} elseif ($days_since_last <= $t_r[40]) {
+					$r_score = 4; $r_label = 'Baru';
+				} elseif ($days_since_last <= $t_r[60]) {
+					$r_score = 3; $r_label = 'Cukup lama';
+				} elseif ($days_since_last <= $t_r[80]) {
+					$r_score = 2; $r_label = 'Lama';
+				} else {
+					$r_score = 1; $r_label = 'Sangat lama';
+				}
+			}
+		}
+
+		// 2. Frequency (F) score (1 to 5) - percentile 20%, 40%, 60%, 80%
+		$f_score = 1;
+		$f_label = 'Sangat jarang';
+		$total_orders = (int)$total_orders;
+		if ($total_orders >= $t_f[80]) {
+			$f_score = 5; $f_label = 'Sangat sering';
+		} elseif ($total_orders >= $t_f[60]) {
+			$f_score = 4; $f_label = 'Sering';
+		} elseif ($total_orders >= $t_f[40]) {
+			$f_score = 3; $f_label = 'Kadang';
+		} elseif ($total_orders >= $t_f[20]) {
+			$f_score = 2; $f_label = 'Jarang';
+		} else {
+			$f_score = 1; $f_label = 'Sangat jarang';
+		}
+
+		// 3. Monetary (M) score (1 to 5) - percentile 20%, 40%, 60%, 80%
+		$m_score = 1;
+		$m_label = 'Sangat kecil';
+		$total_spend = (float)$total_spend;
+		if ($total_spend >= $t_m[80]) {
+			$m_score = 5; $m_label = 'Sangat Besar';
+		} elseif ($total_spend >= $t_m[60]) {
+			$m_score = 4; $m_label = 'Besar';
+		} elseif ($total_spend >= $t_m[40]) {
+			$m_score = 3; $m_label = 'Sedang';
+		} elseif ($total_spend >= $t_m[20]) {
+			$m_score = 2; $m_label = 'Kecil';
+		} else {
+			$m_score = 1; $m_label = 'Sangat kecil';
+		}
+
+		$rfm_code = "{$r_score}{$f_score}{$m_score}";
+
+		$matrix = $this->get_rfm_matrix();
+		$rule = isset($matrix[$rfm_code]) ? $matrix[$rfm_code] : [
+			'segment' => 'Need Attention',
+			'goal' => 'Kenalkan kembali brand & manfaat',
+			'action' => 'Kirim ulang value produk + testimoni relevan'
+		];
+
+		if (strpos($rule['segment'], 'Can') !== false) {
+			$rule['segment'] = "Can't Lose Them";
+		}
+
+		$badge_style = $this->get_rfm_badge_style($rule['segment']);
+
+		return [
+			'r_score' => $r_score,
+			'f_score' => $f_score,
+			'm_score' => $m_score,
+			'r_label' => $r_label,
+			'f_label' => $f_label,
+			'm_label' => $m_label,
+			'rfm_code' => $rfm_code,
+			'rfm_display' => "{$r_score}-{$f_score}-{$m_score}",
+			'segment' => $rule['segment'],
+			'goal' => $rule['goal'],
+			'action' => $rule['action'],
+			'days_since_last' => $days_since_last,
+			'badge' => $badge_style
+		];
+	}
+
+	/**
+	 * Get consolidated customer list directly from sales_order + penjualan_marketplace
+	 * Grouped by phone number (primary key for customer identity)
+	 */
+	public function get_customers($filter = '', $limit = 25, $offset = 0, $rfm_segment_filter = '', $product_filter = '')
+	{
+		$thresholds = $this->get_rfm_percentile_thresholds($product_filter);
+
+		if (!empty($product_filter)) {
+			$p_esc = $this->db->escape_like_str($product_filter);
+			$sql = "SELECT 
+				phone as customer_phone,
+				COALESCE(NULLIF(MAX(nama), ''), 'Customer') as customer_nama,
+				COUNT(DISTINCT order_id) as total_orders,
+				SUM(total) as total_spend,
+				MAX(tanggal) as last_order_date,
+				GROUP_CONCAT(DISTINCT source ORDER BY source SEPARATOR ', ') as sumber_penjualan
+			FROM (
+				SELECT 
+					CAST(so.no_telepon AS CHAR) COLLATE utf8mb4_unicode_ci as phone, 
+					CAST(so.nama_penerima AS CHAR) COLLATE utf8mb4_unicode_ci as nama, 
+					CAST(CONCAT('so_', so.id) AS CHAR) COLLATE utf8mb4_unicode_ci as order_id, 
+					soi.subtotal as total, 
+					CAST(so.tanggal_so AS DATETIME) as tanggal, 
+					'Toko' COLLATE utf8mb4_unicode_ci as source 
+				FROM sales_order_item soi
+				JOIN sales_order so ON soi.so_id = so.id
+				LEFT JOIN produk p ON soi.produk_id = p.id
+				WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
+				AND (p.nama_produk LIKE '%{$p_esc}%' OR soi.catatan LIKE '%{$p_esc}%')
+
+				UNION ALL
+
+				SELECT 
+					CAST(pm.no_telepon AS CHAR) COLLATE utf8mb4_unicode_ci as phone, 
+					CAST(pm.nama_penerima AS CHAR) COLLATE utf8mb4_unicode_ci as nama, 
+					CAST(CONCAT('pm_', pm.id) AS CHAR) COLLATE utf8mb4_unicode_ci as order_id, 
+					pmi.subtotal as total, 
+					CAST(pm.tanggal_so AS DATETIME) as tanggal, 
+					CAST(COALESCE(
+						lbl.order_source,
+						CASE 
+							WHEN LOWER(pm.source) LIKE '%tokopedia%' THEN 'Tokopedia'
+							WHEN LOWER(pm.source) LIKE '%tiktok%' THEN 'TikTok Shop'
+							WHEN LOWER(pm.source) LIKE '%shopee%' THEN 'Shopee'
+							WHEN LOWER(pm.no_pesanan) LIKE '%shp%' THEN 'Shopee'
+							WHEN LOWER(pm.no_pesanan) LIKE '%tkp%' THEN 'Tokopedia'
+							WHEN LOWER(pm.no_pesanan) LIKE '%ttk%' THEN 'TikTok Shop'
+							ELSE 'Shopee'
+						END
+					) AS CHAR) COLLATE utf8mb4_unicode_ci as source 
+				FROM penjualan_marketplace_item pmi
+				JOIN penjualan_marketplace pm ON pmi.penjualan_marketplace_id = pm.id
+				LEFT JOIN produk p ON pmi.produk_id = p.id
+				LEFT JOIN crm_transaction_followup_labels lbl ON lbl.order_id = pm.id AND lbl.order_table = 'penjualan_marketplace'
+				WHERE pm.no_telepon IS NOT NULL AND pm.no_telepon != ''
+				AND (p.nama_produk LIKE '%{$p_esc}%' OR pmi.catatan LIKE '%{$p_esc}%')
+			) u";
+		} else {
+			$sql = "SELECT 
+				phone as customer_phone,
+				COALESCE(NULLIF(MAX(nama), ''), 'Customer') as customer_nama,
+				COUNT(DISTINCT order_id) as total_orders,
+				SUM(total) as total_spend,
+				MAX(tanggal) as last_order_date,
+				GROUP_CONCAT(DISTINCT source ORDER BY source SEPARATOR ', ') as sumber_penjualan
+			FROM (
+				SELECT 
+					CAST(no_telepon AS CHAR) COLLATE utf8mb4_unicode_ci as phone, 
+					CAST(nama_penerima AS CHAR) COLLATE utf8mb4_unicode_ci as nama, 
+					CAST(CONCAT('so_', id) AS CHAR) COLLATE utf8mb4_unicode_ci as order_id, 
+					total, 
+					CAST(tanggal_so AS DATETIME) as tanggal, 
+					'Toko' COLLATE utf8mb4_unicode_ci as source 
+				FROM sales_order 
+				WHERE no_telepon IS NOT NULL AND no_telepon != ''
+
+				UNION ALL
+
+				SELECT 
+					CAST(pm.no_telepon AS CHAR) COLLATE utf8mb4_unicode_ci as phone, 
+					CAST(pm.nama_penerima AS CHAR) COLLATE utf8mb4_unicode_ci as nama, 
+					CAST(CONCAT('pm_', pm.id) AS CHAR) COLLATE utf8mb4_unicode_ci as order_id, 
+					pm.total, 
+					CAST(pm.tanggal_so AS DATETIME) as tanggal, 
+					CAST(COALESCE(
+						lbl.order_source,
+						CASE 
+							WHEN LOWER(pm.source) LIKE '%tokopedia%' THEN 'Tokopedia'
+							WHEN LOWER(pm.source) LIKE '%tiktok%' THEN 'TikTok Shop'
+							WHEN LOWER(pm.source) LIKE '%shopee%' THEN 'Shopee'
+							WHEN LOWER(pm.no_pesanan) LIKE '%shp%' THEN 'Shopee'
+							WHEN LOWER(pm.no_pesanan) LIKE '%tkp%' THEN 'Tokopedia'
+							WHEN LOWER(pm.no_pesanan) LIKE '%ttk%' THEN 'TikTok Shop'
+							ELSE 'Shopee'
+						END
+					) AS CHAR) COLLATE utf8mb4_unicode_ci as source 
+				FROM penjualan_marketplace pm
+				LEFT JOIN crm_transaction_followup_labels lbl ON lbl.order_id = pm.id AND lbl.order_table = 'penjualan_marketplace'
+				WHERE pm.no_telepon IS NOT NULL AND pm.no_telepon != ''
+
+				UNION ALL
+
+				SELECT 
+					CAST(customer_phone AS CHAR) COLLATE utf8mb4_unicode_ci as phone,
+					CAST(customer_nama AS CHAR) COLLATE utf8mb4_unicode_ci as nama,
+					CAST(IF(order_id > 0, CONCAT(IF(order_table='sales_order','so_','pm_'), order_id), NULL) AS CHAR) COLLATE utf8mb4_unicode_ci as order_id,
+					0 as total,
+					CAST(COALESCE(tanggal_pengiriman, created_at) AS DATETIME) as tanggal,
+					CAST(order_source AS CHAR) COLLATE utf8mb4_unicode_ci as source
+				FROM crm_transaction_followup_labels
+				WHERE customer_phone IS NOT NULL AND customer_phone != ''
+			) u";
+		}
+
+		if (!empty($filter)) {
+			$f_esc = $this->db->escape_like_str($filter);
+			$sql .= " WHERE (nama LIKE '%{$f_esc}%' OR phone LIKE '%{$f_esc}%')";
+		}
+
+		$sql .= " GROUP BY phone ORDER BY last_order_date DESC";
+		
+		$all_rows = $this->db->query($sql)->result();
+
+		// Enhance each row with RFM calculation
+		$enhanced_rows = [];
+		foreach ($all_rows as $r) {
+			$r->total_orders = (int)$r->total_orders;
+			$r->total_spend = (float)$r->total_spend;
+
+			$r->rfm = $this->calculate_rfm($r->last_order_date, $r->total_orders, $r->total_spend, $thresholds);
+
+			if (!empty($rfm_segment_filter)) {
+				if (strcasecmp($r->rfm['segment'], $rfm_segment_filter) !== 0) {
+					continue;
+				}
+			}
+
+			$enhanced_rows[] = $r;
+		}
+
+		$count = count($enhanced_rows);
+		$paged_rows = array_slice($enhanced_rows, $offset, $limit);
+
+		return ['rows' => $paged_rows, 'total' => $count];
+	}
+
+	/**
+	 * Get RFM Segmentation Breakdown for Dashboard Cards
+	 */
+	public function get_rfm_dashboard_distribution($product_filter = '')
+	{
+		$result = $this->get_customers('', 10000, 0, '', $product_filter);
+		$rows = $result['rows'];
+		$total = count($rows);
+
+		$distribution = [
+			'Champions' => 0,
+			'Loyal Customers' => 0,
+			'Potential Loyalist' => 0,
+			'New Customers' => 0,
+			'Big Spenders' => 0,
+			'Frequent Low Value' => 0,
+			'Need Attention' => 0,
+			'At Risk Customers' => 0,
+			"Can't Lose Them" => 0,
+			'Hibernating' => 0,
+		];
+
+		foreach ($rows as $r) {
+			$seg = $r->rfm['segment'];
+			if (!isset($distribution[$seg])) {
+				$distribution[$seg] = 0;
+			}
+			$distribution[$seg]++;
+		}
+
+		$formatted = [];
+		foreach ($distribution as $seg => $cnt) {
+			$pct = $total > 0 ? round(($cnt / $total) * 100, 1) : 0;
+			$badge = $this->get_rfm_badge_style($seg);
+			$formatted[] = [
+				'segment' => $seg,
+				'count' => $cnt,
+				'percentage' => $pct,
+				'badge' => $badge
+			];
+		}
+
+		return ['total' => $total, 'segments' => $formatted];
+	}
+
+	/**
+	 * Helper: build SQL phone condition matching raw, canonical, zero-prefix, 62-prefix, or 9-digit tail
+	 */
+	private function get_phone_where_clause($column, $phone)
+	{
+		$phone_esc = $this->db->escape_str($phone);
+		$clean = preg_replace('/[^0-9]/', '', (string)$phone);
+		if (empty($clean)) {
+			return "{$column} = '{$phone_esc}'";
+		}
+		
+		$raw_tail = strlen($clean) >= 9 ? substr($clean, -9) : $clean;
+		$zero_format = '0' . (substr($clean, 0, 2) === '62' ? substr($clean, 2) : (substr($clean, 0, 1) === '0' ? substr($clean, 1) : $clean));
+		$sixty_format = '62' . (substr($clean, 0, 2) === '62' ? substr($clean, 2) : (substr($clean, 0, 1) === '0' ? substr($clean, 1) : $clean));
+		
+		$zero_esc = $this->db->escape_str($zero_format);
+		$sixty_esc = $this->db->escape_str($sixty_format);
+		$tail_esc = $this->db->escape_str($raw_tail);
+
+		return "({$column} = '{$phone_esc}' OR {$column} = '{$zero_esc}' OR {$column} = '{$sixty_esc}' OR (LENGTH({$column}) >= 9 AND RIGHT({$column}, 9) = '{$tail_esc}'))";
 	}
 
 	/**
 	 * Get customer summary stats (FA-04)
 	 */
-	public function get_customer_summary($phone)
+	public function get_customer_summary($phone, $product_filter = '')
 	{
-		$phone = $this->db->escape_str($phone);
+		$where_so = $this->get_phone_where_clause('so.no_telepon', $phone);
+		$where_pm = $this->get_phone_where_clause('pm.no_telepon', $phone);
+		$where_lbl = $this->get_phone_where_clause('customer_phone', $phone);
 
-		// Get total spend from SO
-		$so_spend = $this->get_query_sum("SELECT COALESCE(SUM(total),0) as t FROM sales_order WHERE no_telepon = ?", [$phone]);
+		// Product filter: JOIN to item tables and filter by product name
+		$so_join = '';
+		$so_product_where = '';
+		$pm_join = '';
+		$pm_product_where = '';
+		if (!empty($product_filter)) {
+			$pf = $this->db->escape($product_filter);
+			$so_join = "INNER JOIN sales_order_item soi ON soi.so_id = so.id LEFT JOIN produk p ON soi.produk_id = p.id";
+			$so_product_where = " AND (p.nama_produk = {$pf} OR soi.catatan = {$pf})";
+			$pm_join = "INNER JOIN penjualan_marketplace_item pmi ON pmi.penjualan_marketplace_id = pm.id LEFT JOIN produk p2 ON pmi.produk_id = p2.id";
+			$pm_product_where = " AND (p2.nama_produk = {$pf} OR pmi.catatan = {$pf} OR pm.nama_produk_marketplace = {$pf})";
+		}
+
+		// Get total spend from SO (with product filter)
+		$so_spend = $this->get_query_sum("SELECT COALESCE(SUM(DISTINCT so.total),0) as t FROM sales_order so {$so_join} WHERE {$where_so}{$so_product_where}");
 		
-		// Get total spend from marketplace
-		$mp_spend = $this->get_query_sum("SELECT COALESCE(SUM(total),0) as t FROM penjualan_marketplace WHERE no_telepon = ?", [$phone]);
+		// Get total spend from marketplace (with product filter)
+		$mp_spend = $this->get_query_sum("SELECT COALESCE(SUM(DISTINCT pm.total),0) as t FROM penjualan_marketplace pm {$pm_join} WHERE {$where_pm}{$pm_product_where}");
 
 		// Get order counts
-		$so_count = $this->get_query_count("SELECT COUNT(*) as cnt FROM sales_order WHERE no_telepon = ?", [$phone]);
-		$mp_count = $this->get_query_count("SELECT COUNT(*) as cnt FROM penjualan_marketplace WHERE no_telepon = ?", [$phone]);
+		$so_count = $this->get_query_count("SELECT COUNT(DISTINCT so.id) as cnt FROM sales_order so {$so_join} WHERE {$where_so}{$so_product_where}");
+		$mp_count = $this->get_query_count("SELECT COUNT(DISTINCT pm.id) as cnt FROM penjualan_marketplace pm {$pm_join} WHERE {$where_pm}{$pm_product_where}");
 
-		// Get sources breakdown
-		$sources = $this->db->query("SELECT DISTINCT order_source FROM crm_transaction_followup_labels WHERE customer_phone = ?", [$phone])->result();
-		$source_list = array_map(function($s) { return $s->order_source; }, $sources);
+		// Get dates & names
+		$dates_so = $this->db->query("SELECT MIN(so.tanggal_so) as first_order, MAX(so.tanggal_so) as last_order, MAX(so.nama_penerima) as nama FROM sales_order so {$so_join} WHERE {$where_so}{$so_product_where}")->row();
+		$dates_pm = $this->db->query("SELECT MIN(pm.tanggal_so) as first_order, MAX(pm.tanggal_so) as last_order, MAX(pm.nama_penerima) as nama, GROUP_CONCAT(DISTINCT COALESCE(lbl.order_source, CASE WHEN LOWER(pm.source) LIKE '%tokopedia%' THEN 'Tokopedia' WHEN LOWER(pm.source) LIKE '%tiktok%' THEN 'TikTok Shop' WHEN LOWER(pm.source) LIKE '%shopee%' THEN 'Shopee' WHEN LOWER(pm.no_pesanan) LIKE '%shp%' THEN 'Shopee' WHEN LOWER(pm.no_pesanan) LIKE '%tkp%' THEN 'Tokopedia' WHEN LOWER(pm.no_pesanan) LIKE '%ttk%' THEN 'TikTok Shop' ELSE 'Shopee' END) SEPARATOR ', ') as sources FROM penjualan_marketplace pm {$pm_join} LEFT JOIN crm_transaction_followup_labels lbl ON lbl.order_id = pm.id AND lbl.order_table = 'penjualan_marketplace' WHERE {$where_pm}{$pm_product_where}")->row();
 
-		// Get first and last order dates
-		$dates = $this->db->query("SELECT 
-			MIN(tanggal_pengiriman) as first_order, 
-			MAX(tanggal_pengiriman) as last_order 
-			FROM crm_transaction_followup_labels WHERE customer_phone = ?", [$phone])->row();
+		$first_candidates = array_filter([$dates_so ? $dates_so->first_order : null, $dates_pm ? $dates_pm->first_order : null]);
+		$last_candidates = array_filter([$dates_so ? $dates_so->last_order : null, $dates_pm ? $dates_pm->last_order : null]);
 
-		// Customer name
-		$name_row = $this->db->query("SELECT customer_nama FROM crm_transaction_followup_labels WHERE customer_phone = ? ORDER BY id DESC LIMIT 1", [$phone])->row();
+		$first_order = !empty($first_candidates) ? min($first_candidates) : null;
+		$last_order = !empty($last_candidates) ? max($last_candidates) : null;
+
+		$sources_arr = [];
+		if ($so_count > 0) $sources_arr[] = 'Toko';
+		if (!empty($dates_pm->sources)) {
+			foreach (explode(', ', $dates_pm->sources) as $s) {
+				if ($s && !in_array($s, $sources_arr)) $sources_arr[] = $s;
+			}
+		}
+		$lbl_sources = $this->db->query("SELECT GROUP_CONCAT(DISTINCT order_source SEPARATOR ', ') as sources FROM crm_transaction_followup_labels WHERE {$where_lbl}")->row();
+		if ($lbl_sources && !empty($lbl_sources->sources)) {
+			foreach (explode(', ', $lbl_sources->sources) as $s) {
+				if ($s && !in_array($s, $sources_arr)) $sources_arr[] = $s;
+			}
+		}
+
+		$name = '-';
+		if ($dates_so && !empty($dates_so->nama)) $name = $dates_so->nama;
+		elseif ($dates_pm && !empty($dates_pm->nama)) $name = $dates_pm->nama;
+		else {
+			$name_lbl = $this->db->query("SELECT customer_nama FROM crm_transaction_followup_labels WHERE {$where_lbl} LIMIT 1")->row();
+			if ($name_lbl) $name = $name_lbl->customer_nama;
+		}
+
+		$total_spend = (float)$so_spend + (float)$mp_spend;
+		$total_orders = (int)$so_count + (int)$mp_count;
+
+		$thresholds = !empty($product_filter) ? $this->get_rfm_percentile_thresholds($product_filter) : null;
+		$rfm = $this->calculate_rfm($last_order, $total_orders, $total_spend, $thresholds);
 
 		return [
-			'nama' => $name_row ? $name_row->customer_nama : '-',
+			'nama' => $name,
 			'phone' => $phone,
 			'total_spend_toko' => (float)$so_spend,
 			'total_spend_online' => (float)$mp_spend,
-			'total_spend' => (float)$so_spend + (float)$mp_spend,
+			'total_spend' => $total_spend,
 			'order_count_toko' => (int)$so_count,
 			'order_count_online' => (int)$mp_count,
-			'total_orders' => (int)$so_count + (int)$mp_count,
-			'sources' => $source_list,
-			'first_order' => $dates ? $dates->first_order : null,
-			'last_order' => $dates ? $dates->last_order : null,
+			'total_orders' => $total_orders,
+			'sources' => $sources_arr,
+			'first_order' => $first_order,
+			'last_order' => $last_order,
+			'rfm' => $rfm,
 		];
 	}
 
@@ -105,44 +750,107 @@ class Model_crm extends CI_Model
 	 * Get transaction history for a customer (FA-01, FA-02)
 	 * UNION of sales_order + penjualan_marketplace
 	 */
-	public function get_customer_transactions($phone)
+	public function get_customer_transactions($phone, $product_filter = '')
 	{
-		$phone = $this->db->escape_str($phone);
+		$where_so = $this->get_phone_where_clause('so.no_telepon', $phone);
+		$where_pm = $this->get_phone_where_clause('pm.no_telepon', $phone);
+		$where_lbl = $this->get_phone_where_clause('lbl.customer_phone', $phone);
+
+		// Product filter JOINs
+		$so_join = '';
+		$so_product_where = '';
+		$pm_join_extra = '';
+		$pm_product_where = '';
+		if (!empty($product_filter)) {
+			$pf = $this->db->escape($product_filter);
+			$so_join = "INNER JOIN sales_order_item soi_f ON soi_f.so_id = so.id LEFT JOIN produk p_f ON soi_f.produk_id = p_f.id";
+			$so_product_where = " AND (p_f.nama_produk = {$pf} OR soi_f.catatan = {$pf})";
+			$pm_join_extra = "INNER JOIN penjualan_marketplace_item pmi_f ON pmi_f.penjualan_marketplace_id = pm.id LEFT JOIN produk p2_f ON pmi_f.produk_id = p2_f.id";
+			$pm_product_where = " AND (p2_f.nama_produk = {$pf} OR pmi_f.catatan = {$pf} OR pm.nama_produk_marketplace = {$pf})";
+		}
 
 		$sql = "
-			(SELECT 
-				'sales_order' as tbl, so.id, so.nomor_so, so.no_pesanan, so.tanggal_so as tanggal,
+			(SELECT DISTINCT
+				CAST('sales_order' AS CHAR) COLLATE utf8mb4_unicode_ci as tbl, 
+				so.id, 
+				CAST(so.nomor_so AS CHAR) COLLATE utf8mb4_unicode_ci as nomor_so, 
+				CAST(so.no_pesanan AS CHAR) COLLATE utf8mb4_unicode_ci as no_pesanan, 
+				so.tanggal_so as tanggal,
 				COALESCE(so.tanggal_kirim, so.tanggal_so) as tanggal_kirim,
-				'Toko' as sumber_penjualan,
-				so.status, so.status_pesanan, so.nomor_resi, so.kurir_ekspedisi,
-				so.nama_penerima, so.no_telepon, so.alamat_pengiriman,
+				CAST('Toko' AS CHAR) COLLATE utf8mb4_unicode_ci as sumber_penjualan,
+				CAST(so.status AS CHAR) COLLATE utf8mb4_unicode_ci as status, 
+				CAST(so.status_pesanan AS CHAR) COLLATE utf8mb4_unicode_ci as status_pesanan, 
+				CAST(so.nomor_resi AS CHAR) COLLATE utf8mb4_unicode_ci as nomor_resi, 
+				CAST(so.kurir_ekspedisi AS CHAR) COLLATE utf8mb4_unicode_ci as kurir_ekspedisi,
+				CAST(so.nama_penerima AS CHAR) COLLATE utf8mb4_unicode_ci as nama_penerima, 
+				CAST(so.no_telepon AS CHAR) COLLATE utf8mb4_unicode_ci as no_telepon, 
+				CAST(so.alamat_pengiriman AS CHAR) COLLATE utf8mb4_unicode_ci as alamat_pengiriman,
 				so.total, 
-				COALESCE(
+				CAST(COALESCE(
 					NULLIF(so.nama_produk_marketplace, ''),
 					(SELECT COALESCE(NULLIF(soi.catatan, ''), p.nama_produk) FROM sales_order_item soi LEFT JOIN produk p ON soi.produk_id = p.id WHERE soi.so_id = so.id ORDER BY soi.id ASC LIMIT 1),
 					'Produk SO'
-				) as produk_ringkasan
+				) AS CHAR) COLLATE utf8mb4_unicode_ci as produk_ringkasan
 			FROM sales_order so 
-			WHERE so.no_telepon = '{$phone}')
+			{$so_join}
+			WHERE {$where_so}{$so_product_where})
 			UNION ALL
-			(SELECT 
-				'penjualan_marketplace' as tbl, pm.id, pm.nomor_so, pm.no_pesanan, pm.tanggal_so as tanggal,
+			(SELECT DISTINCT
+				CAST('penjualan_marketplace' AS CHAR) COLLATE utf8mb4_unicode_ci as tbl, 
+				pm.id, 
+				CAST(pm.nomor_so AS CHAR) COLLATE utf8mb4_unicode_ci as nomor_so, 
+				CAST(pm.no_pesanan AS CHAR) COLLATE utf8mb4_unicode_ci as no_pesanan, 
+				pm.tanggal_so as tanggal,
 				pm.tanggal_so as tanggal_kirim,
-				CASE 
-					WHEN LOWER(pm.source) LIKE '%tokopedia%' THEN 'Tokopedia'
-					WHEN LOWER(pm.source) LIKE '%tiktok%' THEN 'TikTok Shop'
-					ELSE 'Shopee'
-				END as sumber_penjualan,
-				pm.status, pm.status_pesanan, pm.nomor_resi, pm.kurir_ekspedisi,
-				pm.nama_penerima, pm.no_telepon, pm.alamat_pengiriman,
+				CAST(COALESCE(
+					lbl.order_source,
+					CASE 
+						WHEN LOWER(pm.source) LIKE '%tokopedia%' THEN 'Tokopedia'
+						WHEN LOWER(pm.source) LIKE '%tiktok%' THEN 'TikTok Shop'
+						WHEN LOWER(pm.source) LIKE '%shopee%' THEN 'Shopee'
+						WHEN LOWER(pm.no_pesanan) LIKE '%shp%' THEN 'Shopee'
+						WHEN LOWER(pm.no_pesanan) LIKE '%tkp%' THEN 'Tokopedia'
+						WHEN LOWER(pm.no_pesanan) LIKE '%ttk%' THEN 'TikTok Shop'
+						ELSE 'Shopee'
+					END
+				) AS CHAR) COLLATE utf8mb4_unicode_ci as sumber_penjualan,
+				CAST(pm.status AS CHAR) COLLATE utf8mb4_unicode_ci as status, 
+				CAST(pm.status_pesanan AS CHAR) COLLATE utf8mb4_unicode_ci as status_pesanan, 
+				CAST(pm.nomor_resi AS CHAR) COLLATE utf8mb4_unicode_ci as nomor_resi, 
+				CAST(pm.kurir_ekspedisi AS CHAR) COLLATE utf8mb4_unicode_ci as kurir_ekspedisi,
+				CAST(pm.nama_penerima AS CHAR) COLLATE utf8mb4_unicode_ci as nama_penerima, 
+				CAST(pm.no_telepon AS CHAR) COLLATE utf8mb4_unicode_ci as no_telepon, 
+				CAST(pm.alamat_pengiriman AS CHAR) COLLATE utf8mb4_unicode_ci as alamat_pengiriman,
 				pm.total, 
-				COALESCE(
+				CAST(COALESCE(
 					NULLIF(pm.nama_produk_marketplace, ''),
 					(SELECT COALESCE(NULLIF(pmi.catatan, ''), p.nama_produk) FROM penjualan_marketplace_item pmi LEFT JOIN produk p ON pmi.produk_id = p.id WHERE pmi.penjualan_marketplace_id = pm.id ORDER BY pmi.id ASC LIMIT 1),
 					'Produk Marketplace'
-				) as produk_ringkasan
+				) AS CHAR) COLLATE utf8mb4_unicode_ci as produk_ringkasan
 			FROM penjualan_marketplace pm 
-			WHERE pm.no_telepon = '{$phone}')
+			{$pm_join_extra}
+			LEFT JOIN crm_transaction_followup_labels lbl ON lbl.order_id = pm.id AND lbl.order_table = 'penjualan_marketplace'
+			WHERE {$where_pm}{$pm_product_where})
+			" . (empty($product_filter) ? "UNION ALL
+			(SELECT 
+				CAST('crm_transaction_followup_labels' AS CHAR) COLLATE utf8mb4_unicode_ci as tbl, 
+				lbl.id, 
+				CAST('' AS CHAR) COLLATE utf8mb4_unicode_ci as nomor_so, 
+				CAST(COALESCE(NULLIF(lbl.no_pesanan,''), 'WA-INCOMING') AS CHAR) COLLATE utf8mb4_unicode_ci as no_pesanan, 
+				COALESCE(lbl.tanggal_pengiriman, lbl.created_at) as tanggal,
+				COALESCE(lbl.tanggal_pengiriman, lbl.created_at) as tanggal_kirim,
+				CAST(lbl.order_source AS CHAR) COLLATE utf8mb4_unicode_ci as sumber_penjualan,
+				CAST(lbl.status_label AS CHAR) COLLATE utf8mb4_unicode_ci as status, 
+				CAST(lbl.status_label AS CHAR) COLLATE utf8mb4_unicode_ci as status_pesanan, 
+				CAST(COALESCE(lbl.nomor_resi, '-') AS CHAR) COLLATE utf8mb4_unicode_ci as nomor_resi, 
+				CAST('-' AS CHAR) COLLATE utf8mb4_unicode_ci as kurir_ekspedisi,
+				CAST(lbl.customer_nama AS CHAR) COLLATE utf8mb4_unicode_ci as nama_penerima, 
+				CAST(lbl.customer_phone AS CHAR) COLLATE utf8mb4_unicode_ci as no_telepon, 
+				CAST('' AS CHAR) COLLATE utf8mb4_unicode_ci as alamat_pengiriman,
+				COALESCE(lbl.converted_amount, 0) as total, 
+				CAST('Transaksi Follow-up Toko/CRM' AS CHAR) COLLATE utf8mb4_unicode_ci as produk_ringkasan
+			FROM crm_transaction_followup_labels lbl 
+			WHERE {$where_lbl} AND (lbl.order_id = 0 OR lbl.order_id IS NULL))" : "") . "
 			ORDER BY tanggal DESC";
 
 		return $this->db->query($sql)->result();
@@ -168,6 +876,156 @@ class Model_crm extends CI_Model
 				LEFT JOIN produk p ON pmi.produk_id = p.id 
 				WHERE pmi.penjualan_marketplace_id = ?", [$order_id])->result();
 		}
+	}
+
+	/**
+	 * Get product-level RFM metrics for a customer (Recency, Frequency, Monetary PER PRODUCT)
+	 */
+	public function get_customer_product_rfm($phone)
+	{
+		$where_so = $this->get_phone_where_clause('so.no_telepon', $phone);
+		$where_pm = $this->get_phone_where_clause('pm.no_telepon', $phone);
+
+		$sql = "
+			SELECT 
+				item_data.produk_id,
+				item_data.nama_produk,
+				item_data.kode_produk,
+				MAX(item_data.tanggal_transaksi) as last_bought_date,
+				DATEDIFF(CURRENT_DATE(), MAX(item_data.tanggal_transaksi)) as recency_days,
+				COUNT(DISTINCT item_data.order_id) as order_count,
+				SUM(item_data.qty) as total_qty,
+				SUM(item_data.subtotal) as total_spend
+			FROM (
+				SELECT 
+					soi.produk_id,
+					COALESCE(NULLIF(soi.catatan, ''), p.nama_produk, 'Produk SO') as nama_produk,
+					COALESCE(p.kode_produk, '-') as kode_produk,
+					so.tanggal_so as tanggal_transaksi,
+					CONCAT('so_', so.id) as order_id,
+					soi.qty,
+					soi.subtotal
+				FROM sales_order_item soi
+				JOIN sales_order so ON soi.so_id = so.id
+				LEFT JOIN produk p ON soi.produk_id = p.id
+				WHERE {$where_so}
+
+				UNION ALL
+
+				SELECT 
+					pmi.produk_id,
+					COALESCE(NULLIF(pmi.catatan, ''), p.nama_produk, 'Produk Marketplace') as nama_produk,
+					COALESCE(p.kode_produk, '-') as kode_produk,
+					pm.tanggal_so as tanggal_transaksi,
+					CONCAT('pm_', pm.id) as order_id,
+					pmi.qty,
+					pmi.subtotal
+				FROM penjualan_marketplace_item pmi
+				JOIN penjualan_marketplace pm ON pmi.penjualan_marketplace_id = pm.id
+				LEFT JOIN produk p ON pmi.produk_id = p.id
+				WHERE {$where_pm}
+			) item_data
+			GROUP BY item_data.nama_produk, item_data.kode_produk, item_data.produk_id
+			ORDER BY total_spend DESC, last_bought_date DESC
+		";
+
+		return $this->db->query($sql)->result();
+	}
+
+	/**
+	 * Get list of all distinct products for dropdown filters
+	 */
+	public function get_all_products_list()
+	{
+		$sql = "
+			SELECT DISTINCT item_name FROM (
+				SELECT COALESCE(NULLIF(soi.catatan, ''), p.nama_produk) as item_name
+				FROM sales_order_item soi LEFT JOIN produk p ON soi.produk_id = p.id
+				UNION
+				SELECT COALESCE(NULLIF(pmi.catatan, ''), p.nama_produk) as item_name
+				FROM penjualan_marketplace_item pmi LEFT JOIN produk p ON pmi.produk_id = p.id
+			) u
+			WHERE item_name IS NOT NULL AND item_name != ''
+			ORDER BY item_name ASC
+		";
+		return $this->db->query($sql)->result();
+	}
+
+	/**
+	 * Get aggregated RFM analysis PER PRODUCT across all customers
+	 */
+	public function get_product_rfm_list($filter = '', $limit = 50, $offset = 0)
+	{
+		$where_clause = "";
+		if (!empty($filter)) {
+			$f_esc = $this->db->escape_like_str($filter);
+			$where_clause = " WHERE item_name LIKE '%{$f_esc}%'";
+		}
+
+		$sql = "
+			SELECT 
+				item_name,
+				COUNT(DISTINCT phone) as total_customers,
+				COUNT(DISTINCT order_id) as total_orders,
+				SUM(qty) as total_qty,
+				SUM(subtotal) as total_spend,
+				MAX(tanggal) as last_order_date,
+				DATEDIFF(CURRENT_DATE(), MAX(tanggal)) as recency_days
+			FROM (
+				SELECT 
+					so.no_telepon as phone,
+					CONCAT('so_', so.id) as order_id,
+					COALESCE(NULLIF(soi.catatan, ''), p.nama_produk, 'Produk SO') as item_name,
+					soi.qty,
+					soi.subtotal,
+					so.tanggal_so as tanggal
+				FROM sales_order_item soi
+				JOIN sales_order so ON soi.so_id = so.id
+				LEFT JOIN produk p ON soi.produk_id = p.id
+				WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
+
+				UNION ALL
+
+				SELECT 
+					pm.no_telepon as phone,
+					CONCAT('pm_', pm.id) as order_id,
+					COALESCE(NULLIF(pmi.catatan, ''), p.nama_produk, 'Produk Marketplace') as item_name,
+					pmi.qty,
+					pmi.subtotal,
+					pm.tanggal_so as tanggal
+				FROM penjualan_marketplace_item pmi
+				JOIN penjualan_marketplace pm ON pmi.penjualan_marketplace_id = pm.id
+				LEFT JOIN produk p ON pmi.produk_id = p.id
+				WHERE pm.no_telepon IS NOT NULL AND pm.no_telepon != ''
+			) u
+			{$where_clause}
+			GROUP BY item_name
+			ORDER BY total_spend DESC, last_order_date DESC
+		";
+
+		$all_rows = $this->db->query($sql)->result();
+		
+		foreach ($all_rows as $r) {
+			$r->total_customers = (int)$r->total_customers;
+			$r->total_orders = (int)$r->total_orders;
+			$r->total_qty = (float)$r->total_qty;
+			$r->total_spend = (float)$r->total_spend;
+			$r->recency_days = (int)$r->recency_days;
+
+			if ($r->recency_days <= 30 && $r->total_orders >= 10) {
+				$r->status_badge = ['label' => 'Best Seller', 'bg' => '#dcfce7', 'color' => '#15803d', 'icon' => 'fa-fire'];
+			} elseif ($r->recency_days <= 60 && $r->total_orders >= 5) {
+				$r->status_badge = ['label' => 'High Demand', 'bg' => '#e0e7ff', 'color' => '#4338ca', 'icon' => 'fa-trending-up'];
+			} elseif ($r->recency_days <= 90) {
+				$r->status_badge = ['label' => 'Steady Sales', 'bg' => '#fef3c7', 'color' => '#b45309', 'icon' => 'fa-clock-o'];
+			} else {
+				$r->status_badge = ['label' => 'Slow Moving', 'bg' => '#fee2e2', 'color' => '#b91c1c', 'icon' => 'fa-exclamation-triangle'];
+			}
+		}
+
+		$total = count($all_rows);
+		$paged = array_slice($all_rows, $offset, $limit);
+		return ['rows' => $paged, 'total' => $total];
 	}
 
 	/**
@@ -267,6 +1125,230 @@ class Model_crm extends CI_Model
 
 		return ['rows' => $rows, 'total' => $count];
 	}
+
+	/**
+	 * Ensure at least one followup label exists for a given phone number so that 2-way chat modal can open
+	 */
+	public function ensure_label_for_phone($phone)
+	{
+		$clean_phone = preg_replace('/[^0-9]/', '', (string)$phone);
+		if (empty($clean_phone)) return null;
+
+		$where_clause = $this->get_phone_where_clause('tfl.customer_phone', $phone);
+		$existing = $this->db->query("SELECT id FROM crm_transaction_followup_labels tfl WHERE {$where_clause} LIMIT 1")->row();
+		if ($existing) {
+			return $existing->id;
+		}
+
+		// Find customer name from sales_order or marketplace
+		$so_cust = $this->db->query("SELECT nama_penerima as nama FROM sales_order so WHERE " . $this->get_phone_where_clause('so.no_telepon', $phone) . " LIMIT 1")->row();
+		$pm_cust = $this->db->query("SELECT nama_penerima as nama FROM penjualan_marketplace pm WHERE " . $this->get_phone_where_clause('pm.no_telepon', $phone) . " LIMIT 1")->row();
+
+		$nama = 'Customer';
+		if (!empty($so_cust->nama)) $nama = $so_cust->nama;
+		elseif (!empty($pm_cust->nama)) $nama = $pm_cust->nama;
+
+		$categories = $this->get_categories(true);
+		$cat_id = !empty($categories) ? $categories[0]->id : 1;
+		$now = date('Y-m-d H:i:s');
+
+		$this->db->insert('crm_transaction_followup_labels', [
+			'order_source' => 'Direct',
+			'order_id' => 0,
+			'order_table' => 'manual_entry',
+			'customer_nama' => $nama,
+			'customer_phone' => $phone,
+			'no_pesanan' => 'RFM-' . date('YmdHis'),
+			'tanggal_pengiriman' => date('Y-m-d'),
+			'followup_category_id' => $cat_id,
+			'tanggal_label_muncul' => date('Y-m-d'),
+			'status_label' => 'Pending',
+			'created_at' => $now,
+			'updated_at' => $now,
+		]);
+
+		return $this->db->insert_id();
+	}
+
+	/**
+	 * Get all chat conversations for dedicated WhatsApp Chat Center page
+	 * OPTIMIZED: Uses batch query instead of N+1 get_customer_summary() per row
+	 */
+	public function get_all_chat_conversations($search = '')
+	{
+		$sql = "
+			SELECT 
+				tfl.id as label_id,
+				tfl.customer_nama,
+				tfl.customer_phone,
+				tfl.no_pesanan,
+				tfl.order_source,
+				tfl.status_label,
+				tfl.updated_at,
+				(SELECT message FROM crm_chat_history ch WHERE LENGTH(ch.customer_phone) >= 9 AND RIGHT(ch.customer_phone, 9) = RIGHT(tfl.customer_phone, 9) ORDER BY ch.id DESC LIMIT 1) as last_message,
+				(SELECT created_at FROM crm_chat_history ch WHERE LENGTH(ch.customer_phone) >= 9 AND RIGHT(ch.customer_phone, 9) = RIGHT(tfl.customer_phone, 9) ORDER BY ch.id DESC LIMIT 1) as last_message_at,
+				(SELECT COUNT(*) FROM crm_chat_history ch WHERE LENGTH(ch.customer_phone) >= 9 AND RIGHT(ch.customer_phone, 9) = RIGHT(tfl.customer_phone, 9) AND ch.direction = 'in' AND ch.status != 'read') as unread_count
+			FROM crm_transaction_followup_labels tfl
+			INNER JOIN (
+				SELECT MAX(id) as max_id
+				FROM crm_transaction_followup_labels
+				WHERE customer_phone IS NOT NULL AND customer_phone != ''
+				GROUP BY RIGHT(customer_phone, 9)
+			) latest ON latest.max_id = tfl.id
+			WHERE 1=1
+		";
+
+		if (!empty($search)) {
+			$s = $this->db->escape_like_str($search);
+			$clean_search = preg_replace('/[^0-9]/', '', $search);
+			
+			$phone_conds = ["tfl.customer_phone LIKE '%{$s}%'"];
+			if (strlen($clean_search) >= 4) {
+				$tail = strlen($clean_search) >= 8 ? substr($clean_search, -8) : $clean_search;
+				$tail_esc = $this->db->escape_like_str($tail);
+				$phone_conds[] = "RIGHT(tfl.customer_phone, 8) LIKE '%{$tail_esc}%'";
+				
+				if (substr($clean_search, 0, 2) === '08') {
+					$alt = '628' . substr($clean_search, 2);
+					$phone_conds[] = "tfl.customer_phone LIKE '%{$alt}%'";
+				} elseif (substr($clean_search, 0, 3) === '628') {
+					$alt = '08' . substr($clean_search, 3);
+					$phone_conds[] = "tfl.customer_phone LIKE '%{$alt}%'";
+				}
+			}
+			$phone_sql = implode(' OR ', $phone_conds);
+
+			$sql .= " AND (tfl.customer_nama LIKE '%{$s}%' OR ({$phone_sql}) OR tfl.no_pesanan LIKE '%{$s}%')";
+		}
+
+		$sql .= " ORDER BY 
+			unread_count DESC,
+			last_message_at DESC,
+			tfl.updated_at DESC
+			LIMIT 100
+		";
+
+		$rows = $this->db->query($sql)->result();
+
+		if (empty($rows)) {
+			return $rows;
+		}
+
+		// --- BATCH RFM: collect unique phones, do 1 batch query ---
+		$phones = [];
+		foreach ($rows as $r) {
+			$clean = preg_replace('/[^0-9]/', '', (string)$r->customer_phone);
+			if (!empty($clean)) {
+				$phones[$clean] = $r->customer_phone;
+			}
+		}
+
+		// Build batch summary: 1 query for all phones at once
+		$phone_rfm_map = [];
+		if (!empty($phones)) {
+			$phone_rfm_map = $this->batch_get_rfm_for_phones(array_values($phones));
+		}
+
+		// Attach RFM to each row using phone lookup
+		foreach ($rows as &$r) {
+			$clean = preg_replace('/[^0-9]/', '', (string)$r->customer_phone);
+			$tail = strlen($clean) >= 9 ? substr($clean, -9) : $clean;
+			$r->rfm = isset($phone_rfm_map[$tail]) ? $phone_rfm_map[$tail] : [
+				'segment' => 'Need Attention',
+				'badge' => $this->get_rfm_badge_style('Need Attention')
+			];
+		}
+
+		return $rows;
+	}
+
+	/**
+	 * Batch get RFM data for multiple phones in 2 queries instead of N*6
+	 * Returns array keyed by last-9-digits of phone
+	 */
+	private function batch_get_rfm_for_phones($phones)
+	{
+		if (empty($phones)) return [];
+
+		// Build OR conditions for all phones
+		$conditions_so = [];
+		$conditions_pm = [];
+		$phone_tails = [];
+
+		foreach ($phones as $phone) {
+			$clean = preg_replace('/[^0-9]/', '', (string)$phone);
+			if (empty($clean)) continue;
+
+			$tail = strlen($clean) >= 9 ? substr($clean, -9) : $clean;
+			$phone_tails[$tail] = true;
+
+			$tail_esc = $this->db->escape_str($tail);
+			$conditions_so[] = "(LENGTH(so.no_telepon) >= 9 AND RIGHT(so.no_telepon, 9) = '{$tail_esc}')";
+			$conditions_pm[] = "(LENGTH(pm.no_telepon) >= 9 AND RIGHT(pm.no_telepon, 9) = '{$tail_esc}')";
+		}
+
+		if (empty($conditions_so)) return [];
+
+		// Query 1: sales_order summary grouped by phone tail
+		$so_where = implode(' OR ', $conditions_so);
+		$sql_so = "SELECT 
+			RIGHT(so.no_telepon, 9) as phone_tail,
+			COUNT(*) as cnt,
+			COALESCE(SUM(so.total), 0) as spend,
+			MAX(so.tanggal_so) as last_date
+		FROM sales_order so
+		WHERE so.no_telepon IS NOT NULL AND so.no_telepon != '' AND ({$so_where})
+		GROUP BY phone_tail";
+
+		// Query 2: penjualan_marketplace summary grouped by phone tail
+		$pm_where = implode(' OR ', $conditions_pm);
+		$sql_pm = "SELECT 
+			RIGHT(pm.no_telepon, 9) as phone_tail,
+			COUNT(*) as cnt,
+			COALESCE(SUM(pm.total), 0) as spend,
+			MAX(pm.tanggal_so) as last_date
+		FROM penjualan_marketplace pm
+		WHERE pm.no_telepon IS NOT NULL AND pm.no_telepon != '' AND ({$pm_where})
+		GROUP BY phone_tail";
+
+		$so_data = [];
+		$pm_data = [];
+
+		$so_rows = $this->db->query($sql_so)->result();
+		foreach ($so_rows as $row) {
+			$so_data[$row->phone_tail] = $row;
+		}
+
+		$pm_rows = $this->db->query($sql_pm)->result();
+		foreach ($pm_rows as $row) {
+			$pm_data[$row->phone_tail] = $row;
+		}
+
+		// Calculate RFM for each phone
+		$thresholds = $this->get_rfm_percentile_thresholds();
+		$result = [];
+
+		foreach (array_keys($phone_tails) as $tail) {
+			$so = isset($so_data[$tail]) ? $so_data[$tail] : null;
+			$pm = isset($pm_data[$tail]) ? $pm_data[$tail] : null;
+
+			$total_orders = ($so ? (int)$so->cnt : 0) + ($pm ? (int)$pm->cnt : 0);
+			$total_spend = ($so ? (float)$so->spend : 0) + ($pm ? (float)$pm->spend : 0);
+
+			$last_dates = array_filter([
+				$so ? $so->last_date : null,
+				$pm ? $pm->last_date : null
+			]);
+			$last_order = !empty($last_dates) ? max($last_dates) : null;
+
+			$rfm = $this->calculate_rfm($last_order, $total_orders, $total_spend, $thresholds);
+			$result[$tail] = $rfm;
+		}
+
+		return $result;
+	}
+
+
 
 	/**
 	 * Get all active follow-up categories
@@ -715,7 +1797,8 @@ class Model_crm extends CI_Model
 	}
 
 	/**
-	 * Get all related label IDs for a customer (by phone + name matching)
+	 * Get all related label IDs for a customer (by phone tail matching)
+	 * OPTIMIZED: Uses SQL WHERE instead of loading entire table into PHP
 	 * @param object $label
 	 * @return array of label IDs
 	 */
@@ -724,17 +1807,24 @@ class Model_crm extends CI_Model
 		$clean_phone = $this->normalize_phone_number($label->customer_phone);
 		$phone_tail = strlen($clean_phone) >= 9 ? substr($clean_phone, -9) : $clean_phone;
 
-		$all_labels = $this->db->select('id, customer_phone, customer_nama')->get('crm_transaction_followup_labels')->result();
-		$label_ids = [];
-		foreach ($all_labels as $lbl) {
-			$cp = $this->normalize_phone_number($lbl->customer_phone);
-			if ($cp === $clean_phone || (strlen($cp) >= 9 && !empty($phone_tail) && substr($cp, -9) === $phone_tail)) {
-				$label_ids[] = (int)$lbl->id;
-			}
+		if (empty($phone_tail)) {
+			return [(int)$label->id];
 		}
+
+		$tail_esc = $this->db->escape_str($phone_tail);
+		$sql = "SELECT id FROM crm_transaction_followup_labels 
+				WHERE LENGTH(customer_phone) >= 9 AND RIGHT(customer_phone, 9) = '{$tail_esc}'";
+		$rows = $this->db->query($sql)->result();
+
+		$label_ids = [];
+		foreach ($rows as $r) {
+			$label_ids[] = (int)$r->id;
+		}
+
 		if (empty($label_ids)) {
 			$label_ids = [(int)$label->id];
 		}
+
 		return array_unique($label_ids);
 	}
 
@@ -936,7 +2026,7 @@ class Model_crm extends CI_Model
 		$phone = preg_replace('/^0/', '62', $phone);
 		$phone = preg_replace('/[^0-9]/', '', $phone);
 		if (substr($phone, 0, 2) !== '62') $phone = '62' . $phone;
-		return 'https://wa.me/' . $phone . '?text=' . rawurlencode($message);
+		return 'https://api.whatsapp.com/send?phone=' . $phone . '&text=' . rawurlencode($message);
 	}
 
 	/**
@@ -1024,13 +2114,25 @@ class Model_crm extends CI_Model
 
 			$post_data = [
 				'target' => $phone,
-				'message' => $message,
+				'message' => !empty($message) ? $message : ' ',
 			];
 			if (!empty($file_url)) {
 				$post_data['url'] = $file_url;
 				$filename = pathinfo(parse_url($file_url, PHP_URL_PATH), PATHINFO_BASENAME);
 				if (!empty($filename)) {
 					$post_data['filename'] = $filename;
+				}
+
+				// Auto-detect media type for Fonnte API
+				$ext = strtolower(pathinfo(parse_url($file_url, PHP_URL_PATH), PATHINFO_EXTENSION));
+				if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'])) {
+					$post_data['type'] = 'image';
+				} elseif (in_array($ext, ['mp4', 'avi', 'mov', 'mkv', '3gp'])) {
+					$post_data['type'] = 'video';
+				} elseif (in_array($ext, ['mp3', 'ogg', 'wav', 'm4a', 'aac', 'opus', 'amr', 'webm'])) {
+					$post_data['type'] = 'audio';
+				} else {
+					$post_data['type'] = 'document';
 				}
 			}
 			$target_url = (empty($api_url) || strpos($api_url, 'send-message') !== false) ? 'https://api.fonnte.com/send' : $api_url;
@@ -1156,10 +2258,30 @@ class Model_crm extends CI_Model
 			JOIN sales_order so ON tfl.order_table = 'sales_order' AND tfl.order_id = so.id
 			JOIN crm_followup_categories fc ON tfl.followup_category_id = fc.id
 			SET 
-			  tfl.tanggal_pengiriman = COALESCE(NULLIF(so.tanggal_kirim, ''), NULLIF(so.tanggal_so, ''), DATE(so.created_at), tfl.tanggal_pengiriman),
-			  tfl.tanggal_label_muncul = DATE_ADD(COALESCE(NULLIF(so.tanggal_kirim, ''), NULLIF(so.tanggal_so, ''), DATE(so.created_at), tfl.tanggal_pengiriman), INTERVAL fc.jumlah_hari DAY)
-			WHERE tfl.tanggal_label_muncul != DATE_ADD(COALESCE(NULLIF(so.tanggal_kirim, ''), NULLIF(so.tanggal_so, ''), DATE(so.created_at), tfl.tanggal_pengiriman), INTERVAL fc.jumlah_hari DAY)
-			   OR tfl.tanggal_pengiriman != COALESCE(NULLIF(so.tanggal_kirim, ''), NULLIF(so.tanggal_so, ''), DATE(so.created_at), tfl.tanggal_pengiriman)
+			  tfl.tanggal_pengiriman = COALESCE(
+			    CASE WHEN so.tanggal_kirim > '1000-01-01' THEN DATE(so.tanggal_kirim) ELSE NULL END,
+			    CASE WHEN so.tanggal_so > '1000-01-01' THEN DATE(so.tanggal_so) ELSE NULL END,
+			    CASE WHEN so.created_at > '1000-01-01' THEN DATE(so.created_at) ELSE NULL END,
+			    tfl.tanggal_pengiriman
+			  ),
+			  tfl.tanggal_label_muncul = DATE_ADD(COALESCE(
+			    CASE WHEN so.tanggal_kirim > '1000-01-01' THEN DATE(so.tanggal_kirim) ELSE NULL END,
+			    CASE WHEN so.tanggal_so > '1000-01-01' THEN DATE(so.tanggal_so) ELSE NULL END,
+			    CASE WHEN so.created_at > '1000-01-01' THEN DATE(so.created_at) ELSE NULL END,
+			    tfl.tanggal_pengiriman
+			  ), INTERVAL fc.jumlah_hari DAY)
+			WHERE tfl.tanggal_label_muncul != DATE_ADD(COALESCE(
+			    CASE WHEN so.tanggal_kirim > '1000-01-01' THEN DATE(so.tanggal_kirim) ELSE NULL END,
+			    CASE WHEN so.tanggal_so > '1000-01-01' THEN DATE(so.tanggal_so) ELSE NULL END,
+			    CASE WHEN so.created_at > '1000-01-01' THEN DATE(so.created_at) ELSE NULL END,
+			    tfl.tanggal_pengiriman
+			  ), INTERVAL fc.jumlah_hari DAY)
+			   OR tfl.tanggal_pengiriman != COALESCE(
+			    CASE WHEN so.tanggal_kirim > '1000-01-01' THEN DATE(so.tanggal_kirim) ELSE NULL END,
+			    CASE WHEN so.tanggal_so > '1000-01-01' THEN DATE(so.tanggal_so) ELSE NULL END,
+			    CASE WHEN so.created_at > '1000-01-01' THEN DATE(so.created_at) ELSE NULL END,
+			    tfl.tanggal_pengiriman
+			  )
 		");
 
 		// Sync penjualan_marketplace dates
@@ -1168,10 +2290,26 @@ class Model_crm extends CI_Model
 			JOIN penjualan_marketplace mp ON tfl.order_table = 'penjualan_marketplace' AND tfl.order_id = mp.id
 			JOIN crm_followup_categories fc ON tfl.followup_category_id = fc.id
 			SET 
-			  tfl.tanggal_pengiriman = COALESCE(NULLIF(mp.tanggal_so, ''), DATE(mp.created_at), tfl.tanggal_pengiriman),
-			  tfl.tanggal_label_muncul = DATE_ADD(COALESCE(NULLIF(mp.tanggal_so, ''), DATE(mp.created_at), tfl.tanggal_pengiriman), INTERVAL fc.jumlah_hari DAY)
-			WHERE tfl.tanggal_label_muncul != DATE_ADD(COALESCE(NULLIF(mp.tanggal_so, ''), DATE(mp.created_at), tfl.tanggal_pengiriman), INTERVAL fc.jumlah_hari DAY)
-			   OR tfl.tanggal_pengiriman != COALESCE(NULLIF(mp.tanggal_so, ''), DATE(mp.created_at), tfl.tanggal_pengiriman)
+			  tfl.tanggal_pengiriman = COALESCE(
+			    CASE WHEN mp.tanggal_so > '1000-01-01' THEN DATE(mp.tanggal_so) ELSE NULL END,
+			    CASE WHEN mp.created_at > '1000-01-01' THEN DATE(mp.created_at) ELSE NULL END,
+			    tfl.tanggal_pengiriman
+			  ),
+			  tfl.tanggal_label_muncul = DATE_ADD(COALESCE(
+			    CASE WHEN mp.tanggal_so > '1000-01-01' THEN DATE(mp.tanggal_so) ELSE NULL END,
+			    CASE WHEN mp.created_at > '1000-01-01' THEN DATE(mp.created_at) ELSE NULL END,
+			    tfl.tanggal_pengiriman
+			  ), INTERVAL fc.jumlah_hari DAY)
+			WHERE tfl.tanggal_label_muncul != DATE_ADD(COALESCE(
+			    CASE WHEN mp.tanggal_so > '1000-01-01' THEN DATE(mp.tanggal_so) ELSE NULL END,
+			    CASE WHEN mp.created_at > '1000-01-01' THEN DATE(mp.created_at) ELSE NULL END,
+			    tfl.tanggal_pengiriman
+			  ), INTERVAL fc.jumlah_hari DAY)
+			   OR tfl.tanggal_pengiriman != COALESCE(
+			    CASE WHEN mp.tanggal_so > '1000-01-01' THEN DATE(mp.tanggal_so) ELSE NULL END,
+			    CASE WHEN mp.created_at > '1000-01-01' THEN DATE(mp.created_at) ELSE NULL END,
+			    tfl.tanggal_pengiriman
+			  )
 		");
 
 		// Global safety sync for any remaining labels
@@ -1246,10 +2384,11 @@ class Model_crm extends CI_Model
 			$phone = $mp->no_telepon ?: '';
 			$nama = $mp->nama_penerima ?: '-';
 			$src = strtolower($mp->source ?: '');
+			$no_p = strtolower($mp->no_pesanan ?: '');
 			$source = 'Shopee';
-			if (strpos($src, 'tokopedia') !== false || strpos($src, 'pdf') !== false || strpos($src, 'scan') !== false) $source = 'Tokopedia';
-			elseif (strpos($src, 'tiktok') !== false) $source = 'TikTok Shop';
-			elseif (strpos($src, 'lazada') !== false) $source = 'Lazada';
+			if (strpos($src, 'tokopedia') !== false || strpos($no_p, 'tkp') !== false) $source = 'Tokopedia';
+			elseif (strpos($src, 'tiktok') !== false || strpos($no_p, 'ttk') !== false) $source = 'TikTok Shop';
+			elseif (strpos($src, 'shopee') !== false || strpos($no_p, 'shp') !== false) $source = 'Shopee';
 
 			foreach ($categories as $cat) {
 				$key = 'penjualan_marketplace_' . $mp->id . '_' . $cat->id;
@@ -1284,8 +2423,18 @@ class Model_crm extends CI_Model
 			  tfl.no_pesanan = COALESCE(NULLIF(so.no_pesanan, ''), NULLIF(so.nomor_so, ''), tfl.no_pesanan),
 			  tfl.customer_nama = COALESCE(NULLIF(so.nama_penerima, ''), tfl.customer_nama),
 			  tfl.customer_phone = COALESCE(NULLIF(so.no_telepon, ''), tfl.customer_phone),
-			  tfl.tanggal_pengiriman = COALESCE(NULLIF(so.tanggal_kirim, ''), NULLIF(so.tanggal_so, ''), DATE(so.created_at), tfl.tanggal_pengiriman),
-			  tfl.tanggal_label_muncul = DATE_ADD(COALESCE(NULLIF(so.tanggal_kirim, ''), NULLIF(so.tanggal_so, ''), DATE(so.created_at), tfl.tanggal_pengiriman), INTERVAL fc.jumlah_hari DAY),
+			  tfl.tanggal_pengiriman = COALESCE(
+			    CASE WHEN so.tanggal_kirim > '1000-01-01' THEN DATE(so.tanggal_kirim) ELSE NULL END,
+			    CASE WHEN so.tanggal_so > '1000-01-01' THEN DATE(so.tanggal_so) ELSE NULL END,
+			    CASE WHEN so.created_at > '1000-01-01' THEN DATE(so.created_at) ELSE NULL END,
+			    tfl.tanggal_pengiriman
+			  ),
+			  tfl.tanggal_label_muncul = DATE_ADD(COALESCE(
+			    CASE WHEN so.tanggal_kirim > '1000-01-01' THEN DATE(so.tanggal_kirim) ELSE NULL END,
+			    CASE WHEN so.tanggal_so > '1000-01-01' THEN DATE(so.tanggal_so) ELSE NULL END,
+			    CASE WHEN so.created_at > '1000-01-01' THEN DATE(so.created_at) ELSE NULL END,
+			    tfl.tanggal_pengiriman
+			  ), INTERVAL fc.jumlah_hari DAY),
 			  tfl.order_source = CASE 
 			    WHEN LOWER(so.source) LIKE '%toko%' OR so.source = 'manual' OR so.source IS NULL THEN 'Toko'
 			    WHEN LOWER(so.source) LIKE '%shopee%' THEN 'Shopee'
@@ -1304,13 +2453,20 @@ class Model_crm extends CI_Model
 			  tfl.no_pesanan = COALESCE(NULLIF(mp.no_pesanan, ''), NULLIF(mp.nomor_so, ''), tfl.no_pesanan),
 			  tfl.customer_nama = COALESCE(NULLIF(mp.nama_penerima, ''), tfl.customer_nama),
 			  tfl.customer_phone = COALESCE(NULLIF(mp.no_telepon, ''), tfl.customer_phone),
-			  tfl.tanggal_pengiriman = COALESCE(NULLIF(mp.tanggal_so, ''), DATE(mp.created_at), tfl.tanggal_pengiriman),
-			  tfl.tanggal_label_muncul = DATE_ADD(COALESCE(NULLIF(mp.tanggal_so, ''), DATE(mp.created_at), tfl.tanggal_pengiriman), INTERVAL fc.jumlah_hari DAY),
+			  tfl.tanggal_pengiriman = COALESCE(
+			    CASE WHEN mp.tanggal_so > '1000-01-01' THEN DATE(mp.tanggal_so) ELSE NULL END,
+			    CASE WHEN mp.created_at > '1000-01-01' THEN DATE(mp.created_at) ELSE NULL END,
+			    tfl.tanggal_pengiriman
+			  ),
+			  tfl.tanggal_label_muncul = DATE_ADD(COALESCE(
+			    CASE WHEN mp.tanggal_so > '1000-01-01' THEN DATE(mp.tanggal_so) ELSE NULL END,
+			    CASE WHEN mp.created_at > '1000-01-01' THEN DATE(mp.created_at) ELSE NULL END,
+			    tfl.tanggal_pengiriman
+			  ), INTERVAL fc.jumlah_hari DAY),
 			  tfl.order_source = CASE 
-			    WHEN LOWER(mp.source) LIKE '%tokopedia%' OR LOWER(mp.source) LIKE '%pdf%' OR LOWER(mp.source) LIKE '%scan%' THEN 'Tokopedia'
-			    WHEN LOWER(mp.source) LIKE '%tiktok%' THEN 'TikTok Shop'
-			    WHEN LOWER(mp.source) LIKE '%lazada%' THEN 'Lazada'
-			    WHEN LOWER(mp.source) LIKE '%shopee%' THEN 'Shopee'
+			    WHEN LOWER(mp.source) LIKE '%tokopedia%' OR LOWER(mp.no_pesanan) LIKE '%tkp%' THEN 'Tokopedia'
+			    WHEN LOWER(mp.source) LIKE '%tiktok%' OR LOWER(mp.no_pesanan) LIKE '%ttk%' THEN 'TikTok Shop'
+			    WHEN LOWER(mp.source) LIKE '%shopee%' OR LOWER(mp.no_pesanan) LIKE '%shp%' THEN 'Shopee'
 			    ELSE 'Shopee'
 			  END
 		");

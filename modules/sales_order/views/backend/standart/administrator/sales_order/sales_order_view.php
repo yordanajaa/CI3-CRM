@@ -12,8 +12,16 @@ $display_phone = !empty($so->no_telepon)
     : (!empty($so->telp_pelanggan) ? $so->telp_pelanggan : '081234567890');
 
 // Determine receiver & customer name
-$display_pelanggan = !empty($so->nama_penerima) ? $so->nama_penerima : ($so->nama_pelanggan ?? 'Pelanggan General');
-$display_buyer = !empty($so->username_pembeli) ? ' (@' . $so->username_pembeli . ')' : '';
+$display_pelanggan = !empty($so->nama_pelanggan) 
+    ? $so->nama_pelanggan 
+    : (!empty($so->nama_penerima) 
+        ? $so->nama_penerima 
+        : (!empty($so->username_pembeli) 
+            ? $so->username_pembeli 
+            : (!empty($so->no_telepon) 
+                ? $so->no_telepon 
+                : 'Pelanggan Umum')));
+$display_buyer = (!empty($so->username_pembeli) && $so->username_pembeli != $display_pelanggan) ? ' (@' . $so->username_pembeli . ')' : '';
 
 // Determine estimated send date / deadline
 $display_est_kirim = !empty($so->pesanan_harus_dikirim_sebelum) 
@@ -24,6 +32,19 @@ $display_est_kirim = !empty($so->pesanan_harus_dikirim_sebelum)
 $display_resi = !empty($so->nomor_resi) ? $so->nomor_resi : '-';
 $display_kurir = !empty($so->opsi_pengiriman) ? $so->opsi_pengiriman : (!empty($so->kurir_ekspedisi) ? $so->kurir_ekspedisi : 'Reguler Courier');
 ?>
+<style>
+@keyframes soFadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.box-primary {
+  border-radius: 12px !important;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.04) !important;
+  animation: soFadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.table-responsive { -webkit-overflow-scrolling: touch; }
+</style>
+
 <section class="content-header">
    <h1>Detail Sales Order <small><?= _ent($so->nomor_so); ?></small></h1>
    <ol class="breadcrumb">

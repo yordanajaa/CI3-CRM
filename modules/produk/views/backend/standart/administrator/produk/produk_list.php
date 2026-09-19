@@ -1,4 +1,17 @@
-<?php /* produk_list.php */ ?>
+<style>
+@keyframes produkFadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.box-primary {
+  border-radius: 12px !important;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.04) !important;
+  animation: produkFadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.table-responsive { -webkit-overflow-scrolling: touch; }
+</style>
+
 <section class="content-header">
    <h1>Data Products <small>Register All Data Products</small></h1>
    <ol class="breadcrumb">

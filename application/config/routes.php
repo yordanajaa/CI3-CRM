@@ -12,6 +12,15 @@ $route['default_controller'] = 'auth/backend/auth/login';
 $route['404_override'] = 'not_found';
 $route['translate_uri_dashes'] = FALSE;
 
+// Public Webhook Routes (no auth required — for Fonnte/WA Gateway callbacks)
+$route['webhook'] = 'webhook/index';
+$route['webhook/fonnte'] = 'webhook/fonnte';
+$route['webhook/wa'] = 'webhook/wa';
+$route['webhook/waha'] = 'webhook/waha';
+$route['webhook/test'] = 'webhook/test';
+// Backward compat: old webhook URL still works
+$route['administrator/crm/fonnte_webhook'] = 'webhook/fonnte';
+
 $route['administrator/login'] = 'auth/backend/auth/login';
 $route['administrator/register'] = 'auth/backend/auth/register';
 $route['administrator/forgot-password'] = 'auth/backend/auth/forgot_password';

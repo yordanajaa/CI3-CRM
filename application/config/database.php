@@ -5,7 +5,7 @@ $active_group = 'default';
 $query_builder = TRUE;
 
 // Auto detect database credentials (Localhost vs Hostinger)
-$is_online = isset($_SERVER['HTTP_HOST']) && !in_array($_SERVER['HTTP_HOST'], array('localhost', '127.0.0.1', 'ci3_metafora.test'));
+$is_online = isset($_SERVER['SERVER_NAME']) && !in_array($_SERVER['SERVER_NAME'], array('localhost', '127.0.0.1', 'ci3_metafora.test'));
 
 if ($is_online) {
     // Pengaturan Database Hostinger (Sesuaikan dengan data MySQL cPanel Hostinger)

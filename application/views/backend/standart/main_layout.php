@@ -34,6 +34,17 @@
   
   <!-- Smooth Sidebar & Page Navigation Transition Animations -->
   <style>
+    /* Global Bulletproof Modal Stacking Fix */
+    .modal-backdrop { pointer-events: none !important; }
+    .modal { pointer-events: auto !important; }
+    
+    /* Fix Z-Index for Dropdowns inside Modals */
+    .chosen-container .chosen-drop { z-index: 9999 !important; }
+    .select2-dropdown { z-index: 9999 !important; }
+    .xdsoft_datetimepicker { z-index: 9999 !important; }
+    .datepicker { z-index: 9999 !important; }
+    .sweet-alert { z-index: 99999 !important; }
+
     /* Page Content Transition Animation */
     .content-wrapper {
       animation: fadeInSlide 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -391,8 +402,8 @@ $(document).ready(function(){
                         }
                      }
 
-                     html += '<li style="border-bottom: 1px solid #f4f4f4;">';
-                     html += '  <a href="' + item.url + '" style="display: flex; align-items: flex-start; padding: 10px 15px; color: #333; text-decoration: none; transition: background 0.2s;" onmouseover="this.style.background=\'#f9f9f9\'" onmouseout="this.style.background=\'transparent\'">';
+                     html += '<li style="border-bottom: 1px solid #f4f4f4;" class="notif-item" data-notif-id="' + item.id + '" data-notif-type="' + item.type + '">';
+                     html += '  <a href="' + item.url + '" class="notif-link" data-chat-id="' + item.id + '" data-type="' + item.type + '" style="display: flex; align-items: flex-start; padding: 10px 15px; color: #333; text-decoration: none; transition: background 0.2s;" onmouseover="this.style.background=\'#f9f9f9\'" onmouseout="this.style.background=\'transparent\'">';
                      html += '    <div style="margin-right: 12px; font-size: 18px; line-height: 1;" class="' + item.icon_bg + '"><i class="fa ' + item.icon + '"></i></div>';
                      html += '    <div style="flex: 1; overflow: hidden;">';
                      html += '      <div style="font-weight: 600; font-size: 12px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; color: #2c3e50;">' + item.title + '</div>';
@@ -421,7 +432,44 @@ $(document).ready(function(){
 
    if ($('#notif-approval-menu').length > 0) {
       loadApprovalNotifications();
-      setInterval(loadApprovalNotifications, 3000); // Poll every 3 seconds for instant real-time notifications
+      setInterval(loadApprovalNotifications, 3000);
+
+      // Click handler: mark notification as read, remove from list, then navigate
+      $(document).on('click', '.notif-link', function(e) {
+         e.preventDefault();
+         var $link = $(this);
+         var $item = $link.closest('.notif-item');
+         var chatId = $link.data('chat-id');
+         var itemType = $link.data('type');
+         var targetUrl = $link.attr('href');
+
+         // Instantly remove from visual list
+         $item.slideUp(150, function() { $(this).remove(); });
+
+         // Update badge count
+         var currentCount = parseInt($('#notif-header-count').text()) || 0;
+         var newCount = Math.max(0, currentCount - 1);
+         if (newCount > 0) {
+            $('#notif-approval-badge').text(newCount > 99 ? '99+' : newCount);
+            $('#notif-header-count').text(newCount);
+         } else {
+            $('#notif-approval-badge').hide();
+            $('#notif-header-count').text('0');
+         }
+
+         // Mark as read via AJAX (fire-and-forget)
+         if (itemType === 'incoming_wa' && chatId) {
+            $.post(BASE_URL + 'administrator/crm/mark_notification_read_ajax', { chat_id: chatId });
+         }
+
+         // Navigate immediately — force reload if already on same page
+         if (window.location.href.indexOf(targetUrl.split('?')[0]) !== -1) {
+            window.location.href = targetUrl;
+            window.location.reload(true);
+         } else {
+            window.location.href = targetUrl;
+         }
+      });
    }
 });
 </script>
@@ -455,6 +503,22 @@ $(document).ready(function(){
 <script src="<?= BASE_ASSET; ?>admin-lte/plugins/fastclick/fastclick.js"></script>
 <script src="<?= BASE_ASSET; ?>admin-lte/dist/js/app.min.js"></script>
 <script src="<?= BASE_ASSET; ?>js-scroll/script/jquery.jscrollpane.min.js"></script>
-<script src="<?= BASE_ASSET; ?>js/custom.js"></script>
+<script src="<?= BASE_ASSET; ?>js/custom.js?v=<?= VERSION ?>"></script>
+<script>
+  /* Global Modal Backdrop Fix: Append modal to body to prevent z-index blocking in some browsers */
+  $(document).ready(function() {
+      $(document).on('show.bs.modal', '.modal', function () {
+          if (!$(this).parent().is('body')) {
+              $(this).appendTo('body');
+          }
+      });
+      /* Fallback: If a modal is already open and stuck behind backdrop */
+      $('.modal:visible').each(function() {
+          if (!$(this).parent().is('body')) {
+              $(this).appendTo('body');
+          }
+      });
+  });
+</script>
 </body>
 </html>

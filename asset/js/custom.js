@@ -343,3 +343,10 @@ jQuery.expr[':'].regex = function(elem, index, match) {
         }
     });
 })();
+
+/* Global Modal Backdrop Fix: Append modal to body to prevent z-index blocking */
+$(document).on('show.bs.modal', '.modal', function () {
+    if (!$(this).parent().is('body')) {
+        $(this).appendTo('body');
+    }
+});

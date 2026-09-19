@@ -196,12 +196,70 @@
   .badge-urgent { font-size: 10px; padding: 2px 8px; }
 }
 
+/* RFM Card Grid */
+.rfm-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 12px;
+}
+.rfm-dash-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  transition: all 0.2s ease;
+  position: relative;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+.rfm-dash-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  border-color: #cbd5e1;
+}
+
+/* ===== Animations & Micro-Interactions ===== */
+@keyframes crmFadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.crm-dash-header, .kpi-card, .chart-box, .rfm-dash-card {
+  animation: crmFadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.btn:active {
+  transform: scale(0.97) !important;
+}
+
+.table-responsive {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f8fafc;
+}
+
+@media (max-width: 767px) {
+  .crm-dash-header { padding: 20px 16px; border-radius: 12px; text-align: center; }
+  .crm-dash-header h2 { font-size: 20px; }
+  .crm-dash-header p { font-size: 12.5px; }
+  .crm-dash-header .text-right { text-align: center !important; margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .crm-dash-header .text-right .btn { width: 100%; justify-content: center; }
+  .chart-box { padding: 16px; margin-bottom: 16px; }
+  .kpi-card { padding: 14px 12px; }
+  .kpi-card .kpi-value { font-size: 20px; }
+}
+
 @media (max-width: 480px) {
   .crm-dash-header h2 { font-size: 16px; }
-  .crm-dash-header .text-right { display: flex; flex-direction: column; gap: 6px; }
-  .crm-dash-header .text-right .btn { width: 100%; }
-  .kpi-card .kpi-value { font-size: 16px; }
-  .kpi-card .kpi-label { font-size: 9px; }
+  .kpi-card .kpi-value { font-size: 17px; }
+  .kpi-card .kpi-label { font-size: 9.5px; }
+  .rfm-card-grid { grid-template-columns: 1fr; }
 }
 </style>
 
@@ -214,8 +272,9 @@
         <p>Pantau keterlibatan pelanggan, tren pengiriman follow-up, repeat order rate, dan performa tim CS secara real-time.</p>
       </div>
       <div class="col-md-4 text-right" style="padding-top: 10px;">
+        <a href="<?= site_url('administrator/crm/chat'); ?>" class="btn btn-sm" style="background:linear-gradient(135deg, #075e54, #128c7e); color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:700; box-shadow:0 4px 12px rgba(18,140,126,0.35);"><i class="fa fa-whatsapp"></i> Live Chat WA</a>
         <a href="<?= site_url('administrator/crm/journal_followup'); ?>" class="btn btn-sm" style="background:#6366f1; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:600;"><i class="fa fa-tasks"></i> Journal Follow-Up</a>
-        <a href="<?= site_url('administrator/crm/broadcast'); ?>" class="btn btn-sm" style="background:#22c55e; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:600;"><i class="fa fa-whatsapp"></i> Broadcast WA</a>
+        <a href="<?= site_url('administrator/crm/broadcast'); ?>" class="btn btn-sm" style="background:#22c55e; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:600;"><i class="fa fa-bullhorn"></i> Broadcast WA</a>
       </div>
     </div>
   </div>
@@ -256,8 +315,31 @@
         <div class="kpi-value"><?= number_format($kpis['total_broadcast']); ?></div>
         <div class="kpi-label">WA Broadcast Terkirim</div>
       </div>
+  </div>
+
+  <!-- RFM Link Card (now in separate module) -->
+  <div class="row">
+    <div class="col-md-12">
+      <div class="chart-box" style="border-top: 4px solid #6366f1; background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);">
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+          <div style="display:flex; align-items:center; gap:14px;">
+            <div style="width:52px; height:52px; border-radius:12px; background:#6366f1; color:#fff; display:flex; align-items:center; justify-content:center; font-size:22px;">
+              <i class="fa fa-bar-chart"></i>
+            </div>
+            <div>
+              <div style="font-size:17px; font-weight:800; color:#1e1b4b;">Analisis RFM Pelanggan</div>
+              <div style="font-size:12.5px; color:#475569;">Lihat segmentasi lengkap Recency, Frequency, Monetary di modul terpisah</div>
+            </div>
+          </div>
+          <div>
+            <a href="<?= site_url('administrator/rfm/dashboard'); ?>" class="btn btn-sm" style="background:#6366f1; color:#fff; border:none; font-weight:600; border-radius:8px; padding:8px 18px; margin-right:6px;"><i class="fa fa-tachometer"></i> Dashboard RFM</a>
+            <a href="<?= site_url('administrator/rfm'); ?>" class="btn btn-sm" style="background:#fff; color:#312e81; border:1px solid #c7d2fe; font-weight:600; border-radius:8px; padding:8px 18px;"><i class="fa fa-users"></i> Daftar Customer RFM</a>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
+
 
   <!-- Charts Row 1 -->
   <div class="row">
@@ -507,5 +589,37 @@ $(document).ready(function() {
       scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }
     }
   });
+
+  // Chart 4: RFM Segment Distribution
+  var rfmData = <?= json_encode(!empty($rfm_distribution) ? $rfm_distribution : []); ?>;
+  if (rfmData && rfmData.length > 0) {
+    var rfmLabels = rfmData.map(function(item) { return item.segment; });
+    var rfmCounts = rfmData.map(function(item) { return item.count; });
+    var rfmColors = rfmData.map(function(item) { return item.badge ? item.badge.bg : '#6366f1'; });
+
+    var ctxRfm = document.getElementById('chartRfmDistribution').getContext('2d');
+    new Chart(ctxRfm, {
+      type: 'doughnut',
+      data: {
+        labels: rfmLabels,
+        datasets: [{
+          data: rfmCounts,
+          backgroundColor: rfmColors,
+          borderWidth: 2,
+          borderColor: '#ffffff'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { boxWidth: 10, font: { size: 10 } }
+          }
+        }
+      }
+    });
+  }
 });
 </script>

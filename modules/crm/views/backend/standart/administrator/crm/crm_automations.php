@@ -1,14 +1,44 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
 <style>
-.crm-header { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%); color: #fff; padding: 25px 30px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(49, 46, 129, 0.2); }
+@keyframes crmFadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.crm-header {
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
+  color: #fff;
+  padding: 25px 30px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 10px 25px rgba(49, 46, 129, 0.2);
+  animation: crmFadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
 .crm-header h2 { margin: 0 0 5px 0; font-weight: 800; font-size: 22px; }
 .crm-header p { margin: 0; opacity: 0.85; font-size: 13px; }
 
-.proc-card { background: #fff; border-radius: 10px; padding: 18px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); border-left: 4px solid #4f46e5; margin-bottom: 15px; height: 100%; transition: transform 0.2s; }
+.proc-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 18px 20px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  border-left: 4px solid #4f46e5;
+  margin-bottom: 15px;
+  height: 100%;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: crmFadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
 .proc-card:hover { transform: translateY(-3px); box-shadow: 0 6px 18px rgba(0,0,0,0.1); }
 .proc-card .proc-num { font-size: 11px; font-weight: 700; color: #6366f1; text-transform: uppercase; letter-spacing: 0.5px; }
 .proc-card .proc-title { font-size: 15px; font-weight: 700; color: #1e293b; margin: 4px 0 6px 0; }
 .proc-card .proc-desc { font-size: 12px; color: #64748b; line-height: 1.4; }
+
+.box {
+  animation: crmFadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.table-responsive {
+  -webkit-overflow-scrolling: touch;
+}
 
 .badge-mode { padding: 3px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
 .bm-web { background: #e0e7ff; color: #4338ca; }

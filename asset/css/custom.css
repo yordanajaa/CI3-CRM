@@ -1466,4 +1466,14 @@ img {
     vertical-align: middle;
 }
 
+/* Bulletproof Modal Stacking Fix:
+   Allows clicks to pass through the backdrop and hit the modal underneath it.
+   This guarantees that modals are ALWAYS clickable even if trapped in a stacking context (like Opera GX dark mode filter bugs). */
+.modal-backdrop {
+    pointer-events: none !important;
+}
+.modal {
+    pointer-events: auto !important;
+}
+
 

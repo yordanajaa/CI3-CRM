@@ -1,10 +1,36 @@
 <?php /* pelanggan_list.php - Sleek High-End UI */ ?>
 <style>
-.kpi-card { background:#fff; border-radius:8px; padding:15px; margin-bottom:15px; border:1px solid #e2e8f0; box-shadow:0 1px 3px rgba(0,0,0,0.05); position:relative; }
-.kpi-title { font-size:11px; text-transform:uppercase; color:#64748b; font-weight:600; }
-.kpi-value { font-size:20px; font-weight:700; color:#1e293b; margin:4px 0; }
+@keyframes pelangganFadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.kpi-card {
+  background:#fff;
+  border-radius:12px;
+  padding:18px 20px;
+  margin-bottom:15px;
+  border:1px solid #e2e8f0;
+  box-shadow:0 4px 16px rgba(0,0,0,0.04);
+  position:relative;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: pelangganFadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.kpi-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.08);
+}
+.kpi-title { font-size:11px; text-transform:uppercase; color:#64748b; font-weight:700; letter-spacing:0.5px; }
+.kpi-value { font-size:24px; font-weight:800; color:#1e293b; margin:4px 0; }
 .kpi-sub { font-size:11px; color:#94a3b8; }
-.kpi-icon { position:absolute; right:15px; top:18px; font-size:28px; opacity:0.15; }
+.kpi-icon { position:absolute; right:18px; top:20px; font-size:32px; opacity:0.15; }
+
+.box-primary {
+  border-radius: 12px !important;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.04) !important;
+  animation: pelangganFadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.table-responsive { -webkit-overflow-scrolling: touch; }
 </style>
 
 <section class="content-header">

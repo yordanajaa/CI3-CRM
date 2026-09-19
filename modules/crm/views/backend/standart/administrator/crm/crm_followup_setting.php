@@ -1,5 +1,10 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
 <style>
+@keyframes crmFadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .crm-header {
   background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #312e81 100%);
   color: #fff;
@@ -9,6 +14,7 @@
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25);
   position: relative;
   overflow: hidden;
+  animation: crmFadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .crm-header h2 { margin: 0 0 6px 0; font-weight: 800; font-size: 24px; letter-spacing: -0.5px; }
 .crm-header p { margin: 0; opacity: 0.85; font-size: 13px; }
@@ -22,6 +28,15 @@
   border: 1px solid #f1f5f9;
   border-left: 4px solid #6366f1;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: crmFadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.cat-card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(0,0,0,0.08); }
+
+.box {
+  animation: crmFadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.table-responsive {
+  -webkit-overflow-scrolling: touch;
 }
 .cat-card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(0,0,0,0.08); }
 .cat-card.inactive { border-left-color: #cbd5e1; opacity: 0.65; }

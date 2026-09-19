@@ -14,11 +14,13 @@ class Crm extends Admin
 	public function index($offset = 0)
 	{
 		$filter = $this->input->get('q');
-		$result = $this->model_crm->get_customers($filter, $this->limit_page, $offset);
+		$rfm_segment = $this->input->get('rfm_segment');
+		$result = $this->model_crm->get_customers($filter, $this->limit_page, $offset, $rfm_segment);
 
 		$this->data['customers'] = $result['rows'];
 		$this->data['customer_counts'] = $result['total'];
 		$this->data['filter'] = $filter;
+		$this->data['rfm_segment'] = $rfm_segment;
 
 		$config = [
 			'base_url'    => 'administrator/crm/index/',
@@ -28,7 +30,7 @@ class Crm extends Admin
 		];
 		$this->data['pagination'] = $this->pagination($config);
 
-		$this->template->title('CRM — Customer Directory');
+		$this->template->title('CRM — Customer Directory & Segmentasi RFM');
 		$this->render('backend/standart/administrator/crm/crm_customer_list', $this->data);
 	}
 
@@ -47,10 +49,34 @@ class Crm extends Admin
 
 		$this->data['summary'] = $this->model_crm->get_customer_summary($phone);
 		$this->data['transactions'] = $this->model_crm->get_customer_transactions($phone);
+		$this->data['product_rfm'] = $this->model_crm->get_customer_product_rfm($phone);
 		$this->data['phone'] = $phone;
 
 		$this->template->title('CRM — Detail Customer');
 		$this->render('backend/standart/administrator/crm/crm_customer_detail', $this->data);
+	}
+
+	// ===== MODUL DEDICATED WHATSAPP CHAT CENTER =====
+
+	public function chat()
+	{
+		$phone_param = trim((string)$this->input->get('phone'));
+		$label_param = (int)($this->input->get('label_id') ?: 0);
+		$auto_msg = trim((string)$this->input->get('wa_msg'));
+
+		if (!empty($phone_param)) {
+			$label_param = $this->model_crm->ensure_label_for_phone($phone_param);
+		}
+
+		$search = trim((string)$this->input->get('q'));
+		$this->data['conversations'] = $this->model_crm->get_all_chat_conversations($search);
+		$this->data['active_phone'] = $phone_param;
+		$this->data['active_label_id'] = $label_param;
+		$this->data['auto_msg'] = $auto_msg;
+		$this->data['search_q'] = $search;
+
+		$this->template->title('CRM — WhatsApp Chat Center');
+		$this->render('backend/standart/administrator/crm/crm_chat', $this->data);
 	}
 
 	public function transaction_detail_ajax()
@@ -70,13 +96,21 @@ class Crm extends Admin
 
 	public function journal_followup($offset = 0)
 	{
+		$phone_param = trim((string)$this->input->get('phone'));
+		if (!empty($phone_param)) {
+			$this->model_crm->ensure_label_for_phone($phone_param);
+		}
+
+		$search_query = $this->input->get('q') ?: $phone_param;
+
 		$filters = [
 			'category_id' => $this->input->get('category_id'),
 			'order_source' => $this->input->get('order_source'),
 			'status_label' => $this->input->get('status_label'),
 			'date_from' => $this->input->get('date_from'),
 			'date_to' => $this->input->get('date_to'),
-			'search' => $this->input->get('q'),
+			'search' => $search_query,
+			'show_future' => !empty($phone_param) ? 1 : 0,
 		];
 
 		$result = $this->model_crm->get_journal_entries($filters, $this->limit_page, $offset);
@@ -297,11 +331,41 @@ class Crm extends Admin
 		]);
 	}
 
+	public function get_templates_ajax()
+	{
+		header('Content-Type: application/json');
+		$label_id = $this->input->get('label_id');
+		$categories = $this->model_crm->get_categories(true);
+		
+		$label = null;
+		if (!empty($label_id)) {
+			$label = $this->model_crm->get_label($label_id);
+		}
+
+		$list = [];
+		foreach ($categories as $cat) {
+			$preview = $cat->template_pesan_default;
+			if ($label) {
+				$preview = $this->model_crm->render_template($cat->template_pesan_default, $label);
+			}
+			$list[] = [
+				'id' => $cat->id,
+				'nama' => $cat->nama_kategori,
+				'jumlah_hari' => $cat->jumlah_hari,
+				'template_raw' => $cat->template_pesan_default,
+				'template_rendered' => $preview,
+			];
+		}
+
+		echo json_encode(['success' => true, 'templates' => $list]);
+	}
+
 	public function send_broadcast_ajax()
 	{
 		header('Content-Type: application/json');
 		$label_ids = $this->input->post('label_ids');
 		$custom_message = trim($this->input->post('custom_message') ?: '');
+		$file_url = trim($this->input->post('file_url') ?: '');
 
 		if (empty($label_ids) || !is_array($label_ids)) {
 			echo json_encode(['success' => false, 'message' => 'Pilih minimal 1 customer']); return;
@@ -320,9 +384,12 @@ class Crm extends Admin
 			if ($label->is_broadcast_sent && count($label_ids) > 1 && empty($custom_message)) continue;
 
 			$message = !empty($custom_message) ? $custom_message : $this->model_crm->render_template($label->template_pesan_default, $label);
+			if (!empty($file_url) && strpos($message, $file_url) === false) {
+				$message .= "\n\n[Lampiran File]: " . $file_url;
+			}
 
 			if ($use_api) {
-				$api_res = $this->model_crm->send_wa_via_api($label->customer_phone, $message);
+				$api_res = $this->model_crm->send_wa_via_api($label->customer_phone, $message, $file_url);
 				$this->model_crm->log_broadcast($lid, $message, 'wa_gateway_api');
 				$api_results[] = [
 					'phone' => $label->customer_phone,
@@ -441,18 +508,26 @@ class Crm extends Admin
 		header('Content-Type: application/json');
 		$category_id = $this->input->get('category_id');
 		$order_source = $this->input->get('order_source');
+		$rfm_segment = $this->input->get('rfm_segment');
 
 		$filters = [
 			'category_id' => $category_id,
 			'order_source' => $order_source,
 			'status_label' => 'Pending',
 		];
-		$result = $this->model_crm->get_journal_entries($filters, 200, 0);
+		$result = $this->model_crm->get_journal_entries($filters, 500, 0);
 
-		// Filter only non-broadcast-sent (FB-10)
+		// Filter only non-broadcast-sent (FB-10) and optional RFM segment
 		$recipients = [];
 		foreach ($result['rows'] as $r) {
 			if (!$r->is_broadcast_sent && !empty($r->customer_phone)) {
+				if (!empty($rfm_segment)) {
+					$cust_summary = $this->model_crm->get_customer_summary($r->customer_phone);
+					$cust_segment = isset($cust_summary['rfm']['segment']) ? $cust_summary['rfm']['segment'] : '';
+					if (strcasecmp($cust_segment, $rfm_segment) !== 0) {
+						continue;
+					}
+				}
 				$recipients[] = $r;
 			}
 		}
@@ -490,20 +565,22 @@ class Crm extends Admin
 	public function export_customers()
 	{
 		$filter = $this->input->get('q');
-		$result = $this->model_crm->get_customers($filter, 10000, 0);
+		$rfm_segment = $this->input->get('rfm_segment');
+		$result = $this->model_crm->get_customers($filter, 10000, 0, $rfm_segment);
 
 		header('Content-Type: text/csv; charset=utf-8');
 		header('Content-Disposition: attachment; filename=CRM_Customer_Directory_' . date('Ymd_His') . '.csv');
 		$output = fopen('php://output', 'w');
 		fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
 		fwrite($output, "sep=;\n");
-		fputcsv($output, ['No', 'Nama Customer', 'No. HP', 'Sumber Penjualan', 'Total Order', 'Order Terakhir', 'Pending Followup'], ';');
+		fputcsv($output, ['No', 'Nama Customer', 'No. HP', 'Sumber Penjualan', 'Total Order', 'Total Spend (Rp)', 'Kode RFM', 'Segmen RFM', 'Target Goal', 'Rekomendasi Action', 'Order Terakhir'], ';');
 
 		$no = 1;
 		foreach ($result['rows'] as $c) {
 			$phone = trim((string)$c->customer_phone);
 			$phone_str = !empty($phone) ? '="' . $phone . '"' : '-';
 			$last_date = !empty($c->last_order_date) ? '="' . date('d/m/Y', strtotime($c->last_order_date)) . '"' : '-';
+			$rfm = isset($c->rfm) ? $c->rfm : $this->model_crm->calculate_rfm($c->last_order_date, $c->total_orders, $c->total_spend);
 
 			fputcsv($output, [
 				$no++,
@@ -511,8 +588,12 @@ class Crm extends Admin
 				$phone_str,
 				$c->sumber_penjualan ?: 'Direct',
 				$c->total_orders,
-				$last_date,
-				$c->pending_followups
+				number_format($c->total_spend, 0, ',', '.'),
+				$rfm['rfm_display'],
+				$rfm['segment'],
+				$rfm['goal'],
+				$rfm['action'],
+				$last_date
 			], ';');
 		}
 		fclose($output);
@@ -522,11 +603,12 @@ class Crm extends Admin
 	public function export_customers_pdf()
 	{
 		$filter = $this->input->get('q');
-		$result = $this->model_crm->get_customers($filter, 10000, 0);
+		$rfm_segment = $this->input->get('rfm_segment');
+		$result = $this->model_crm->get_customers($filter, 10000, 0, $rfm_segment);
 
 		$this->data['rows'] = $result['rows'];
 		$this->load->library('HtmlPdf');
-		$this->htmlpdf->initialize(['orientation' => 'P', 'format' => 'A4', 'marges' => [5, 5, 5, 5]]);
+		$this->htmlpdf->initialize(['orientation' => 'L', 'format' => 'A4', 'marges' => [5, 5, 5, 5]]);
 		$content = $this->load->view('backend/standart/administrator/crm/crm_customers_pdf', $this->data, true);
 		$this->htmlpdf->writeHTML($content);
 		$filename = 'CRM_Customer_Directory_' . date('Ymd_His') . '.pdf';
@@ -852,10 +934,45 @@ class Crm extends Admin
 		}
 		$media_url = trim($media_url);
 
-		if (empty($message) && !empty($media_url)) {
-			$message = '[Lampiran Media/Dokumen]: ' . $media_url;
-		} elseif (!empty($media_url) && strpos($message, $media_url) === false) {
-			$message .= "\n\n[Lampiran File]: " . $media_url;
+		// Extract mimetype from Fonnte payload for better media type detection
+		$mimetype = '';
+		if ($this->input->post('mimetype')) {
+			$mimetype = $this->input->post('mimetype');
+		} elseif (isset($json['mimetype'])) {
+			$mimetype = $json['mimetype'];
+		} elseif (isset($json['type'])) {
+			$mimetype = $json['type'];
+		} elseif (isset($json['content_type'])) {
+			$mimetype = $json['content_type'];
+		} elseif (isset($json['media_type'])) {
+			$mimetype = $json['media_type'];
+		}
+		$mimetype = strtolower(trim($mimetype));
+
+		// Determine media label based on mimetype or file extension
+		if (!empty($media_url)) {
+			$ext = strtolower(pathinfo(parse_url($media_url, PHP_URL_PATH), PATHINFO_EXTENSION));
+			$media_label = '[Lampiran File]';
+
+			if (strpos($mimetype, 'image') !== false || in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'])) {
+				$media_label = '[Foto]';
+			} elseif (strpos($mimetype, 'video') !== false || in_array($ext, ['mp4', 'avi', 'mov', 'mkv', '3gp', 'webm'])) {
+				$media_label = '[Video]';
+			} elseif (strpos($mimetype, 'audio') !== false || strpos($mimetype, 'ogg') !== false || in_array($ext, ['mp3', 'ogg', 'wav', 'm4a', 'aac', 'opus', 'amr', 'webm', '3gp'])) {
+				$media_label = '[Dokumen]';
+			} elseif (strpos($mimetype, 'pdf') !== false || in_array($ext, ['pdf'])) {
+				$media_label = '[Dokumen PDF]';
+			} elseif (strpos($mimetype, 'document') !== false || strpos($mimetype, 'word') !== false || strpos($mimetype, 'spreadsheet') !== false || strpos($mimetype, 'excel') !== false || in_array($ext, ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'csv', 'txt'])) {
+				$media_label = '[Dokumen]';
+			} elseif (strpos($mimetype, 'zip') !== false || strpos($mimetype, 'rar') !== false || in_array($ext, ['zip', 'rar', '7z', 'tar', 'gz'])) {
+				$media_label = '[Dokumen Arsip]';
+			}
+
+			if (empty($message)) {
+				$message = $media_label . ': ' . $media_url;
+			} elseif (strpos($message, $media_url) === false) {
+				$message .= "\n\n" . $media_label . ': ' . $media_url;
+			}
 		}
 
 		// Extract name
@@ -1038,10 +1155,59 @@ class Crm extends Admin
 	}
 
 	/**
+	 * Mark notification(s) as read when clicked
+	 * Accepts: chat_id (single), label_id (all for that label), or mark_all=1
+	 */
+	public function mark_notification_read_ajax()
+	{
+		header('Content-Type: application/json');
+
+		$chat_id  = (int)($this->input->post('chat_id') ?: $this->input->get('chat_id') ?: 0);
+		$label_id = (int)($this->input->post('label_id') ?: $this->input->get('label_id') ?: 0);
+		$mark_all = (int)($this->input->post('mark_all') ?: $this->input->get('mark_all') ?: 0);
+
+		if (!$this->db->table_exists('crm_chat_history')) {
+			echo json_encode(['success' => false, 'message' => 'Table not found']);
+			return;
+		}
+
+		$affected = 0;
+
+		if ($chat_id > 0) {
+			// Mark single message as read
+			$this->db->where('id', $chat_id)
+				->where('direction', 'in')
+				->where('status !=', 'read')
+				->update('crm_chat_history', ['status' => 'read']);
+			$affected = $this->db->affected_rows();
+		} elseif ($label_id > 0) {
+			// Mark all incoming messages for this label as read
+			$this->db->where('label_id', $label_id)
+				->where('direction', 'in')
+				->where('status !=', 'read')
+				->update('crm_chat_history', ['status' => 'read']);
+			$affected = $this->db->affected_rows();
+		} elseif ($mark_all) {
+			// Mark ALL unread incoming messages as read
+			$this->db->where('direction', 'in')
+				->where('status !=', 'read')
+				->update('crm_chat_history', ['status' => 'read']);
+			$affected = $this->db->affected_rows();
+		}
+
+		echo json_encode([
+			'success' => true,
+			'affected' => $affected,
+			'message' => $affected . ' notifikasi ditandai sudah dibaca'
+		]);
+	}
+
+	/**
 	 * Dedicated endpoint: Send chat message from CS to customer
 	 * Supports: WA Reply (via Fonnte API) and Internal Note
 	 */
 	public function send_message_ajax()
+
 	{
 		header('Content-Type: application/json');
 		$label_id = $this->input->post('label_id');
@@ -1049,17 +1215,14 @@ class Crm extends Admin
 		$file_url = trim($this->input->post('file_url') ?: '');
 		$is_internal_note = (int)($this->input->post('is_internal_note') ?: 0);
 
-		if (empty($message) && !empty($file_url)) {
-			$ext = strtolower(pathinfo(parse_url($file_url, PHP_URL_PATH), PATHINFO_EXTENSION));
-			if (in_array($ext, ['mp3', 'ogg', 'wav', 'm4a', 'aac', 'opus', 'webm', '3gp', 'amr']) || strpos($file_url, 'voice') !== false || strpos($file_url, 'audio') !== false) {
-				$message = '[Pesan Suara]: ' . $file_url;
-			} else {
-				$message = '[Lampiran Media/Dokumen]: ' . $file_url;
-			}
+		// Validasi: harus ada pesan ATAU file
+		if (empty($message) && empty($file_url)) {
+			echo json_encode(['success' => false, 'message' => 'Label ID dan pesan atau file attachment tidak boleh kosong'], JSON_UNESCAPED_UNICODE);
+			return;
 		}
 
-		if (!$label_id || empty($message)) {
-			echo json_encode(['success' => false, 'message' => 'Label ID dan pesan atau file attachment tidak boleh kosong'], JSON_UNESCAPED_UNICODE);
+		if (!$label_id) {
+			echo json_encode(['success' => false, 'message' => 'Label ID tidak boleh kosong'], JSON_UNESCAPED_UNICODE);
 			return;
 		}
 
@@ -1080,10 +1243,32 @@ class Crm extends Admin
 		$chat_status = 'sent';
 		$fonnte_response = null;
 
+		// ---- Build message for LOCAL save (display di chat bubble) ----
+		// Teks caption asli user + info lampiran file (untuk tampilan di CRM saja)
 		$message_to_save = $message;
-		if (!empty($file_url) && strpos($message_to_save, $file_url) === false) {
-			$message_to_save .= "\n\n[Lampiran File]: " . $file_url;
+		if (!empty($file_url)) {
+			$ext = strtolower(pathinfo(parse_url($file_url, PHP_URL_PATH), PATHINFO_EXTENSION));
+			if (in_array($ext, ['mp3', 'ogg', 'wav', 'm4a', 'aac', 'opus', 'webm', '3gp', 'amr']) || strpos($file_url, 'voice') !== false || strpos($file_url, 'audio') !== false) {
+				$file_label = '[Dokumen]';
+			} elseif (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'])) {
+				$file_label = '[Foto]';
+			} elseif (in_array($ext, ['mp4', 'avi', 'mov', 'mkv', 'webm'])) {
+				$file_label = '[Video]';
+			} else {
+				$file_label = '[Dokumen]';
+			}
+
+			if (empty($message_to_save)) {
+				$message_to_save = $file_label . ': ' . $file_url;
+			} elseif (strpos($message_to_save, $file_url) === false) {
+				$message_to_save .= "\n\n" . $file_label . ': ' . $file_url;
+			}
 		}
+
+		// ---- Build message for FONNTE API (kirim ke WhatsApp) ----
+		// Fonnte butuh: message = caption teks saja, url = link file terpisah
+		// Jika hanya file tanpa caption, beri caption kosong '' agar Fonnte kirim sebagai media
+		$message_for_api = $message; // Caption asli tanpa URL embed
 
 		if ($is_internal_note) {
 			// Internal note: DO NOT send to Fonnte, just save locally
@@ -1092,7 +1277,7 @@ class Crm extends Admin
 			// Send via Fonnte API
 			$config = $this->model_crm->get_wa_gateway_config();
 			if ($config->mode === 'wa_gateway') {
-				$api_result = $this->model_crm->send_wa_via_api($label->customer_phone, $message, $file_url);
+				$api_result = $this->model_crm->send_wa_via_api($label->customer_phone, $message_for_api, $file_url);
 				$fonnte_response = json_encode($api_result);
 
 				if ($api_result['success']) {

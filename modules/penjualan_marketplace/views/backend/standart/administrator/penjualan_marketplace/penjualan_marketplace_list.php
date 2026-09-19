@@ -56,6 +56,11 @@ $per_page = isset($per_page) ? $per_page : 25;
 /* Modern Premium UI/UX Design Tokens */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
+@keyframes pmFadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .content-wrapper, .right-side {
    font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
 }
@@ -68,6 +73,7 @@ $per_page = isset($per_page) ? $per_page : 25;
    margin-bottom: 22px;
    box-shadow: 0 10px 30px rgba(0,0,0,0.03);
    border: 1px solid #e2e8f0;
+   animation: pmFadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .pm-header-icon {
    width: 48px;

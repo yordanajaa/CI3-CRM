@@ -1,5 +1,10 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
 <style>
+@keyframes crmFadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .crm-header {
   background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #312e81 100%);
   color: #fff;
@@ -7,6 +12,7 @@
   border-radius: 16px;
   margin-bottom: 22px;
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25);
+  animation: crmFadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .crm-header h2 { margin: 0 0 6px 0; font-weight: 800; font-size: 24px; letter-spacing: -0.5px; }
 .crm-header p { margin: 0; opacity: 0.85; font-size: 13px; }
@@ -17,6 +23,11 @@
   border: 1px solid #e2e8f0;
   box-shadow: 0 4px 16px rgba(0,0,0,0.04);
   margin-bottom: 20px;
+  animation: crmFadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.table-responsive {
+  -webkit-overflow-scrolling: touch;
 }
 .box-clean .box-header {
   padding: 18px 24px;

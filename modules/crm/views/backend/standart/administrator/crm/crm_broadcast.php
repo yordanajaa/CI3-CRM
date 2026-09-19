@@ -1,5 +1,10 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
 <style>
+@keyframes crmFadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .crm-banner {
   background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #312e81 100%);
   color: #ffffff;
@@ -11,6 +16,7 @@
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
+  animation: crmFadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .crm-banner .title-area h2 { margin: 0 0 4px 0; font-weight: 800; font-size: 22px; letter-spacing: -0.5px; color: #ffffff; }
 .crm-banner .title-area p { margin: 0; opacity: 0.85; font-size: 13px; color: #cbd5e1; }
@@ -21,6 +27,11 @@
   border: 1px solid #e2e8f0;
   box-shadow: 0 4px 16px rgba(0,0,0,0.03);
   margin-bottom: 20px;
+  animation: crmFadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.table-responsive {
+  -webkit-overflow-scrolling: touch;
 }
 .box-clean .box-header {
   padding: 16px 20px;
@@ -112,7 +123,7 @@
         </div>
         <div class="box-body" style="padding:22px;">
           <div class="row" style="align-items: flex-end;">
-            <div class="col-md-5">
+            <div class="col-md-4">
               <div class="form-group" style="margin-bottom:0;">
                 <label style="font-size:12px; font-weight:700; color:#334155;">Pilih Kategori Label H+ <span class="text-danger">*</span></label>
                 <select class="form-control" id="bc-category" style="border-radius:8px; height:40px; font-size:13px;">
@@ -127,7 +138,7 @@
                 </select>
               </div>
             </div>
-            <div class="col-md-5">
+            <div class="col-md-3">
               <div class="form-group" style="margin-bottom:0;">
                 <label style="font-size:12px; font-weight:700; color:#334155;">Filter Sumber Penjualan</label>
                 <select class="form-control" id="bc-source" style="border-radius:8px; height:40px; font-size:13px;">
@@ -136,6 +147,24 @@
                   <option value="Shopee">Shopee</option>
                   <option value="Tokopedia">Tokopedia</option>
                   <option value="TikTok Shop">TikTok Shop</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="form-group" style="margin-bottom:0;">
+                <label style="font-size:12px; font-weight:700; color:#334155;">Filter Segmen RFM</label>
+                <select class="form-control" id="bc-rfm-segment" style="border-radius:8px; height:40px; font-size:13px;">
+                  <option value="">Semua Segmen Customer</option>
+                  <option value="Champions">🏆 Champions (Setia & High Value)</option>
+                  <option value="Loyal Customers">⭐ Loyal Customers (Frequent Buyers)</option>
+                  <option value="Potential Loyalist">🌱 Potential Loyalist (Potensial Setia)</option>
+                  <option value="New Customers">🆕 New Customers (Pelanggan Baru)</option>
+                  <option value="Big Spenders">💎 Big Spenders (Belanja Besar)</option>
+                  <option value="Frequent Low Value">🔄 Frequent Low Value (Sering, Nilai Kecil)</option>
+                  <option value="Need Attention">⚠️ Need Attention (Butuh Perhatian)</option>
+                  <option value="At Risk Customers">🚨 At Risk Customers (Risiko Churn)</option>
+                  <option value="Can't Lose Them">🔥 Can't Lose Them (Wajib Dipertahankan)</option>
+                  <option value="Hibernating">💤 Hibernating (Dormant / Pasif)</option>
                 </select>
               </div>
             </div>
@@ -250,6 +279,7 @@ $(document).ready(function() {
   $('#btn-load-recipients').on('click', function() {
     var cat_id = $('#bc-category').val();
     var source = $('#bc-source').val();
+    var rfm_seg = $('#bc-rfm-segment').val();
 
     if (!cat_id) {
       notify('warning', 'Pilih kategori label H+ terlebih dahulu.');
@@ -257,7 +287,7 @@ $(document).ready(function() {
     }
 
     $.get(_BASE + 'administrator/crm/get_broadcast_recipients_ajax', {
-      category_id: cat_id, order_source: source
+      category_id: cat_id, order_source: source, rfm_segment: rfm_seg
     }, function(res) {
       var r = parseRes(res);
       if (r.success) {

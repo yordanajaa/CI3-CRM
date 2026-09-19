@@ -1,4 +1,28 @@
-<?php /* pelanggan_view.php - Customer Analytics & Repeat Purchase History */ ?>
+<style>
+@keyframes pelangganFadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.small-box {
+  border-radius:12px !important;
+  box-shadow:0 4px 16px rgba(0,0,0,0.04) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: pelangganFadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.small-box:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.08) !important;
+}
+
+.box-primary, .nav-tabs-custom {
+  border-radius: 12px !important;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.04) !important;
+  animation: pelangganFadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.table-responsive { -webkit-overflow-scrolling: touch; }
+</style>
+
 <section class="content-header">
    <h1>Detail &amp; Analisis Pelanggan <small><?= _ent($pelanggan->nama_pelanggan); ?></small></h1>
    <ol class="breadcrumb">

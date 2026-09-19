@@ -28,7 +28,7 @@ class Sales_order extends Admin
 		$this->data['sos']       = $this->model_sales_order->get($filter, $field, $this->limit_page, $offset);
 		$this->data['so_counts'] = $this->model_sales_order->count_all($filter, $field);
 		$this->data['stats']     = $this->model_sales_order->get_stats();
-		$this->data['pelanggans']= $this->db->get('pelanggan')->result();
+		$this->data['pelanggans']= $this->db->order_by('nama_pelanggan', 'ASC')->get('pelanggan')->result();
 		$this->data['gudangs']   = $this->db->get('gudang')->result();
 
 		$config = [
@@ -47,7 +47,7 @@ class Sales_order extends Admin
 	{
 		$this->is_allowed('sales_order_add');
 		$this->data['nomor_baru']  = $this->model_sales_order->generate_nomor();
-		$this->data['pelanggans']  = $this->db->where('status', 'aktif')->get('pelanggan')->result();
+		$this->data['pelanggans']  = $this->db->where('status', 'aktif')->order_by('nama_pelanggan', 'ASC')->get('pelanggan')->result();
 		$this->data['gudangs']     = $this->db->where('status', 'aktif')->get('gudang')->result();
 		$this->data['produks']     = $this->db->select('produk.*, satuan.singkatan as nama_satuan')
 			->join('satuan', 'satuan.id = produk.satuan_id', 'LEFT')
@@ -182,7 +182,7 @@ class Sales_order extends Admin
 			set_message('Hanya data berstatus Draft yang bisa diedit.', 'error');
 			redirect('administrator/sales_order');
 		}
-		$this->data['pelanggans'] = $this->db->where('status', 'aktif')->get('pelanggan')->result();
+		$this->data['pelanggans'] = $this->db->where('status', 'aktif')->order_by('nama_pelanggan', 'ASC')->get('pelanggan')->result();
 		$this->data['gudangs']    = $this->db->where('status', 'aktif')->get('gudang')->result();
 		$this->data['produks']    = $this->db->where('status', 'aktif')->get('produk')->result();
 		$this->data['items']      = $this->model_sales_order->get_items($id);
@@ -438,6 +438,8 @@ class Sales_order extends Admin
 	public function import_shopee()
 	{
 		$this->is_allowed('sales_order_add');
+		ini_set('memory_limit', '512M');
+		set_time_limit(300);
 
 		if (empty($_FILES['file_csv']['name'])) {
 			set_message('Silakan pilih file CSV/Excel Shopee yang akan diimport.', 'error');
@@ -446,46 +448,47 @@ class Sales_order extends Admin
 		}
 
 		$file_path = $_FILES['file_csv']['tmp_name'];
-		$handle = fopen($file_path, 'r');
-		if (!$handle) {
-			set_message('Gagal membaca file CSV.', 'error');
+		require_once FCPATH . 'application/libraries/Excel/PHPExcel/IOFactory.php';
+
+		try {
+			$objPHPExcel = PHPExcel_IOFactory::load($file_path);
+			$sheet = $objPHPExcel->getActiveSheet();
+			$rows = $sheet->toArray(null, true, true, true);
+		} catch (Exception $e) {
+			set_message('Gagal membaca file CSV/Excel Shopee: ' . $e->getMessage(), 'error');
 			redirect('administrator/sales_order');
 			return;
 		}
 
-		// Remove BOM if present
-		$bom = fread($handle, 3);
-		if ($bom !== "\xEF\xBB\xBF") {
-			rewind($handle);
-		}
-
-		$header = fgetcsv($handle, 4000, ",");
-		if (!$header) {
-			set_message('File CSV kosong atau format tidak sesuai.', 'error');
+		if (empty($rows) || count($rows) < 2) {
+			set_message('File CSV/Excel kosong atau format tidak sesuai.', 'error');
 			redirect('administrator/sales_order');
 			return;
 		}
 
-		// Clean header string
-		$header = array_map(function($h) {
-			return trim(preg_replace('/[\x00-\x1F\x7F-\xFF]/', '', $h));
-		}, $header);
+		// Row 1 is header
+		$header_row = $rows[1];
+		$header_map = [];
+		foreach ($header_row as $colLetter => $hText) {
+			if ($hText !== null && $hText !== '') {
+				$clean_h = trim(preg_replace('/[\x00-\x1F\x7F-\xFF]/', '', $hText));
+				$header_map[$colLetter] = $clean_h;
+			}
+		}
 
-		// Helper to search flexible key matching
-		$get_val = function($data, $keys) {
+		$get_val = function($data_row, $keys) use ($header_map) {
 			foreach ($keys as $k) {
-				if (isset($data[$k]) && $data[$k] !== '') return trim($data[$k]);
 				$k_norm = strtolower(preg_replace('/[^a-z0-9]/', '', $k));
-				foreach ($data as $d_key => $d_val) {
-					if (strtolower(preg_replace('/[^a-z0-9]/', '', $d_key)) === $k_norm) {
-						if ($d_val !== '') return trim($d_val);
+				foreach ($header_map as $colLetter => $hName) {
+					if (strtolower(preg_replace('/[^a-z0-9]/', '', $hName)) === $k_norm) {
+						$val = isset($data_row[$colLetter]) ? trim((string)$data_row[$colLetter]) : '';
+						if ($val !== '') return $val;
 					}
 				}
 			}
 			return '';
 		};
 
-		// Get default customer and warehouse
 		$default_pelanggan = $this->db->get_where('pelanggan', ['kode_pelanggan' => 'CUS-MARKETPLACE'])->row() 
 			?: $this->db->get('pelanggan')->row();
 		$default_gudang = $this->db->get_where('gudang', ['status' => 'aktif'])->row();
@@ -495,23 +498,20 @@ class Sales_order extends Admin
 		$success_count = 0;
 		$skipped_count = 0;
 
-		while (($row = fgetcsv($handle, 4000, ",")) !== FALSE) {
-			if (count($row) < 5 || empty(array_filter($row))) continue;
-			$data = array_combine(array_slice($header, 0, count($row)), $row);
-			if (!$data) continue;
+		for ($r = 2; $r <= count($rows); $r++) {
+			$data_row = $rows[$r];
+			if (empty(array_filter($data_row))) continue;
 
-			$no_pesanan = $get_val($data, ['No. Pesanan', 'No Pesanan', 'Nomor Pesanan']);
+			$no_pesanan = $get_val($data_row, ['No. Pesanan', 'No Pesanan', 'Nomor Pesanan']);
 			if (empty($no_pesanan)) continue;
 
-			// Check if order already imported
 			$existing = $this->db->get_where('sales_order', ['no_pesanan' => $no_pesanan])->row();
 			if ($existing) {
 				$skipped_count++;
 				continue;
 			}
 
-			// Map Shopee status to internal status
-			$status_pesanan = $get_val($data, ['Status Pesanan']);
+			$status_pesanan = $get_val($data_row, ['Status Pesanan']);
 			$raw_status = strtolower($status_pesanan);
 			$status = 'draft';
 			if (strpos($raw_status, 'selesai') !== false || strpos($raw_status, 'completed') !== false) {
@@ -522,28 +522,28 @@ class Sales_order extends Admin
 				$status = 'shipped';
 			}
 
-			$tot_bayar_raw = $get_val($data, ['Total Pembayaran', 'Total Harga Produk']);
+			$tot_bayar_raw = $get_val($data_row, ['Total Pembayaran', 'Total Harga Produk']);
 			$total_bayar = (float) str_replace(['.', ',', 'Rp', ' '], '', $tot_bayar_raw);
 			$nomor_so = $this->model_sales_order->generate_nomor();
 
-			$waktu_bayar_raw = $get_val($data, ['Waktu Pembayaran Dilakukan', 'Waktu Pembayaran', 'Waktu Pesanan Dibuat']);
+			$waktu_bayar_raw = $get_val($data_row, ['Waktu Pembayaran Dilakukan', 'Waktu Pembayaran', 'Waktu Pesanan Dibuat']);
 			$waktu_bayar = !empty($waktu_bayar_raw) ? date('Y-m-d H:i:s', strtotime($waktu_bayar_raw)) : date('Y-m-d H:i:s');
 			$tanggal_so = !empty($waktu_bayar_raw) ? date('Y-m-d', strtotime($waktu_bayar_raw)) : date('Y-m-d');
 
-			$username_buyer = $get_val($data, ['Username (Pembeli)', 'Username Pembeli', 'Username']);
-			$nama_penerima  = $get_val($data, ['Nama Penerima']);
-			$no_telp       = $get_val($data, ['No. Telepon', 'No Telepon', 'Notelp']);
-			$alamat        = $get_val($data, ['Alamat Pengiriman']);
-			$kota          = $get_val($data, ['Kota/Kabupaten', 'Kota']);
-			$provinsi      = $get_val($data, ['Provinsi']);
-			$sku_induk     = $get_val($data, ['SKU Induk']);
-			$nama_produk   = $get_val($data, ['Nama Produk']);
-			$sku_ref       = $get_val($data, ['Nomor Referensi SKU']);
-			$variasi       = $get_val($data, ['Nama Variasi']);
-			$no_resi       = $get_val($data, ['No. Resi', 'No Resi']);
-			$opsi_kirim    = $get_val($data, ['Opsi Pengiriman']);
-			$alasan_batal  = $get_val($data, ['Alasan Pembatalan (tambahan kolom)', 'Alasan Pembatalan']);
-			$st_batal      = $get_val($data, ['Status Pembatalan/ Pengembalian', 'Status Pembatalan/Pengembalian']);
+			$username_buyer = $get_val($data_row, ['Username (Pembeli)', 'Username Pembeli', 'Username']);
+			$nama_penerima  = $get_val($data_row, ['Nama Penerima']);
+			$no_telp       = $get_val($data_row, ['No. Telepon', 'No Telepon', 'Notelp']);
+			$alamat        = $get_val($data_row, ['Alamat Pengiriman']);
+			$kota          = $get_val($data_row, ['Kota/Kabupaten', 'Kota']);
+			$provinsi      = $get_val($data_row, ['Provinsi']);
+			$sku_induk     = $get_val($data_row, ['SKU Induk']);
+			$nama_produk   = $get_val($data_row, ['Nama Produk']);
+			$sku_ref       = $get_val($data_row, ['Nomor Referensi SKU']);
+			$variasi       = $get_val($data_row, ['Nama Variasi']);
+			$no_resi       = $get_val($data_row, ['No. Resi', 'No Resi']);
+			$opsi_kirim    = $get_val($data_row, ['Opsi Pengiriman']);
+			$alasan_batal  = $get_val($data_row, ['Alasan Pembatalan (tambahan kolom)', 'Alasan Pembatalan']);
+			$st_batal      = $get_val($data_row, ['Status Pembatalan/ Pengembalian', 'Status Pembatalan/Pengembalian']);
 
 			$so_data = [
 				'nomor_so'                    => $nomor_so,
@@ -572,7 +572,7 @@ class Sales_order extends Admin
 				'nama_variasi'                => $variasi,
 				'subtotal'                    => $total_bayar,
 				'total'                       => $total_bayar,
-				'catatan'                     => 'Import Shopee CSV - Buyer: ' . $username_buyer,
+				'catatan'                     => 'Import Shopee Excel - Buyer: ' . $username_buyer,
 				'created_by'                  => get_user_data('username'),
 				'created_at'                  => date('Y-m-d H:i:s'),
 			];
@@ -593,10 +593,10 @@ class Sales_order extends Admin
 					$prod = $this->db->get('produk')->row();
 				}
 
-				$qty_raw = $get_val($data, ['Jumlah', 'Jumlah Produk di Pesan']);
+				$qty_raw = $get_val($data_row, ['Jumlah', 'Jumlah Produk di Pesan']);
 				$qty = (float) str_replace(['.', ','], '', $qty_raw ?: 1);
 
-				$harga_raw = $get_val($data, ['Harga Setelah Diskon', 'Harga Awal']);
+				$harga_raw = $get_val($data_row, ['Harga Setelah Diskon', 'Harga Awal']);
 				$harga = (float) str_replace(['.', ',', 'Rp', ' '], '', $harga_raw);
 				if ($harga <= 0 && $qty > 0) {
 					$harga = $total_bayar / $qty;
@@ -618,8 +618,6 @@ class Sales_order extends Admin
 			}
 		}
 
-		fclose($handle);
-
 		if ($success_count == 0 && $skipped_count > 0) {
 			set_message("Gagal Import! Data pesanan sudah ada di sistem dan tidak bisa dimasukkan lagi ({$skipped_count} pesanan duplikat ditolak).", 'error');
 		} elseif ($success_count > 0 && $skipped_count > 0) {
@@ -635,6 +633,8 @@ class Sales_order extends Admin
 	public function import_tokopedia()
 	{
 		$this->is_allowed('sales_order_add');
+		ini_set('memory_limit', '512M');
+		set_time_limit(300);
 
 		if (empty($_FILES['file_csv']['name'])) {
 			set_message('Silakan pilih file CSV/Excel Tokopedia yang akan diimport.', 'error');
@@ -643,28 +643,45 @@ class Sales_order extends Admin
 		}
 
 		$file_path = $_FILES['file_csv']['tmp_name'];
-		$handle = fopen($file_path, 'r');
-		if (!$handle) {
-			set_message('Gagal membaca file CSV.', 'error');
+		require_once FCPATH . 'application/libraries/Excel/PHPExcel/IOFactory.php';
+
+		try {
+			$objPHPExcel = PHPExcel_IOFactory::load($file_path);
+			$sheet = $objPHPExcel->getActiveSheet();
+			$rows = $sheet->toArray(null, true, true, true);
+		} catch (Exception $e) {
+			set_message('Gagal membaca file CSV/Excel Tokopedia: ' . $e->getMessage(), 'error');
 			redirect('administrator/sales_order');
 			return;
 		}
 
-		$bom = fread($handle, 3);
-		if ($bom !== "\xEF\xBB\xBF") {
-			rewind($handle);
-		}
-
-		$header = fgetcsv($handle, 4000, ",");
-		if (!$header) {
-			set_message('File CSV kosong atau format tidak sesuai.', 'error');
+		if (empty($rows) || count($rows) < 2) {
+			set_message('File CSV/Excel kosong atau format tidak sesuai.', 'error');
 			redirect('administrator/sales_order');
 			return;
 		}
 
-		$header = array_map(function($h) {
-			return trim(preg_replace('/[\x00-\x1F\x7F-\xFF]/', '', $h));
-		}, $header);
+		$header_row = $rows[1];
+		$header_map = [];
+		foreach ($header_row as $colLetter => $hText) {
+			if ($hText !== null && $hText !== '') {
+				$clean_h = trim(preg_replace('/[\x00-\x1F\x7F-\xFF]/', '', $hText));
+				$header_map[$colLetter] = $clean_h;
+			}
+		}
+
+		$get_val = function($data_row, $keys) use ($header_map) {
+			foreach ($keys as $k) {
+				$k_norm = strtolower(preg_replace('/[^a-z0-9]/', '', $k));
+				foreach ($header_map as $colLetter => $hName) {
+					if (strtolower(preg_replace('/[^a-z0-9]/', '', $hName)) === $k_norm) {
+						$val = isset($data_row[$colLetter]) ? trim((string)$data_row[$colLetter]) : '';
+						if ($val !== '') return $val;
+					}
+				}
+			}
+			return '';
+		};
 
 		$default_pelanggan = $this->db->get_where('pelanggan', ['kode_pelanggan' => 'CUS-MARKETPLACE'])->row() 
 			?: $this->db->get('pelanggan')->row();
@@ -675,12 +692,11 @@ class Sales_order extends Admin
 		$success_count = 0;
 		$skipped_count = 0;
 
-		while (($row = fgetcsv($handle, 4000, ",")) !== FALSE) {
-			if (count($row) < 4 || empty(array_filter($row))) continue;
-			$data = array_combine(array_slice($header, 0, count($row)), $row);
-			if (!$data) continue;
+		for ($r = 2; $r <= count($rows); $r++) {
+			$data_row = $rows[$r];
+			if (empty(array_filter($data_row))) continue;
 
-			$no_pesanan = trim($data['No. Pesanan'] ?? '');
+			$no_pesanan = $get_val($data_row, ['No. Pesanan', 'No Pesanan', 'Nomor Pesanan']);
 			if (empty($no_pesanan)) continue;
 
 			$existing = $this->db->get_where('sales_order', ['no_pesanan' => $no_pesanan])->row();
@@ -689,7 +705,8 @@ class Sales_order extends Admin
 				continue;
 			}
 
-			$raw_status = strtolower(trim($data['Status Pesanan'] ?? ''));
+			$status_pesanan = $get_val($data_row, ['Status Pesanan']);
+			$raw_status = strtolower($status_pesanan);
 			$status = 'draft';
 			if (strpos($raw_status, 'selesai') !== false) {
 				$status = 'delivered';
@@ -699,11 +716,13 @@ class Sales_order extends Admin
 				$status = 'shipped';
 			}
 
-			$total_bayar = (float) str_replace(['.', ',', 'Rp', ' '], '', $data['Total Pembayaran'] ?? $data['Total Harga Produk'] ?? 0);
+			$tot_bayar_raw = $get_val($data_row, ['Total Pembayaran', 'Total Harga Produk']);
+			$total_bayar = (float) str_replace(['.', ',', 'Rp', ' '], '', $tot_bayar_raw);
 			$nomor_so = $this->model_sales_order->generate_nomor();
 
-			$waktu_bayar = !empty($data['Waktu Pembayaran']) ? date('Y-m-d H:i:s', strtotime($data['Waktu Pembayaran'])) : date('Y-m-d H:i:s');
-			$tanggal_so = !empty($data['Waktu Pembayaran']) ? date('Y-m-d', strtotime($data['Waktu Pembayaran'])) : date('Y-m-d');
+			$waktu_bayar_raw = $get_val($data_row, ['Waktu Pembayaran']);
+			$waktu_bayar = !empty($waktu_bayar_raw) ? date('Y-m-d H:i:s', strtotime($waktu_bayar_raw)) : date('Y-m-d H:i:s');
+			$tanggal_so = !empty($waktu_bayar_raw) ? date('Y-m-d', strtotime($waktu_bayar_raw)) : date('Y-m-d');
 
 			$so_data = [
 				'nomor_so'            => $nomor_so,
@@ -713,22 +732,22 @@ class Sales_order extends Admin
 				'gudang_id'           => $gudang_id,
 				'tanggal_so'          => $tanggal_so,
 				'status'              => $status,
-				'status_pesanan'      => $data['Status Pesanan'] ?? '',
-				'nomor_resi'          => $data['No. Resi'] ?? '',
-				'kurir_ekspedisi'     => $data['Kurir'] ?? '',
+				'status_pesanan'      => $status_pesanan,
+				'nomor_resi'          => $get_val($data_row, ['No. Resi', 'No Resi']),
+				'kurir_ekspedisi'     => $get_val($data_row, ['Kurir']),
 				'waktu_pembayaran'    => $waktu_bayar,
-				'username_pembeli'    => $data['Username Pembeli'] ?? '',
-				'nama_penerima'       => $data['Nama Penerima'] ?? '',
-				'no_telepon'          => $data['No. Telepon'] ?? '',
-				'alamat_pengiriman'   => $data['Alamat Pengiriman'] ?? '',
-				'kota_kabupaten'      => $data['Kota/Kabupaten'] ?? '',
-				'provinsi'            => $data['Provinsi'] ?? '',
-				'sku_induk'           => $data['SKU Induk'] ?? '',
-				'nama_produk_marketplace' => $data['Nama Produk'] ?? '',
-				'nama_variasi'        => $data['Nama Variasi'] ?? '',
+				'username_pembeli'    => $get_val($data_row, ['Username Pembeli', 'Username']),
+				'nama_penerima'       => $get_val($data_row, ['Nama Penerima']),
+				'no_telepon'          => $get_val($data_row, ['No. Telepon', 'No Telepon']),
+				'alamat_pengiriman'   => $get_val($data_row, ['Alamat Pengiriman']),
+				'kota_kabupaten'      => $get_val($data_row, ['Kota/Kabupaten', 'Kota']),
+				'provinsi'            => $get_val($data_row, ['Provinsi']),
+				'sku_induk'           => $get_val($data_row, ['SKU Induk']),
+				'nama_produk_marketplace' => $get_val($data_row, ['Nama Produk']),
+				'nama_variasi'        => $get_val($data_row, ['Nama Variasi']),
 				'subtotal'            => $total_bayar,
 				'total'               => $total_bayar,
-				'catatan'             => 'Import Tokopedia CSV - Buyer: ' . ($data['Username Pembeli'] ?? ''),
+				'catatan'             => 'Import Tokopedia Excel - Buyer: ' . $get_val($data_row, ['Username Pembeli', 'Username']),
 				'created_by'          => get_user_data('username'),
 				'created_at'          => date('Y-m-d H:i:s'),
 			];
@@ -736,8 +755,8 @@ class Sales_order extends Admin
 			$so_id = $this->model_sales_order->store($so_data);
 
 			if ($so_id) {
-				$sku = trim($data['SKU Induk'] ?? '');
-				$nama_prod = trim($data['Nama Produk'] ?? '');
+				$sku = trim($get_val($data_row, ['SKU Induk']));
+				$nama_prod = trim($get_val($data_row, ['Nama Produk']));
 				$prod = null;
 
 				if ($sku) {
@@ -750,8 +769,8 @@ class Sales_order extends Admin
 					$prod = $this->db->get('produk')->row();
 				}
 
-				$qty = (float) str_replace(['.', ','], '', $data['Jumlah'] ?? 1);
-				$harga = (float) str_replace(['.', ',', 'Rp', ' '], '', $data['Harga Satuan'] ?? 0);
+				$qty = (float) str_replace(['.', ','], '', $get_val($data_row, ['Jumlah']) ?: 1);
+				$harga = (float) str_replace(['.', ',', 'Rp', ' '], '', $get_val($data_row, ['Harga Satuan']) ?: 0);
 				if ($harga <= 0 && $qty > 0) {
 					$harga = $total_bayar / $qty;
 				}
@@ -771,8 +790,6 @@ class Sales_order extends Admin
 				$success_count++;
 			}
 		}
-
-		fclose($handle);
 
 		if ($success_count == 0 && $skipped_count > 0) {
 			set_message("Gagal Import! Data pesanan sudah ada di sistem dan tidak bisa dimasukkan lagi ({$skipped_count} pesanan duplikat ditolak).", 'error');
