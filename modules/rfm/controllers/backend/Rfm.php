@@ -215,8 +215,23 @@ class Rfm extends Admin
 
 	public function import_excel()
 	{
-		ini_set('memory_limit', '512M');
-		set_time_limit(300);
+		@ini_set('memory_limit', '512M');
+		@set_time_limit(300);
+
+		if (isset($_FILES['file_excel']['error']) && $_FILES['file_excel']['error'] !== UPLOAD_ERR_OK) {
+			$err_code = $_FILES['file_excel']['error'];
+			$err_msg = 'Gagal mengunggah file. ';
+			if ($err_code === UPLOAD_ERR_INI_SIZE || $err_code === UPLOAD_ERR_FORM_SIZE) {
+				$err_msg .= 'Ukuran file melebihi batas upload_max_filesize di server hosting.';
+			} elseif ($err_code === UPLOAD_ERR_NO_FILE) {
+				$err_msg .= 'Silakan pilih file Excel (.xlsx, .xls) atau CSV yang akan diimport.';
+			} else {
+				$err_msg .= 'Kode error upload: ' . $err_code;
+			}
+			set_message($err_msg, 'error');
+			redirect('administrator/rfm');
+			return;
+		}
 
 		if (empty($_FILES['file_excel']['name'])) {
 			set_message('Silakan pilih file Excel (.xlsx, .xls) atau CSV yang akan diimport.', 'error');
@@ -234,31 +249,58 @@ class Rfm extends Admin
 			return;
 		}
 
-		require_once FCPATH . 'application/libraries/Excel/PHPExcel/IOFactory.php';
+		$rows = [];
 
 		try {
 			if ($ext === 'csv') {
-				$objReader = PHPExcel_IOFactory::createReader('CSV');
+				// Pure native PHP CSV parser - fast, lightweight, 0 MB overhead, works on all hosting environments without PHPZip/PHPExcel dependencies
 				$handle = fopen($file_tmp, 'r');
-				$first_line = fgets($handle);
-				fclose($handle);
+				if ($handle !== false) {
+					// Detect UTF-8 BOM
+					$bom = fread($handle, 3);
+					if ($bom !== "\xEF\xBB\xBF") {
+						rewind($handle);
+					}
+					
+					// Detect Delimiter (; or \t or ,)
+					$first_line = fgets($handle);
+					if ($bom !== "\xEF\xBB\xBF") {
+						rewind($handle);
+					} else {
+						fseek($handle, 3);
+					}
 
-				if (strpos($first_line, ';') !== false) {
-					$objReader->setDelimiter(';');
-				} elseif (strpos($first_line, "\t") !== false) {
-					$objReader->setDelimiter("\t");
-				} else {
-					$objReader->setDelimiter(',');
+					$delimiter = ';';
+					if (strpos($first_line, ';') !== false) {
+						$delimiter = ';';
+					} elseif (strpos($first_line, "\t") !== false) {
+						$delimiter = "\t";
+					} else {
+						$delimiter = ',';
+					}
+
+					$r_idx = 1;
+					while (($data = fgetcsv($handle, 0, $delimiter)) !== false) {
+						if (empty($data) || (count($data) === 1 && trim((string)$data[0]) === '')) continue;
+						$row_dict = [];
+						$col_letter = 'A';
+						foreach ($data as $cell) {
+							$row_dict[$col_letter] = trim((string)$cell);
+							$col_letter++;
+						}
+						$rows[$r_idx] = $row_dict;
+						$r_idx++;
+					}
+					fclose($handle);
 				}
-				$objPHPExcel = $objReader->load($file_tmp);
 			} else {
+				require_once FCPATH . 'application/libraries/Excel/PHPExcel/IOFactory.php';
 				$objPHPExcel = PHPExcel_IOFactory::load($file_tmp);
+				$sheet = $objPHPExcel->getActiveSheet();
+				$rows = $sheet->toArray(null, true, true, true);
 			}
-
-			$sheet = $objPHPExcel->getActiveSheet();
-			$rows = $sheet->toArray(null, true, true, true);
 		} catch (Exception $e) {
-			set_message('Gagal membaca file Excel: ' . $e->getMessage(), 'error');
+			set_message('Gagal membaca file data: ' . $e->getMessage(), 'error');
 			redirect('administrator/rfm');
 			return;
 		}
