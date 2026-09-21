@@ -422,21 +422,31 @@ $score_colors = [1 => '#ef4444', 2 => '#f97316', 3 => '#eab308', 4 => '#22c55e',
       </thead>
       <tbody>
         <?php 
-        // Filter product_rfm to only show the selected product if filter is active
+        // Always display ALL products bought by this customer.
+        // If a product filter is active, highlight that product at the top.
         $display_products = $product_rfm;
-        if (!empty($product_filter) && !empty($product_rfm)) {
-            $display_products = array_filter($product_rfm, function($pr) use ($product_filter) {
-                return (isset($pr->nama_produk) && $pr->nama_produk === $product_filter);
+        if (!empty($product_filter) && !empty($display_products) && is_array($display_products)) {
+            usort($display_products, function($a, $b) use ($product_filter) {
+                $is_a = (isset($a->nama_produk) && $a->nama_produk === $product_filter) ? 1 : 0;
+                $is_b = (isset($b->nama_produk) && $b->nama_produk === $product_filter) ? 1 : 0;
+                return $is_b - $is_a;
             });
         }
         ?>
         <?php if (empty($display_products)): ?>
-        <tr><td colspan="8" class="text-center" style="padding:30px !important; color:#94a3b8;"><i class="fa fa-info-circle" style="font-size:20px; display:block; margin-bottom:6px;"></i>Belum ada data transaksi produk untuk customer ini</td></tr>
+        <tr><td colspan="9" class="text-center" style="padding:30px !important; color:#94a3b8;"><i class="fa fa-info-circle" style="font-size:20px; display:block; margin-bottom:6px;"></i>Belum ada data transaksi produk untuk customer ini</td></tr>
         <?php else: ?>
-        <?php $pno = 1; foreach ($display_products as $pr): ?>
-        <tr<?= (!empty($product_filter) && isset($pr->nama_produk) && $pr->nama_produk === $product_filter) ? ' style="background:#eef2ff;"' : ''; ?>>
+        <?php $pno = 1; foreach ($display_products as $pr): 
+          $is_active_prod = (!empty($product_filter) && isset($pr->nama_produk) && $pr->nama_produk === $product_filter);
+        ?>
+        <tr<?= $is_active_prod ? ' style="background:#eef2ff; border-left:4px solid #6366f1;"' : ''; ?>>
           <td><?= $pno++; ?></td>
-          <td><strong style="color:#0f172a;"><?= htmlspecialchars($pr->nama_produk); ?></strong></td>
+          <td>
+            <strong style="color:#0f172a;"><?= htmlspecialchars($pr->nama_produk); ?></strong>
+            <?php if ($is_active_prod): ?>
+              <span class="label" style="background:#4338ca; color:#fff; font-size:10px; margin-left:6px; padding:2px 8px; border-radius:10px;"><i class="fa fa-check-circle"></i> Filter Aktif</span>
+            <?php endif; ?>
+          </td>
           <td><code style="font-size:11px; background:#f1f5f9; padding:2px 6px; border-radius:4px; color:#475569; white-space:nowrap;"><?= htmlspecialchars($pr->kode_produk ?? '-'); ?></code></td>
           <td style="white-space:nowrap;"><?= $pr->last_bought_date ? date('d M Y', strtotime($pr->last_bought_date)) : '-'; ?></td>
           <td>
@@ -449,6 +459,13 @@ $score_colors = [1 => '#ef4444', 2 => '#f97316', 3 => '#eab308', 4 => '#22c55e',
           <td><strong><?= $pr->order_count; ?>x</strong></td>
           <td><?= number_format($pr->total_qty, 0, ',', '.'); ?></td>
           <td><strong style="color:#059669; white-space:nowrap;">Rp <?= number_format($pr->total_spend, 0, ',', '.'); ?></strong></td>
+          <td>
+            <?php if ($is_active_prod): ?>
+              <a href="<?= site_url('administrator/rfm/customer_detail?phone=' . urlencode($phone)); ?>" class="btn btn-xs" style="background:#e2e8f0; color:#334155; font-weight:600; font-size:11px; border-radius:6px;" title="Reset Filter ke Semua Produk"><i class="fa fa-times"></i> Reset Filter</a>
+            <?php else: ?>
+              <a href="<?= site_url('administrator/rfm/customer_detail?phone=' . urlencode($phone) . '&product=' . urlencode($pr->nama_produk)); ?>" class="btn btn-xs" style="background:#6366f1; color:#fff; font-weight:600; font-size:11px; border-radius:6px;" title="Filter skor RFM khusus produk ini"><i class="fa fa-filter"></i> Filter Produk Ini</a>
+            <?php endif; ?>
+          </td>
         </tr>
         <?php endforeach; ?>
         <?php endif; ?>
