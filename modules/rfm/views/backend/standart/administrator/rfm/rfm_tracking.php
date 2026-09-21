@@ -135,9 +135,11 @@
           </label>
           <select name="product" class="form-control select2" style="width:100%; border-radius:8px; height:38px;">
             <option value="">-- Semua Produk (Keseluruhan) --</option>
-            <?php foreach ($products_list as $prod): ?>
-            <option value="<?= htmlspecialchars($prod->item_name); ?>" <?= (!empty($product_filter) && $product_filter === $prod->item_name) ? 'selected' : ''; ?>>
-              <?= htmlspecialchars($prod->item_name); ?>
+            <?php foreach ($products_list as $prod): 
+              $p_name = is_object($prod) ? $prod->item_name : (is_array($prod) ? ($prod['item_name'] ?? '') : (string)$prod);
+            ?>
+            <option value="<?= htmlspecialchars($p_name); ?>" <?= (!empty($product_filter) && $product_filter === $p_name) ? 'selected' : ''; ?>>
+              <?= htmlspecialchars($p_name); ?>
             </option>
             <?php endforeach; ?>
           </select>
