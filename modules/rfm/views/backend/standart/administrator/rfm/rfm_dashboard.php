@@ -397,34 +397,49 @@
   </div>
 </div>
 
-<!-- ===== PRODUCT SELECTOR FILTER BAR ===== -->
+<!-- ===== PRODUCT & PERIODE FILTER BAR ===== -->
 <div class="section-card" style="margin-bottom:20px; padding:16px 20px; background:#fff; border:1px solid #e0e7ff; border-left:4px solid #6366f1;">
   <form method="GET" action="<?= site_url('administrator/rfm/dashboard'); ?>" id="form-product-filter" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
-    <div style="display:flex; align-items:center; gap:12px; flex:1; min-width:280px;">
+    <div style="display:flex; align-items:center; gap:16px; flex:1; min-width:320px; flex-wrap:wrap;">
       <i class="fa fa-filter" style="color:#6366f1; font-size:18px;"></i>
-      <label for="product-select" style="margin:0; font-weight:700; color:#1e1b4b; font-size:13.5px; white-space:nowrap;">Filter RFM Per Produk:</label>
-      <select name="product" id="product-select" class="form-control" style="border-radius:8px; border:1px solid #cbd5e1; font-size:13px; font-weight:600; height:38px; max-width:420px;" onchange="document.getElementById('form-product-filter').submit();">
-         <option value="">-- Pilih Produk untuk Analisis RFM --</option>
-        <?php if (!empty($products_list)): ?>
-          <?php foreach ($products_list as $prod): 
-            $p_name = !empty($prod->item_name) ? $prod->item_name : (!empty($prod->nama_produk) ? $prod->nama_produk : '');
-            if (empty($p_name)) continue;
-          ?>
-            <option value="<?= htmlspecialchars($p_name); ?>" <?= ($product_filter === $p_name) ? 'selected' : ''; ?>>
-              <?= htmlspecialchars($p_name); ?>
-            </option>
-          <?php endforeach; ?>
-        <?php endif; ?>
-      </select>
+      
+      <!-- Filter Produk -->
+      <div style="display:flex; align-items:center; gap:6px;">
+        <label for="product-select" style="margin:0; font-weight:700; color:#1e1b4b; font-size:13px; white-space:nowrap;">Produk:</label>
+        <select name="product" id="product-select" class="form-control" style="border-radius:8px; border:1px solid #cbd5e1; font-size:12.5px; font-weight:600; height:38px; min-width:240px; max-width:360px;" onchange="document.getElementById('form-product-filter').submit();">
+           <option value="">-- Semua Produk --</option>
+          <?php if (!empty($products_list)): ?>
+            <?php foreach ($products_list as $prod): 
+              $p_name = !empty($prod->item_name) ? $prod->item_name : (!empty($prod->nama_produk) ? $prod->nama_produk : '');
+              if (empty($p_name)) continue;
+            ?>
+              <option value="<?= htmlspecialchars($p_name); ?>" <?= ($product_filter === $p_name) ? 'selected' : ''; ?>>
+                <?= htmlspecialchars($p_name); ?>
+              </option>
+            <?php endforeach; ?>
+          <?php endif; ?>
+        </select>
+      </div>
+
+      <!-- Filter Periode Bulan -->
+      <div style="display:flex; align-items:center; gap:6px;">
+        <label for="period-select" style="margin:0; font-weight:700; color:#1e1b4b; font-size:13px; white-space:nowrap;">Periode / Bulan:</label>
+        <select name="period" id="period-select" class="form-control" style="border-radius:8px; border:1px solid #cbd5e1; font-size:12.5px; font-weight:600; height:38px; min-width:180px;" onchange="document.getElementById('form-product-filter').submit();">
+           <option value="">-- Semua Periode Bulan --</option>
+          <?php if (!empty($months_list)): ?>
+            <?php foreach ($months_list as $m): ?>
+              <option value="<?= htmlspecialchars($m->ym_val); ?>" <?= (($period_filter ?? '') === $m->ym_val) ? 'selected' : ''; ?>>
+                📅 <?= htmlspecialchars($m->ym_label); ?>
+              </option>
+            <?php endforeach; ?>
+          <?php endif; ?>
+        </select>
+      </div>
     </div>
+
     <div style="display:flex; align-items:center; gap:8px;">
-      <?php if (!empty($product_filter)): ?>
-        <span class="label" style="background:#e0e7ff; color:#3730a3; font-size:12px; padding:7px 12px; border-radius:20px; font-weight:700;">
-          <i class="fa fa-tag"></i> Selected: <?= htmlspecialchars($product_filter); ?>
-        </span>
+      <?php if (!empty($product_filter) || !empty($period_filter)): ?>
         <a href="<?= site_url('administrator/rfm/dashboard'); ?>" class="btn btn-sm btn-default" style="border-radius:8px; font-weight:600;"><i class="fa fa-times"></i> Reset Filter</a>
-      <?php else: ?>
-        <span class="text-muted" style="font-size:12px;"><i class="fa fa-info-circle"></i> Pilih produk untuk melihat RFM spesifik item tersebut</span>
       <?php endif; ?>
     </div>
   </form>
@@ -502,6 +517,89 @@
           </div>
         </div>
         <?php endforeach; ?>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MONTHLY RFM TRACKING & TREND PER PRODUK ===== -->
+<div class="row" style="margin-top:16px; margin-bottom:16px;">
+  <div class="col-md-12">
+    <div class="section-card" style="border-left:4px solid #10b981;">
+      <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
+        <span>
+          <i class="fa fa-line-chart" style="color:#10b981;"></i> 
+          Tracking & Trend RFM Bulanan <?= !empty($product_filter) ? 'Produk: <strong style="color:#065f46; background:#ecfdf5; padding:3px 10px; border-radius:6px; font-size:14px;">' . htmlspecialchars($product_filter) . '</strong>' : '(Semua Produk)'; ?>
+          <?php if (!empty($period_filter)): ?>
+          <span class="label" style="background:#e0e7ff; color:#3730a3; font-size:12px; margin-left:6px; padding:4px 10px; border-radius:10px;"><i class="fa fa-calendar"></i> Periode: <?= htmlspecialchars($period_filter); ?></span>
+          <?php endif; ?>
+        </span>
+        <span class="text-muted" style="font-size:12px; font-weight:600;"><i class="fa fa-info-circle"></i> Rekapitulasi per bulan berdasarkan aktivitas transaksi real-time</span>
+      </div>
+
+      <div class="table-responsive" style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+        <table class="table table-hover table-striped seg-def-table" style="margin-bottom:0; width:100%; min-width:850px;">
+          <thead>
+            <tr style="background:#f8fafc;">
+              <th style="width:4%;">#</th>
+              <th style="min-width:140px;">Bulan / Periode</th>
+              <th style="text-align:center; min-width:120px;">Pembeli Unik</th>
+              <th style="text-align:center; min-width:120px;">Jumlah Order (F)</th>
+              <th style="text-align:center; min-width:110px;">Total Qty</th>
+              <th style="text-align:right; min-width:160px;">Total Omset (Monetary)</th>
+              <th style="text-align:center; min-width:140px;">Rata2 Recency (R)</th>
+              <th style="text-align:center; min-width:120px;">Aksi / Filter</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php if (empty($monthly_tracking)): ?>
+            <tr><td colspan="8" class="text-center" style="padding:30px !important; color:#94a3b8;"><i class="fa fa-calendar-o" style="font-size:24px; display:block; margin-bottom:6px;"></i>Belum ada data transaksi bulanan untuk periode/produk ini</td></tr>
+            <?php else: ?>
+            <?php $m_no = 1; foreach ($monthly_tracking as $mt): 
+              $is_active_m = (!empty($period_filter) && $period_filter === $mt->ym_period);
+            ?>
+            <tr<?= $is_active_m ? ' style="background:#ecfdf5; border-left:4px solid #10b981;"' : ''; ?>>
+              <td><?= $m_no++; ?></td>
+              <td>
+                <strong style="color:#0f172a; font-size:13.5px;"><i class="fa fa-calendar" style="color:#6366f1; margin-right:4px;"></i> <?= htmlspecialchars($mt->period_label); ?></strong>
+                <code style="font-size:10px; background:#f1f5f9; padding:2px 5px; border-radius:4px; margin-left:4px; color:#475569;"><?= htmlspecialchars($mt->ym_period); ?></code>
+                <?php if ($is_active_m): ?>
+                <span class="label" style="background:#059669; color:#fff; font-size:10px; margin-left:4px; padding:2px 6px; border-radius:8px;">Aktif</span>
+                <?php endif; ?>
+              </td>
+              <td style="text-align:center;">
+                <span class="label" style="background:#e0e7ff; color:#3730a3; font-size:12px; font-weight:800; padding:5px 10px; border-radius:6px;">
+                  <i class="fa fa-user"></i> <?= number_format($mt->unique_buyers); ?> Customer
+                </span>
+              </td>
+              <td style="text-align:center;">
+                <strong style="color:#0f172a; font-size:13px;"><?= number_format($mt->total_orders); ?>x</strong> Transaksi
+              </td>
+              <td style="text-align:center;">
+                <span class="label" style="background:#f1f5f9; color:#334155; font-size:11.5px; font-weight:700; padding:4px 8px; border-radius:6px;">
+                  <?= number_format($mt->total_qty); ?> pcs
+                </span>
+              </td>
+              <td style="text-align:right;">
+                <strong style="color:#059669; font-size:14px;">Rp <?= number_format($mt->total_spend, 0, ',', '.'); ?></strong>
+              </td>
+              <td style="text-align:center;">
+                <span class="label" style="background:<?= ($mt->avg_recency_days <= 30 ? '#dcfce7; color:#166534;' : ($mt->avg_recency_days <= 90 ? '#fef3c7; color:#92400e;' : '#fee2e2; color:#991b1b;')); ?> font-size:11.5px; padding:4px 8px; border-radius:6px; font-weight:600;">
+                  ~<?= $mt->avg_recency_days; ?> hari
+                </span>
+              </td>
+              <td style="text-align:center;">
+                <?php if ($is_active_m): ?>
+                  <a href="<?= site_url('administrator/rfm/dashboard' . (!empty($product_filter) ? '?product=' . urlencode($product_filter) : '')); ?>" class="btn btn-xs btn-default" style="border-radius:6px; font-size:11px; font-weight:600;" title="Reset Filter Bulan"><i class="fa fa-times"></i> Reset</a>
+                <?php else: ?>
+                  <a href="<?= site_url('administrator/rfm/dashboard?period=' . urlencode($mt->ym_period) . (!empty($product_filter) ? '&product=' . urlencode($product_filter) : '')); ?>" class="btn btn-xs" style="background:#10b981; color:#fff; border-radius:6px; font-size:11px; font-weight:700; padding:3px 8px;" title="Filter khusus bulan ini"><i class="fa fa-filter"></i> Filter Bulan</a>
+                <?php endif; ?>
+              </td>
+            </tr>
+            <?php endforeach; ?>
+            <?php endif; ?>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>

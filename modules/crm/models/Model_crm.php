@@ -956,6 +956,86 @@ class Model_crm extends CI_Model
 	}
 
 	/**
+	 * Get list of available distinct months/periods for filter dropdowns
+	 */
+	public function get_distinct_months_list()
+	{
+		$sql = "
+			SELECT DISTINCT 
+				DATE_FORMAT(tanggal_so, '%Y-%m') as ym_val,
+				DATE_FORMAT(tanggal_so, '%M %Y') as ym_label
+			FROM (
+				SELECT tanggal_so FROM sales_order WHERE tanggal_so IS NOT NULL AND tanggal_so != '0000-00-00'
+				UNION ALL
+				SELECT tanggal_so FROM penjualan_marketplace WHERE tanggal_so IS NOT NULL AND tanggal_so != '0000-00-00'
+			) d
+			ORDER BY ym_val DESC
+		";
+		return $this->db->query($sql)->result();
+	}
+
+	/**
+	 * Get monthly RFM tracking & trend data per product
+	 */
+	public function get_monthly_rfm_tracking_per_product($product_filter = '', $period_filter = '')
+	{
+		$where_conds = [];
+		if (!empty($product_filter)) {
+			$pf_esc = $this->db->escape_like_str($product_filter);
+			$where_conds[] = "(t_data.nama_produk LIKE '%{$pf_esc}%')";
+		}
+		if (!empty($period_filter)) {
+			$period_esc = $this->db->escape_str($period_filter);
+			$where_conds[] = "DATE_FORMAT(t_data.tanggal_so, '%Y-%m') = '{$period_esc}'";
+		}
+
+		$where_sql = !empty($where_conds) ? "WHERE " . implode(' AND ', $where_conds) : "";
+
+		$sql = "
+			SELECT 
+				DATE_FORMAT(t_data.tanggal_so, '%Y-%m') as ym_period,
+				DATE_FORMAT(t_data.tanggal_so, '%M %Y') as period_label,
+				COUNT(DISTINCT t_data.no_telepon) as unique_buyers,
+				COUNT(DISTINCT t_data.order_id) as total_orders,
+				SUM(t_data.qty) as total_qty,
+				SUM(t_data.subtotal) as total_spend,
+				ROUND(AVG(DATEDIFF(CURRENT_DATE(), t_data.tanggal_so)), 0) as avg_recency_days
+			FROM (
+				SELECT 
+					so.no_telepon,
+					so.tanggal_so,
+					CONCAT('so_', so.id) as order_id,
+					soi.qty,
+					soi.subtotal,
+					COALESCE(p.nama_produk, soi.catatan, 'Produk SO') as nama_produk
+				FROM sales_order_item soi
+				JOIN sales_order so ON soi.so_id = so.id
+				LEFT JOIN produk p ON soi.produk_id = p.id
+				WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
+
+				UNION ALL
+
+				SELECT 
+					pm.no_telepon,
+					pm.tanggal_so,
+					CONCAT('pm_', pm.id) as order_id,
+					pmi.qty,
+					pmi.subtotal,
+					COALESCE(p2.nama_produk, pmi.catatan, pm.nama_produk_marketplace, 'Produk Marketplace') as nama_produk
+				FROM penjualan_marketplace_item pmi
+				JOIN penjualan_marketplace pm ON pmi.penjualan_marketplace_id = pm.id
+				LEFT JOIN produk p2 ON pmi.produk_id = p2.id
+				WHERE pm.no_telepon IS NOT NULL AND pm.no_telepon != ''
+			) t_data
+			{$where_sql}
+			GROUP BY ym_period, period_label
+			ORDER BY ym_period DESC
+		";
+
+		return $this->db->query($sql)->result();
+	}
+
+	/**
 	 * Get aggregated RFM analysis PER PRODUCT across all customers
 	 */
 	public function get_product_rfm_list($filter = '', $limit = 50, $offset = 0)

@@ -19,13 +19,17 @@ class Rfm extends Admin
 	public function dashboard()
 	{
 		$product_filter = $this->input->get('product');
+		$period_filter = $this->input->get('period');
 
 		$this->data['rfm_distribution'] = $this->model_rfm->get_rfm_dashboard_distribution($product_filter);
 		$this->data['thresholds'] = $this->model_rfm->get_threshold_display($product_filter);
 		$this->data['segments'] = $this->model_rfm->get_segment_definitions();
 		$this->data['product_rfm_list'] = $this->model_rfm->get_product_rfm_list('', 25, 0);
 		$this->data['products_list'] = $this->model_rfm->get_all_products_list();
+		$this->data['months_list'] = $this->model_rfm->get_distinct_months_list();
+		$this->data['monthly_tracking'] = $this->model_rfm->get_monthly_rfm_tracking_per_product($product_filter, $period_filter);
 		$this->data['product_filter'] = $product_filter;
+		$this->data['period_filter'] = $period_filter;
 
 		// Quick stats per product (if filtered) or overall
 		$result = $this->model_rfm->get_customers('', 10000, 0, '', $product_filter);
