@@ -149,9 +149,12 @@
           </label>
           <select name="period" class="form-control" style="width:100%; border-radius:8px; height:38px;">
             <option value="">-- Semua Periode Bulanan --</option>
-            <?php foreach ($months_list as $m): ?>
-            <option value="<?= htmlspecialchars($m['ym_val']); ?>" <?= (!empty($period_filter) && $period_filter === $m['ym_val']) ? 'selected' : ''; ?>>
-              <?= htmlspecialchars($m['ym_label']); ?> (<?= $m['ym_val']; ?>)
+            <?php foreach ($months_list as $m): 
+              $m_val = is_object($m) ? $m->ym_val : ($m['ym_val'] ?? '');
+              $m_lbl = is_object($m) ? $m->ym_label : ($m['ym_label'] ?? '');
+            ?>
+            <option value="<?= htmlspecialchars($m_val); ?>" <?= (!empty($period_filter) && $period_filter === $m_val) ? 'selected' : ''; ?>>
+              <?= htmlspecialchars($m_lbl); ?> (<?= $m_val; ?>)
             </option>
             <?php endforeach; ?>
           </select>
@@ -342,8 +345,9 @@
               <?php endif; ?>
             </td>
             <td style="text-align:center;">
-              <span class="label" style="background:<?= $mt->avg_recency <= 30 ? '#dcfce7; color:#166534;' : ($mt->avg_recency <= 90 ? '#fef3c7; color:#92400e;' : '#fee2e2; color:#991b1b;'); ?> border-radius:6px; padding:5px 9px; font-weight:700;">
-                <i class="fa fa-clock-o"></i> <?= round($mt->avg_recency); ?> hr lalu
+              <?php $r_days = is_object($mt) ? ($mt->avg_recency_days ?? $mt->avg_recency ?? 0) : ($mt['avg_recency_days'] ?? $mt['avg_recency'] ?? 0); ?>
+              <span class="label" style="background:<?= $r_days <= 30 ? '#dcfce7; color:#166534;' : ($r_days <= 90 ? '#fef3c7; color:#92400e;' : '#fee2e2; color:#991b1b;'); ?> border-radius:6px; padding:5px 9px; font-weight:700;">
+                <i class="fa fa-clock-o"></i> <?= round($r_days); ?> hr lalu
               </span>
             </td>
             <td style="text-align:center;">
