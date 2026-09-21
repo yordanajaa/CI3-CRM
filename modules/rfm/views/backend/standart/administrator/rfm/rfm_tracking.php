@@ -98,6 +98,60 @@
 .table-tracking tr:hover {
   background-color: #f8fafc !important;
 }
+
+/* Mobile Friendly Media Queries */
+@media (max-width: 768px) {
+  .tracking-header-card {
+    padding: 18px 20px;
+    border-radius: 12px;
+  }
+  .tracking-title {
+    font-size: 18px;
+    flex-wrap: wrap;
+  }
+  .tracking-subtitle {
+    font-size: 12.5px;
+  }
+  .tracking-header-card .btn {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+    font-size: 12.5px;
+  }
+  .kpi-mini-card {
+    padding: 14px 16px;
+  }
+  .kpi-mini-val {
+    font-size: 18px;
+  }
+  .kpi-mini-lbl {
+    font-size: 10px;
+  }
+  .section-card-custom {
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+  }
+  .chart-box-responsive {
+    height: 240px !important;
+  }
+}
+@media (max-width: 480px) {
+  .tracking-title {
+    font-size: 16px;
+  }
+  .kpi-mini-card > div {
+    flex-direction: column;
+    text-align: center;
+    gap: 8px;
+  }
+  .kpi-mini-card .kpi-mini-lbl {
+    margin-top: 2px;
+  }
+  #form-filter-tracking .btn {
+    margin-top: 8px !important;
+  }
+}
 </style>
 
 <div class="rfm-tracking-wrapper">
@@ -252,7 +306,7 @@
       <span><i class="fa fa-area-chart" style="color:#059669; font-size:18px; margin-right:6px;"></i> Grafik Historis Omset (Rp) & Pembeli Unik (Customer) Per Bulan</span>
       <span class="badge" style="background:#ecfdf5; color:#047857; font-weight:700; padding:6px 12px; font-size:11.5px; border:1px solid #a7f3d0;"><i class="fa fa-bar-chart"></i> Dual-Axis Analytics</span>
     </div>
-    <div style="position:relative; height:320px; width:100%;">
+    <div class="chart-box-responsive" style="position:relative; height:320px; width:100%;">
       <canvas id="monthlyTrendChart"></canvas>
     </div>
   </div>
