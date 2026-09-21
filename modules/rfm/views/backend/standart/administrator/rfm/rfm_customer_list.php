@@ -199,13 +199,19 @@
     <h2><i class="fa fa-bar-chart"></i> Segmentasi Pelanggan RFM</h2>
     <p>Daftar pelanggan dengan skor Recency, Frequency, Monetary dan segmentasi otomatis</p>
   </div>
+  <?php
+    $nav_params = array_filter(['product' => $product_filter ?? '', 'period' => $period_filter ?? '']);
+    $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
+    $export_params = array_filter(['q' => $filter ?? '', 'rfm_segment' => $rfm_segment ?? '', 'product' => $product_filter ?? '', 'period' => $period_filter ?? '']);
+    $export_qs = !empty($export_params) ? '?' . http_build_query($export_params) : '';
+  ?>
   <div class="header-actions">
-    <a href="<?= site_url('administrator/rfm/dashboard' . (!empty($product_filter) ? '?product=' . urlencode($product_filter) : '')); ?>" class="btn" style="background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.3); font-weight:700;"><i class="fa fa-tachometer"></i> Dashboard RFM</a>
-    <a href="<?= site_url('administrator/rfm' . (!empty($product_filter) ? '?product=' . urlencode($product_filter) : '')); ?>" class="btn" style="background:#fff; color:#312e81; font-weight:700;"><i class="fa fa-users"></i> Daftar Customer</a>
+    <a href="<?= site_url('administrator/rfm/dashboard' . $nav_qs); ?>" class="btn" style="background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.3); font-weight:700;"><i class="fa fa-tachometer"></i> Dashboard RFM</a>
+    <a href="<?= site_url('administrator/rfm' . $nav_qs); ?>" class="btn" style="background:#fff; color:#312e81; font-weight:700;"><i class="fa fa-users"></i> Daftar Customer</a>
     <a href="<?= site_url('administrator/crm/chat'); ?>" class="btn" style="background:linear-gradient(135deg, #075e54, #128c7e); color:#fff; box-shadow:0 4px 12px rgba(18,140,126,0.35); font-weight:700;"><i class="fa fa-whatsapp"></i> Live Chat WA</a>
     <a href="<?= site_url('administrator/crm/broadcast'); ?>" class="btn" style="background:#25D366; color:#fff; font-weight:700;"><i class="fa fa-bullhorn"></i> Broadcast WA</a>
     <button type="button" class="btn" data-toggle="modal" data-target="#modal-import-excel" style="background:#10b981; color:#fff; font-weight:700; border:none; box-shadow:0 4px 12px rgba(16,185,129,0.35);"><i class="fa fa-file-excel-o"></i> Import Excel Data</button>
-    <a href="<?= site_url('administrator/rfm/export_customers?q=' . urlencode($filter ?? '') . '&rfm_segment=' . urlencode($rfm_segment ?? '') . '&product=' . urlencode($product_filter ?? '')); ?>" class="btn" style="background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.3); font-weight:700;"><i class="fa fa-download"></i> Export CSV</a>
+    <a href="<?= site_url('administrator/rfm/export_customers' . $export_qs); ?>" class="btn" style="background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.3); font-weight:700;"><i class="fa fa-download"></i> Export CSV</a>
   </div>
 </div>
 
@@ -222,12 +228,12 @@
     <div class="filter-bar">
       <form method="get" action="<?= site_url('administrator/rfm'); ?>">
         <div class="row" style="margin-left:-5px; margin-right:-5px;">
-          <div class="col-md-4 col-sm-6 col-xs-12" style="padding-left:5px; padding-right:5px; margin-bottom:8px;">
+          <div class="col-md-3 col-sm-6 col-xs-12" style="padding-left:5px; padding-right:5px; margin-bottom:8px;">
             <input type="text" name="q" class="form-control" placeholder="Cari nama / no telepon..." value="<?= htmlspecialchars($filter ?? ''); ?>" style="border-radius:8px; height:38px;">
           </div>
-          <div class="col-md-3 col-sm-6 col-xs-12" style="padding-left:5px; padding-right:5px; margin-bottom:8px;">
+          <div class="col-md-2 col-sm-6 col-xs-12" style="padding-left:5px; padding-right:5px; margin-bottom:8px;">
             <select name="rfm_segment" class="form-control" style="border-radius:8px; height:38px;">
-              <option value="">— Semua Segmen —</option>
+              <option value="">— Segmen —</option>
               <?php
               $all_segments = ['Champions','Loyal Customers','Potential Loyalist','New Customers','Big Spenders','Frequent Low Value','Need Attention','At Risk Customers',"Can't Lose Them",'Hibernating'];
               foreach ($all_segments as $seg):
@@ -244,6 +250,14 @@
                 if (empty($p_name)) continue;
               ?>
               <option value="<?= htmlspecialchars($p_name); ?>" <?= ($product_filter ?? '') === $p_name ? 'selected' : ''; ?>><?= htmlspecialchars($p_name); ?></option>
+              <?php endforeach; endif; ?>
+            </select>
+          </div>
+          <div class="col-md-2 col-sm-6 col-xs-12" style="padding-left:5px; padding-right:5px; margin-bottom:8px;">
+            <select name="period" class="form-control" style="border-radius:8px; height:38px;">
+              <option value="">— Semua Periode —</option>
+              <?php if (!empty($months_list)): foreach ($months_list as $m): ?>
+              <option value="<?= htmlspecialchars($m->ym_val); ?>" <?= ($period_filter ?? '') === $m->ym_val ? 'selected' : ''; ?>>📅 <?= htmlspecialchars($m->ym_label); ?></option>
               <?php endforeach; endif; ?>
             </select>
           </div>
@@ -388,7 +402,14 @@
               </span>
             </td>
             <td style="text-align:center; white-space:nowrap; min-width:130px; width:130px;">
-              <a href="<?= site_url('administrator/rfm/customer_detail?phone=' . urlencode($c->customer_phone) . (!empty($product_filter) ? '&product=' . urlencode($product_filter) : '')); ?>" class="btn btn-sm" style="background:#6366f1; color:#fff; border:none; border-radius:6px; font-size:11px; font-weight:700; padding:4px 8px;" title="Detail RFM">
+              <?php
+                $det_qs = array_filter([
+                  'phone' => $c->customer_phone,
+                  'product' => $product_filter ?? '',
+                  'period' => $period_filter ?? ''
+                ]);
+              ?>
+              <a href="<?= site_url('administrator/rfm/customer_detail?' . http_build_query($det_qs)); ?>" class="btn btn-sm" style="background:#6366f1; color:#fff; border:none; border-radius:6px; font-size:11px; font-weight:700; padding:4px 8px;" title="Detail RFM">
                 <i class="fa fa-bar-chart"></i> Detail
               </a>
               <?php 

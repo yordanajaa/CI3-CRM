@@ -21,7 +21,7 @@ class Rfm extends Admin
 		$product_filter = $this->input->get('product');
 		$period_filter = $this->input->get('period');
 
-		$this->data['rfm_distribution'] = $this->model_rfm->get_rfm_dashboard_distribution($product_filter);
+		$this->data['rfm_distribution'] = $this->model_rfm->get_rfm_dashboard_distribution($product_filter, $period_filter);
 		$this->data['thresholds'] = $this->model_rfm->get_threshold_display($product_filter);
 		$this->data['segments'] = $this->model_rfm->get_segment_definitions();
 		$this->data['product_rfm_list'] = $this->model_rfm->get_product_rfm_list('', 25, 0);
@@ -32,7 +32,7 @@ class Rfm extends Admin
 		$this->data['period_filter'] = $period_filter;
 
 		// Quick stats per product (if filtered) or overall
-		$result = $this->model_rfm->get_customers('', 10000, 0, '', $product_filter);
+		$result = $this->model_rfm->get_customers('', 10000, 0, '', $product_filter, $period_filter);
 		$total = count($result['rows']);
 		$avg_r = 0; $avg_f = 0; $avg_m = 0;
 		$avg_days = 0; $avg_orders = 0; $avg_spend = 0;
@@ -74,15 +74,18 @@ class Rfm extends Admin
 		$filter = $this->input->get('q');
 		$rfm_segment = $this->input->get('rfm_segment');
 		$product_filter = $this->input->get('product');
+		$period_filter = $this->input->get('period');
 
-		$result = $this->model_rfm->get_customers($filter, $this->limit_page, $offset, $rfm_segment, $product_filter);
+		$result = $this->model_rfm->get_customers($filter, $this->limit_page, $offset, $rfm_segment, $product_filter, $period_filter);
 
 		$this->data['customers'] = $result['rows'];
 		$this->data['customer_counts'] = $result['total'];
 		$this->data['filter'] = $filter;
 		$this->data['rfm_segment'] = $rfm_segment;
 		$this->data['product_filter'] = $product_filter;
+		$this->data['period_filter'] = $period_filter;
 		$this->data['products_list'] = $this->model_rfm->get_all_products_list();
+		$this->data['months_list'] = $this->model_rfm->get_distinct_months_list();
 
 		// Product Recap: when filtered by product, get product-level summary
 		$this->data['product_recap'] = null;
@@ -92,7 +95,7 @@ class Rfm extends Admin
 				$this->data['product_recap'] = $product_rfm_all['rows'][0];
 			}
 			// Get RFM distribution for this product
-			$this->data['product_distribution'] = $this->model_rfm->get_rfm_dashboard_distribution($product_filter);
+			$this->data['product_distribution'] = $this->model_rfm->get_rfm_dashboard_distribution($product_filter, $period_filter);
 		}
 
 		$config = [
@@ -113,6 +116,7 @@ class Rfm extends Admin
 	{
 		$phone = $this->input->get('phone');
 		$product_filter = $this->input->get('product');
+		$period_filter = $this->input->get('period');
 		if (empty($phone)) {
 			set_message('Nomor telepon customer tidak valid.', 'error');
 			redirect('administrator/rfm');
@@ -123,6 +127,7 @@ class Rfm extends Admin
 		$this->data['product_rfm'] = $this->model_rfm->get_customer_product_rfm($phone);
 		$this->data['phone'] = $phone;
 		$this->data['product_filter'] = $product_filter;
+		$this->data['period_filter'] = $period_filter;
 
 		$this->template->title('Analisis RFM — Detail Customer');
 		$this->render('backend/standart/administrator/rfm/rfm_customer_detail', $this->data);
@@ -149,7 +154,8 @@ class Rfm extends Admin
 		$filter = $this->input->get('q');
 		$rfm_segment = $this->input->get('rfm_segment');
 		$product = $this->input->get('product');
-		$result = $this->model_rfm->get_customers($filter, 10000, 0, $rfm_segment, $product);
+		$period = $this->input->get('period');
+		$result = $this->model_rfm->get_customers($filter, 10000, 0, $rfm_segment, $product, $period);
 
 		$filename_parts = ['RFM'];
 		if (!empty($rfm_segment)) {

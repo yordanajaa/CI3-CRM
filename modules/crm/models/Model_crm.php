@@ -450,9 +450,9 @@ class Model_crm extends CI_Model
 	 * Get consolidated customer list directly from sales_order + penjualan_marketplace
 	 * Grouped by phone number (primary key for customer identity)
 	 */
-	public function get_customers($filter = '', $limit = 25, $offset = 0, $rfm_segment_filter = '', $product_filter = '')
+	public function get_customers($filter = '', $limit = 25, $offset = 0, $rfm_segment_filter = '', $product_filter = '', $period_filter = '')
 	{
-		$thresholds = $this->get_rfm_percentile_thresholds($product_filter);
+		$thresholds = $this->get_rfm_percentile_thresholds($product_filter, $period_filter);
 
 		if (!empty($product_filter)) {
 			$p_esc = $this->db->escape_like_str($product_filter);
@@ -561,9 +561,17 @@ class Model_crm extends CI_Model
 			) u";
 		}
 
+		$where_conditions = [];
 		if (!empty($filter)) {
 			$f_esc = $this->db->escape_like_str($filter);
-			$sql .= " WHERE (nama LIKE '%{$f_esc}%' OR phone LIKE '%{$f_esc}%')";
+			$where_conditions[] = "(nama LIKE '%{$f_esc}%' OR phone LIKE '%{$f_esc}%')";
+		}
+		if (!empty($period_filter)) {
+			$period_esc = $this->db->escape_str($period_filter);
+			$where_conditions[] = "DATE_FORMAT(tanggal, '%Y-%m') = '{$period_esc}'";
+		}
+		if (!empty($where_conditions)) {
+			$sql .= " WHERE " . implode(" AND ", $where_conditions);
 		}
 
 		$sql .= " GROUP BY phone ORDER BY last_order_date DESC";
@@ -596,9 +604,9 @@ class Model_crm extends CI_Model
 	/**
 	 * Get RFM Segmentation Breakdown for Dashboard Cards
 	 */
-	public function get_rfm_dashboard_distribution($product_filter = '')
+	public function get_rfm_dashboard_distribution($product_filter = '', $period_filter = '')
 	{
-		$result = $this->get_customers('', 10000, 0, '', $product_filter);
+		$result = $this->get_customers('', 10000, 0, '', $product_filter, $period_filter);
 		$rows = $result['rows'];
 		$total = count($rows);
 

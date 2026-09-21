@@ -303,9 +303,13 @@ $score_colors = [1 => '#ef4444', 2 => '#f97316', 3 => '#eab308', 4 => '#22c55e',
       <?php endforeach; ?>
     </div>
   </div>
+  <?php
+    $nav_params = array_filter(['product' => $product_filter ?? '', 'period' => $period_filter ?? '']);
+    $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
+  ?>
   <div class="header-btns">
-    <a href="<?= site_url('administrator/rfm' . (!empty($product_filter) ? '?product=' . urlencode($product_filter) : '')); ?>" class="btn" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);font-weight:700;"><i class="fa fa-arrow-left"></i> Kembali ke Daftar Customer</a>
-    <a href="<?= site_url('administrator/rfm/dashboard' . (!empty($product_filter) ? '?product=' . urlencode($product_filter) : '')); ?>" class="btn" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);font-weight:700;"><i class="fa fa-tachometer"></i> Dashboard RFM</a>
+    <a href="<?= site_url('administrator/rfm' . $nav_qs); ?>" class="btn" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);font-weight:700;"><i class="fa fa-arrow-left"></i> Kembali ke Daftar Customer</a>
+    <a href="<?= site_url('administrator/rfm/dashboard' . $nav_qs); ?>" class="btn" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);font-weight:700;"><i class="fa fa-tachometer"></i> Dashboard RFM</a>
     <a href="<?= site_url('administrator/crm/customer_detail?phone=' . urlencode($phone)); ?>" class="btn" style="background:#fff;color:#312e81;font-weight:700;"><i class="fa fa-tasks"></i> Lihat Detail CRM</a>
     <?php
       $clean_phone = preg_replace('/[^0-9]/', '', $phone ?? '');
@@ -322,9 +326,13 @@ $score_colors = [1 => '#ef4444', 2 => '#f97316', 3 => '#eab308', 4 => '#22c55e',
 </div>
 
 <!-- ===== SUMMARY CARDS ===== -->
-<?php if (!empty($product_filter)): ?>
+<?php if (!empty($product_filter) || !empty($period_filter)): ?>
 <div class="alert" style="background:#e0e7ff; color:#3730a3; border:1px solid #c7d2fe; border-radius:10px; padding:10px 16px; margin-bottom:14px; font-weight:600; font-size:13px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
-  <span><i class="fa fa-filter"></i> Data di bawah hanya untuk produk: <strong><?= htmlspecialchars($product_filter); ?></strong></span>
+  <span><i class="fa fa-filter"></i> Data terfilter: 
+    <?= !empty($product_filter) ? 'Produk <strong>' . htmlspecialchars($product_filter) . '</strong>' : ''; ?>
+    <?= (!empty($product_filter) && !empty($period_filter)) ? ' | ' : ''; ?>
+    <?= !empty($period_filter) ? 'Periode <strong>' . htmlspecialchars($period_filter) . '</strong>' : ''; ?>
+  </span>
   <a href="<?= site_url('administrator/rfm/customer_detail?phone=' . urlencode($phone)); ?>" style="color:#3730a3; font-size:12px; font-weight:700;"><i class="fa fa-times"></i> Hapus Filter</a>
 </div>
 <?php endif; ?>

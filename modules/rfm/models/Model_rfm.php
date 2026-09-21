@@ -48,14 +48,14 @@ class Model_rfm extends CI_Model
 
 	// ===== Customer Data (delegates to Model_crm) =====
 
-	public function get_customers($filter = '', $limit = 25, $offset = 0, $rfm_segment_filter = '', $product_filter = '')
+	public function get_customers($filter = '', $limit = 25, $offset = 0, $rfm_segment_filter = '', $product_filter = '', $period_filter = '')
 	{
-		return $this->crm->get_customers($filter, $limit, $offset, $rfm_segment_filter, $product_filter);
+		return $this->crm->get_customers($filter, $limit, $offset, $rfm_segment_filter, $product_filter, $period_filter);
 	}
 
-	public function get_rfm_dashboard_distribution($product_filter = '')
+	public function get_rfm_dashboard_distribution($product_filter = '', $period_filter = '')
 	{
-		return $this->crm->get_rfm_dashboard_distribution($product_filter);
+		return $this->crm->get_rfm_dashboard_distribution($product_filter, $period_filter);
 	}
 
 	public function get_customer_summary($phone, $product_filter = '')
