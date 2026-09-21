@@ -973,10 +973,20 @@ class Model_crm extends CI_Model
 				DATE_FORMAT(tanggal_so, '%Y-%m') as ym_val,
 				DATE_FORMAT(tanggal_so, '%M %Y') as ym_label
 			FROM (
-				SELECT tanggal_so FROM sales_order WHERE tanggal_so IS NOT NULL AND tanggal_so != '0000-00-00'
+				SELECT tanggal_so FROM sales_order 
+				WHERE tanggal_so IS NOT NULL 
+				  AND CAST(tanggal_so AS CHAR) NOT LIKE '0000%' 
+				  AND tanggal_so > '1970-01-01'
+
 				UNION ALL
-				SELECT tanggal_so FROM penjualan_marketplace WHERE tanggal_so IS NOT NULL AND tanggal_so != '0000-00-00'
+
+				SELECT tanggal_so FROM penjualan_marketplace 
+				WHERE tanggal_so IS NOT NULL 
+				  AND CAST(tanggal_so AS CHAR) NOT LIKE '0000%' 
+				  AND tanggal_so > '1970-01-01'
 			) d
+			WHERE DATE_FORMAT(tanggal_so, '%Y-%m') IS NOT NULL 
+			  AND DATE_FORMAT(tanggal_so, '%Y-%m') != '0000-00'
 			ORDER BY ym_val DESC
 		";
 		return $this->db->query($sql)->result();
@@ -1020,6 +1030,9 @@ class Model_crm extends CI_Model
 				JOIN sales_order so ON soi.so_id = so.id
 				LEFT JOIN produk p ON soi.produk_id = p.id
 				WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
+				  AND so.tanggal_so IS NOT NULL 
+				  AND CAST(so.tanggal_so AS CHAR) NOT LIKE '0000%' 
+				  AND so.tanggal_so > '1970-01-01'
 
 				UNION ALL
 
@@ -1034,6 +1047,9 @@ class Model_crm extends CI_Model
 				JOIN penjualan_marketplace pm ON pmi.penjualan_marketplace_id = pm.id
 				LEFT JOIN produk p2 ON pmi.produk_id = p2.id
 				WHERE pm.no_telepon IS NOT NULL AND pm.no_telepon != ''
+				  AND pm.tanggal_so IS NOT NULL 
+				  AND CAST(pm.tanggal_so AS CHAR) NOT LIKE '0000%' 
+				  AND pm.tanggal_so > '1970-01-01'
 			) t_data
 			{$where_sql}
 			GROUP BY ym_period, period_label
