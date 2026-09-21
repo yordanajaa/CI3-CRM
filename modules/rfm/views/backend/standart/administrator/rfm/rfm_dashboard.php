@@ -449,15 +449,14 @@
   </form>
 </div>
 
-<?php if (!empty($product_filter)): ?>
-<!-- ===== KPI CARDS (only shown when product is selected) ===== -->
+<!-- ===== KPI CARDS ===== -->
 <div class="row kpi-row">
   <div class="col-md-3 col-sm-6 col-xs-6">
     <div class="kpi-card">
       <div class="kpi-icon" style="background:#e0e7ff; color:#4338ca;"><i class="fa fa-users"></i></div>
       <div class="kpi-body">
         <div class="kpi-value"><?= number_format($kpis['total_customers']); ?></div>
-        <div class="kpi-label">Total Pembeli<?= !empty($product_filter) ? ' Produk Ini' : ''; ?></div>
+        <div class="kpi-label">Total Pembeli<?= !empty($product_filter) ? ' Produk Ini' : ' (Keseluruhan)'; ?></div>
       </div>
     </div>
   </div>
@@ -529,7 +528,7 @@
 <!-- ===== MONTHLY RFM TRACKING & TREND PER PRODUK ===== -->
 <div class="row" style="margin-top:16px; margin-bottom:16px;">
   <div class="col-md-12">
-    <div class="section-card" style="border-left:4px solid #10b981;">
+    <div class="section-card" id="section-tracking-monthly" style="border-left:4px solid #10b981; scroll-margin-top:20px;">
       <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
         <span>
           <i class="fa fa-line-chart" style="color:#10b981;"></i> 
@@ -725,22 +724,7 @@
       <?php endif; ?>
     </div>
   </div>
-</div>
-<?php else: ?>
-<!-- ===== PROMPT: Pilih Produk Dulu ===== -->
-<div class="row">
-  <div class="col-md-12">
-    <div class="section-card" style="text-align:center; padding:50px 24px;">
-      <div style="margin-bottom:16px;"><i class="fa fa-filter" style="font-size:56px; color:#c7d2fe;"></i></div>
-      <h3 style="color:#1e1b4b; font-weight:800; margin:0 0 8px 0;">Pilih Produk untuk Memulai Analisis RFM</h3>
-      <p style="color:#64748b; font-size:14px; margin:0 0 20px 0;">Gunakan dropdown <strong>"Filter RFM Per Produk"</strong> di atas untuk memilih produk yang ingin dianalisis.<br>Data segmen customer, KPI, dan distribusi RFM akan ditampilkan berdasarkan produk yang dipilih.</p>
-    </div>
-  </div>
-</div>
-<?php endif; ?>
-
-<?php if (!empty($product_filter)): ?>
-<!-- ===== BAR CHART (only when product selected) ===== -->
+<!-- ===== BAR CHART ===== -->
 <div class="row">
   <div class="col-md-12">
     <div class="section-card">
@@ -818,7 +802,6 @@
     </div>
   </div>
 </div>
-<?php endif; ?>
 
 <!-- ===== SEGMENT DEFINITIONS TABLE (always visible) ===== -->
 <div class="row">
@@ -991,12 +974,20 @@ window.addEventListener('load', function() {
         plugins: {
           legend: { display: false }
         },
-        scales: {
-          y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 11, weight: '600' } } },
-          x: { grid: { display: false }, ticks: { font: { size: 10, weight: '600' }, maxRotation: 45 } }
         }
       }
     });
+  }
+
+  if (window.location.hash === '#section-tracking-monthly') {
+    setTimeout(function() {
+      var trackEl = document.getElementById('section-tracking-monthly');
+      if (trackEl) {
+        trackEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        trackEl.style.boxShadow = '0 0 20px rgba(16, 185, 129, 0.45)';
+        trackEl.style.borderColor = '#10b981';
+      }
+    }, 250);
   }
 });
 </script>

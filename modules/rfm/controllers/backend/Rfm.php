@@ -67,6 +67,11 @@ class Rfm extends Admin
 		$this->render('backend/standart/administrator/rfm/rfm_dashboard', $this->data);
 	}
 
+	public function tracking()
+	{
+		redirect('administrator/rfm/dashboard#section-tracking-monthly');
+	}
+
 	// ===== Customer List with RFM =====
 
 	public function customer_list($offset = 0)
