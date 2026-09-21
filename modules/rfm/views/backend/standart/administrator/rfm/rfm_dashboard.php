@@ -525,167 +525,23 @@
   </div>
 </div>
 
-<!-- ===== MONTHLY RFM TRACKING & TREND PER PRODUK ===== -->
-<?php
-  $track_data = $monthly_tracking ?? [];
-  $track_cnt = count($track_data);
-  $total_sum_spend = array_sum(array_column($track_data, 'total_spend'));
-  $avg_sum_spend = $track_cnt > 0 ? $total_sum_spend / $track_cnt : 0;
-  $total_sum_buyers = array_sum(array_column($track_data, 'unique_buyers'));
-  $avg_sum_buyers = $track_cnt > 0 ? $total_sum_buyers / $track_cnt : 0;
-  $total_sum_orders = array_sum(array_column($track_data, 'total_orders'));
-?>
+<!-- ===== SHORTCUT CARD TO DEDICATED TRACKING PAGE ===== -->
 <div class="row" style="margin-top:20px; margin-bottom:24px;">
   <div class="col-md-12">
-    <div class="section-card" id="section-tracking-monthly" style="border-radius:16px; overflow:hidden; border:1px solid #a7f3d0; box-shadow:0 10px 30px rgba(16,185,129,0.12); padding:0; background:#fff; transition:all 0.3s ease;">
-      <!-- Header Banner -->
-      <div style="background:linear-gradient(135deg, #064e3b 0%, #047857 50%, #059669 100%); padding:22px 28px; color:#fff; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-        <div>
-          <h3 style="margin:0 0 6px 0; font-weight:800; font-size:20px; color:#fff; display:flex; align-items:center; gap:10px;">
-            <i class="fa fa-line-chart" style="color:#6ee7b7; font-size:22px;"></i>
-            Tracking & Tren RFM Bulanan
-          </h3>
-          <p style="margin:0; opacity:0.9; font-size:13px; color:#ecfdf5;">
-            Analisis rekapitulasi performa omset, frekuensi order, dan pembeli unik per bulan <?= !empty($product_filter) ? 'untuk produk: <strong>' . htmlspecialchars($product_filter) . '</strong>' : '(Semua Produk)'; ?>
-          </p>
-        </div>
-        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-          <?php if (!empty($period_filter)): ?>
-          <span class="label" style="background:rgba(255,255,255,0.2); color:#fff; font-size:12px; padding:6px 14px; border-radius:20px; border:1px solid rgba(255,255,255,0.4); font-weight:700;"><i class="fa fa-calendar"></i> Filter Periode: <?= htmlspecialchars($period_filter); ?></span>
-          <a href="<?= site_url('administrator/rfm/dashboard' . (!empty($product_filter) ? '?product=' . urlencode($product_filter) : '')); ?>" class="btn btn-xs" style="background:#fff; color:#047857; font-weight:700; border-radius:8px; padding:6px 14px; box-shadow:0 2px 6px rgba(0,0,0,0.1);"><i class="fa fa-times"></i> Reset Filter Bulan</a>
-          <?php else: ?>
-          <span class="label" style="background:rgba(255,255,255,0.2); color:#fff; font-size:12.5px; padding:6px 14px; border-radius:20px; font-weight:700;"><i class="fa fa-check-circle"></i> Tracking Aktif Real-Time</span>
-          <?php endif; ?>
-        </div>
+    <div style="background:linear-gradient(135deg, #064e3b 0%, #047857 50%, #059669 100%); border-radius:16px; padding:22px 28px; color:#fff; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; box-shadow:0 10px 25px rgba(4,120,87,0.2);">
+      <div style="max-width:700px;">
+        <h3 style="margin:0 0 6px 0; font-weight:800; font-size:19px; color:#fff; display:flex; align-items:center; gap:10px;">
+          <i class="fa fa-line-chart" style="color:#6ee7b7; font-size:22px;"></i>
+          Tracking & Tren RFM Bulanan (Halaman Khusus)
+        </h3>
+        <p style="margin:0; opacity:0.9; font-size:13px; color:#ecfdf5; line-height:1.5;">
+          Pantau histori omset (monetary), frekuensi order, dan tren pembeli unik per bulan dengan grafik interaktif & indikator pertumbuhan MoM di halaman khusus.
+        </p>
       </div>
-
-      <div style="padding:22px 26px;">
-        <!-- 4 Mini Summary Stats Cards -->
-        <div class="row" style="margin-bottom:20px;">
-          <div class="col-md-3 col-sm-6 col-xs-6" style="margin-bottom:10px;">
-            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; padding:14px 16px; text-align:center;">
-              <div style="font-size:20px; font-weight:800; color:#166534;"><?= $track_cnt; ?> Bulan</div>
-              <div style="font-size:11px; font-weight:700; color:#15803d; text-transform:uppercase; margin-top:2px;">Total Periode Teracak</div>
-            </div>
-          </div>
-          <div class="col-md-3 col-sm-6 col-xs-6" style="margin-bottom:10px;">
-            <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:14px 16px; text-align:center;">
-              <div style="font-size:18px; font-weight:800; color:#1e40af;">Rp <?= number_format($avg_sum_spend, 0, ',', '.'); ?></div>
-              <div style="font-size:11px; font-weight:700; color:#1d4ed8; text-transform:uppercase; margin-top:2px;">Rata2 Omset / Bulan</div>
-            </div>
-          </div>
-          <div class="col-md-3 col-sm-6 col-xs-6" style="margin-bottom:10px;">
-            <div style="background:#faf5ff; border:1px solid #e9d5ff; border-radius:12px; padding:14px 16px; text-align:center;">
-              <div style="font-size:20px; font-weight:800; color:#6b21a8;"><?= number_format($avg_sum_buyers); ?> Customer</div>
-              <div style="font-size:11px; font-weight:700; color:#7e22ce; text-transform:uppercase; margin-top:2px;">Rata2 Pembeli / Bulan</div>
-            </div>
-          </div>
-          <div class="col-md-3 col-sm-6 col-xs-6" style="margin-bottom:10px;">
-            <div style="background:#fff7ed; border:1px solid #fed7aa; border-radius:12px; padding:14px 16px; text-align:center;">
-              <div style="font-size:20px; font-weight:800; color:#c2410c;"><?= number_format($total_sum_orders); ?>x</div>
-              <div style="font-size:11px; font-weight:700; color:#ea580c; text-transform:uppercase; margin-top:2px;">Total Transaksi</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Monthly Visual Trend Chart -->
-        <?php if (!empty($track_data)): ?>
-        <div style="background:#fafbfc; border:1px solid #e2e8f0; border-radius:14px; padding:18px; margin-bottom:22px;">
-          <div style="font-weight:800; font-size:14px; color:#0f172a; margin-bottom:14px; display:flex; align-items:center; gap:8px;">
-            <i class="fa fa-area-chart" style="color:#059669; font-size:16px;"></i> Grafik Tren Omset (Rp) & Pembeli Unik (Customer) Per Bulan
-          </div>
-          <div style="position:relative; height:270px; width:100%;">
-            <canvas id="monthlyTrendChart"></canvas>
-          </div>
-        </div>
-        <?php endif; ?>
-
-        <!-- Monthly Performance Table -->
-        <div class="table-responsive" style="overflow-x:auto;">
-          <table class="table table-hover table-striped seg-def-table" style="margin-bottom:0; width:100%; min-width:880px;">
-            <thead>
-              <tr style="background:#f8fafc; border-bottom:2px solid #e2e8f0;">
-                <th style="width:4%;">#</th>
-                <th style="min-width:140px;">Bulan / Periode</th>
-                <th style="text-align:center; min-width:120px;">Pembeli Unik</th>
-                <th style="text-align:center; min-width:120px;">Jumlah Order (F)</th>
-                <th style="text-align:center; min-width:100px;">Total Qty</th>
-                <th style="text-align:right; min-width:160px;">Total Omset (Monetary)</th>
-                <th style="text-align:center; min-width:120px;">Tren Omset (MoM)</th>
-                <th style="text-align:center; min-width:130px;">Rata2 Recency (R)</th>
-                <th style="text-align:center; min-width:120px;">Aksi / Filter</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php if (empty($track_data)): ?>
-              <tr><td colspan="9" class="text-center" style="padding:30px !important; color:#94a3b8;"><i class="fa fa-calendar-o" style="font-size:24px; display:block; margin-bottom:6px;"></i>Belum ada data transaksi bulanan untuk periode/produk ini</td></tr>
-              <?php else: ?>
-              <?php 
-              $m_no = 1; 
-              foreach ($track_data as $idx => $mt): 
-                $is_active_m = (!empty($period_filter) && $period_filter === $mt->ym_period);
-                
-                // Calculate Month-over-Month (MoM) growth percentage
-                $prev_spend = isset($track_data[$idx + 1]) ? (float)$track_data[$idx + 1]->total_spend : 0;
-                $growth_pct = 0;
-                if ($prev_spend > 0) {
-                  $growth_pct = round((($mt->total_spend - $prev_spend) / $prev_spend) * 100, 1);
-                }
-              ?>
-              <tr<?= $is_active_m ? ' style="background:#ecfdf5; border-left:4px solid #10b981;"' : ''; ?>>
-                <td><?= $m_no++; ?></td>
-                <td>
-                  <strong style="color:#0f172a; font-size:13.5px;"><i class="fa fa-calendar" style="color:#6366f1; margin-right:4px;"></i> <?= htmlspecialchars($mt->period_label); ?></strong>
-                  <code style="font-size:10px; background:#f1f5f9; padding:2px 5px; border-radius:4px; margin-left:4px; color:#475569;"><?= htmlspecialchars($mt->ym_period); ?></code>
-                  <?php if ($is_active_m): ?>
-                  <span class="label" style="background:#059669; color:#fff; font-size:10px; margin-left:4px; padding:2px 6px; border-radius:8px;">Aktif</span>
-                  <?php endif; ?>
-                </td>
-                <td style="text-align:center;">
-                  <span class="label" style="background:#e0e7ff; color:#3730a3; font-size:12px; font-weight:800; padding:5px 10px; border-radius:6px;">
-                    <i class="fa fa-user"></i> <?= number_format($mt->unique_buyers); ?> Customer
-                  </span>
-                </td>
-                <td style="text-align:center;">
-                  <strong style="color:#0f172a; font-size:13px;"><?= number_format($mt->total_orders); ?>x</strong> Transaksi
-                </td>
-                <td style="text-align:center;">
-                  <span class="label" style="background:#f1f5f9; color:#334155; font-size:11.5px; font-weight:700; padding:4px 8px; border-radius:6px;">
-                    <?= number_format($mt->total_qty); ?> pcs
-                  </span>
-                </td>
-                <td style="text-align:right;">
-                  <strong style="color:#059669; font-size:14px;">Rp <?= number_format($mt->total_spend, 0, ',', '.'); ?></strong>
-                </td>
-                <td style="text-align:center;">
-                  <?php if ($prev_spend == 0): ?>
-                    <span class="label" style="background:#f1f5f9; color:#64748b; font-size:11px; padding:4px 8px; border-radius:6px; font-weight:600;"><i class="fa fa-minus"></i> Awal</span>
-                  <?php elseif ($growth_pct > 0): ?>
-                    <span class="label" style="background:#dcfce7; color:#166534; font-size:11.5px; padding:4px 8px; border-radius:6px; font-weight:700;"><i class="fa fa-arrow-up"></i> +<?= $growth_pct; ?>%</span>
-                  <?php elseif ($growth_pct < 0): ?>
-                    <span class="label" style="background:#fee2e2; color:#991b1b; font-size:11.5px; padding:4px 8px; border-radius:6px; font-weight:700;"><i class="fa fa-arrow-down"></i> <?= $growth_pct; ?>%</span>
-                  <?php else: ?>
-                    <span class="label" style="background:#f1f5f9; color:#475569; font-size:11px; padding:4px 8px; border-radius:6px; font-weight:600;"><i class="fa fa-minus"></i> 0.0%</span>
-                  <?php endif; ?>
-                </td>
-                <td style="text-align:center;">
-                  <span class="label" style="background:<?= ($mt->avg_recency_days <= 30 ? '#dcfce7; color:#166534;' : ($mt->avg_recency_days <= 90 ? '#fef3c7; color:#92400e;' : '#fee2e2; color:#991b1b;')); ?> font-size:11.5px; padding:4px 8px; border-radius:6px; font-weight:600;">
-                    ~<?= $mt->avg_recency_days; ?> hari
-                  </span>
-                </td>
-                <td style="text-align:center;">
-                  <?php if ($is_active_m): ?>
-                    <a href="<?= site_url('administrator/rfm/dashboard' . (!empty($product_filter) ? '?product=' . urlencode($product_filter) : '')); ?>" class="btn btn-xs btn-default" style="border-radius:6px; font-size:11px; font-weight:600;" title="Reset Filter Bulan"><i class="fa fa-times"></i> Reset</a>
-                  <?php else: ?>
-                    <a href="<?= site_url('administrator/rfm/dashboard?period=' . urlencode($mt->ym_period) . (!empty($product_filter) ? '&product=' . urlencode($product_filter) : '')); ?>" class="btn btn-xs" style="background:#10b981; color:#fff; border-radius:6px; font-size:11px; font-weight:700; padding:3px 10px; box-shadow:0 2px 4px rgba(16,185,129,0.2);" title="Filter khusus bulan ini"><i class="fa fa-filter"></i> Filter Bulan</a>
-                  <?php endif; ?>
-                </td>
-              </tr>
-              <?php endforeach; ?>
-              <?php endif; ?>
-            </tbody>
-          </table>
-        </div>
+      <div>
+        <a href="<?= site_url('administrator/rfm/tracking' . (!empty($product_filter) ? '?product=' . urlencode($product_filter) : '')); ?>" class="btn" style="background:#ffffff; color:#047857; font-weight:800; border-radius:10px; padding:10px 22px; font-size:13.5px; box-shadow:0 4px 14px rgba(0,0,0,0.15); transition:all 0.2s;">
+          <i class="fa fa-external-link"></i> Buka Tracking Bulanan <i class="fa fa-arrow-right" style="margin-left:6px;"></i>
+        </a>
       </div>
     </div>
   </div>

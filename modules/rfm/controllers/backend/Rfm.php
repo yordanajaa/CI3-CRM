@@ -69,7 +69,35 @@ class Rfm extends Admin
 
 	public function tracking()
 	{
-		redirect('administrator/rfm/dashboard#section-tracking-monthly');
+		$product_filter = $this->input->get('product');
+		$period_filter = $this->input->get('period');
+
+		$this->data['products_list'] = $this->model_rfm->get_all_products_list();
+		$this->data['months_list'] = $this->model_rfm->get_distinct_months_list();
+		$this->data['monthly_tracking'] = $this->model_rfm->get_monthly_rfm_tracking_per_product($product_filter, $period_filter);
+		$this->data['product_filter'] = $product_filter;
+		$this->data['period_filter'] = $period_filter;
+
+		// Summary statistics
+		$track_data = $this->data['monthly_tracking'] ?? [];
+		$track_cnt = count($track_data);
+		$total_sum_spend = array_sum(array_column($track_data, 'total_spend'));
+		$avg_sum_spend = $track_cnt > 0 ? $total_sum_spend / $track_cnt : 0;
+		$total_sum_buyers = array_sum(array_column($track_data, 'unique_buyers'));
+		$avg_sum_buyers = $track_cnt > 0 ? $total_sum_buyers / $track_cnt : 0;
+		$total_sum_orders = array_sum(array_column($track_data, 'total_orders'));
+
+		$this->data['kpi_tracking'] = [
+			'track_cnt' => $track_cnt,
+			'total_sum_spend' => $total_sum_spend,
+			'avg_sum_spend' => $avg_sum_spend,
+			'total_sum_buyers' => $total_sum_buyers,
+			'avg_sum_buyers' => $avg_sum_buyers,
+			'total_sum_orders' => $total_sum_orders
+		];
+
+		$this->template->title('Analisis RFM — Tracking & Tren Bulanan');
+		$this->render('backend/standart/administrator/rfm/rfm_tracking', $this->data);
 	}
 
 	// ===== Customer List with RFM =====
