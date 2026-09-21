@@ -304,8 +304,9 @@ $score_colors = [1 => '#ef4444', 2 => '#f97316', 3 => '#eab308', 4 => '#22c55e',
     </div>
   </div>
   <div class="header-btns">
-    <a href="<?= site_url('administrator/rfm' . (!empty($product_filter) ? '?product=' . urlencode($product_filter) : '')); ?>" class="btn" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);"><i class="fa fa-arrow-left"></i> Kembali</a>
-    <a href="<?= site_url('administrator/crm/customer_detail?phone=' . urlencode($phone)); ?>" class="btn" style="background:#fff;color:#312e81;"><i class="fa fa-tasks"></i> Lihat CRM Detail</a>
+    <a href="<?= site_url('administrator/rfm' . (!empty($product_filter) ? '?product=' . urlencode($product_filter) : '')); ?>" class="btn" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);font-weight:700;"><i class="fa fa-arrow-left"></i> Kembali ke Daftar Customer</a>
+    <a href="<?= site_url('administrator/rfm/dashboard' . (!empty($product_filter) ? '?product=' . urlencode($product_filter) : '')); ?>" class="btn" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);font-weight:700;"><i class="fa fa-tachometer"></i> Dashboard RFM</a>
+    <a href="<?= site_url('administrator/crm/customer_detail?phone=' . urlencode($phone)); ?>" class="btn" style="background:#fff;color:#312e81;font-weight:700;"><i class="fa fa-tasks"></i> Lihat Detail CRM</a>
     <?php
       $clean_phone = preg_replace('/[^0-9]/', '', $phone ?? '');
       $wa_phone = preg_replace('/^0/', '62', $clean_phone);
@@ -313,8 +314,10 @@ $score_colors = [1 => '#ef4444', 2 => '#f97316', 3 => '#eab308', 4 => '#22c55e',
       $wa_act = !empty($rfm['action']) ? $rfm['action'] : 'Terima kasih telah berbelanja bersama kami.';
       $wa_msg = "Halo Kak " . ($s['nama'] ?? 'Customer') . ",\n\nSalam dari Metafora! " . $wa_act . "\n\nAda yang bisa kami bantu hari ini?";
       $direct_wa_url = 'https://api.whatsapp.com/send?phone=' . $wa_phone . '&text=' . rawurlencode($wa_msg);
+      $crm_chat_url = site_url('administrator/crm/chat?phone=' . urlencode($phone) . '&wa_msg=' . rawurlencode($wa_msg));
     ?>
-    <a href="<?= $direct_wa_url; ?>" target="_blank" class="btn" style="background:#25D366;color:#fff;" title="Buka Chat WhatsApp Langsung"><i class="fa fa-whatsapp"></i> Chat WA</a>
+    <a href="<?= $crm_chat_url; ?>" class="btn" style="background:linear-gradient(135deg, #075e54, #128c7e);color:#fff;font-weight:700;" title="Buka WhatsApp Chat Center"><i class="fa fa-comments"></i> Live Chat WA</a>
+    <a href="<?= $direct_wa_url; ?>" target="_blank" class="btn" style="background:#25D366;color:#fff;font-weight:700;" title="Buka Chat WhatsApp Langsung"><i class="fa fa-whatsapp"></i> Chat WA Langsung</a>
   </div>
 </div>
 
