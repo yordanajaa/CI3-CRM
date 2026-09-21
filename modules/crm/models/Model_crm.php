@@ -680,13 +680,17 @@ class Model_crm extends CI_Model
 			$so_product_where = " AND (p.nama_produk = {$pf} OR soi.catatan = {$pf})";
 			$pm_join = "INNER JOIN penjualan_marketplace_item pmi ON pmi.penjualan_marketplace_id = pm.id LEFT JOIN produk p2 ON pmi.produk_id = p2.id";
 			$pm_product_where = " AND (p2.nama_produk = {$pf} OR pmi.catatan = {$pf} OR pm.nama_produk_marketplace = {$pf})";
-		}
 
-		// Get total spend from SO (with product filter)
-		$so_spend = $this->get_query_sum("SELECT COALESCE(SUM(DISTINCT so.total),0) as t FROM sales_order so {$so_join} WHERE {$where_so}{$so_product_where}");
-		
-		// Get total spend from marketplace (with product filter)
-		$mp_spend = $this->get_query_sum("SELECT COALESCE(SUM(DISTINCT pm.total),0) as t FROM penjualan_marketplace pm {$pm_join} WHERE {$where_pm}{$pm_product_where}");
+			// Get total spend from SO item subtotal for this product
+			$so_spend = $this->get_query_sum("SELECT COALESCE(SUM(soi.subtotal),0) as t FROM sales_order so {$so_join} WHERE {$where_so}{$so_product_where}");
+			
+			// Get total spend from marketplace item subtotal for this product
+			$mp_spend = $this->get_query_sum("SELECT COALESCE(SUM(pmi.subtotal),0) as t FROM penjualan_marketplace pm {$pm_join} WHERE {$where_pm}{$pm_product_where}");
+		} else {
+			// Get overall total spend across all products
+			$so_spend = $this->get_query_sum("SELECT COALESCE(SUM(so.total),0) as t FROM sales_order so WHERE {$where_so}");
+			$mp_spend = $this->get_query_sum("SELECT COALESCE(SUM(pm.total),0) as t FROM penjualan_marketplace pm WHERE {$where_pm}");
+		}
 
 		// Get order counts
 		$so_count = $this->get_query_count("SELECT COUNT(DISTINCT so.id) as cnt FROM sales_order so {$so_join} WHERE {$where_so}{$so_product_where}");
