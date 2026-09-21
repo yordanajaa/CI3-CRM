@@ -488,7 +488,14 @@ class Rfm extends Admin
 				$status = 'shipped';
 			}
 
-			$nomor_so_code = 'SO-IMP-' . date('YmdHis') . '-' . sprintf('%05d', $r);
+			// Generate guaranteed unique nomor_so within 28 chars to prevent MySQL UNIQUE constraint error
+			$nomor_so_code = 'SO-IMP-' . date('Ymd') . '-' . mt_rand(100, 999) . '-' . sprintf('%04d', $r);
+			if (strlen($nomor_so_code) > 28) {
+				$nomor_so_code = substr($nomor_so_code, 0, 28);
+			}
+			while ($this->db->get_where('sales_order', ['nomor_so' => $nomor_so_code])->num_rows() > 0) {
+				$nomor_so_code = 'SO-IMP-' . date('Ymd') . '-' . mt_rand(1000, 9999) . '-' . mt_rand(10, 99);
+			}
 
 			$so_data = [
 				'nomor_so'            => $nomor_so_code,
@@ -511,28 +518,33 @@ class Rfm extends Admin
 				'created_at'          => date('Y-m-d H:i:s'),
 			];
 
-			$this->db->insert('sales_order', $so_data);
-			$so_id = $this->db->insert_id();
+			try {
+				$this->db->insert('sales_order', $so_data);
+				$so_id = $this->db->insert_id();
 
-			if ($so_id) {
-				$prod = $this->db->like('nama_produk', $product_name)->get('produk')->row();
-				if (!$prod) {
-					$prod = $this->db->get('produk')->row();
+				if ($so_id) {
+					$prod = $this->db->like('nama_produk', $product_name)->get('produk')->row();
+					if (!$prod) {
+						$prod = $this->db->get('produk')->row();
+					}
+
+					$this->db->insert('sales_order_item', [
+						'so_id'         => $so_id,
+						'produk_id'     => $prod ? $prod->id : 1,
+						'qty'           => $qty,
+						'satuan'        => 'pcs',
+						'harga_satuan'  => $unit_price,
+						'diskon_persen' => 0,
+						'diskon_nominal'=> 0,
+						'subtotal'      => $total,
+						'catatan'       => $product_name,
+					]);
+
+					$success_count++;
 				}
-
-				$this->db->insert('sales_order_item', [
-					'so_id'         => $so_id,
-					'produk_id'     => $prod ? $prod->id : 1,
-					'qty'           => $qty,
-					'satuan'        => 'pcs',
-					'harga_satuan'  => $unit_price,
-					'diskon_persen' => 0,
-					'diskon_nominal'=> 0,
-					'subtotal'      => $total,
-					'catatan'       => $product_name,
-				]);
-
-				$success_count++;
+			} catch (Exception $db_err) {
+				$skipped_count++;
+				log_message('error', 'RFM Import DB Error: ' . $db_err->getMessage());
 			}
 		}
 
