@@ -394,6 +394,7 @@
   <div class="header-actions">
     <a href="<?= site_url('administrator/rfm/dashboard' . $nav_qs); ?>" class="btn" style="background:#fff; color:#312e81; font-weight:700;"><i class="fa fa-tachometer"></i> Dashboard RFM</a>
     <a href="<?= site_url('administrator/rfm' . $nav_qs); ?>" class="btn" style="background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.3); font-weight:700;"><i class="fa fa-users"></i> Daftar Customer</a>
+    <a href="<?= site_url('administrator/rfm/tracking' . $nav_qs); ?>" class="btn" style="background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.3); font-weight:700;"><i class="fa fa-line-chart"></i> Tracking RFM Bulanan</a>
     <a href="<?= site_url('administrator/crm/chat'); ?>" class="btn" style="background:linear-gradient(135deg, #075e54, #128c7e); color:#fff; box-shadow:0 4px 12px rgba(18,140,126,0.35); font-weight:700;"><i class="fa fa-whatsapp"></i> Live Chat WA</a>
     <a href="<?= site_url('administrator/crm/broadcast'); ?>" class="btn" style="background:#25D366; color:#fff; font-weight:700;"><i class="fa fa-bullhorn"></i> Broadcast WA</a>
     <button type="button" class="btn" data-toggle="modal" data-target="#modal-import-excel" style="background:#10b981; color:#fff; font-weight:700; border:none; box-shadow:0 4px 12px rgba(16,185,129,0.35);"><i class="fa fa-file-excel-o"></i> Import Excel Data</button>
