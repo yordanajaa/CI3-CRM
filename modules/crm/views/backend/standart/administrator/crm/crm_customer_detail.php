@@ -5,13 +5,17 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+:root {
+  --crm-gradient: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4338ca 100%);
+}
+
 .profile-header {
-  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #312e81 100%);
+  background: var(--crm-gradient);
   color: #fff;
-  padding: 28px 32px;
+  padding: 24px 28px 20px 28px;
   border-radius: 16px;
-  margin-bottom: 22px;
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25);
+  margin-bottom: 24px;
+  box-shadow: 0 12px 30px rgba(30, 27, 75, 0.25);
   position: relative;
   overflow: hidden;
   animation: crmFadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -24,8 +28,68 @@
   background: radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, rgba(255,255,255,0) 70%);
   pointer-events: none;
 }
+.profile-header .location-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: #e0e7ff;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+}
 .profile-header .name { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 .profile-header .phone { font-size: 15px; color: #cbd5e1; font-weight: 500; }
+
+/* Navigation Tab Bar */
+.profile-header .nav-tabs-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 14px;
+  margin-top: 18px;
+  border-top: 1px solid rgba(255,255,255,0.18);
+  position: relative;
+  z-index: 2;
+}
+.profile-header .nav-tab-btn {
+  padding: 8px 18px;
+  border-radius: 25px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #e0e7ff;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  text-decoration: none !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+.profile-header .nav-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.profile-header .nav-tab-btn.active {
+  background: #ffffff !important;
+  color: #312e81 !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+.profile-header .nav-tab-btn.active .active-dot {
+  width: 7px;
+  height: 7px;
+  background: #6366f1;
+  border-radius: 50%;
+  display: inline-block;
+}
 
 .summary-card {
   background: #ffffff;
@@ -153,8 +217,12 @@
 </style>
 
 <section class="content" style="padding-top:15px;">
-  <!-- Profile Header -->
+  <!-- Profile Header & Navigation -->
   <div class="profile-header">
+    <div class="location-tag">
+      <i class="fa fa-map-marker"></i> CRM & After Sales <i class="fa fa-angle-right"></i> <a href="<?= site_url('administrator/crm'); ?>" style="color:#e0e7ff;text-decoration:underline;">Daftar Customer</a> <i class="fa fa-angle-right"></i> <span>Detail Customer</span>
+    </div>
+
     <div class="row">
       <div class="col-md-1 text-center" style="padding-top: 5px;">
         <i class="fa fa-user-circle-o" style="font-size: 50px; opacity: 0.8;"></i>
@@ -186,6 +254,25 @@
         <a href="<?= $top_wa_url; ?>" target="_blank" class="btn btn-sm" style="background:#25D366;color:#fff;border:none;font-weight:700;border-radius:6px;" title="Buka Chat WhatsApp Langsung"><i class="fa fa-whatsapp"></i> Chat WA</a>
         <?php endif; ?>
       </div>
+    </div>
+
+    <!-- Bottom Row: Navigation Tabs Bar -->
+    <div class="nav-tabs-bar">
+      <a href="<?= site_url('administrator/crm/dashboard'); ?>" class="nav-tab-btn">
+        <i class="fa fa-tachometer"></i> 1. Dashboard CRM
+      </a>
+      <a href="<?= site_url('administrator/crm/chat'); ?>" class="nav-tab-btn">
+        <i class="fa fa-comments"></i> 2. Live Chat WA
+      </a>
+      <a href="<?= site_url('administrator/crm/journal_followup'); ?>" class="nav-tab-btn">
+        <i class="fa fa-tasks"></i> 3. Journal Follow-Up
+      </a>
+      <a href="<?= site_url('administrator/crm/broadcast'); ?>" class="nav-tab-btn">
+        <i class="fa fa-bullhorn"></i> 4. Broadcast WA
+      </a>
+      <a href="<?= site_url('administrator/crm'); ?>" class="nav-tab-btn active">
+        <span class="active-dot"></span> <i class="fa fa-users"></i> 5. Detail Customer CRM
+      </a>
     </div>
   </div>
 

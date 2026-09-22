@@ -5,19 +5,132 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-.crm-header {
-  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #312e81 100%);
+:root {
+  --crm-gradient: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4338ca 100%);
+}
+
+.crm-header-nav {
+  background: var(--crm-gradient);
   color: #fff;
-  padding: 28px 32px;
+  padding: 24px 28px 20px 28px;
   border-radius: 16px;
-  margin-bottom: 22px;
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25);
+  margin-bottom: 24px;
+  box-shadow: 0 12px 30px rgba(30, 27, 75, 0.25);
   position: relative;
   overflow: hidden;
   animation: crmFadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.crm-header h2 { margin: 0 0 6px 0; font-weight: 800; font-size: 24px; letter-spacing: -0.5px; }
-.crm-header p { margin: 0; opacity: 0.85; font-size: 13px; }
+.crm-header-nav::after {
+  content: '';
+  position: absolute;
+  right: -50px; bottom: -50px;
+  width: 220px; height: 220px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.crm-header-nav .header-top-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 18px;
+  position: relative;
+  z-index: 2;
+}
+.crm-header-nav .location-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: #e0e7ff;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 8px;
+}
+.crm-header-nav .header-title h2 {
+  margin: 0 0 4px 0;
+  font-weight: 800;
+  font-size: 24px;
+  letter-spacing: -0.5px;
+  color: #fff;
+}
+.crm-header-nav .header-title p {
+  margin: 0;
+  opacity: 0.88;
+  font-size: 13px;
+  color: #e2e8f0;
+}
+.crm-header-nav .action-tools {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.crm-header-nav .action-tools .btn {
+  border-radius: 9px;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 7px 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  border: none;
+}
+.crm-header-nav .action-tools .btn:hover { transform: translateY(-2px); }
+
+/* Navigation Tab Bar */
+.crm-header-nav .nav-tabs-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,0.18);
+  position: relative;
+  z-index: 2;
+}
+.crm-header-nav .nav-tab-btn {
+  padding: 8px 18px;
+  border-radius: 25px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #e0e7ff;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  text-decoration: none !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+.crm-header-nav .nav-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.crm-header-nav .nav-tab-btn.active {
+  background: #ffffff !important;
+  color: #312e81 !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+.crm-header-nav .nav-tab-btn.active .active-dot {
+  width: 7px;
+  height: 7px;
+  background: #6366f1;
+  border-radius: 50%;
+  display: inline-block;
+}
 
 .stat-card {
   background: #ffffff;
@@ -103,9 +216,42 @@
 </style>
 
 <section class="content" style="padding-top:15px;">
-  <div class="crm-header">
-    <h2><i class="fa fa-users"></i> Customer Directory</h2>
-    <p>Daftar pelanggan otomatis dari seluruh sumber penjualan — Toko, Shopee, Tokopedia, TikTok Shop</p>
+  <!-- Integrated Header Banner & Navigation -->
+  <div class="crm-header-nav">
+    <div class="header-top-flex">
+      <div class="header-title">
+        <div class="location-tag">
+          <i class="fa fa-map-marker"></i> CRM & After Sales <i class="fa fa-angle-right"></i> <span>Daftar Customer</span>
+        </div>
+        <h2><i class="fa fa-address-book" style="color:#818cf8;"></i> Customer Directory CRM</h2>
+        <p>Daftar pelanggan otomatis dari seluruh sumber penjualan — Toko, Shopee, Tokopedia, TikTok Shop</p>
+      </div>
+
+      <div class="action-tools">
+        <a href="<?= site_url('administrator/crm/journal_followup'); ?>" class="btn" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);"><i class="fa fa-tasks"></i> Journal Follow-Up</a>
+        <a href="<?= site_url('administrator/crm/export_customers?q=' . urlencode($filter ?? '') . '&rfm_segment=' . urlencode($rfm_segment ?? '')); ?>" class="btn btn-success" style="background:#10b981; color:#fff;"><i class="fa fa-file-excel-o"></i> Export CSV</a>
+        <a href="<?= site_url('administrator/crm/export_customers_pdf?q=' . urlencode($filter ?? '') . '&rfm_segment=' . urlencode($rfm_segment ?? '')); ?>" target="_blank" class="btn btn-danger" style="background:#ef4444; color:#fff;"><i class="fa fa-file-pdf-o"></i> Export PDF</a>
+      </div>
+    </div>
+
+    <!-- Bottom Row: Navigation Tabs Bar -->
+    <div class="nav-tabs-bar">
+      <a href="<?= site_url('administrator/crm/dashboard'); ?>" class="nav-tab-btn">
+        <i class="fa fa-tachometer"></i> 1. Dashboard CRM
+      </a>
+      <a href="<?= site_url('administrator/crm/chat'); ?>" class="nav-tab-btn">
+        <i class="fa fa-comments"></i> 2. Live Chat WA
+      </a>
+      <a href="<?= site_url('administrator/crm/journal_followup'); ?>" class="nav-tab-btn">
+        <i class="fa fa-tasks"></i> 3. Journal Follow-Up
+      </a>
+      <a href="<?= site_url('administrator/crm/broadcast'); ?>" class="nav-tab-btn">
+        <i class="fa fa-bullhorn"></i> 4. Broadcast WA
+      </a>
+      <a href="<?= site_url('administrator/crm'); ?>" class="nav-tab-btn active">
+        <span class="active-dot"></span> <i class="fa fa-users"></i> 5. Daftar Customer CRM
+      </a>
+    </div>
   </div>
 
   <!-- Search & Filter -->

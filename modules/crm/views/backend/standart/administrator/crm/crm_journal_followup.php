@@ -1,17 +1,127 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
-<style>
-.crm-header {
-  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #312e81 100%);
+:root {
+  --crm-gradient: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4338ca 100%);
+}
+
+.crm-header-nav {
+  background: var(--crm-gradient);
   color: #fff;
-  padding: 28px 32px;
+  padding: 24px 28px 20px 28px;
   border-radius: 16px;
-  margin-bottom: 22px;
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25);
+  margin-bottom: 24px;
+  box-shadow: 0 12px 30px rgba(30, 27, 75, 0.25);
   position: relative;
   overflow: hidden;
 }
-.crm-header h2 { margin: 0 0 6px 0; font-weight: 800; font-size: 24px; letter-spacing: -0.5px; }
-.crm-header p { margin: 0; opacity: 0.85; font-size: 13px; }
+.crm-header-nav::after {
+  content: '';
+  position: absolute;
+  right: -50px; bottom: -50px;
+  width: 220px; height: 220px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.crm-header-nav .header-top-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 18px;
+  position: relative;
+  z-index: 2;
+}
+.crm-header-nav .location-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: #e0e7ff;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 8px;
+}
+.crm-header-nav .header-title h2 {
+  margin: 0 0 4px 0;
+  font-weight: 800;
+  font-size: 24px;
+  letter-spacing: -0.5px;
+  color: #fff;
+}
+.crm-header-nav .header-title p {
+  margin: 0;
+  opacity: 0.88;
+  font-size: 13px;
+  color: #e2e8f0;
+}
+.crm-header-nav .action-tools {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.crm-header-nav .action-tools .btn {
+  border-radius: 9px;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 7px 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  border: none;
+}
+.crm-header-nav .action-tools .btn:hover { transform: translateY(-2px); }
+
+/* Navigation Tab Bar */
+.crm-header-nav .nav-tabs-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,0.18);
+  position: relative;
+  z-index: 2;
+}
+.crm-header-nav .nav-tab-btn {
+  padding: 8px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.92);
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.22);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+.crm-header-nav .nav-tab-btn:hover {
+  background: rgba(255,255,255,0.25);
+  color: #fff;
+  transform: translateY(-1px);
+}
+.crm-header-nav .nav-tab-btn.active {
+  background: #ffffff !important;
+  color: #312e81 !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.18) !important;
+}
+.crm-header-nav .nav-tab-btn .active-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #6366f1;
+  display: inline-block;
+}
 
 .stat-box {
   background: #ffffff;
@@ -259,21 +369,27 @@
 </style>
 
 <section class="content" style="padding-top:15px;">
-  <div class="crm-header">
-    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:15px;">
-      <div>
-        <h2><i class="fa fa-tasks"></i> Journal Follow-Up</h2>
+  <!-- Header Banner & Navigation -->
+  <div class="crm-header-nav">
+    <!-- Top Row: Title, Subtitle & Action Tools -->
+    <div class="header-top-flex">
+      <div class="header-title">
+        <div class="location-tag">
+          <i class="fa fa-map-marker"></i> CRM & After Sales <i class="fa fa-angle-right"></i> <span>Journal Follow-Up</span>
+        </div>
+        <h2><i class="fa fa-tasks" style="color:#818cf8;"></i> Journal Follow-Up After Sales</h2>
         <p>Pantau tahapan after sales — Konfirmasi Pengiriman, H+3 Cek Sampai, H+7 Experience, Custom H+n</p>
       </div>
-      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-        <button class="btn btn-sm" style="background:#0284c7;color:#fff;border:none;border-radius:8px;font-weight:600;padding:7px 14px;" id="btn-open-manual-add" title="Tambah Data Follow-Up Manual Baru"><i class="fa fa-plus-circle"></i> Tambah Data Manual</button>
-        <button class="btn btn-sm" style="background:#8e44ad;color:#fff;border:none;border-radius:8px;font-weight:600;padding:7px 14px;" id="btn-sync-cron" title="Pindai transaksi baru & buat label H+"><i class="fa fa-refresh"></i> Sync Label H+</button>
+
+      <div class="action-tools">
+        <button type="button" class="btn" style="background:#0284c7; color:#fff;" id="btn-open-manual-add" title="Tambah Data Follow-Up Manual Baru"><i class="fa fa-plus-circle"></i> Tambah Manual</button>
+        <button type="button" class="btn" style="background:#8e44ad; color:#fff;" id="btn-sync-cron" title="Pindai transaksi baru & buat label H+"><i class="fa fa-refresh"></i> Sync Label H+</button>
         
         <div class="btn-group">
-          <button type="button" class="btn btn-sm btn-success dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="border-radius:8px;font-weight:600;padding:7px 14px;background:#10b981;border:none;">
-            <i class="fa fa-download"></i> Export Data <span class="caret"></span>
+          <button type="button" class="btn btn-success dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="background:#10b981; color:#fff; border:none;">
+            <i class="fa fa-download"></i> Export <span class="caret"></span>
           </button>
-          <ul class="dropdown-menu dropdown-menu-right" style="border-radius:10px;box-shadow:0 10px 25px rgba(0,0,0,0.15);padding:6px 0;">
+          <ul class="dropdown-menu dropdown-menu-right" style="border-radius:10px; box-shadow:0 10px 25px rgba(0,0,0,0.15); padding:6px 0;">
             <li><a href="<?= site_url('administrator/crm/export_journal_excel?' . http_build_query($_GET)); ?>"><i class="fa fa-file-excel-o text-success" style="width:20px;"></i> Export Excel (.xls)</a></li>
             <li><a href="<?= site_url('administrator/crm/export_journal?' . http_build_query($_GET)); ?>"><i class="fa fa-file-text-o text-info" style="width:20px;"></i> Export CSV (.csv)</a></li>
             <li role="separator" class="divider" style="margin:4px 0;"></li>
@@ -281,10 +397,28 @@
           </ul>
         </div>
 
-        <a href="<?= site_url('administrator/crm/chat'); ?>" class="btn btn-sm" style="background:linear-gradient(135deg, #075e54, #128c7e);color:#fff;border:none;border-radius:8px;font-weight:700;padding:7px 14px;box-shadow:0 4px 12px rgba(18,140,126,0.35);"><i class="fa fa-whatsapp"></i> Live Chat WA Center</a>
-        <a href="<?= site_url('administrator/crm/broadcast'); ?>" class="btn btn-sm" style="background:#25D366;color:#fff;border:none;border-radius:8px;font-weight:600;padding:7px 14px;"><i class="fa fa-bullhorn"></i> Broadcast WA</a>
-        <a href="<?= site_url('administrator/crm/followup_setting'); ?>" class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:8px;font-weight:600;padding:7px 14px;"><i class="fa fa-cogs"></i> Settings</a>
+        <a href="<?= site_url('administrator/crm/chat'); ?>" class="btn" style="background:linear-gradient(135deg, #075e54, #128c7e); color:#fff; box-shadow:0 4px 12px rgba(18,140,126,0.35);" title="Live Chat WA Center"><i class="fa fa-whatsapp"></i> Live Chat WA</a>
+        <a href="<?= site_url('administrator/crm/followup_setting'); ?>" class="btn" style="background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.3);"><i class="fa fa-cogs"></i> Settings</a>
       </div>
+    </div>
+
+    <!-- Bottom Row: Navigation Tabs Bar -->
+    <div class="nav-tabs-bar">
+      <a href="<?= site_url('administrator/crm/dashboard'); ?>" class="nav-tab-btn">
+        <i class="fa fa-tachometer"></i> 1. Dashboard CRM
+      </a>
+      <a href="<?= site_url('administrator/crm/chat'); ?>" class="nav-tab-btn">
+        <i class="fa fa-comments"></i> 2. Live Chat WA
+      </a>
+      <a href="<?= site_url('administrator/crm/journal_followup'); ?>" class="nav-tab-btn active">
+        <span class="active-dot"></span> <i class="fa fa-tasks"></i> 3. Journal Follow-Up
+      </a>
+      <a href="<?= site_url('administrator/crm/broadcast'); ?>" class="nav-tab-btn">
+        <i class="fa fa-bullhorn"></i> 4. Broadcast WA
+      </a>
+      <a href="<?= site_url('administrator/crm'); ?>" class="nav-tab-btn">
+        <i class="fa fa-users"></i> 5. Daftar Customer CRM
+      </a>
     </div>
   </div>
 
