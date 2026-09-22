@@ -743,19 +743,25 @@
   </div>
 </div>
 
-<!-- ===== SEGMENT DEFINITIONS TABLE (always visible) ===== -->
+<!-- ===== SEGMENT DEFINITIONS TABLE (WITH CRUD) ===== -->
 <div class="row">
   <div class="col-md-12">
     <div class="section-card">
-      <div class="card-title"><i class="fa fa-book" style="color:#6366f1;"></i> Definisi & Strategi Per Segmen</div>
+      <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
+        <span><i class="fa fa-book" style="color:#6366f1;"></i> Definisi & Strategi Per Segmen</span>
+        <button type="button" class="btn btn-sm" data-toggle="modal" data-target="#modal-add-segment" style="background:#6366f1; color:#fff; border-radius:8px; font-weight:700; padding:6px 14px; box-shadow:0 2px 6px rgba(99,102,241,0.3);">
+          <i class="fa fa-plus-circle"></i> Tambah Strategi Segmen
+        </button>
+      </div>
       <div class="table-responsive">
-        <table class="table seg-def-table">
+        <table class="table seg-def-table" style="margin-bottom:0;">
           <thead>
             <tr>
-              <th style="min-width:140px;">Segment</th>
-              <th style="min-width:110px;">Jumlah Customer</th>
+              <th style="min-width:160px;">Segment</th>
+              <th style="min-width:120px;">Jumlah Customer</th>
               <th style="min-width:200px;">Goal</th>
               <th style="min-width:240px;">Action</th>
+              <th style="min-width:130px; text-align:center;">Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -763,22 +769,47 @@
             $dist_map = [];
             foreach ($rfm_distribution['segments'] as $d) { $dist_map[$d['segment']] = $d; }
             foreach ($segments as $s): 
-              $cnt = isset($dist_map[$s['segment']]) ? $dist_map[$s['segment']]['count'] : 0;
-              $pct = isset($dist_map[$s['segment']]) ? $dist_map[$s['segment']]['percentage'] : 0;
+              $s_id = isset($s['id']) ? $s['id'] : '';
+              $s_segment = isset($s['segment']) ? $s['segment'] : '';
+              $s_icon = isset($s['icon']) ? $s['icon'] : 'fa-star';
+              $s_color = isset($s['color']) ? $s['color'] : '#6366f1';
+              $s_goal = isset($s['goal']) ? $s['goal'] : '';
+              $s_action = isset($s['action']) ? $s['action'] : '';
+              $s_sort = isset($s['sort_order']) ? $s['sort_order'] : 0;
+              $cnt = isset($dist_map[$s_segment]) ? $dist_map[$s_segment]['count'] : 0;
+              $pct = isset($dist_map[$s_segment]) ? $dist_map[$s_segment]['percentage'] : 0;
             ?>
             <tr>
               <td>
                 <span style="display:inline-flex;align-items:center;gap:10px;">
-                  <span style="width:30px;height:30px;border-radius:8px;background:<?= $s['color']; ?>15;color:<?= $s['color']; ?>;display:inline-flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;"><i class="fa <?= $s['icon']; ?>"></i></span>
-                  <strong style="font-size:13px; color:#0f172a;"><?= htmlspecialchars($s['segment']); ?></strong>
+                  <span style="width:30px;height:30px;border-radius:8px;background:<?= $s_color; ?>15;color:<?= $s_color; ?>;display:inline-flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;"><i class="fa <?= $s_icon; ?>"></i></span>
+                  <strong style="font-size:13px; color:#0f172a;"><?= htmlspecialchars($s_segment); ?></strong>
                 </span>
               </td>
               <td>
                 <strong style="font-size:14px; color:#0f172a;"><?= number_format($cnt); ?></strong>
                 <span style="color:#64748b; font-size:11px;"> (<?= $pct; ?>%)</span>
               </td>
-              <td style="font-size:12.5px; color:#475569; line-height:1.4;"><?= htmlspecialchars($s['goal']); ?></td>
-              <td style="font-size:12.5px; color:#475569; line-height:1.4;"><?= htmlspecialchars($s['action']); ?></td>
+              <td style="font-size:12.5px; color:#475569; line-height:1.4;"><?= htmlspecialchars($s_goal); ?></td>
+              <td style="font-size:12.5px; color:#475569; line-height:1.4;"><?= htmlspecialchars($s_action); ?></td>
+              <td style="text-align:center; vertical-align:middle; white-space:nowrap;">
+                <button type="button" class="btn btn-xs btn-info btn-edit-segment" 
+                  data-id="<?= $s_id; ?>" 
+                  data-segment="<?= htmlspecialchars($s_segment, ENT_QUOTES); ?>" 
+                  data-icon="<?= htmlspecialchars($s_icon, ENT_QUOTES); ?>" 
+                  data-color="<?= htmlspecialchars($s_color, ENT_QUOTES); ?>" 
+                  data-goal="<?= htmlspecialchars($s_goal, ENT_QUOTES); ?>" 
+                  data-action="<?= htmlspecialchars($s_action, ENT_QUOTES); ?>" 
+                  data-sort="<?= $s_sort; ?>"
+                  style="border-radius:6px; font-weight:600; padding:4px 9px;" title="Edit Strategi Segmen Ini">
+                  <i class="fa fa-edit"></i> Edit
+                </button>
+                <?php if (!empty($s_id)): ?>
+                <a href="<?= site_url('administrator/rfm/delete_segment_strategy/' . $s_id); ?>" class="btn btn-xs btn-danger" onclick="return confirm('Apakah Anda yakin ingin menghapus strategi segmen <?= htmlspecialchars($s_segment, ENT_QUOTES); ?> ini?');" style="border-radius:6px; font-weight:600; padding:4px 9px; margin-left:3px;" title="Hapus Segmen Ini">
+                  <i class="fa fa-trash"></i> Hapus
+                </a>
+                <?php endif; ?>
+              </td>
             </tr>
             <?php endforeach; ?>
           </tbody>
@@ -1006,8 +1037,134 @@ window.addEventListener('DOMContentLoaded', function() {
       }
     }, 250);
   }
+
+  // Edit Segment Strategy Event Handler
+  $(document).on('click', '.btn-edit-segment', function() {
+    var id = $(this).data('id');
+    var segment = $(this).data('segment');
+    var icon = $(this).data('icon');
+    var color = $(this).data('color');
+    var goal = $(this).data('goal');
+    var action = $(this).data('action');
+    var sort = $(this).data('sort');
+
+    $('#edit_seg_id').val(id);
+    $('#edit_seg_segment').val(segment);
+    $('#edit_seg_icon').val(icon);
+    $('#edit_seg_color').val(color);
+    $('#edit_seg_goal').val(goal);
+    $('#edit_seg_action').val(action);
+    $('#edit_seg_sort').val(sort);
+
+    $('#modal-edit-segment').modal('show');
+  });
 });
 </script>
+
+<!-- ===== MODAL TAMBAH STRATEGI SEGMEN ===== -->
+<div class="modal fade" id="modal-add-segment" tabindex="-1" role="dialog" aria-labelledby="modalAddSegmentLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document" style="max-width:540px; margin:40px auto;">
+    <div class="modal-content" style="border-radius:16px; border:none; box-shadow:0 20px 40px rgba(0,0,0,0.15); overflow:hidden;">
+      <form method="POST" action="<?= site_url('administrator/rfm/save_segment_strategy'); ?>">
+        <div class="modal-header" style="background:linear-gradient(135deg, #1e1b4b, #312e81, #4338ca); color:#fff; padding:18px 24px; border:none; position:relative;">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color:#fff; opacity:0.8; font-size:24px; position:absolute; right:20px; top:18px;">&times;</button>
+          <h4 class="modal-title" id="modalAddSegmentLabel" style="font-weight:700; font-size:17px; margin:0; display:flex; align-items:center; gap:10px;">
+            <i class="fa fa-plus-circle" style="color:#818cf8; font-size:22px;"></i> Tambah Strategi Segmen Baru
+          </h4>
+        </div>
+        <div class="modal-body" style="padding:24px;">
+          <div class="form-group" style="margin-bottom:16px;">
+            <label style="font-weight:700; color:#1e1b4b; font-size:13px; margin-bottom:6px; display:block;">Nama Segmen RFM:</label>
+            <input type="text" name="segment" class="form-control" placeholder="Contoh: VIP Champions" required style="border-radius:8px; border:1px solid #cbd5e1; height:40px; font-weight:600;">
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group" style="margin-bottom:16px;">
+                <label style="font-weight:700; color:#1e1b4b; font-size:13px; margin-bottom:6px; display:block;">Ikon (FontAwesome):</label>
+                <input type="text" name="icon" class="form-control" placeholder="fa-trophy" value="fa-star" required style="border-radius:8px; border:1px solid #cbd5e1; height:40px; font-weight:600;">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group" style="margin-bottom:16px;">
+                <label style="font-weight:700; color:#1e1b4b; font-size:13px; margin-bottom:6px; display:block;">Warna Segmen (HEX):</label>
+                <input type="color" name="color" class="form-control" value="#6366f1" style="border-radius:8px; border:1px solid #cbd5e1; height:40px; padding:2px 4px;">
+              </div>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:16px;">
+            <label style="font-weight:700; color:#1e1b4b; font-size:13px; margin-bottom:6px; display:block;">Goal (Tujuan Perilaku):</label>
+            <textarea name="goal" class="form-control" rows="2" placeholder="Contoh: Pertahankan loyalitas dan tingkatkan frekuensi belanja" style="border-radius:8px; border:1px solid #cbd5e1; font-size:13px;"></textarea>
+          </div>
+          <div class="form-group" style="margin-bottom:16px;">
+            <label style="font-weight:700; color:#1e1b4b; font-size:13px; margin-bottom:6px; display:block;">Action (Tindakan & Strategi Promo):</label>
+            <textarea name="action" class="form-control" rows="3" placeholder="Contoh: Berikan hadiah eksklusif, voucher cashback, dan edukasi VIP" style="border-radius:8px; border:1px solid #cbd5e1; font-size:13px;"></textarea>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label style="font-weight:700; color:#1e1b4b; font-size:13px; margin-bottom:6px; display:block;">Urutan Tampilan:</label>
+            <input type="number" name="sort_order" class="form-control" value="0" style="border-radius:8px; border:1px solid #cbd5e1; height:40px; font-weight:600;">
+          </div>
+        </div>
+        <div class="modal-footer" style="background:#f8fafc; border-top:1px solid #e2e8f0; padding:14px 24px; border-radius:0 0 16px 16px; display:flex; justify-content:flex-end; gap:10px;">
+          <button type="button" class="btn btn-default" data-dismiss="modal" style="border-radius:8px; font-weight:600; padding:8px 18px;">Batal</button>
+          <button type="submit" class="btn" style="background:linear-gradient(135deg, #4338ca, #6366f1); color:#fff; border-radius:8px; font-weight:700; padding:8px 22px; box-shadow:0 4px 12px rgba(99,102,241,0.3);"><i class="fa fa-save"></i> Simpan Segmen</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL EDIT STRATEGI SEGMEN ===== -->
+<div class="modal fade" id="modal-edit-segment" tabindex="-1" role="dialog" aria-labelledby="modalEditSegmentLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document" style="max-width:540px; margin:40px auto;">
+    <div class="modal-content" style="border-radius:16px; border:none; box-shadow:0 20px 40px rgba(0,0,0,0.15); overflow:hidden;">
+      <form method="POST" action="<?= site_url('administrator/rfm/save_segment_strategy'); ?>">
+        <input type="hidden" name="id" id="edit_seg_id">
+        <div class="modal-header" style="background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; padding:18px 24px; border:none; position:relative;">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color:#fff; opacity:0.8; font-size:24px; position:absolute; right:20px; top:18px;">&times;</button>
+          <h4 class="modal-title" id="modalEditSegmentLabel" style="font-weight:700; font-size:17px; margin:0; display:flex; align-items:center; gap:10px;">
+            <i class="fa fa-edit" style="color:#7dd3fc; font-size:22px;"></i> Edit Strategi Segmen
+          </h4>
+        </div>
+        <div class="modal-body" style="padding:24px;">
+          <div class="form-group" style="margin-bottom:16px;">
+            <label style="font-weight:700; color:#1e1b4b; font-size:13px; margin-bottom:6px; display:block;">Nama Segmen RFM:</label>
+            <input type="text" name="segment" id="edit_seg_segment" class="form-control" required style="border-radius:8px; border:1px solid #cbd5e1; height:40px; font-weight:600;">
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group" style="margin-bottom:16px;">
+                <label style="font-weight:700; color:#1e1b4b; font-size:13px; margin-bottom:6px; display:block;">Ikon (FontAwesome):</label>
+                <input type="text" name="icon" id="edit_seg_icon" class="form-control" required style="border-radius:8px; border:1px solid #cbd5e1; height:40px; font-weight:600;">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group" style="margin-bottom:16px;">
+                <label style="font-weight:700; color:#1e1b4b; font-size:13px; margin-bottom:6px; display:block;">Warna Segmen (HEX):</label>
+                <input type="color" name="color" id="edit_seg_color" class="form-control" style="border-radius:8px; border:1px solid #cbd5e1; height:40px; padding:2px 4px;">
+              </div>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:16px;">
+            <label style="font-weight:700; color:#1e1b4b; font-size:13px; margin-bottom:6px; display:block;">Goal (Tujuan Perilaku):</label>
+            <textarea name="goal" id="edit_seg_goal" class="form-control" rows="2" style="border-radius:8px; border:1px solid #cbd5e1; font-size:13px;"></textarea>
+          </div>
+          <div class="form-group" style="margin-bottom:16px;">
+            <label style="font-weight:700; color:#1e1b4b; font-size:13px; margin-bottom:6px; display:block;">Action (Tindakan & Strategi Promo):</label>
+            <textarea name="action" id="edit_seg_action" class="form-control" rows="3" style="border-radius:8px; border:1px solid #cbd5e1; font-size:13px;"></textarea>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label style="font-weight:700; color:#1e1b4b; font-size:13px; margin-bottom:6px; display:block;">Urutan Tampilan:</label>
+            <input type="number" name="sort_order" id="edit_seg_sort" class="form-control" style="border-radius:8px; border:1px solid #cbd5e1; height:40px; font-weight:600;">
+          </div>
+        </div>
+        <div class="modal-footer" style="background:#f8fafc; border-top:1px solid #e2e8f0; padding:14px 24px; border-radius:0 0 16px 16px; display:flex; justify-content:flex-end; gap:10px;">
+          <button type="button" class="btn btn-default" data-dismiss="modal" style="border-radius:8px; font-weight:600; padding:8px 18px;">Batal</button>
+          <button type="submit" class="btn" style="background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; border-radius:8px; font-weight:700; padding:8px 22px; box-shadow:0 4px 12px rgba(2,132,199,0.3);"><i class="fa fa-check"></i> Update Segmen</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 
 <!-- ===== MODAL IMPORT EXCEL ===== -->
 <div class="modal fade" id="modal-import-excel" tabindex="-1" role="dialog" aria-labelledby="modalImportExcelLabel" aria-hidden="true">

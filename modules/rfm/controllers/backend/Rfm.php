@@ -100,6 +100,56 @@ class Rfm extends Admin
 		$this->render('backend/standart/administrator/rfm/rfm_tracking', $this->data);
 	}
 
+	// ===== Segment Strategy CRUD =====
+
+	public function save_segment_strategy()
+	{
+		$id = $this->input->post('id');
+		$segment = trim($this->input->post('segment'));
+		$icon = trim($this->input->post('icon'));
+		$color = trim($this->input->post('color'));
+		$goal = trim($this->input->post('goal'));
+		$action = trim($this->input->post('action'));
+		$sort_order = (int)$this->input->post('sort_order');
+
+		if (empty($segment)) {
+			set_message('Nama segmen tidak boleh kosong!', 'error');
+			redirect('administrator/rfm/dashboard');
+			return;
+		}
+
+		$data = [
+			'segment' => $segment,
+			'icon' => !empty($icon) ? $icon : 'fa-star',
+			'color' => !empty($color) ? $color : '#6366f1',
+			'goal' => $goal,
+			'action' => $action,
+			'sort_order' => $sort_order,
+		];
+
+		if (!empty($id)) {
+			$this->model_rfm->update_segment_strategy($id, $data);
+			set_message('Strategi segmen RFM berhasil diperbarui!', 'success');
+		} else {
+			$this->model_rfm->add_segment_strategy($data);
+			set_message('Strategi segmen RFM baru berhasil ditambahkan!', 'success');
+		}
+
+		redirect('administrator/rfm/dashboard');
+	}
+
+	public function delete_segment_strategy($id = null)
+	{
+		if ($id) {
+			$this->model_rfm->delete_segment_strategy($id);
+			set_message('Strategi segmen RFM berhasil dihapus!', 'success');
+		} else {
+			set_message('ID segmen tidak valid!', 'error');
+		}
+
+		redirect('administrator/rfm/dashboard');
+	}
+
 	// ===== Customer List with RFM =====
 
 	public function customer_list($offset = 0)

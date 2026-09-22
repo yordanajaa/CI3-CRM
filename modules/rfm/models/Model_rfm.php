@@ -133,21 +133,51 @@ class Model_rfm extends CI_Model
 	}
 
 	/**
-	 * Get segment summary with goals and actions
+	 * Get segment summary with goals and actions from database
 	 */
 	public function get_segment_definitions()
 	{
+		if ($this->db->table_exists('rfm_segment_strategy')) {
+			$query = $this->db->order_by('sort_order', 'ASC')->order_by('id', 'ASC')->get('rfm_segment_strategy');
+			if ($query && $query->num_rows() > 0) {
+				return $query->result_array();
+			}
+		}
+
+		// Fallback default definitions
 		return [
-			['segment' => 'Champions', 'icon' => 'fa-trophy', 'color' => '#f59e0b', 'goal' => 'Pertahankan loyalitas dan beri apresiasi', 'action' => 'Berikan hadiah eksklusif, early access, dan testimoni program'],
-			['segment' => 'Loyal Customers', 'icon' => 'fa-diamond', 'color' => '#10b981', 'goal' => 'Naikkan frekuensi atau AOV', 'action' => 'Tawarkan bundling, loyalty reward, dan referral program'],
-			['segment' => 'Potential Loyalist', 'icon' => 'fa-star', 'color' => '#6366f1', 'goal' => 'Dorong jadi loyal customer', 'action' => 'Follow up rutin, edukasi produk, dan masuk grup WA konsultasi'],
-			['segment' => 'New Customers', 'icon' => 'fa-user-plus', 'color' => '#3b82f6', 'goal' => 'Bina jadi pembeli ulang', 'action' => 'Reminder, konsultasi awal, dan edukasi cara konsumsi'],
-			['segment' => 'Big Spenders', 'icon' => 'fa-credit-card', 'color' => '#8b5cf6', 'goal' => 'Pertahankan nilai belanja', 'action' => 'Berikan penawaran VIP, diskon eksklusif, dan layanan personal'],
-			['segment' => 'Frequent Low Value', 'icon' => 'fa-shopping-basket', 'color' => '#64748b', 'goal' => 'Dorong naik kelas belanja', 'action' => 'Upsell produk premium, bundling hemat'],
-			['segment' => 'Need Attention', 'icon' => 'fa-bell', 'color' => '#f97316', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
-			['segment' => 'At Risk Customers', 'icon' => 'fa-exclamation-triangle', 'color' => '#ef4444', 'goal' => 'Cegah churn, reaktivasi', 'action' => 'Diskon khusus, personal outreach, tanya feedback'],
-			['segment' => "Can't Lose Them", 'icon' => 'fa-heart', 'color' => '#ec4899', 'goal' => 'Win back segera', 'action' => 'Kontak langsung, penawaran istimewa, eskalasi ke manajemen'],
-			['segment' => 'Hibernating', 'icon' => 'fa-moon-o', 'color' => '#6b7280', 'goal' => 'Reaktivasi atau lepaskan', 'action' => 'Kampanye re-engagement, survei alasan berhenti'],
+			['id' => 1, 'segment' => 'Champions', 'icon' => 'fa-trophy', 'color' => '#f59e0b', 'goal' => 'Pertahankan loyalitas dan beri apresiasi', 'action' => 'Berikan hadiah eksklusif, early access, dan testimoni program'],
+			['id' => 2, 'segment' => 'Loyal Customers', 'icon' => 'fa-diamond', 'color' => '#10b981', 'goal' => 'Naikkan frekuensi atau AOV', 'action' => 'Tawarkan bundling, loyalty reward, dan referral program'],
+			['id' => 3, 'segment' => 'Potential Loyalist', 'icon' => 'fa-star', 'color' => '#6366f1', 'goal' => 'Dorong jadi loyal customer', 'action' => 'Follow up rutin, edukasi produk, dan masuk grup WA konsultasi'],
+			['id' => 4, 'segment' => 'New Customers', 'icon' => 'fa-user-plus', 'color' => '#3b82f6', 'goal' => 'Bina jadi pembeli ulang', 'action' => 'Reminder, konsultasi awal, dan edukasi cara konsumsi'],
+			['id' => 5, 'segment' => 'Big Spenders', 'icon' => 'fa-credit-card', 'color' => '#8b5cf6', 'goal' => 'Pertahankan nilai belanja', 'action' => 'Berikan penawaran VIP, diskon eksklusif, dan layanan personal'],
+			['id' => 6, 'segment' => 'Frequent Low Value', 'icon' => 'fa-shopping-basket', 'color' => '#64748b', 'goal' => 'Dorong naik kelas belanja', 'action' => 'Upsell produk premium, bundling hemat'],
+			['id' => 7, 'segment' => 'Need Attention', 'icon' => 'fa-bell', 'color' => '#f97316', 'goal' => 'Kenalkan kembali brand & manfaat', 'action' => 'Kirim ulang value produk + testimoni relevan'],
+			['id' => 8, 'segment' => 'At Risk Customers', 'icon' => 'fa-exclamation-triangle', 'color' => '#ef4444', 'goal' => 'Cegah churn, reaktivasi', 'action' => 'Diskon khusus, personal outreach, tanya feedback'],
+			['id' => 9, 'segment' => "Can't Lose Them", 'icon' => 'fa-heart', 'color' => '#ec4899', 'goal' => 'Win back segera', 'action' => 'Kontak langsung, penawaran istimewa, eskalasi ke manajemen'],
+			['id' => 10, 'segment' => 'Hibernating', 'icon' => 'fa-moon-o', 'color' => '#6b7280', 'goal' => 'Reaktivasi atau lepaskan', 'action' => 'Kampanye re-engagement, survei alasan berhenti'],
 		];
+	}
+
+	public function get_segment_strategy_by_id($id)
+	{
+		return $this->db->get_where('rfm_segment_strategy', ['id' => $id])->row_array();
+	}
+
+	public function add_segment_strategy($data)
+	{
+		return $this->db->insert('rfm_segment_strategy', $data);
+	}
+
+	public function update_segment_strategy($id, $data)
+	{
+		$this->db->where('id', $id);
+		return $this->db->update('rfm_segment_strategy', $data);
+	}
+
+	public function delete_segment_strategy($id)
+	{
+		$this->db->where('id', $id);
+		return $this->db->delete('rfm_segment_strategy');
 	}
 }
