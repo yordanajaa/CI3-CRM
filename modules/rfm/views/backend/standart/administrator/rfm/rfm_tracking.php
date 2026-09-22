@@ -3,8 +3,8 @@
 
 <style>
 :root {
-  --rfm-primary: #059669;
-  --rfm-gradient-green: linear-gradient(135deg, #064e3b 0%, #047857 40%, #059669 100%);
+  --rfm-primary: #6366f1;
+  --rfm-gradient: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4338ca 100%);
   --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.03);
   --card-radius: 14px;
 }
@@ -16,12 +16,12 @@
 
 /* Header & Location Navigation Card */
 .rfm-header-nav {
-  background: var(--rfm-gradient-green);
+  background: var(--rfm-gradient);
   color: #fff;
   padding: 24px 28px 20px 28px;
   border-radius: 16px;
   margin-bottom: 22px;
-  box-shadow: 0 12px 30px rgba(4, 120, 87, 0.25);
+  box-shadow: 0 12px 30px rgba(30, 27, 75, 0.25);
   position: relative;
   overflow: hidden;
 }
@@ -50,7 +50,7 @@
   gap: 6px;
   background: rgba(255,255,255,0.15);
   border: 1px solid rgba(255,255,255,0.25);
-  color: #ecfdf5;
+  color: #e0e7ff;
   font-size: 11.5px;
   font-weight: 700;
   padding: 4px 12px;
@@ -66,9 +66,9 @@
 }
 .rfm-header-nav .header-title p {
   margin: 0;
-  opacity: 0.9;
+  opacity: 0.88;
   font-size: 13px;
-  color: #a7f3d0;
+  color: #e2e8f0;
 }
 .rfm-header-nav .action-tools {
   display: flex;
@@ -123,7 +123,7 @@
 }
 .rfm-header-nav .nav-tab-btn.active {
   background: #ffffff !important;
-  color: #047857 !important;
+  color: #312e81 !important;
   border-color: #ffffff !important;
   box-shadow: 0 4px 14px rgba(0,0,0,0.18) !important;
 }
@@ -131,7 +131,7 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #10b981;
+  background: #6366f1;
   display: inline-block;
 }
 
@@ -258,7 +258,7 @@
         <div class="location-tag">
           <i class="fa fa-map-marker"></i> Analisis RFM <i class="fa fa-angle-right"></i> <span>Tracking & Tren Bulanan</span>
         </div>
-        <h2><i class="fa fa-line-chart" style="color:#6ee7b7;"></i> Tracking & Tren RFM Bulanan</h2>
+        <h2><i class="fa fa-line-chart" style="color:#818cf8;"></i> Tracking & Tren RFM Bulanan</h2>
         <p>Rekapitulasi historis omset (monetary), frekuensi order, dan pembeli unik per bulan <?= !empty($product_filter) ? 'untuk produk: <strong>' . htmlspecialchars($product_filter) . '</strong>' : '(Seluruh Produk)'; ?></p>
       </div>
 
