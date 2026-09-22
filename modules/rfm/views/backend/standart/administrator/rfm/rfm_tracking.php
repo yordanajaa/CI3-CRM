@@ -14,68 +14,126 @@
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-.tracking-header-card {
+/* Header & Location Navigation Card */
+.rfm-header-nav {
   background: var(--rfm-gradient-green);
+  color: #fff;
+  padding: 24px 28px 20px 28px;
   border-radius: 16px;
-  padding: 26px 30px;
-  color: #ffffff;
-  box-shadow: 0 12px 30px rgba(4, 120, 87, 0.25);
   margin-bottom: 22px;
+  box-shadow: 0 12px 30px rgba(4, 120, 87, 0.25);
   position: relative;
   overflow: hidden;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
 }
-.tracking-header-card::after {
+.rfm-header-nav::after {
   content: '';
   position: absolute;
-  right: -40px;
-  bottom: -40px;
-  width: 200px;
-  height: 200px;
-  background: rgba(255, 255, 255, 0.06);
+  right: -50px; bottom: -50px;
+  width: 220px; height: 220px;
+  background: rgba(255,255,255,0.05);
   border-radius: 50%;
   pointer-events: none;
 }
-.tracking-title {
-  margin: 0 0 6px 0;
-  font-weight: 800;
-  font-size: 24px;
-  color: #ffffff;
+.rfm-header-nav .header-top-flex {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  letter-spacing: -0.5px;
-}
-.tracking-subtitle {
-  margin: 0;
-  font-size: 13.5px;
-  color: #a7f3d0;
-  line-height: 1.5;
-}
-.tracking-header-card .header-actions {
-  display: flex;
-  gap: 8px;
+  justify-content: space-between;
+  align-items: flex-start;
   flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 18px;
   position: relative;
   z-index: 2;
 }
-.tracking-header-card .header-actions .btn {
+.rfm-header-nav .location-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: #ecfdf5;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 8px;
+}
+.rfm-header-nav .header-title h2 {
+  margin: 0 0 4px 0;
+  font-weight: 800;
+  font-size: 24px;
+  letter-spacing: -0.5px;
+  color: #fff;
+}
+.rfm-header-nav .header-title p {
+  margin: 0;
+  opacity: 0.9;
+  font-size: 13px;
+  color: #a7f3d0;
+}
+.rfm-header-nav .action-tools {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.rfm-header-nav .action-tools .btn {
   border-radius: 9px;
   font-weight: 700;
-  font-size: 12.5px;
-  padding: 8px 16px;
+  font-size: 12px;
+  padding: 7px 14px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   transition: all 0.2s ease;
   box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  border: none;
 }
-.tracking-header-card .header-actions .btn:hover { transform: translateY(-2px); }
+.rfm-header-nav .action-tools .btn:hover { transform: translateY(-2px); }
+
+/* Navigation Tab Bar */
+.rfm-header-nav .nav-tabs-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,0.18);
+  position: relative;
+  z-index: 2;
+}
+.rfm-header-nav .nav-tab-btn {
+  padding: 8px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.92);
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.22);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+.rfm-header-nav .nav-tab-btn:hover {
+  background: rgba(255,255,255,0.25);
+  color: #fff;
+  transform: translateY(-1px);
+}
+.rfm-header-nav .nav-tab-btn.active {
+  background: #ffffff !important;
+  color: #047857 !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.18) !important;
+}
+.rfm-header-nav .nav-tab-btn .active-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  display: inline-block;
+}
 
 .kpi-mini-card {
   background: #ffffff;
@@ -143,7 +201,7 @@
   from { opacity: 0; transform: translateY(14px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.tracking-header-card, .kpi-mini-card, .section-card-custom {
+.rfm-header-nav, .kpi-mini-card, .section-card-custom {
   animation: rfmFadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -165,64 +223,68 @@
   border-radius: 4px;
 }
 
-/* ===== Mobile Responsive Media Queries ===== */
+/* Mobile Responsive Media Queries */
 @media (max-width: 991px) {
-  .tracking-header-card { padding: 22px 24px; }
+  .rfm-header-nav { padding: 20px 22px; }
   .chart-box-responsive { height: 280px !important; }
 }
 
 @media (max-width: 767px) {
-  .tracking-header-card { padding: 20px 16px; text-align: center; flex-direction: column; }
-  .tracking-title { font-size: 20px; justify-content: center; }
-  .tracking-subtitle { font-size: 12.5px; }
-  .tracking-header-card .header-actions { width: 100%; justify-content: center; gap: 8px; }
-  .tracking-header-card .header-actions .btn { width: 100%; max-width: 100%; padding: 10px; font-size: 12.5px; justify-content: center; }
+  .rfm-header-nav { padding: 18px 16px; text-align: center; }
+  .rfm-header-nav .header-top-flex { flex-direction: column; align-items: center; }
+  .rfm-header-nav .header-title h2 { font-size: 20px; }
+  .rfm-header-nav .header-title p { font-size: 12px; }
+  .rfm-header-nav .action-tools { width: 100%; justify-content: center; }
+  .rfm-header-nav .action-tools .btn { font-size: 11.5px; padding: 6px 10px; }
+  .rfm-header-nav .nav-tabs-bar { justify-content: center; width: 100%; }
+  .rfm-header-nav .nav-tab-btn { width: 100%; justify-content: center; padding: 10px; font-size: 12.5px; }
   
   .kpi-mini-card { padding: 14px 16px; }
   .kpi-mini-val { font-size: 18px; }
   .kpi-mini-lbl { font-size: 10px; }
   .section-card-custom { padding: 16px; border-radius: 12px; margin-bottom: 16px; }
   .chart-box-responsive { height: 240px !important; }
-  
-  #form-filter-tracking .row > div { margin-bottom: 10px !important; }
-  #form-filter-tracking button, #form-filter-tracking a { margin-top: 0 !important; }
-}
-
-@media (max-width: 575px) {
-  .tracking-title { font-size: 18px; }
-  .kpi-mini-card > div { flex-direction: column; text-align: center; gap: 6px; }
-  .kpi-mini-card .kpi-mini-lbl { margin-top: 2px; }
-  .kpi-mini-card div[style*="width:42px"] { margin: 0 auto 4px auto; }
 }
 </style>
 
 <div class="rfm-tracking-wrapper">
   <!-- ==========================================
-       LAYER 1: HEADER BANNER & QUICK ACTIONS
+       LAYER 1: HEADER & LOCATION NAVIGATION
        ========================================== -->
-  <div class="tracking-header-card">
-    <div>
-      <h2 class="tracking-title">
-        <i class="fa fa-line-chart" style="color:#6ee7b7;"></i>
-        Tracking & Tren RFM Bulanan
-      </h2>
-      <p class="tracking-subtitle">
-        Rekapitulasi historis omset (monetary), frekuensi order, dan pembeli unik per bulan <?= !empty($product_filter) ? 'untuk produk: <strong>' . htmlspecialchars($product_filter) . '</strong>' : '(Seluruh Produk)'; ?>
-      </p>
+  <div class="rfm-header-nav">
+    <!-- Top Row: Title, Subtitle & Action Tools -->
+    <div class="header-top-flex">
+      <div class="header-title">
+        <div class="location-tag">
+          <i class="fa fa-map-marker"></i> Analisis RFM <i class="fa fa-angle-right"></i> <span>Tracking & Tren Bulanan</span>
+        </div>
+        <h2><i class="fa fa-line-chart" style="color:#6ee7b7;"></i> Tracking & Tren RFM Bulanan</h2>
+        <p>Rekapitulasi historis omset (monetary), frekuensi order, dan pembeli unik per bulan <?= !empty($product_filter) ? 'untuk produk: <strong>' . htmlspecialchars($product_filter) . '</strong>' : '(Seluruh Produk)'; ?></p>
+      </div>
+
+      <?php
+        $nav_params = array_filter(['product' => $product_filter ?? '', 'period' => $period_filter ?? '']);
+        $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
+      ?>
+      <div class="action-tools">
+        <a href="<?= site_url('administrator/crm/chat'); ?>" class="btn" style="background:linear-gradient(135deg, #075e54, #128c7e); color:#fff; box-shadow:0 4px 12px rgba(18,140,126,0.35);" title="Live Chat WA"><i class="fa fa-whatsapp"></i> Live Chat WA</a>
+        <a href="<?= site_url('administrator/crm/broadcast'); ?>" class="btn" style="background:#25D366; color:#fff;" title="Broadcast WA"><i class="fa fa-bullhorn"></i> Broadcast WA</a>
+        <button type="button" class="btn" data-toggle="modal" data-target="#modal-import-excel" style="background:#10b981; color:#fff; box-shadow:0 4px 12px rgba(16,185,129,0.35);"><i class="fa fa-file-excel-o"></i> Import Excel Data</button>
+        <a href="<?= site_url('administrator/rfm/export_customers' . $nav_qs); ?>" class="btn" style="background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.3);"><i class="fa fa-download"></i> Export CSV</a>
+      </div>
     </div>
 
-    <?php
-      $nav_params = array_filter(['product' => $product_filter ?? '', 'period' => $period_filter ?? '']);
-      $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
-    ?>
-    <div class="header-actions">
-      <a href="<?= site_url('administrator/rfm/dashboard' . $nav_qs); ?>" class="btn" style="background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.3); font-weight:700;"><i class="fa fa-tachometer"></i> Dashboard RFM</a>
-      <a href="<?= site_url('administrator/rfm' . $nav_qs); ?>" class="btn" style="background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.3); font-weight:700;"><i class="fa fa-users"></i> Daftar Customer</a>
-      <a href="<?= site_url('administrator/rfm/tracking' . $nav_qs); ?>" class="btn" style="background:#ffffff; color:#047857; font-weight:700;"><i class="fa fa-line-chart"></i> Tracking RFM Bulanan</a>
-      <a href="<?= site_url('administrator/crm/chat'); ?>" class="btn" style="background:linear-gradient(135deg, #075e54, #128c7e); color:#fff; box-shadow:0 4px 12px rgba(18,140,126,0.35); font-weight:700;"><i class="fa fa-whatsapp"></i> Live Chat WA</a>
-      <a href="<?= site_url('administrator/crm/broadcast'); ?>" class="btn" style="background:#25D366; color:#fff; font-weight:700;"><i class="fa fa-bullhorn"></i> Broadcast WA</a>
-      <button type="button" class="btn" data-toggle="modal" data-target="#modal-import-excel" style="background:#10b981; color:#fff; font-weight:700; border:none; box-shadow:0 4px 12px rgba(16,185,129,0.35);"><i class="fa fa-file-excel-o"></i> Import Excel Data</button>
-      <a href="<?= site_url('administrator/rfm/export_customers' . $nav_qs); ?>" class="btn" style="background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.3); font-weight:700;"><i class="fa fa-download"></i> Export CSV</a>
+    <!-- Bottom Row: Navigation Tabs Bar (Clear Location Indicator) -->
+    <div class="nav-tabs-bar">
+      <a href="<?= site_url('administrator/rfm/dashboard' . $nav_qs); ?>" class="nav-tab-btn">
+        <i class="fa fa-tachometer"></i> 1. Dashboard RFM
+      </a>
+      <a href="<?= site_url('administrator/rfm' . $nav_qs); ?>" class="nav-tab-btn">
+        <i class="fa fa-users"></i> 2. Daftar Customer
+      </a>
+      <a href="<?= site_url('administrator/rfm/tracking' . $nav_qs); ?>" class="nav-tab-btn active">
+        <span class="active-dot"></span> <i class="fa fa-line-chart"></i> 3. Tracking RFM Bulanan
+      </a>
     </div>
   </div>
 
@@ -459,7 +521,7 @@
             </td>
             <td style="text-align:center;">
               <?php $r_days = is_object($mt) ? ($mt->avg_recency_days ?? $mt->avg_recency ?? 0) : ($mt['avg_recency_days'] ?? $mt['avg_recency'] ?? 0); ?>
-              <span class="label" style="background:<?= $r_days <= 30 ? '#dcfce7; color:#166534;' : ($r_days <= 90 ? '#fef3c7; color:#92400e;' : '#fee2e2; color:#991b1b;'); ?> border-radius:6px; padding:5px 9px; font-weight:700;">
+              <span class="label" style="background:<?= $r_days <= 30 ? '#dcfce7; color:#166534;' : ($r_days <= 90 ? '#fef3c7; color:#92400e;' : '#fee2e2; color:#991b1b;'); ?> border-radius:6px; padding:5px 99px; font-weight:700; padding:5px 9px;">
                 <i class="fa fa-clock-o"></i> <?= round($r_days); ?> hr lalu
               </span>
             </td>

@@ -9,79 +9,124 @@
   --card-radius: 14px;
 }
 
-.rfm-header {
+.rfm-header-nav {
   background: var(--rfm-gradient);
   color: #fff;
-  padding: 28px 32px;
+  padding: 24px 28px 20px 28px;
   border-radius: 16px;
   margin-bottom: 24px;
   box-shadow: 0 12px 30px rgba(49, 46, 129, 0.25);
   position: relative;
   overflow: hidden;
+}
+.rfm-header-nav::after {
+  content: '';
+  position: absolute;
+  right: -50px; bottom: -50px;
+  width: 220px; height: 220px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.rfm-header-nav .header-top-flex {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   flex-wrap: wrap;
   gap: 16px;
+  margin-bottom: 18px;
+  position: relative;
+  z-index: 2;
 }
-.rfm-header::before {
-  content: '';
-  position: absolute;
-  right: -60px;
-  top: -60px;
-  width: 220px;
-  height: 220px;
-  background: rgba(255,255,255,0.06);
-  border-radius: 50%;
-  pointer-events: none;
+.rfm-header-nav .location-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: #e0e7ff;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 8px;
 }
-.rfm-header::after {
-  content: '';
-  position: absolute;
-  right: 60px;
-  bottom: -80px;
-  width: 280px;
-  height: 280px;
-  background: rgba(255,255,255,0.03);
-  border-radius: 50%;
-  pointer-events: none;
-}
-.rfm-header .header-title h2 {
-  margin: 0 0 6px 0;
+.rfm-header-nav .header-title h2 {
+  margin: 0 0 4px 0;
   font-weight: 800;
-  font-size: 26px;
+  font-size: 24px;
   letter-spacing: -0.5px;
   color: #fff;
 }
-.rfm-header .header-title p {
+.rfm-header-nav .header-title p {
   margin: 0;
-  opacity: 0.85;
-  font-size: 13.5px;
-  font-weight: 400;
+  opacity: 0.88;
+  font-size: 13px;
   color: #e2e8f0;
 }
-.rfm-header .header-actions {
-  position: relative;
-  z-index: 2;
+.rfm-header-nav .action-tools {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
+  align-items: center;
 }
-.rfm-header .header-actions .btn {
-  border-radius: 10px;
+.rfm-header-nav .action-tools .btn {
+  border-radius: 9px;
   font-weight: 700;
-  font-size: 13px;
-  padding: 9px 18px;
+  font-size: 12px;
+  padding: 7px 14px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   transition: all 0.2s ease;
   box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  border: none;
 }
-.rfm-header .header-actions .btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+.rfm-header-nav .action-tools .btn:hover { transform: translateY(-2px); }
+
+/* Navigation Tab Bar */
+.rfm-header-nav .nav-tabs-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,0.18);
+  position: relative;
+  z-index: 2;
+}
+.rfm-header-nav .nav-tab-btn {
+  padding: 8px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.92);
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.22);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+.rfm-header-nav .nav-tab-btn:hover {
+  background: rgba(255,255,255,0.25);
+  color: #fff;
+  transform: translateY(-1px);
+}
+.rfm-header-nav .nav-tab-btn.active {
+  background: #ffffff !important;
+  color: #312e81 !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.18) !important;
+}
+.rfm-header-nav .nav-tab-btn .active-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  display: inline-block;
 }
 
 /* KPI Cards */
@@ -378,23 +423,40 @@
 <!-- ==========================================
      LAYER 1: HEADER BANNER & QUICK ACTIONS
      ========================================== -->
-<div class="rfm-header">
-  <div class="header-title">
-    <h2><i class="fa fa-bar-chart"></i> Dashboard Analisis RFM</h2>
-    <p>Recency, Frequency, Monetary — Segmentasi pelanggan berdasarkan perilaku transaksi per produk</p>
+<div class="rfm-header-nav">
+  <!-- Top Row: Title, Subtitle & Action Tools -->
+  <div class="header-top-flex">
+    <div class="header-title">
+      <div class="location-tag">
+        <i class="fa fa-map-marker"></i> Analisis RFM <i class="fa fa-angle-right"></i> <span>Dashboard Utama</span>
+      </div>
+      <h2><i class="fa fa-bar-chart"></i> Dashboard Analisis RFM</h2>
+      <p>Recency, Frequency, Monetary — Segmentasi pelanggan berdasarkan perilaku transaksi per produk</p>
+    </div>
+
+    <?php
+      $nav_params = array_filter(['product' => $product_filter ?? '', 'period' => $period_filter ?? '']);
+      $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
+    ?>
+    <div class="action-tools">
+      <a href="<?= site_url('administrator/crm/chat'); ?>" class="btn" style="background:linear-gradient(135deg, #075e54, #128c7e); color:#fff; box-shadow:0 4px 12px rgba(18,140,126,0.35);" title="Live Chat WA"><i class="fa fa-whatsapp"></i> Live Chat WA</a>
+      <a href="<?= site_url('administrator/crm/broadcast'); ?>" class="btn" style="background:#25D366; color:#fff;" title="Broadcast WA"><i class="fa fa-bullhorn"></i> Broadcast WA</a>
+      <button type="button" class="btn" data-toggle="modal" data-target="#modal-import-excel" style="background:#10b981; color:#fff; box-shadow:0 4px 12px rgba(16,185,129,0.35);"><i class="fa fa-file-excel-o"></i> Import Excel Data</button>
+      <a href="<?= site_url('administrator/rfm/export_customers' . $nav_qs); ?>" class="btn" style="background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.3);"><i class="fa fa-download"></i> Export CSV</a>
+    </div>
   </div>
-  <?php
-    $nav_params = array_filter(['product' => $product_filter ?? '', 'period' => $period_filter ?? '']);
-    $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
-  ?>
-  <div class="header-actions">
-    <a href="<?= site_url('administrator/rfm/dashboard' . $nav_qs); ?>" class="btn" style="background:#fff; color:#312e81; font-weight:700;"><i class="fa fa-tachometer"></i> Dashboard RFM</a>
-    <a href="<?= site_url('administrator/rfm' . $nav_qs); ?>" class="btn" style="background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.3); font-weight:700;"><i class="fa fa-users"></i> Daftar Customer</a>
-    <a href="<?= site_url('administrator/rfm/tracking' . $nav_qs); ?>" class="btn" style="background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.3); font-weight:700;"><i class="fa fa-line-chart"></i> Tracking RFM Bulanan</a>
-    <a href="<?= site_url('administrator/crm/chat'); ?>" class="btn" style="background:linear-gradient(135deg, #075e54, #128c7e); color:#fff; box-shadow:0 4px 12px rgba(18,140,126,0.35); font-weight:700;"><i class="fa fa-whatsapp"></i> Live Chat WA</a>
-    <a href="<?= site_url('administrator/crm/broadcast'); ?>" class="btn" style="background:#25D366; color:#fff; font-weight:700;"><i class="fa fa-bullhorn"></i> Broadcast WA</a>
-    <button type="button" class="btn" data-toggle="modal" data-target="#modal-import-excel" style="background:#10b981; color:#fff; font-weight:700; border:none; box-shadow:0 4px 12px rgba(16,185,129,0.35);"><i class="fa fa-file-excel-o"></i> Import Excel Data</button>
-    <a href="<?= site_url('administrator/rfm/export_customers' . $nav_qs); ?>" class="btn" style="background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.3); font-weight:700;"><i class="fa fa-download"></i> Export CSV</a>
+
+  <!-- Bottom Row: Navigation Tabs Bar (Clear Location Indicator) -->
+  <div class="nav-tabs-bar">
+    <a href="<?= site_url('administrator/rfm/dashboard' . $nav_qs); ?>" class="nav-tab-btn active">
+      <span class="active-dot"></span> <i class="fa fa-tachometer"></i> 1. Dashboard RFM
+    </a>
+    <a href="<?= site_url('administrator/rfm' . $nav_qs); ?>" class="nav-tab-btn">
+      <i class="fa fa-users"></i> 2. Daftar Customer
+    </a>
+    <a href="<?= site_url('administrator/rfm/tracking' . $nav_qs); ?>" class="nav-tab-btn">
+      <i class="fa fa-line-chart"></i> 3. Tracking RFM Bulanan
+    </a>
   </div>
 </div>
 
