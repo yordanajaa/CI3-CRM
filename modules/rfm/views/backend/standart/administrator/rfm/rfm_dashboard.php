@@ -283,12 +283,12 @@
 /* Chart Containers */
 .chart-box-pie {
   position: relative;
-  height: 340px;
+  height: 320px;
   width: 100%;
 }
 .chart-box-bar {
   position: relative;
-  height: 260px;
+  height: 250px;
   width: 100%;
 }
 
@@ -302,12 +302,6 @@
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-@keyframes rfmPulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.03); }
-  100% { transform: scale(1); }
 }
 
 .rfm-animated {
@@ -349,7 +343,7 @@
 
 @media (max-width: 991px) {
   .segment-grid { grid-template-columns: repeat(2, 1fr); }
-  .chart-box-pie { height: 300px; }
+  .chart-box-pie { height: 280px; }
 }
 
 @media (max-width: 767px) {
@@ -381,7 +375,9 @@
 }
 </style>
 
-<!-- ===== HEADER ===== -->
+<!-- ==========================================
+     LAYER 1: HEADER BANNER & QUICK ACTIONS
+     ========================================== -->
 <div class="rfm-header">
   <div class="header-title">
     <h2><i class="fa fa-bar-chart"></i> Dashboard Analisis RFM</h2>
@@ -402,7 +398,9 @@
   </div>
 </div>
 
-<!-- ===== PRODUCT & PERIODE FILTER BAR ===== -->
+<!-- ==========================================
+     LAYER 2: FILTER BAR (PRODUK & PERIODE)
+     ========================================== -->
 <div class="section-card" style="margin-bottom:20px; padding:16px 20px; background:#fff; border:1px solid #e0e7ff; border-left:4px solid #6366f1;">
   <form method="GET" action="<?= site_url('administrator/rfm/dashboard'); ?>" id="form-product-filter" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
     <div style="display:flex; align-items:center; gap:16px; flex:1; min-width:320px; flex-wrap:wrap;">
@@ -450,7 +448,9 @@
   </form>
 </div>
 
-<!-- ===== KPI CARDS ===== -->
+<!-- ==========================================
+     LAYER 3: EXECUTIVE SUMMARY KPI CARDS
+     ========================================== -->
 <div class="row kpi-row">
   <div class="col-md-3 col-sm-6 col-xs-6">
     <div class="kpi-card">
@@ -490,22 +490,33 @@
   </div>
 </div>
 
-<!-- ===== SEGMENT DISTRIBUTION & BREAKDOWN ===== -->
+<!-- ==========================================
+     LAYER 4: SEGMENTATION & DISTRIBUTION VISUALS
+     ========================================== -->
 <div class="row rfm-flex-row">
-  <!-- Pie Chart -->
+  <!-- Left Column: Visual Charts (Pie + Bar) -->
   <div class="col-md-5 col-sm-12 rfm-flex-col">
-    <div class="section-card" style="flex:1; display:flex; flex-direction:column;">
+    <!-- Doughnut Distribution Chart -->
+    <div class="section-card" style="margin-bottom:16px;">
       <div class="card-title"><i class="fa fa-pie-chart" style="color:#6366f1;"></i> Distribusi Segmen RFM</div>
       <div class="chart-box-pie">
         <canvas id="rfmPieChart"></canvas>
       </div>
     </div>
+
+    <!-- Bar Comparison Chart -->
+    <div class="section-card" style="flex:1;">
+      <div class="card-title"><i class="fa fa-bar-chart" style="color:#6366f1;"></i> Perbandingan Jumlah Customer Per Segmen</div>
+      <div class="chart-box-bar">
+        <canvas id="rfmBarChart"></canvas>
+      </div>
+    </div>
   </div>
 
-  <!-- Segment Cards Grid -->
+  <!-- Right Column: 10 Segment Breakdown Cards -->
   <div class="col-md-7 col-sm-12 rfm-flex-col">
     <div class="section-card" style="flex:1;">
-      <div class="card-title"><i class="fa fa-th-large" style="color:#6366f1;"></i> Breakdown Per Segmen</div>
+      <div class="card-title"><i class="fa fa-th-large" style="color:#6366f1;"></i> Breakdown Per Segmen (<?= count($rfm_distribution['segments']); ?> Segmen)</div>
       <div class="segment-grid">
         <?php foreach ($rfm_distribution['segments'] as $dist): ?>
         <div class="seg-card">
@@ -526,7 +537,155 @@
   </div>
 </div>
 
-<!-- ===== MONTHLY RFM TRACKING & TREND SECTION ===== -->
+<!-- ==========================================
+     LAYER 5: STRATEGY MATRIX (CRUD) & THRESHOLDS
+     ========================================== -->
+<!-- Segment Definitions & Strategy Table (With CRUD) -->
+<div class="row" style="margin-top:8px;">
+  <div class="col-md-12">
+    <div class="section-card">
+      <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
+        <span><i class="fa fa-book" style="color:#6366f1;"></i> Definisi & Strategi Per Segmen</span>
+        <button type="button" class="btn btn-sm" data-toggle="modal" data-target="#modal-add-segment" style="background:#6366f1; color:#fff; border-radius:8px; font-weight:700; padding:6px 14px; box-shadow:0 2px 6px rgba(99,102,241,0.3);">
+          <i class="fa fa-plus-circle"></i> Tambah Strategi Segmen
+        </button>
+      </div>
+      <div class="table-responsive">
+        <table class="table seg-def-table" style="margin-bottom:0;">
+          <thead>
+            <tr>
+              <th style="min-width:160px;">Segment</th>
+              <th style="min-width:120px;">Jumlah Customer</th>
+              <th style="min-width:200px;">Goal (Tujuan Perilaku)</th>
+              <th style="min-width:240px;">Action (Strategi Promo)</th>
+              <th style="min-width:130px; text-align:center;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php 
+            $dist_map = [];
+            foreach ($rfm_distribution['segments'] as $d) { $dist_map[$d['segment']] = $d; }
+            foreach ($segments as $s): 
+              $s_id = isset($s['id']) ? $s['id'] : '';
+              $s_segment = isset($s['segment']) ? $s['segment'] : '';
+              $s_icon = isset($s['icon']) ? $s['icon'] : 'fa-star';
+              $s_color = isset($s['color']) ? $s['color'] : '#6366f1';
+              $s_goal = isset($s['goal']) ? $s['goal'] : '';
+              $s_action = isset($s['action']) ? $s['action'] : '';
+              $s_sort = isset($s['sort_order']) ? $s['sort_order'] : 0;
+              $cnt = isset($dist_map[$s_segment]) ? $dist_map[$s_segment]['count'] : 0;
+              $pct = isset($dist_map[$s_segment]) ? $dist_map[$s_segment]['percentage'] : 0;
+            ?>
+            <tr>
+              <td>
+                <span style="display:inline-flex;align-items:center;gap:10px;">
+                  <span style="width:30px;height:30px;border-radius:8px;background:<?= $s_color; ?>15;color:<?= $s_color; ?>;display:inline-flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;"><i class="fa <?= $s_icon; ?>"></i></span>
+                  <strong style="font-size:13px; color:#0f172a;"><?= htmlspecialchars($s_segment); ?></strong>
+                </span>
+              </td>
+              <td>
+                <strong style="font-size:14px; color:#0f172a;"><?= number_format($cnt); ?></strong>
+                <span style="color:#64748b; font-size:11px;"> (<?= $pct; ?>%)</span>
+              </td>
+              <td style="font-size:12.5px; color:#475569; line-height:1.4;"><?= htmlspecialchars($s_goal); ?></td>
+              <td style="font-size:12.5px; color:#475569; line-height:1.4;"><?= htmlspecialchars($s_action); ?></td>
+              <td style="text-align:center; vertical-align:middle; white-space:nowrap;">
+                <button type="button" class="btn btn-xs btn-info btn-edit-segment" 
+                  data-id="<?= $s_id; ?>" 
+                  data-segment="<?= htmlspecialchars($s_segment, ENT_QUOTES); ?>" 
+                  data-icon="<?= htmlspecialchars($s_icon, ENT_QUOTES); ?>" 
+                  data-color="<?= htmlspecialchars($s_color, ENT_QUOTES); ?>" 
+                  data-goal="<?= htmlspecialchars($s_goal, ENT_QUOTES); ?>" 
+                  data-action="<?= htmlspecialchars($s_action, ENT_QUOTES); ?>" 
+                  data-sort="<?= $s_sort; ?>"
+                  style="border-radius:6px; font-weight:600; padding:4px 9px;" title="Edit Strategi Segmen Ini">
+                  <i class="fa fa-edit"></i> Edit
+                </button>
+                <?php if (!empty($s_id)): ?>
+                <a href="<?= site_url('administrator/rfm/delete_segment_strategy/' . $s_id); ?>" class="btn btn-xs btn-danger" onclick="return confirm('Apakah Anda yakin ingin menghapus strategi segmen <?= htmlspecialchars($s_segment, ENT_QUOTES); ?> ini?');" style="border-radius:6px; font-weight:600; padding:4px 9px; margin-left:3px;" title="Hapus Segmen Ini">
+                  <i class="fa fa-trash"></i> Hapus
+                </a>
+                <?php endif; ?>
+              </td>
+            </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Threshold Tables (Percentile Rules R, F, M) -->
+<div class="row">
+  <div class="col-md-4 col-sm-12">
+    <div class="section-card">
+      <div class="card-title"><i class="fa fa-clock-o" style="color:#2563eb;"></i> Threshold Recency (R)</div>
+      <div class="table-responsive">
+        <table class="table table-threshold">
+          <thead><tr><th>Percentile</th><th>Range Hari</th><th>Skor</th><th>Label</th></tr></thead>
+          <tbody>
+            <?php $r_colors = ['#16a34a','#22c55e','#eab308','#f97316','#ef4444']; ?>
+            <?php foreach ($thresholds['recency'] as $i => $tr): ?>
+            <tr>
+              <td><strong><?= $tr['percentile']; ?></strong></td>
+              <td><?= $tr['range']; ?></td>
+              <td><span class="score-badge" style="background:<?= $r_colors[$i]; ?>"><?= $tr['score']; ?></span></td>
+              <td><?= $tr['label']; ?></td>
+            </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 col-sm-12">
+    <div class="section-card">
+      <div class="card-title"><i class="fa fa-repeat" style="color:#16a34a;"></i> Threshold Frequency (F)</div>
+      <div class="table-responsive">
+        <table class="table table-threshold">
+          <thead><tr><th>Percentile</th><th>Range Order</th><th>Skor</th><th>Label</th></tr></thead>
+          <tbody>
+            <?php $f_colors = ['#16a34a','#22c55e','#eab308','#f97316','#ef4444']; ?>
+            <?php foreach ($thresholds['frequency'] as $i => $tf): ?>
+            <tr>
+              <td><strong><?= $tf['percentile']; ?></strong></td>
+              <td><?= $tf['range']; ?></td>
+              <td><span class="score-badge" style="background:<?= $f_colors[$i]; ?>"><?= $tf['score']; ?></span></td>
+              <td><?= $tf['label']; ?></td>
+            </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 col-sm-12">
+    <div class="section-card">
+      <div class="card-title"><i class="fa fa-money" style="color:#7c3aed;"></i> Threshold Monetary (M)</div>
+      <div class="table-responsive">
+        <table class="table table-threshold">
+          <thead><tr><th>Percentile</th><th>Range Nominal</th><th>Skor</th><th>Label</th></tr></thead>
+          <tbody>
+            <?php $m_colors = ['#16a34a','#22c55e','#eab308','#f97316','#ef4444']; ?>
+            <?php foreach ($thresholds['monetary'] as $i => $tm): ?>
+            <tr>
+              <td><strong><?= $tm['percentile']; ?></strong></td>
+              <td><?= $tm['range']; ?></td>
+              <td><span class="score-badge" style="background:<?= $m_colors[$i]; ?>"><?= $tm['score']; ?></span></td>
+              <td><?= $tm['label']; ?></td>
+            </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================
+     LAYER 6: MONTHLY RFM TRACKING & TRENDS
+     ========================================== -->
 <?php
   $track_data = $monthly_tracking ?? [];
   $track_cnt = count($track_data);
@@ -536,7 +695,7 @@
   $avg_sum_buyers = $track_cnt > 0 ? $total_sum_buyers / $track_cnt : 0;
   $total_sum_orders = array_sum(array_column($track_data, 'total_orders'));
 ?>
-<div class="row" style="margin-top:20px; margin-bottom:24px;">
+<div class="row" style="margin-top:8px; margin-bottom:24px;">
   <div class="col-md-12">
     <div class="section-card" id="section-tracking-monthly" style="border-radius:16px; overflow:hidden; border:1px solid #a7f3d0; box-shadow:0 10px 30px rgba(16,185,129,0.12); padding:0; background:#fff; transition:all 0.3s ease;">
       <!-- Header Banner -->
@@ -693,7 +852,71 @@
   </div>
 </div>
 
-<!-- ===== DAFTAR PEMBELI & FREKUENSI TRANSAKSI PRODUK ===== -->
+<!-- ==========================================
+     LAYER 7: PRODUCT RFM PERFORMANCE & CUSTOMER LIST
+     ========================================== -->
+<!-- Analisis RFM Per Produk (Product-Level Performance) -->
+<div class="row">
+  <div class="col-xs-12">
+    <div class="section-card">
+      <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+        <span><i class="fa fa-shopping-bag" style="color:#ec4899;"></i> Analisis RFM Per Produk (Product-Level Performance)</span>
+        <a href="<?= site_url('administrator/rfm'); ?>" class="btn btn-xs" style="background:#f1f5f9; color:#475569; border-radius:6px; font-weight:600;"><i class="fa fa-arrow-right"></i> Lihat Semua Customer</a>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table seg-def-table" style="margin-bottom:0;">
+          <thead>
+            <tr>
+              <th style="width:4%;">#</th>
+              <th>Nama Produk</th>
+              <th style="text-align:center;">Pembeli Unik</th>
+              <th style="text-align:center;">Total Order</th>
+              <th style="text-align:center;">Total Qty</th>
+              <th style="text-align:right;">Total Omset</th>
+              <th style="text-align:center;">Recency (Hari)</th>
+              <th style="text-align:center;">Status RFM Produk</th>
+              <th style="text-align:center;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php if (!empty($product_rfm_list['rows'])): ?>
+            <?php $p_no = 1; foreach ($product_rfm_list['rows'] as $pr): ?>
+            <tr>
+              <td><?= $p_no++; ?></td>
+              <td>
+                <strong style="color:#0f172a; font-size:13px;"><?= htmlspecialchars($pr->item_name); ?></strong>
+              </td>
+              <td style="text-align:center;"><span class="badge" style="background:#e2e8f0; color:#334155; font-size:12px; font-weight:700;"><?= number_format($pr->total_customers); ?> cust</span></td>
+              <td style="text-align:center;"><strong style="color:#1e293b;"><?= number_format($pr->total_orders); ?>x</strong></td>
+              <td style="text-align:center; color:#64748b;"><?= number_format($pr->total_qty); ?></td>
+              <td style="text-align:right; font-weight:700; color:#16a34a;">Rp <?= number_format($pr->total_spend, 0, ',', '.'); ?></td>
+              <td style="text-align:center;">
+                <span class="label" style="background:<?= $pr->recency_days <= 30 ? '#dcfce7; color:#166534;' : ($pr->recency_days <= 90 ? '#fef3c7; color:#92400e;' : '#fee2e2; color:#991b1b;'); ?> border-radius:6px; padding:4px 8px;">
+                  <?= $pr->recency_days; ?> hr lalu
+                </span>
+              </td>
+              <td style="text-align:center;">
+                <span class="label" style="background:<?= $pr->status_badge['bg']; ?>; color:<?= $pr->status_badge['color']; ?>; border-radius:6px; padding:5px 99px; font-weight:700; padding:5px 9px;">
+                  <i class="fa <?= $pr->status_badge['icon']; ?>"></i> <?= $pr->status_badge['label']; ?>
+                </span>
+              </td>
+              <td style="text-align:center;">
+                <a href="<?= site_url('administrator/rfm?product=' . urlencode($pr->item_name)); ?>" class="btn btn-xs" style="background:#6366f1; color:#fff; border-radius:6px; font-weight:600;"><i class="fa fa-users"></i> Filter Customer</a>
+              </td>
+            </tr>
+            <?php endforeach; ?>
+            <?php else: ?>
+            <tr><td colspan="9" class="text-center" style="color:#94a3b8; padding:30px !important;">Tidak ada data produk ditemukan</td></tr>
+            <?php endif; ?>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Preview Daftar Pembeli & Frekuensi Transaksi -->
 <div class="row" style="margin-top:16px; margin-bottom:8px;">
   <div class="col-md-12">
     <div class="section-card" style="border-left:4px solid #6366f1;">
@@ -786,7 +1009,6 @@
                       $wa_action = !empty($rfm['action']) ? $rfm['action'] : 'Terima kasih telah menjadi pelanggan setia kami.';
                       $wa_msg = "Halo Kak " . $c->customer_nama . ",\n\nSalam dari Metafora! " . $wa_action . "\n\nAda yang bisa kami bantu hari ini?";
                       $direct_wa_url = 'https://api.whatsapp.com/send?phone=' . $wa_phone . '&text=' . rawurlencode($wa_msg);
-                      $crm_chat_url = site_url('administrator/crm/chat?phone=' . urlencode($c->customer_phone) . '&wa_msg=' . rawurlencode($wa_msg));
                   ?>
                   <a href="<?= $direct_wa_url; ?>" target="_blank" class="btn btn-xs" style="background:#25D366; color:#fff; border-radius:6px; font-weight:700; padding:3px 7px; font-size:11px; margin-left:2px;" title="Buka Chat WhatsApp Langsung">
                     <i class="fa fa-whatsapp"></i> Chat
@@ -809,222 +1031,11 @@
       <?php endif; ?>
     </div>
   </div>
-<!-- ===== BAR CHART ===== -->
-<div class="row">
-  <div class="col-md-12">
-    <div class="section-card">
-      <div class="card-title"><i class="fa fa-bar-chart" style="color:#6366f1;"></i> Perbandingan Jumlah Customer Per Segmen</div>
-      <div class="chart-box-bar">
-        <canvas id="rfmBarChart"></canvas>
-      </div>
-    </div>
-  </div>
 </div>
 
-<!-- ===== THRESHOLD TABLES ===== -->
-<div class="row">
-  <div class="col-md-4 col-sm-12">
-    <div class="section-card">
-      <div class="card-title"><i class="fa fa-clock-o" style="color:#2563eb;"></i> Threshold Recency</div>
-      <div class="table-responsive">
-        <table class="table table-threshold">
-          <thead><tr><th>Percentile</th><th>Range Hari</th><th>Skor</th><th>Label</th></tr></thead>
-          <tbody>
-            <?php $r_colors = ['#16a34a','#22c55e','#eab308','#f97316','#ef4444']; ?>
-            <?php foreach ($thresholds['recency'] as $i => $tr): ?>
-            <tr>
-              <td><strong><?= $tr['percentile']; ?></strong></td>
-              <td><?= $tr['range']; ?></td>
-              <td><span class="score-badge" style="background:<?= $r_colors[$i]; ?>"><?= $tr['score']; ?></span></td>
-              <td><?= $tr['label']; ?></td>
-            </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-4 col-sm-12">
-    <div class="section-card">
-      <div class="card-title"><i class="fa fa-repeat" style="color:#16a34a;"></i> Threshold Frequency</div>
-      <div class="table-responsive">
-        <table class="table table-threshold">
-          <thead><tr><th>Percentile</th><th>Range Order</th><th>Skor</th><th>Label</th></tr></thead>
-          <tbody>
-            <?php $f_colors = ['#16a34a','#22c55e','#eab308','#f97316','#ef4444']; ?>
-            <?php foreach ($thresholds['frequency'] as $i => $tf): ?>
-            <tr>
-              <td><strong><?= $tf['percentile']; ?></strong></td>
-              <td><?= $tf['range']; ?></td>
-              <td><span class="score-badge" style="background:<?= $f_colors[$i]; ?>"><?= $tf['score']; ?></span></td>
-              <td><?= $tf['label']; ?></td>
-            </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-4 col-sm-12">
-    <div class="section-card">
-      <div class="card-title"><i class="fa fa-money" style="color:#7c3aed;"></i> Threshold Monetary</div>
-      <div class="table-responsive">
-        <table class="table table-threshold">
-          <thead><tr><th>Percentile</th><th>Range Nominal</th><th>Skor</th><th>Label</th></tr></thead>
-          <tbody>
-            <?php $m_colors = ['#16a34a','#22c55e','#eab308','#f97316','#ef4444']; ?>
-            <?php foreach ($thresholds['monetary'] as $i => $tm): ?>
-            <tr>
-              <td><strong><?= $tm['percentile']; ?></strong></td>
-              <td><?= $tm['range']; ?></td>
-              <td><span class="score-badge" style="background:<?= $m_colors[$i]; ?>"><?= $tm['score']; ?></span></td>
-              <td><?= $tm['label']; ?></td>
-            </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ===== SEGMENT DEFINITIONS TABLE (WITH CRUD) ===== -->
-<div class="row">
-  <div class="col-md-12">
-    <div class="section-card">
-      <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
-        <span><i class="fa fa-book" style="color:#6366f1;"></i> Definisi & Strategi Per Segmen</span>
-        <button type="button" class="btn btn-sm" data-toggle="modal" data-target="#modal-add-segment" style="background:#6366f1; color:#fff; border-radius:8px; font-weight:700; padding:6px 14px; box-shadow:0 2px 6px rgba(99,102,241,0.3);">
-          <i class="fa fa-plus-circle"></i> Tambah Strategi Segmen
-        </button>
-      </div>
-      <div class="table-responsive">
-        <table class="table seg-def-table" style="margin-bottom:0;">
-          <thead>
-            <tr>
-              <th style="min-width:160px;">Segment</th>
-              <th style="min-width:120px;">Jumlah Customer</th>
-              <th style="min-width:200px;">Goal</th>
-              <th style="min-width:240px;">Action</th>
-              <th style="min-width:130px; text-align:center;">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php 
-            $dist_map = [];
-            foreach ($rfm_distribution['segments'] as $d) { $dist_map[$d['segment']] = $d; }
-            foreach ($segments as $s): 
-              $s_id = isset($s['id']) ? $s['id'] : '';
-              $s_segment = isset($s['segment']) ? $s['segment'] : '';
-              $s_icon = isset($s['icon']) ? $s['icon'] : 'fa-star';
-              $s_color = isset($s['color']) ? $s['color'] : '#6366f1';
-              $s_goal = isset($s['goal']) ? $s['goal'] : '';
-              $s_action = isset($s['action']) ? $s['action'] : '';
-              $s_sort = isset($s['sort_order']) ? $s['sort_order'] : 0;
-              $cnt = isset($dist_map[$s_segment]) ? $dist_map[$s_segment]['count'] : 0;
-              $pct = isset($dist_map[$s_segment]) ? $dist_map[$s_segment]['percentage'] : 0;
-            ?>
-            <tr>
-              <td>
-                <span style="display:inline-flex;align-items:center;gap:10px;">
-                  <span style="width:30px;height:30px;border-radius:8px;background:<?= $s_color; ?>15;color:<?= $s_color; ?>;display:inline-flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;"><i class="fa <?= $s_icon; ?>"></i></span>
-                  <strong style="font-size:13px; color:#0f172a;"><?= htmlspecialchars($s_segment); ?></strong>
-                </span>
-              </td>
-              <td>
-                <strong style="font-size:14px; color:#0f172a;"><?= number_format($cnt); ?></strong>
-                <span style="color:#64748b; font-size:11px;"> (<?= $pct; ?>%)</span>
-              </td>
-              <td style="font-size:12.5px; color:#475569; line-height:1.4;"><?= htmlspecialchars($s_goal); ?></td>
-              <td style="font-size:12.5px; color:#475569; line-height:1.4;"><?= htmlspecialchars($s_action); ?></td>
-              <td style="text-align:center; vertical-align:middle; white-space:nowrap;">
-                <button type="button" class="btn btn-xs btn-info btn-edit-segment" 
-                  data-id="<?= $s_id; ?>" 
-                  data-segment="<?= htmlspecialchars($s_segment, ENT_QUOTES); ?>" 
-                  data-icon="<?= htmlspecialchars($s_icon, ENT_QUOTES); ?>" 
-                  data-color="<?= htmlspecialchars($s_color, ENT_QUOTES); ?>" 
-                  data-goal="<?= htmlspecialchars($s_goal, ENT_QUOTES); ?>" 
-                  data-action="<?= htmlspecialchars($s_action, ENT_QUOTES); ?>" 
-                  data-sort="<?= $s_sort; ?>"
-                  style="border-radius:6px; font-weight:600; padding:4px 9px;" title="Edit Strategi Segmen Ini">
-                  <i class="fa fa-edit"></i> Edit
-                </button>
-                <?php if (!empty($s_id)): ?>
-                <a href="<?= site_url('administrator/rfm/delete_segment_strategy/' . $s_id); ?>" class="btn btn-xs btn-danger" onclick="return confirm('Apakah Anda yakin ingin menghapus strategi segmen <?= htmlspecialchars($s_segment, ENT_QUOTES); ?> ini?');" style="border-radius:6px; font-weight:600; padding:4px 9px; margin-left:3px;" title="Hapus Segmen Ini">
-                  <i class="fa fa-trash"></i> Hapus
-                </a>
-                <?php endif; ?>
-              </td>
-            </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ===== PRODUCT RFM ANALYSIS ===== -->
-<div class="row" style="margin-top:16px;">
-  <div class="col-xs-12">
-    <div class="section-card">
-      <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
-        <span><i class="fa fa-shopping-bag" style="color:#ec4899;"></i> Analisis RFM Per Produk (Product-Level Performance)</span>
-        <a href="<?= site_url('administrator/rfm'); ?>" class="btn btn-xs" style="background:#f1f5f9; color:#475569; border-radius:6px; font-weight:600;"><i class="fa fa-arrow-right"></i> Lihat Semua Customer</a>
-      </div>
-
-      <div class="table-responsive">
-        <table class="table seg-def-table" style="margin-bottom:0;">
-          <thead>
-            <tr>
-              <th style="width:4%;">#</th>
-              <th>Nama Produk</th>
-              <th style="text-align:center;">Pembeli Unik</th>
-              <th style="text-align:center;">Total Order</th>
-              <th style="text-align:center;">Total Qty</th>
-              <th style="text-align:right;">Total Omset</th>
-              <th style="text-align:center;">Recency (Hari)</th>
-              <th style="text-align:center;">Status RFM Produk</th>
-              <th style="text-align:center;">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php if (!empty($product_rfm_list['rows'])): ?>
-            <?php $p_no = 1; foreach ($product_rfm_list['rows'] as $pr): ?>
-            <tr>
-              <td><?= $p_no++; ?></td>
-              <td>
-                <strong style="color:#0f172a; font-size:13px;"><?= htmlspecialchars($pr->item_name); ?></strong>
-              </td>
-              <td style="text-align:center;"><span class="badge" style="background:#e2e8f0; color:#334155; font-size:12px; font-weight:700;"><?= number_format($pr->total_customers); ?> cust</span></td>
-              <td style="text-align:center;"><strong style="color:#1e293b;"><?= number_format($pr->total_orders); ?>x</strong></td>
-              <td style="text-align:center; color:#64748b;"><?= number_format($pr->total_qty); ?></td>
-              <td style="text-align:right; font-weight:700; color:#16a34a;">Rp <?= number_format($pr->total_spend, 0, ',', '.'); ?></td>
-              <td style="text-align:center;">
-                <span class="label" style="background:<?= $pr->recency_days <= 30 ? '#dcfce7; color:#166534;' : ($pr->recency_days <= 90 ? '#fef3c7; color:#92400e;' : '#fee2e2; color:#991b1b;'); ?> border-radius:6px; padding:4px 8px;">
-                  <?= $pr->recency_days; ?> hr lalu
-                </span>
-              </td>
-              <td style="text-align:center;">
-                <span class="label" style="background:<?= $pr->status_badge['bg']; ?>; color:<?= $pr->status_badge['color']; ?>; border-radius:6px; padding:5px 9px; font-weight:700;">
-                  <i class="fa <?= $pr->status_badge['icon']; ?>"></i> <?= $pr->status_badge['label']; ?>
-                </span>
-              </td>
-              <td style="text-align:center;">
-                <a href="<?= site_url('administrator/rfm?product=' . urlencode($pr->item_name)); ?>" class="btn btn-xs" style="background:#6366f1; color:#fff; border-radius:6px; font-weight:600;"><i class="fa fa-users"></i> Filter Customer</a>
-              </td>
-            </tr>
-            <?php endforeach; ?>
-            <?php else: ?>
-            <tr><td colspan="9" class="text-center" style="color:#94a3b8; padding:30px !important;">Tidak ada data produk ditemukan</td></tr>
-            <?php endif; ?>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
-
+<!-- ==========================================
+     JAVASCRIPT CHARTS & HANDLERS
+     ========================================== -->
 <script>
 window.addEventListener('DOMContentLoaded', function() {
   var segData = <?= json_encode(array_map(function($d) { return ['segment' => $d['segment'], 'count' => $d['count'], 'color' => $d['badge']['color']]; }, $rfm_distribution['segments'])); ?>;
@@ -1033,7 +1044,7 @@ window.addEventListener('DOMContentLoaded', function() {
   var counts = segData.map(function(d) { return d.count; });
   var colors = ['#f59e0b','#10b981','#6366f1','#3b82f6','#8b5cf6','#64748b','#f97316','#ef4444','#ec4899','#6b7280'];
 
-  // Pie / Doughnut Chart
+  // 1. Pie / Doughnut Chart
   var pieCtx = document.getElementById('rfmPieChart');
   if (pieCtx) {
     new Chart(pieCtx, {
@@ -1067,7 +1078,7 @@ window.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Bar Chart
+  // 2. Bar Comparison Chart
   var barCtx = document.getElementById('rfmBarChart');
   if (barCtx) {
     new Chart(barCtx, {
@@ -1094,7 +1105,7 @@ window.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Monthly Trend Chart
+  // 3. Monthly Trend Dual-Axis Chart
   var trendCtx = document.getElementById('monthlyTrendChart');
   if (trendCtx) {
     <?php 
@@ -1172,6 +1183,7 @@ window.addEventListener('DOMContentLoaded', function() {
     });
   }
 
+  // Smooth scroll to monthly tracking section if hash is present
   if (window.location.hash === '#section-tracking-monthly') {
     setTimeout(function() {
       var trackEl = document.getElementById('section-tracking-monthly');
@@ -1206,7 +1218,10 @@ window.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<!-- ===== MODAL TAMBAH STRATEGI SEGMEN ===== -->
+<!-- ==========================================
+     MODALS: TAMBAH / EDIT SEGMEN & IMPORT
+     ========================================== -->
+<!-- MODAL TAMBAH STRATEGI SEGMEN -->
 <div class="modal fade" id="modal-add-segment" tabindex="-1" role="dialog" aria-labelledby="modalAddSegmentLabel" aria-hidden="true">
   <div class="modal-dialog" role="document" style="max-width:540px; margin:40px auto;">
     <div class="modal-content" style="border-radius:16px; border:none; box-shadow:0 20px 40px rgba(0,0,0,0.15); overflow:hidden;">
@@ -1258,7 +1273,7 @@ window.addEventListener('DOMContentLoaded', function() {
   </div>
 </div>
 
-<!-- ===== MODAL EDIT STRATEGI SEGMEN ===== -->
+<!-- MODAL EDIT STRATEGI SEGMEN -->
 <div class="modal fade" id="modal-edit-segment" tabindex="-1" role="dialog" aria-labelledby="modalEditSegmentLabel" aria-hidden="true">
   <div class="modal-dialog" role="document" style="max-width:540px; margin:40px auto;">
     <div class="modal-content" style="border-radius:16px; border:none; box-shadow:0 20px 40px rgba(0,0,0,0.15); overflow:hidden;">
@@ -1311,7 +1326,7 @@ window.addEventListener('DOMContentLoaded', function() {
   </div>
 </div>
 
-<!-- ===== MODAL IMPORT EXCEL ===== -->
+<!-- MODAL IMPORT EXCEL -->
 <div class="modal fade" id="modal-import-excel" tabindex="-1" role="dialog" aria-labelledby="modalImportExcelLabel" aria-hidden="true">
   <div class="modal-dialog" role="document" style="max-width:560px; margin:40px auto;">
     <div class="modal-content" style="border-radius:16px; border:none; box-shadow:0 20px 40px rgba(0,0,0,0.15); overflow:hidden;">
@@ -1368,5 +1383,3 @@ window.addEventListener('DOMContentLoaded', function() {
     </div>
   </div>
 </div>
-
-
