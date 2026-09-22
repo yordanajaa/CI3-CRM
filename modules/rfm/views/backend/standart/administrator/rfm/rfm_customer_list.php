@@ -1,6 +1,7 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
 <style>
 :root {
+  --rfm-primary: #6366f1;
   --rfm-gradient: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4338ca 100%);
   --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.03);
   --card-radius: 14px;
@@ -60,7 +61,7 @@
   flex-direction: column;
   justify-content: center;
 }
-.stat-card .stat-num { font-size: 26px; font-weight: 800; color: #0f172a; line-height: 1.1; }
+.stat-card .stat-num { font-size: 24px; font-weight: 800; color: #0f172a; line-height: 1.1; }
 .stat-card .stat-label { font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
 
 .badge-source {
@@ -181,7 +182,7 @@
   .rfm-header .header-actions { width: 100%; justify-content: center; gap: 8px; }
   .rfm-header .header-actions .btn { width: 100%; max-width: 100%; padding: 10px; font-size: 12.5px; justify-content: center; }
   .stat-card { padding: 14px; height: auto; margin-bottom: 12px; text-align: center; }
-  .stat-card .stat-num { font-size: 22px; }
+  .stat-card .stat-num { font-size: 20px; }
   .filter-bar { padding: 14px; }
   .table-rfm th { font-size: 10px; padding: 8px 6px !important; }
   .table-rfm td { font-size: 11.5px; padding: 8px 6px !important; }
@@ -193,10 +194,12 @@
 }
 </style>
 
-<!-- ===== HEADER ===== -->
+<!-- ==========================================
+     LAYER 1: HEADER BANNER & QUICK ACTIONS
+     ========================================== -->
 <div class="rfm-header">
   <div class="header-title">
-    <h2><i class="fa fa-bar-chart"></i> Segmentasi Pelanggan RFM</h2>
+    <h2><i class="fa fa-users"></i> Segmentasi Pelanggan RFM</h2>
     <p>Daftar pelanggan dengan skor Recency, Frequency, Monetary dan segmentasi otomatis</p>
   </div>
   <?php
@@ -216,70 +219,125 @@
   </div>
 </div>
 
-<!-- ===== STATS & FILTER ===== -->
+<!-- ==========================================
+     LAYER 2: SUMMARY METRICS & ACTIVE FILTERS
+     ========================================== -->
+<?php
+  // Calculate summary for current view
+  $page_orders = 0;
+  $page_spend = 0;
+  if (!empty($customers)) {
+    foreach ($customers as $c) {
+      $page_orders += $c->total_orders;
+      $page_spend += $c->total_spend;
+    }
+  }
+  $active_filters_count = (!empty($filter) ? 1 : 0) + (!empty($rfm_segment) ? 1 : 0) + (!empty($product_filter) ? 1 : 0) + (!empty($period_filter) ? 1 : 0);
+?>
 <div class="row">
-  <div class="col-md-3 col-sm-4 col-xs-12">
+  <div class="col-md-3 col-sm-6 col-xs-6">
     <div class="stat-card" style="border-left-color:#6366f1;">
       <div class="stat-num"><?= number_format($customer_counts); ?></div>
-      <div class="stat-label">Total Customer <?= !empty($rfm_segment) ? '(' . htmlspecialchars($rfm_segment) . ')' : ''; ?></div>
+      <div class="stat-label">Total Customer Ditemukan</div>
     </div>
   </div>
-  <div class="col-md-9 col-sm-8 col-xs-12">
-    <!-- Filter & Search -->
-    <div class="filter-bar">
-      <form method="get" action="<?= site_url('administrator/rfm'); ?>">
-        <div class="row" style="margin-left:-5px; margin-right:-5px;">
-          <div class="col-md-3 col-sm-6 col-xs-12" style="padding-left:5px; padding-right:5px; margin-bottom:8px;">
-            <input type="text" name="q" class="form-control" placeholder="Cari nama / no telepon..." value="<?= htmlspecialchars($filter ?? ''); ?>" style="border-radius:8px; height:38px;">
-          </div>
-          <div class="col-md-2 col-sm-6 col-xs-12" style="padding-left:5px; padding-right:5px; margin-bottom:8px;">
-            <select name="rfm_segment" class="form-control" style="border-radius:8px; height:38px;">
-              <option value="">— Segmen —</option>
-              <?php
-              $all_segments = ['Champions','Loyal Customers','Potential Loyalist','New Customers','Big Spenders','Frequent Low Value','Need Attention','At Risk Customers',"Can't Lose Them",'Hibernating'];
-              foreach ($all_segments as $seg):
-              ?>
-              <option value="<?= $seg; ?>" <?= ($rfm_segment ?? '') === $seg ? 'selected' : ''; ?>><?= $seg; ?></option>
-              <?php endforeach; ?>
-            </select>
-          </div>
-          <div class="col-md-3 col-sm-6 col-xs-12" style="padding-left:5px; padding-right:5px; margin-bottom:8px;">
-            <select name="product" class="form-control" style="border-radius:8px; height:38px;">
-              <option value="">— Semua Produk —</option>
-              <?php if (!empty($products_list)): foreach ($products_list as $p): 
-                $p_name = !empty($p->item_name) ? $p->item_name : (!empty($p->nama_produk) ? $p->nama_produk : '');
-                if (empty($p_name)) continue;
-              ?>
-              <option value="<?= htmlspecialchars($p_name); ?>" <?= ($product_filter ?? '') === $p_name ? 'selected' : ''; ?>><?= htmlspecialchars($p_name); ?></option>
-              <?php endforeach; endif; ?>
-            </select>
-          </div>
-          <div class="col-md-2 col-sm-6 col-xs-12" style="padding-left:5px; padding-right:5px; margin-bottom:8px;">
-            <select name="period" class="form-control" style="border-radius:8px; height:38px;">
-              <option value="">— Semua Periode —</option>
-              <?php if (!empty($months_list)): foreach ($months_list as $m): ?>
-              <option value="<?= htmlspecialchars($m->ym_val); ?>" <?= ($period_filter ?? '') === $m->ym_val ? 'selected' : ''; ?>>📅 <?= htmlspecialchars($m->ym_label); ?></option>
-              <?php endforeach; endif; ?>
-            </select>
-          </div>
-          <div class="col-md-2 col-sm-6 col-xs-12" style="padding-left:5px; padding-right:5px; display:flex; gap:6px; margin-bottom:8px;">
-            <button type="submit" class="btn" style="background:#6366f1; color:#fff; border:none; border-radius:8px; font-weight:700; height:38px; flex:1; display:inline-flex; align-items:center; justify-content:center; gap:6px;"><i class="fa fa-search"></i> Filter</button>
-            <a href="<?= site_url('administrator/rfm'); ?>" class="btn btn-default" style="border-radius:8px; height:38px; width:38px; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;" title="Reset Filter"><i class="fa fa-refresh"></i></a>
-          </div>
-        </div>
-      </form>
+  <div class="col-md-3 col-sm-6 col-xs-6">
+    <div class="stat-card" style="border-left-color:#16a34a;">
+      <div class="stat-num"><?= number_format($page_orders); ?>x</div>
+      <div class="stat-label">Total Transaksi (Halaman Ini)</div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 col-xs-6">
+    <div class="stat-card" style="border-left-color:#059669;">
+      <div class="stat-num" style="font-size:18px;">Rp <?= number_format($page_spend, 0, ',', '.'); ?></div>
+      <div class="stat-label">Total Belanja (Halaman Ini)</div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 col-xs-6">
+    <div class="stat-card" style="border-left-color:<?= $active_filters_count > 0 ? '#f59e0b' : '#64748b'; ?>;">
+      <div class="stat-num" style="font-size:16px;">
+        <?php if ($active_filters_count > 0): ?>
+          <span style="color:#d97706; font-size:18px; font-weight:800;"><?= $active_filters_count; ?> Filter Aktif</span>
+        <?php else: ?>
+          <span style="color:#64748b; font-size:15px; font-weight:700;">Semua Data</span>
+        <?php endif; ?>
+      </div>
+      <div class="stat-label">
+        <?php if ($active_filters_count > 0): ?>
+          <a href="<?= site_url('administrator/rfm'); ?>" style="color:#d97706; text-decoration:underline; font-weight:700;"><i class="fa fa-times"></i> Reset Semua Filter</a>
+        <?php else: ?>
+          Tanpa Filter Terpasang
+        <?php endif; ?>
+      </div>
     </div>
   </div>
 </div>
 
+<!-- ==========================================
+     LAYER 3: MULTI-CRITERIA FILTER BAR
+     ========================================== -->
+<div class="filter-bar">
+  <form method="get" action="<?= site_url('administrator/rfm'); ?>">
+    <div class="row" style="margin-left:-5px; margin-right:-5px;">
+      <div class="col-md-3 col-sm-6 col-xs-12" style="padding-left:5px; padding-right:5px; margin-bottom:8px;">
+        <label style="font-size:11px; font-weight:700; color:#475569; margin-bottom:3px; display:block;">Pencarian:</label>
+        <div class="input-group">
+          <span class="input-group-addon" style="border-radius:8px 0 0 8px; background:#f8fafc;"><i class="fa fa-search"></i></span>
+          <input type="text" name="q" class="form-control" placeholder="Cari nama / no. HP customer..." value="<?= htmlspecialchars($filter ?? ''); ?>" style="border-radius:0 8px 8px 0; height:38px; font-size:12.5px;">
+        </div>
+      </div>
+      <div class="col-md-2 col-sm-6 col-xs-12" style="padding-left:5px; padding-right:5px; margin-bottom:8px;">
+        <label style="font-size:11px; font-weight:700; color:#475569; margin-bottom:3px; display:block;">Segmen Market:</label>
+        <select name="rfm_segment" class="form-control" style="border-radius:8px; height:38px; font-size:12.5px; font-weight:600;">
+          <option value="">— Semua Segmen —</option>
+          <?php
+          $all_segments = ['Champions','Loyal Customers','Potential Loyalist','New Customers','Big Spenders','Frequent Low Value','Need Attention','At Risk Customers',"Can't Lose Them",'Hibernating'];
+          foreach ($all_segments as $seg):
+          ?>
+          <option value="<?= $seg; ?>" <?= ($rfm_segment ?? '') === $seg ? 'selected' : ''; ?>><?= $seg; ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <div class="col-md-3 col-sm-6 col-xs-12" style="padding-left:5px; padding-right:5px; margin-bottom:8px;">
+        <label style="font-size:11px; font-weight:700; color:#475569; margin-bottom:3px; display:block;">Produk Transaksi:</label>
+        <select name="product" class="form-control" style="border-radius:8px; height:38px; font-size:12.5px; font-weight:600;">
+          <option value="">— Semua Produk —</option>
+          <?php if (!empty($products_list)): foreach ($products_list as $p): 
+            $p_name = !empty($p->item_name) ? $p->item_name : (!empty($p->nama_produk) ? $p->nama_produk : '');
+            if (empty($p_name)) continue;
+          ?>
+          <option value="<?= htmlspecialchars($p_name); ?>" <?= ($product_filter ?? '') === $p_name ? 'selected' : ''; ?>><?= htmlspecialchars($p_name); ?></option>
+          <?php endforeach; endif; ?>
+        </select>
+      </div>
+      <div class="col-md-2 col-sm-6 col-xs-12" style="padding-left:5px; padding-right:5px; margin-bottom:8px;">
+        <label style="font-size:11px; font-weight:700; color:#475569; margin-bottom:3px; display:block;">Periode / Bulan:</label>
+        <select name="period" class="form-control" style="border-radius:8px; height:38px; font-size:12.5px; font-weight:600;">
+          <option value="">— Semua Periode —</option>
+          <?php if (!empty($months_list)): foreach ($months_list as $m): ?>
+          <option value="<?= htmlspecialchars($m->ym_val); ?>" <?= ($period_filter ?? '') === $m->ym_val ? 'selected' : ''; ?>>📅 <?= htmlspecialchars($m->ym_label); ?></option>
+          <?php endforeach; endif; ?>
+        </select>
+      </div>
+      <div class="col-md-2 col-sm-6 col-xs-12" style="padding-left:5px; padding-right:5px; display:flex; flex-direction:column; justify-content:flex-end; margin-bottom:8px;">
+        <div style="display:flex; gap:6px;">
+          <button type="submit" class="btn" style="background:#6366f1; color:#fff; border:none; border-radius:8px; font-weight:700; height:38px; flex:1; display:inline-flex; align-items:center; justify-content:center; gap:6px;"><i class="fa fa-filter"></i> Filter</button>
+          <a href="<?= site_url('administrator/rfm'); ?>" class="btn btn-default" style="border-radius:8px; height:38px; width:38px; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;" title="Reset Filter"><i class="fa fa-refresh"></i></a>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- ==========================================
+     LAYER 4: PRODUCT RECAP CARD (IF FILTERED BY PRODUCT)
+     ========================================== -->
 <?php if (!empty($product_filter)): ?>
-<!-- ===== PRODUCT RECAP CARD ===== -->
 <div class="box" style="border-radius:14px; overflow:hidden; border:1px solid #e0e7ff; box-shadow:0 4px 16px rgba(99,102,241,0.08); background:#fff; margin-bottom:20px;">
   <div class="box-header" style="background:linear-gradient(135deg, #eef2ff, #e0e7ff); padding:18px 22px; border-bottom:2px solid #c7d2fe;">
-    <h4 style="margin:0; font-weight:800; color:#1e1b4b; font-size:16px;">
-      <i class="fa fa-shopping-bag" style="color:#6366f1;"></i>
-      Rekapan Produk: <span style="color:#4338ca;"><?= htmlspecialchars($product_filter); ?></span>
-      <a href="<?= site_url('administrator/rfm'); ?>" class="btn btn-xs pull-right" style="background:#fff; color:#6366f1; border:1px solid #c7d2fe; border-radius:6px; font-weight:700;"><i class="fa fa-times"></i> Hapus Filter Produk</a>
+    <h4 style="margin:0; font-weight:800; color:#1e1b4b; font-size:16px; display:flex; justify-content:space-between; align-items:center;">
+      <span><i class="fa fa-shopping-bag" style="color:#6366f1;"></i> Rekapan Produk: <span style="color:#4338ca;"><?= htmlspecialchars($product_filter); ?></span></span>
+      <a href="<?= site_url('administrator/rfm'); ?>" class="btn btn-xs" style="background:#fff; color:#6366f1; border:1px solid #c7d2fe; border-radius:6px; font-weight:700;"><i class="fa fa-times"></i> Hapus Filter Produk</a>
     </h4>
   </div>
   <div class="box-body" style="padding:20px;">
@@ -339,29 +397,32 @@
 </div>
 <?php endif; ?>
 
-<!-- ===== TABLE ===== -->
+<!-- ==========================================
+     LAYER 5: CUSTOMER RFM DATA TABLE & PAGINATION
+     ========================================== -->
 <div class="box box-default" style="border-radius:14px; overflow:hidden; border:1px solid #f1f5f9; box-shadow:0 4px 16px rgba(0,0,0,0.04); background:#fff;">
   <div class="box-body" style="padding:0;">
     <div class="table-responsive">
-      <table class="table table-rfm" style="margin-bottom:0;">
+      <table class="table table-rfm" style="margin-bottom:0; width:100%; min-width:940px;">
         <thead>
           <tr>
-            <th style="width:4%;">#</th>
-            <th style="min-width:160px;">Customer</th>
-            <th style="min-width:120px;">Sumber</th>
-            <th style="min-width:80px;">Orders</th>
-            <th style="min-width:120px;">Total Spend</th>
-            <th style="min-width:100px;">Skor RFM</th>
-            <th style="min-width:140px;">Segment</th>
+            <th style="width:3%; min-width:30px;">#</th>
+            <th style="min-width:160px;">Nama Customer</th>
+            <th style="min-width:120px;">Sumber Platform</th>
+            <th style="text-align:center; min-width:90px;">Order (F)</th>
+            <th style="text-align:right; min-width:120px;">Total Spend (M)</th>
+            <th style="text-align:center; min-width:105px;">Recency (R)</th>
+            <th style="text-align:center; min-width:95px;">Skor RFM</th>
+            <th style="text-align:center; min-width:130px;">Segmen Market</th>
             <th style="text-align:center; min-width:130px; width:130px;">Aksi</th>
           </tr>
         </thead>
         <tbody>
           <?php if (empty($customers)): ?>
-          <tr><td colspan="8" class="text-center" style="padding:40px !important; color:#94a3b8; font-size:14px;"><i class="fa fa-inbox" style="font-size:32px; display:block; margin-bottom:8px;"></i>Tidak ada data customer ditemukan</td></tr>
+          <tr><td colspan="9" class="text-center" style="padding:40px !important; color:#94a3b8; font-size:14px;"><i class="fa fa-inbox" style="font-size:32px; display:block; margin-bottom:8px;"></i>Tidak ada data customer ditemukan</td></tr>
           <?php else: ?>
           <?php
-          $offset_val = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
+          $offset_val = isset($_GET['offset']) ? (int)$_GET['offset'] : (isset($this->uri->segments[4]) ? (int)$this->uri->segments[4] : 0);
           $no = $offset_val + 1;
           foreach ($customers as $c):
             $rfm = $c->rfm;
@@ -374,12 +435,13 @@
           <tr>
             <td><?= $no++; ?></td>
             <td>
-              <strong style="color:#0f172a; font-size:13px;"><?= htmlspecialchars($c->customer_nama); ?></strong><br>
-              <span style="color:#64748b; font-size:11.5px; white-space:nowrap;"><i class="fa fa-phone" style="font-size:10px;"></i> <?= htmlspecialchars($c->customer_phone); ?></span>
+              <strong style="color:#0f172a; font-size:13.5px;"><?= htmlspecialchars($c->customer_nama); ?></strong><br>
+              <span style="color:#64748b; font-size:11.5px; white-space:nowrap;"><i class="fa fa-phone" style="font-size:10px; color:#6366f1;"></i> <?= htmlspecialchars($c->customer_phone); ?></span>
             </td>
             <td>
               <?php foreach ($sources as $src):
                 $src = trim($src);
+                if (empty($src)) continue;
                 $cls = 'badge-toko';
                 if (stripos($src, 'shopee') !== false) $cls = 'badge-shopee';
                 elseif (stripos($src, 'tokopedia') !== false) $cls = 'badge-tokopedia';
@@ -388,17 +450,28 @@
               <span class="badge-source <?= $cls; ?>"><?= htmlspecialchars($src); ?></span>
               <?php endforeach; ?>
             </td>
-            <td><strong><?= $c->total_orders; ?>x</strong></td>
-            <td><strong style="color:#059669; white-space:nowrap;">Rp <?= number_format($c->total_spend, 0, ',', '.'); ?></strong></td>
-            <td>
-              <div class="rfm-score-cell">
-                <span class="rfm-score-pill" style="background:<?= $score_colors[$rfm['r_score']]; ?>" title="Recency: <?= $rfm['r_score']; ?>"><?= $rfm['r_score']; ?></span>
-                <span class="rfm-score-pill" style="background:<?= $score_colors[$rfm['f_score']]; ?>" title="Frequency: <?= $rfm['f_score']; ?>"><?= $rfm['f_score']; ?></span>
-                <span class="rfm-score-pill" style="background:<?= $score_colors[$rfm['m_score']]; ?>" title="Monetary: <?= $rfm['m_score']; ?>"><?= $rfm['m_score']; ?></span>
+            <td style="text-align:center;">
+              <span class="label" style="background:#dcfce7; color:#166534; font-size:11.5px; font-weight:800; padding:4px 8px; border-radius:6px;">
+                <i class="fa fa-repeat"></i> <?= $c->total_orders; ?>x
+              </span>
+            </td>
+            <td style="text-align:right;">
+              <strong style="color:#059669; font-size:13px; white-space:nowrap;">Rp <?= number_format($c->total_spend, 0, ',', '.'); ?></strong>
+            </td>
+            <td style="text-align:center;">
+              <span class="label" style="background:<?= ($rfm['days_since_last'] <= 30 ? '#dcfce7; color:#166534;' : ($rfm['days_since_last'] <= 90 ? '#fef3c7; color:#92400e;' : '#fee2e2; color:#991b1b;')); ?> font-size:11.5px; padding:4px 8px; border-radius:6px; font-weight:600;">
+                <?= $rfm['days_since_last']; ?> hr lalu
+              </span>
+            </td>
+            <td style="text-align:center;">
+              <div class="rfm-score-cell" style="justify-content:center;">
+                <span class="rfm-score-pill" style="background:<?= $score_colors[$rfm['r_score']]; ?>" title="Recency Skor (R): <?= $rfm['r_score']; ?>"><?= $rfm['r_score']; ?></span>
+                <span class="rfm-score-pill" style="background:<?= $score_colors[$rfm['f_score']]; ?>" title="Frequency Skor (F): <?= $rfm['f_score']; ?>"><?= $rfm['f_score']; ?></span>
+                <span class="rfm-score-pill" style="background:<?= $score_colors[$rfm['m_score']]; ?>" title="Monetary Skor (M): <?= $rfm['m_score']; ?>"><?= $rfm['m_score']; ?></span>
               </div>
             </td>
-            <td>
-              <span class="segment-badge" style="background:<?= $badge['bg']; ?>; color:<?= $badge['color']; ?>; border:1px solid <?= $badge['border']; ?>;">
+            <td style="text-align:center;">
+              <span class="segment-badge" style="background:<?= $badge['bg']; ?>; color:<?= $badge['color']; ?>; border:1px solid <?= $badge['border']; ?>; font-size:11px; font-weight:700;">
                 <i class="fa <?= $badge['icon']; ?>" style="margin-right:4px;"></i><?= htmlspecialchars($rfm['segment']); ?>
               </span>
             </td>
@@ -410,8 +483,8 @@
                   'period' => $period_filter ?? ''
                 ]);
               ?>
-              <a href="<?= site_url('administrator/rfm/customer_detail?' . http_build_query($det_qs)); ?>" class="btn btn-sm" style="background:#6366f1; color:#fff; border:none; border-radius:6px; font-size:11px; font-weight:700; padding:4px 8px;" title="Detail RFM">
-                <i class="fa fa-bar-chart"></i> Detail
+              <a href="<?= site_url('administrator/rfm/customer_detail?' . http_build_query($det_qs)); ?>" class="btn btn-sm" style="background:#6366f1; color:#fff; border:none; border-radius:6px; font-size:11px; font-weight:700; padding:4px 8px;" title="Detail Profil RFM">
+                <i class="fa fa-user"></i> Detail
               </a>
               <?php 
                 $clean_phone = preg_replace('/[^0-9]/', '', $c->customer_phone ?? '');
@@ -441,7 +514,9 @@
   <?php endif; ?>
 </div>
 
-<!-- ===== MODAL IMPORT EXCEL ===== -->
+<!-- ==========================================
+     LAYER 6: MODAL IMPORT EXCEL DATA
+     ========================================== -->
 <div class="modal fade" id="modal-import-excel" tabindex="-1" role="dialog" aria-labelledby="modalImportExcelLabel" aria-hidden="true">
   <div class="modal-dialog" role="document" style="max-width:560px; margin:40px auto;">
     <div class="modal-content" style="border-radius:16px; border:none; box-shadow:0 20px 40px rgba(0,0,0,0.15); overflow:hidden;">
@@ -498,5 +573,3 @@
     </div>
   </div>
 </div>
-
-
