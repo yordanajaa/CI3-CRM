@@ -1,28 +1,41 @@
+<?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 
 <style>
-/* Modern Styling System for RFM Tracking Page */
+:root {
+  --rfm-primary: #059669;
+  --rfm-gradient-green: linear-gradient(135deg, #064e3b 0%, #047857 40%, #059669 100%);
+  --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.03);
+  --card-radius: 14px;
+}
+
 .rfm-tracking-wrapper {
-  padding: 10px 0 30px 0;
+  padding: 5px 0 30px 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
+
 .tracking-header-card {
-  background: linear-gradient(135deg, #064e3b 0%, #047857 40%, #059669 100%);
+  background: var(--rfm-gradient-green);
   border-radius: 16px;
-  padding: 24px 28px;
+  padding: 26px 30px;
   color: #ffffff;
-  box-shadow: 0 10px 25px rgba(4, 120, 87, 0.25);
-  margin-bottom: 20px;
+  box-shadow: 0 12px 30px rgba(4, 120, 87, 0.25);
+  margin-bottom: 22px;
   position: relative;
   overflow: hidden;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 .tracking-header-card::after {
   content: '';
   position: absolute;
-  right: -20px;
-  bottom: -30px;
-  width: 180px;
-  height: 180px;
+  right: -40px;
+  bottom: -40px;
+  width: 200px;
+  height: 200px;
   background: rgba(255, 255, 255, 0.06);
   border-radius: 50%;
   pointer-events: none;
@@ -30,11 +43,12 @@
 .tracking-title {
   margin: 0 0 6px 0;
   font-weight: 800;
-  font-size: 22px;
+  font-size: 24px;
   color: #ffffff;
   display: flex;
   align-items: center;
   gap: 10px;
+  letter-spacing: -0.5px;
 }
 .tracking-subtitle {
   margin: 0;
@@ -42,12 +56,33 @@
   color: #a7f3d0;
   line-height: 1.5;
 }
+.tracking-header-card .header-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 2;
+}
+.tracking-header-card .header-actions .btn {
+  border-radius: 9px;
+  font-weight: 700;
+  font-size: 12.5px;
+  padding: 8px 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+.tracking-header-card .header-actions .btn:hover { transform: translateY(-2px); }
+
 .kpi-mini-card {
   background: #ffffff;
   border-radius: 14px;
   padding: 18px 20px;
   border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--card-shadow);
   transition: all 0.25s ease;
   height: 100%;
 }
@@ -61,136 +96,151 @@
   line-height: 1.2;
 }
 .kpi-mini-lbl {
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-top: 4px;
 }
+
 .section-card-custom {
   background: #ffffff;
   border-radius: 16px;
   border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--card-shadow);
   padding: 22px;
   margin-bottom: 22px;
 }
+
 .table-tracking {
   margin-bottom: 0;
 }
 .table-tracking th {
   background: #f8fafc;
   color: #334155;
-  font-size: 12.5px;
+  font-size: 10.5px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.5px;
   padding: 12px 14px !important;
   border-bottom: 2px solid #e2e8f0 !important;
   vertical-align: middle !important;
+  white-space: nowrap;
 }
 .table-tracking td {
-  padding: 14px !important;
+  padding: 12px 14px !important;
   vertical-align: middle !important;
   border-top: 1px solid #f1f5f9 !important;
-  font-size: 13px;
+  font-size: 12.5px;
+  color: #334155;
 }
 .table-tracking tr:hover {
   background-color: #f8fafc !important;
 }
 
-/* Mobile Friendly Media Queries */
-@media (max-width: 768px) {
-  .tracking-header-card {
-    padding: 18px 20px;
-    border-radius: 12px;
-  }
-  .tracking-title {
-    font-size: 18px;
-    flex-wrap: wrap;
-  }
-  .tracking-subtitle {
-    font-size: 12.5px;
-  }
-  .tracking-header-card .btn {
-    width: 100%;
-    justify-content: center;
-    text-align: center;
-    font-size: 12.5px;
-  }
-  .kpi-mini-card {
-    padding: 14px 16px;
-  }
-  .kpi-mini-val {
-    font-size: 18px;
-  }
-  .kpi-mini-lbl {
-    font-size: 10px;
-  }
-  .section-card-custom {
-    padding: 16px;
-    border-radius: 12px;
-    margin-bottom: 16px;
-  }
-  .chart-box-responsive {
-    height: 240px !important;
-  }
+/* Animations */
+@keyframes rfmFadeInUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-@media (max-width: 480px) {
-  .tracking-title {
-    font-size: 16px;
-  }
-  .kpi-mini-card > div {
-    flex-direction: column;
-    text-align: center;
-    gap: 8px;
-  }
-  .kpi-mini-card .kpi-mini-lbl {
-    margin-top: 2px;
-  }
-  #form-filter-tracking .btn {
-    margin-top: 8px !important;
-  }
+.tracking-header-card, .kpi-mini-card, .section-card-custom {
+  animation: rfmFadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.table-responsive {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f8fafc;
+}
+.table-responsive::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+.table-responsive::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 4px;
+}
+.table-responsive::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+/* ===== Mobile Responsive Media Queries ===== */
+@media (max-width: 991px) {
+  .tracking-header-card { padding: 22px 24px; }
+  .chart-box-responsive { height: 280px !important; }
+}
+
+@media (max-width: 767px) {
+  .tracking-header-card { padding: 20px 16px; text-align: center; flex-direction: column; }
+  .tracking-title { font-size: 20px; justify-content: center; }
+  .tracking-subtitle { font-size: 12.5px; }
+  .tracking-header-card .header-actions { width: 100%; justify-content: center; gap: 8px; }
+  .tracking-header-card .header-actions .btn { width: 100%; max-width: 100%; padding: 10px; font-size: 12.5px; justify-content: center; }
+  
+  .kpi-mini-card { padding: 14px 16px; }
+  .kpi-mini-val { font-size: 18px; }
+  .kpi-mini-lbl { font-size: 10px; }
+  .section-card-custom { padding: 16px; border-radius: 12px; margin-bottom: 16px; }
+  .chart-box-responsive { height: 240px !important; }
+  
+  #form-filter-tracking .row > div { margin-bottom: 10px !important; }
+  #form-filter-tracking button, #form-filter-tracking a { margin-top: 0 !important; }
+}
+
+@media (max-width: 575px) {
+  .tracking-title { font-size: 18px; }
+  .kpi-mini-card > div { flex-direction: column; text-align: center; gap: 6px; }
+  .kpi-mini-card .kpi-mini-lbl { margin-top: 2px; }
+  .kpi-mini-card div[style*="width:42px"] { margin: 0 auto 4px auto; }
 }
 </style>
 
 <div class="rfm-tracking-wrapper">
-  <!-- Header Banner -->
+  <!-- ==========================================
+       LAYER 1: HEADER BANNER & QUICK ACTIONS
+       ========================================== -->
   <div class="tracking-header-card">
-    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; position:relative; z-index:2;">
-      <div>
-        <h2 class="tracking-title">
-          <i class="fa fa-line-chart" style="color:#6ee7b7; font-size:26px;"></i>
-          Tracking & Tren RFM Bulanan
-        </h2>
-        <p class="tracking-subtitle">
-          Rekapitulasi historis omset (monetary), frekuensi order, dan pembeli unik per bulan <?= !empty($product_filter) ? 'untuk produk: <strong>' . htmlspecialchars($product_filter) . '</strong>' : '(Seluruh Produk)'; ?>
-        </p>
-      </div>
+    <div>
+      <h2 class="tracking-title">
+        <i class="fa fa-line-chart" style="color:#6ee7b7;"></i>
+        Tracking & Tren RFM Bulanan
+      </h2>
+      <p class="tracking-subtitle">
+        Rekapitulasi historis omset (monetary), frekuensi order, dan pembeli unik per bulan <?= !empty($product_filter) ? 'untuk produk: <strong>' . htmlspecialchars($product_filter) . '</strong>' : '(Seluruh Produk)'; ?>
+      </p>
+    </div>
 
-      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-        <a href="<?= site_url('administrator/rfm/dashboard'); ?>" class="btn" style="background:rgba(255,255,255,0.15); color:#fff; font-weight:700; border-radius:10px; padding:9px 16px; border:1px solid rgba(255,255,255,0.3); transition:all 0.2s;">
-          <i class="fa fa-tachometer"></i> Dashboard RFM
-        </a>
-        <a href="<?= site_url('administrator/rfm'); ?>" class="btn" style="background:#ffffff; color:#047857; font-weight:700; border-radius:10px; padding:9px 18px; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
-          <i class="fa fa-users"></i> Customer & Segmentasi
-        </a>
-      </div>
+    <?php
+      $nav_params = array_filter(['product' => $product_filter ?? '', 'period' => $period_filter ?? '']);
+      $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
+    ?>
+    <div class="header-actions">
+      <a href="<?= site_url('administrator/rfm/dashboard' . $nav_qs); ?>" class="btn" style="background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.3); font-weight:700;"><i class="fa fa-tachometer"></i> Dashboard RFM</a>
+      <a href="<?= site_url('administrator/rfm' . $nav_qs); ?>" class="btn" style="background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.3); font-weight:700;"><i class="fa fa-users"></i> Daftar Customer</a>
+      <a href="<?= site_url('administrator/rfm/tracking' . $nav_qs); ?>" class="btn" style="background:#ffffff; color:#047857; font-weight:700;"><i class="fa fa-line-chart"></i> Tracking RFM Bulanan</a>
+      <a href="<?= site_url('administrator/crm/chat'); ?>" class="btn" style="background:linear-gradient(135deg, #075e54, #128c7e); color:#fff; box-shadow:0 4px 12px rgba(18,140,126,0.35); font-weight:700;"><i class="fa fa-whatsapp"></i> Live Chat WA</a>
+      <a href="<?= site_url('administrator/crm/broadcast'); ?>" class="btn" style="background:#25D366; color:#fff; font-weight:700;"><i class="fa fa-bullhorn"></i> Broadcast WA</a>
+      <button type="button" class="btn" data-toggle="modal" data-target="#modal-import-excel" style="background:#10b981; color:#fff; font-weight:700; border:none; box-shadow:0 4px 12px rgba(16,185,129,0.35);"><i class="fa fa-file-excel-o"></i> Import Excel Data</button>
+      <a href="<?= site_url('administrator/rfm/export_customers' . $nav_qs); ?>" class="btn" style="background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.3); font-weight:700;"><i class="fa fa-download"></i> Export CSV</a>
     </div>
   </div>
 
-  <!-- Filter Control Bar -->
+  <!-- ==========================================
+       LAYER 2: FILTER CONTROL BAR
+       ========================================== -->
   <div class="section-card-custom" style="padding:16px 22px; margin-bottom:20px;">
     <form method="GET" action="<?= site_url('administrator/rfm/tracking'); ?>" id="form-filter-tracking">
       <div class="row" style="display:flex; align-items:center; flex-wrap:wrap; margin:0 -8px;">
-        <div class="col-md-5 col-sm-6" style="padding:0 8px; margin-bottom:8px;">
+        <div class="col-md-5 col-sm-6 col-xs-12" style="padding:0 8px; margin-bottom:8px;">
           <label style="font-weight:700; font-size:12px; color:#475569; display:block; margin-bottom:5px;">
             <i class="fa fa-shopping-bag" style="color:#059669;"></i> Filter Produk:
           </label>
-          <select name="product" class="form-control select2" style="width:100%; border-radius:8px; height:38px;">
+          <select name="product" class="form-control" style="width:100%; border-radius:8px; height:38px; font-size:12.5px; font-weight:600;">
             <option value="">-- Semua Produk (Keseluruhan) --</option>
             <?php foreach ($products_list as $prod): 
               $p_name = is_object($prod) ? $prod->item_name : (is_array($prod) ? ($prod['item_name'] ?? '') : (string)$prod);
+              if (empty($p_name)) continue;
             ?>
             <option value="<?= htmlspecialchars($p_name); ?>" <?= (!empty($product_filter) && $product_filter === $p_name) ? 'selected' : ''; ?>>
               <?= htmlspecialchars($p_name); ?>
@@ -199,29 +249,29 @@
           </select>
         </div>
 
-        <div class="col-md-4 col-sm-6" style="padding:0 8px; margin-bottom:8px;">
+        <div class="col-md-4 col-sm-6 col-xs-12" style="padding:0 8px; margin-bottom:8px;">
           <label style="font-weight:700; font-size:12px; color:#475569; display:block; margin-bottom:5px;">
             <i class="fa fa-calendar" style="color:#6366f1;"></i> Filter Bulan / Periode:
           </label>
-          <select name="period" class="form-control" style="width:100%; border-radius:8px; height:38px;">
+          <select name="period" class="form-control" style="width:100%; border-radius:8px; height:38px; font-size:12.5px; font-weight:600;">
             <option value="">-- Semua Periode Bulanan --</option>
             <?php foreach ($months_list as $m): 
               $m_val = is_object($m) ? $m->ym_val : ($m['ym_val'] ?? '');
               $m_lbl = is_object($m) ? $m->ym_label : ($m['ym_label'] ?? '');
             ?>
             <option value="<?= htmlspecialchars($m_val); ?>" <?= (!empty($period_filter) && $period_filter === $m_val) ? 'selected' : ''; ?>>
-              <?= htmlspecialchars($m_lbl); ?> (<?= $m_val; ?>)
+              📅 <?= htmlspecialchars($m_lbl); ?> (<?= $m_val; ?>)
             </option>
             <?php endforeach; ?>
           </select>
         </div>
 
-        <div class="col-md-3 col-sm-12" style="padding:0 8px; margin-bottom:8px; display:flex; gap:8px; align-items:flex-end;">
-          <button type="submit" class="btn btn-primary" style="background:#047857; border:none; border-radius:8px; font-weight:700; height:38px; flex:1; margin-top:21px;">
-            <i class="fa fa-filter"></i> Terapkan Filter
+        <div class="col-md-3 col-sm-12 col-xs-12" style="padding:0 8px; margin-bottom:8px; display:flex; gap:8px; align-items:flex-end;">
+          <button type="submit" class="btn btn-primary" style="background:#047857; border:none; border-radius:8px; font-weight:700; height:38px; flex:1; margin-top:21px; display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+            <i class="fa fa-filter"></i> Filter
           </button>
           <?php if (!empty($product_filter) || !empty($period_filter)): ?>
-          <a href="<?= site_url('administrator/rfm/tracking'); ?>" class="btn btn-default" style="border-radius:8px; font-weight:600; height:38px; margin-top:21px; border:1px solid #cbd5e1; color:#64748b;" title="Reset Filter">
+          <a href="<?= site_url('administrator/rfm/tracking'); ?>" class="btn btn-default" style="border-radius:8px; font-weight:600; height:38px; margin-top:21px; border:1px solid #cbd5e1; color:#64748b; display:inline-flex; align-items:center; justify-content:center;" title="Reset Filter">
             <i class="fa fa-refresh"></i> Reset
           </a>
           <?php endif; ?>
@@ -230,6 +280,9 @@
     </form>
   </div>
 
+  <!-- ==========================================
+       LAYER 3: 4 MINI SUMMARY STATS CARDS
+       ========================================== -->
   <?php 
   $track_data = $monthly_tracking ?? [];
   $track_cnt = $kpi_tracking['track_cnt'] ?? count($track_data);
@@ -240,58 +293,57 @@
   $total_sum_orders = $kpi_tracking['total_sum_orders'] ?? 0;
   ?>
 
-  <!-- 4 Mini Summary Stats Cards -->
   <div class="row" style="margin-bottom:22px;">
-    <div class="col-md-3 col-sm-6 col-xs-12" style="margin-bottom:12px;">
+    <div class="col-md-3 col-sm-6 col-xs-6" style="margin-bottom:12px;">
       <div class="kpi-mini-card" style="border-left:4px solid #10b981;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div>
             <div class="kpi-mini-val" style="color:#15803d;"><?= number_format($track_cnt); ?> Bulan</div>
             <div class="kpi-mini-lbl" style="color:#166534;">Total Periode Teracak</div>
           </div>
-          <div style="width:42px; height:42px; border-radius:10px; background:#dcfce7; color:#166534; display:flex; align-items:center; justify-content:center; font-size:18px;">
+          <div style="width:42px; height:42px; border-radius:10px; background:#dcfce7; color:#166534; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;">
             <i class="fa fa-calendar-check-o"></i>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="col-md-3 col-sm-6 col-xs-12" style="margin-bottom:12px;">
+    <div class="col-md-3 col-sm-6 col-xs-6" style="margin-bottom:12px;">
       <div class="kpi-mini-card" style="border-left:4px solid #3b82f6;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div>
-            <div class="kpi-mini-val" style="color:#1d4ed8;">Rp <?= number_format($avg_sum_spend, 0, ',', '.'); ?></div>
+            <div class="kpi-mini-val" style="color:#1d4ed8; font-size:18px;">Rp <?= number_format($avg_sum_spend, 0, ',', '.'); ?></div>
             <div class="kpi-mini-lbl" style="color:#1e40af;">Rata2 Omset / Bulan</div>
           </div>
-          <div style="width:42px; height:42px; border-radius:10px; background:#dbeafe; color:#1e40af; display:flex; align-items:center; justify-content:center; font-size:18px;">
+          <div style="width:42px; height:42px; border-radius:10px; background:#dbeafe; color:#1e40af; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;">
             <i class="fa fa-money"></i>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="col-md-3 col-sm-6 col-xs-12" style="margin-bottom:12px;">
+    <div class="col-md-3 col-sm-6 col-xs-6" style="margin-bottom:12px;">
       <div class="kpi-mini-card" style="border-left:4px solid #8b5cf6;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div>
-            <div class="kpi-mini-val" style="color:#6b21a8;"><?= number_format($avg_sum_buyers); ?> Customer</div>
+            <div class="kpi-mini-val" style="color:#6b21a8;"><?= number_format($avg_sum_buyers); ?> Cust</div>
             <div class="kpi-mini-lbl" style="color:#7e22ce;">Rata2 Pembeli / Bulan</div>
           </div>
-          <div style="width:42px; height:42px; border-radius:10px; background:#f3e8ff; color:#7e22ce; display:flex; align-items:center; justify-content:center; font-size:18px;">
+          <div style="width:42px; height:42px; border-radius:10px; background:#f3e8ff; color:#7e22ce; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;">
             <i class="fa fa-users"></i>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="col-md-3 col-sm-6 col-xs-12" style="margin-bottom:12px;">
+    <div class="col-md-3 col-sm-6 col-xs-6" style="margin-bottom:12px;">
       <div class="kpi-mini-card" style="border-left:4px solid #f97316;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div>
             <div class="kpi-mini-val" style="color:#c2410c;"><?= number_format($total_sum_orders); ?>x</div>
             <div class="kpi-mini-lbl" style="color:#ea580c;">Total Transaksi (F)</div>
           </div>
-          <div style="width:42px; height:42px; border-radius:10px; background:#ffedd5; color:#c2410c; display:flex; align-items:center; justify-content:center; font-size:18px;">
+          <div style="width:42px; height:42px; border-radius:10px; background:#ffedd5; color:#c2410c; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;">
             <i class="fa fa-shopping-cart"></i>
           </div>
         </div>
@@ -299,11 +351,13 @@
     </div>
   </div>
 
-  <!-- Monthly Visual Trend Chart -->
+  <!-- ==========================================
+       LAYER 4: MONTHLY DUAL-AXIS VISUAL TREND CHART
+       ========================================== -->
   <?php if (!empty($track_data)): ?>
   <div class="section-card-custom">
-    <div style="font-weight:800; font-size:15px; color:#0f172a; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
-      <span><i class="fa fa-area-chart" style="color:#059669; font-size:18px; margin-right:6px;"></i> Grafik Historis Omset (Rp) & Pembeli Unik (Customer) Per Bulan</span>
+    <div style="font-weight:800; font-size:15px; color:#0f172a; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+      <span><i class="fa fa-area-chart" style="color:#059669; font-size:18px; margin-right:6px;"></i> Grafik Historis Omset (Rp) & Pembeli Unik Per Bulan</span>
       <span class="badge" style="background:#ecfdf5; color:#047857; font-weight:700; padding:6px 12px; font-size:11.5px; border:1px solid #a7f3d0;"><i class="fa fa-bar-chart"></i> Dual-Axis Analytics</span>
     </div>
     <div class="chart-box-responsive" style="position:relative; height:320px; width:100%;">
@@ -312,7 +366,9 @@
   </div>
   <?php endif; ?>
 
-  <!-- Monthly Performance Table -->
+  <!-- ==========================================
+       LAYER 5: MONTHLY PERFORMANCE DATA TABLE
+       ========================================== -->
   <div class="section-card-custom" style="padding:0; overflow:hidden;">
     <div style="padding:18px 22px; background:#fafbfc; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
       <h3 style="margin:0; font-size:15px; font-weight:800; color:#0f172a; display:flex; align-items:center; gap:8px;">
@@ -324,7 +380,7 @@
     </div>
 
     <div class="table-responsive" style="overflow-x:auto;">
-      <table class="table table-hover table-striped table-tracking">
+      <table class="table table-hover table-striped table-tracking" style="min-width:880px;">
         <thead>
           <tr>
             <th style="width:4%;">#</th>
@@ -350,11 +406,12 @@
           <?php else: ?>
           <?php 
           $m_no = 1; 
-          foreach ($track_data as $idx => $mt): 
+          $track_list = array_values($track_data);
+          foreach ($track_list as $idx => $mt): 
             $is_active_m = (!empty($period_filter) && $period_filter === $mt->ym_period);
             
             // Calculate Month-over-Month (MoM) growth percentage
-            $prev_spend = isset($track_data[$idx + 1]) ? (float)$track_data[$idx + 1]->total_spend : 0;
+            $prev_spend = isset($track_list[$idx + 1]) ? (float)$track_list[$idx + 1]->total_spend : 0;
             $growth_pct = 0;
             if ($prev_spend > 0) {
               $growth_pct = round((($mt->total_spend - $prev_spend) / $prev_spend) * 100, 1);
@@ -416,6 +473,66 @@
           <?php endif; ?>
         </tbody>
       </table>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================
+     MODAL IMPORT EXCEL DATA
+     ========================================== -->
+<div class="modal fade" id="modal-import-excel" tabindex="-1" role="dialog" aria-labelledby="modalImportExcelLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document" style="max-width:560px; margin:40px auto;">
+    <div class="modal-content" style="border-radius:16px; border:none; box-shadow:0 20px 40px rgba(0,0,0,0.15); overflow:hidden;">
+      <form method="POST" action="<?= site_url('administrator/rfm/import_excel'); ?>" enctype="multipart/form-data" id="form-import-excel" onsubmit="document.getElementById('btn-submit-import').disabled=true; document.getElementById('btn-submit-import').innerHTML='<i class=\'fa fa-spinner fa-spin\'></i> Mengimport Data...';">
+        <div class="modal-header" style="background:linear-gradient(135deg, #1e1b4b, #312e81, #4338ca); color:#fff; padding:18px 24px; border:none; position:relative;">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color:#fff; opacity:0.8; font-size:24px; position:absolute; right:20px; top:18px;">&times;</button>
+          <h4 class="modal-title" id="modalImportExcelLabel" style="font-weight:700; font-size:17px; margin:0; display:flex; align-items:center; gap:10px;">
+            <i class="fa fa-file-excel-o" style="color:#34d399; font-size:22px;"></i> Import Data Excel (Besar / Banyak)
+          </h4>
+          <p style="margin:4px 0 0 32px; font-size:12.5px; opacity:0.85;">Dapat menerima ribuan data transaksi (.xlsx, .xls, .csv) & aturan matriks RFM</p>
+        </div>
+        <div class="modal-body" style="padding:24px;">
+          <!-- Alert Note -->
+          <div style="background:#eff6ff; border:1px solid #bfdbfe; border-left:4px solid #3b82f6; border-radius:10px; padding:12px 14px; margin-bottom:18px; font-size:12.5px; color:#1e40af;">
+            <i class="fa fa-info-circle" style="font-size:15px; margin-right:6px;"></i>
+            <strong>Auto-Detect Pintar:</strong> Sistem akan otomatis mengenali apakah file berisi data transaksi sales atau 125 aturan matriks RFM (seperti <code>rfm magang.xlsx</code>).
+          </div>
+
+          <!-- Import Mode Type -->
+          <div class="form-group" style="margin-bottom:18px;">
+            <label style="font-weight:700; color:#1e1b4b; font-size:13px; margin-bottom:6px; display:block;">Tipe Data Import:</label>
+            <select name="import_type" class="form-control" style="border-radius:8px; border:1px solid #cbd5e1; height:40px; font-weight:600; font-size:13px;">
+              <option value="auto">✨ Deteksi Otomatis (Rekomendasi)</option>
+              <option value="transactions">🛒 Data Transaksi / Sales Order (Format Shopee, Tokopedia, Excel)</option>
+              <option value="matrix">📊 Aturan Matriks RFM & Segmentasi (File Matriks 125 Aturan)</option>
+            </select>
+          </div>
+
+          <!-- File Upload Input -->
+          <div class="form-group" style="margin-bottom:18px;">
+            <label style="font-weight:700; color:#1e1b4b; font-size:13px; margin-bottom:6px; display:block;">Pilih File Excel / CSV:</label>
+            <div style="border:2px dashed #a5b4fc; background:#faf5ff; border-radius:12px; padding:20px; text-align:center; transition:all 0.2s;" onmouseover="this.style.borderColor='#6366f1';" onmouseout="this.style.borderColor='#a5b4fc';">
+              <i class="fa fa-cloud-upload" style="font-size:36px; color:#6366f1; display:block; margin-bottom:8px;"></i>
+              <span style="font-weight:600; color:#312e81; font-size:13px; display:block; margin-bottom:4px;">Klik atau seret file Excel ke sini</span>
+              <span style="font-size:11.5px; color:#64748b; display:block; margin-bottom:12px;">Format yang didukung: <strong>.xlsx</strong>, <strong>.xls</strong>, <strong>.csv</strong> (Maks 50MB)</span>
+              <input type="file" name="file_excel" class="form-control" accept=".xlsx, .xls, .csv" required style="max-width:320px; margin:0 auto; height:auto; padding:6px; font-size:12px; border-radius:8px;">
+            </div>
+          </div>
+
+          <!-- Download Templates -->
+          <div style="background:#f8fafc; border-radius:10px; padding:12px 16px; border:1px solid #e2e8f0; font-size:12px;">
+            <span style="font-weight:700; color:#475569; display:block; margin-bottom:8px;"><i class="fa fa-download"></i> Unduh Contoh Template:</span>
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+              <a href="<?= site_url('administrator/rfm/download_template_transactions'); ?>" class="btn btn-default btn-xs" style="border-radius:6px; font-weight:600; font-size:11.5px; background:#fff; color:#475569; border:1px solid #cbd5e1;"><i class="fa fa-file-text-o" style="color:#3b82f6;"></i> Template Transaksi Sales (CSV)</a>
+              <a href="<?= site_url('administrator/rfm/download_template_matrix'); ?>" class="btn btn-default btn-xs" style="border-radius:6px; font-weight:600; font-size:11.5px; background:#fff; color:#475569; border:1px solid #cbd5e1;"><i class="fa fa-table" style="color:#10b981;"></i> Template Matriks RFM (CSV)</a>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer" style="background:#f8fafc; border-top:1px solid #e2e8f0; padding:14px 24px; border-radius:0 0 16px 16px; display:flex; justify-content:flex-end; gap:10px;">
+          <button type="button" class="btn btn-default" data-dismiss="modal" style="border-radius:8px; font-weight:600; padding:8px 18px;">Batal</button>
+          <button type="submit" id="btn-submit-import" class="btn" style="background:linear-gradient(135deg, #4338ca, #6366f1); color:#fff; border-radius:8px; font-weight:700; padding:8px 22px; box-shadow:0 4px 12px rgba(99,102,241,0.3);"><i class="fa fa-upload"></i> Mulai Import Data</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
