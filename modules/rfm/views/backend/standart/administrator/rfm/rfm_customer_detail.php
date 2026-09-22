@@ -1,50 +1,132 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
 <style>
 :root {
+  --rfm-primary: #6366f1;
   --rfm-gradient: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4338ca 100%);
   --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.03);
   --card-radius: 14px;
 }
 
-.profile-header {
+/* Header & Location Navigation Card */
+.rfm-header-nav {
   background: var(--rfm-gradient);
   color: #fff;
-  padding: 26px 30px;
+  padding: 24px 28px 20px 28px;
   border-radius: 16px;
-  margin-bottom: 22px;
+  margin-bottom: 24px;
   box-shadow: 0 12px 30px rgba(30, 27, 75, 0.25);
   position: relative;
   overflow: hidden;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
 }
-.profile-header::after {
+.rfm-header-nav::after {
   content: '';
   position: absolute;
-  top: -50%; right: -20%;
-  width: 300px; height: 300px;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, rgba(255,255,255,0) 70%);
+  right: -50px; bottom: -50px;
+  width: 220px; height: 220px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 50%;
   pointer-events: none;
 }
-.profile-header .name { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; color: #fff; }
-.profile-header .phone { font-size: 14px; color: #cbd5e1; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; }
-.profile-header .header-btns { display: flex; gap: 8px; flex-wrap: wrap; position: relative; z-index: 2; }
-.profile-header .header-btns .btn {
+.rfm-header-nav .header-top-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 18px;
+  position: relative;
+  z-index: 2;
+}
+.rfm-header-nav .location-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: #e0e7ff;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 8px;
+}
+.rfm-header-nav .header-title h2 {
+  margin: 0 0 4px 0;
+  font-weight: 800;
+  font-size: 24px;
+  letter-spacing: -0.5px;
+  color: #fff;
+}
+.rfm-header-nav .header-title p {
+  margin: 0;
+  opacity: 0.88;
+  font-size: 13px;
+  color: #e2e8f0;
+}
+.rfm-header-nav .action-tools {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.rfm-header-nav .action-tools .btn {
   border-radius: 9px;
   font-weight: 700;
-  font-size: 12.5px;
-  padding: 8px 16px;
+  font-size: 12px;
+  padding: 7px 14px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   transition: all 0.2s ease;
   box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  border: none;
 }
-.profile-header .header-btns .btn:hover { transform: translateY(-2px); }
+.rfm-header-nav .action-tools .btn:hover { transform: translateY(-2px); }
+
+/* Navigation Tab Bar */
+.rfm-header-nav .nav-tabs-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,0.18);
+  position: relative;
+  z-index: 2;
+}
+.rfm-header-nav .nav-tab-btn {
+  padding: 8px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.92);
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.22);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+.rfm-header-nav .nav-tab-btn:hover {
+  background: rgba(255,255,255,0.25);
+  color: #fff;
+  transform: translateY(-1px);
+}
+.rfm-header-nav .nav-tab-btn.active {
+  background: #ffffff !important;
+  color: #312e81 !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.18) !important;
+}
+.rfm-header-nav .nav-tab-btn .active-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  display: inline-block;
+}
 
 /* Summary Cards */
 .summary-card {
@@ -221,7 +303,7 @@
   }
 }
 
-.profile-header, .summary-card, .rfm-detail-card {
+.rfm-header-nav, .summary-card, .rfm-detail-card {
   animation: rfmFadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
 }
@@ -258,10 +340,15 @@
 }
 
 @media (max-width: 767px) {
-  .profile-header { padding: 18px 14px; text-align: center; flex-direction: column; }
-  .profile-header .name { font-size: 20px; }
-  .profile-header .header-btns { width: 100%; justify-content: center; gap: 8px; }
-  .profile-header .header-btns .btn { width: 100%; max-width: 100%; padding: 10px; font-size: 12.5px; justify-content: center; }
+  .rfm-header-nav { padding: 18px 16px; text-align: center; }
+  .rfm-header-nav .header-top-flex { flex-direction: column; align-items: center; }
+  .rfm-header-nav .header-title h2 { font-size: 20px; }
+  .rfm-header-nav .header-title p { font-size: 12px; }
+  .rfm-header-nav .action-tools { width: 100%; justify-content: center; }
+  .rfm-header-nav .action-tools .btn { font-size: 11.5px; padding: 6px 10px; }
+  .rfm-header-nav .nav-tabs-bar { justify-content: center; width: 100%; }
+  .rfm-header-nav .nav-tab-btn { width: 100%; justify-content: center; padding: 10px; font-size: 12.5px; }
+
   .summary-card .num { font-size: 20px; }
   .rfm-detail-card { padding: 16px; margin-bottom: 16px; }
   .rfm-detail-card .card-title { font-size: 15px; }
@@ -285,43 +372,60 @@ $s = $summary;
 $rfm = $s['rfm'];
 $badge = $rfm['badge'];
 $score_colors = [1 => '#ef4444', 2 => '#f97316', 3 => '#eab308', 4 => '#22c55e', 5 => '#16a34a'];
+$nav_params = array_filter(['product' => $product_filter ?? '', 'period' => $period_filter ?? '']);
+$nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
+
+$clean_phone = preg_replace('/[^0-9]/', '', $phone ?? '');
+$wa_phone = preg_replace('/^0/', '62', $clean_phone);
+if (substr($wa_phone, 0, 2) !== '62') $wa_phone = '62' . $wa_phone;
+$wa_act = !empty($rfm['action']) ? $rfm['action'] : 'Terima kasih telah berbelanja bersama kami.';
+$wa_msg = "Halo Kak " . ($s['nama'] ?? 'Customer') . ",\n\nSalam dari Metafora! " . $wa_act . "\n\nAda yang bisa kami bantu hari ini?";
+$direct_wa_url = 'https://api.whatsapp.com/send?phone=' . $wa_phone . '&text=' . rawurlencode($wa_msg);
+$crm_chat_url = site_url('administrator/crm/chat?phone=' . urlencode($phone) . '&wa_msg=' . rawurlencode($wa_msg));
 ?>
 
-<!-- ===== PROFILE HEADER ===== -->
-<div class="profile-header">
-  <div>
-    <div class="name"><i class="fa fa-user-circle"></i> <?= htmlspecialchars($s['nama']); ?></div>
-    <div class="phone"><i class="fa fa-phone"></i> <?= htmlspecialchars($phone); ?></div>
-    <div style="margin-top:8px;">
-      <?php foreach ($s['sources'] as $src):
-        $cls = 'badge-toko';
-        if (stripos($src, 'shopee') !== false) $cls = 'badge-shopee';
-        elseif (stripos($src, 'tokopedia') !== false) $cls = 'badge-tokopedia';
-        elseif (stripos($src, 'tiktok') !== false) $cls = 'badge-tiktok';
-      ?>
-      <span class="badge-source <?= $cls; ?>"><?= htmlspecialchars($src); ?></span>
-      <?php endforeach; ?>
+<!-- ===== PROFILE & LOCATION HEADER ===== -->
+<div class="rfm-header-nav">
+  <div class="header-top-flex">
+    <div class="header-title">
+      <div class="location-tag">
+        <i class="fa fa-map-marker"></i> Analisis RFM <i class="fa fa-angle-right"></i> <span>Detail Customer Profile</span>
+      </div>
+      <h2><i class="fa fa-user-circle"></i> <?= htmlspecialchars($s['nama']); ?></h2>
+      <p style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:4px;">
+        <span style="font-weight:600;"><i class="fa fa-phone"></i> <?= htmlspecialchars($phone); ?></span>
+        <?php foreach ($s['sources'] as $src):
+          $cls = 'badge-toko';
+          if (stripos($src, 'shopee') !== false) $cls = 'badge-shopee';
+          elseif (stripos($src, 'tokopedia') !== false) $cls = 'badge-tokopedia';
+          elseif (stripos($src, 'tiktok') !== false) $cls = 'badge-tiktok';
+        ?>
+        <span class="badge-source <?= $cls; ?>"><?= htmlspecialchars($src); ?></span>
+        <?php endforeach; ?>
+      </p>
+    </div>
+
+    <div class="action-tools">
+      <a href="<?= site_url('administrator/crm/customer_detail?phone=' . urlencode($phone)); ?>" class="btn" style="background:#fff; color:#312e81;" title="Lihat Detail CRM"><i class="fa fa-tasks"></i> CRM Detail</a>
+      <a href="<?= $crm_chat_url; ?>" class="btn" style="background:linear-gradient(135deg, #075e54, #128c7e); color:#fff; box-shadow:0 4px 12px rgba(18,140,126,0.35);" title="Buka WhatsApp Chat Center"><i class="fa fa-comments"></i> Live Chat WA</a>
+      <a href="<?= $direct_wa_url; ?>" target="_blank" class="btn" style="background:#25D366; color:#fff;" title="Buka Chat WhatsApp Langsung"><i class="fa fa-whatsapp"></i> Chat Direct WA</a>
     </div>
   </div>
-  <?php
-    $nav_params = array_filter(['product' => $product_filter ?? '', 'period' => $period_filter ?? '']);
-    $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
-  ?>
-  <div class="header-btns">
-    <a href="<?= site_url('administrator/rfm' . $nav_qs); ?>" class="btn" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);font-weight:700;"><i class="fa fa-arrow-left"></i> Kembali ke Daftar Customer</a>
-    <a href="<?= site_url('administrator/rfm/dashboard' . $nav_qs); ?>" class="btn" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);font-weight:700;"><i class="fa fa-tachometer"></i> Dashboard RFM</a>
-    <a href="<?= site_url('administrator/crm/customer_detail?phone=' . urlencode($phone)); ?>" class="btn" style="background:#fff;color:#312e81;font-weight:700;"><i class="fa fa-tasks"></i> Lihat Detail CRM</a>
-    <?php
-      $clean_phone = preg_replace('/[^0-9]/', '', $phone ?? '');
-      $wa_phone = preg_replace('/^0/', '62', $clean_phone);
-      if (substr($wa_phone, 0, 2) !== '62') $wa_phone = '62' . $wa_phone;
-      $wa_act = !empty($rfm['action']) ? $rfm['action'] : 'Terima kasih telah berbelanja bersama kami.';
-      $wa_msg = "Halo Kak " . ($s['nama'] ?? 'Customer') . ",\n\nSalam dari Metafora! " . $wa_act . "\n\nAda yang bisa kami bantu hari ini?";
-      $direct_wa_url = 'https://api.whatsapp.com/send?phone=' . $wa_phone . '&text=' . rawurlencode($wa_msg);
-      $crm_chat_url = site_url('administrator/crm/chat?phone=' . urlencode($phone) . '&wa_msg=' . rawurlencode($wa_msg));
-    ?>
-    <a href="<?= $crm_chat_url; ?>" class="btn" style="background:linear-gradient(135deg, #075e54, #128c7e);color:#fff;font-weight:700;" title="Buka WhatsApp Chat Center"><i class="fa fa-comments"></i> Live Chat WA</a>
-    <a href="<?= $direct_wa_url; ?>" target="_blank" class="btn" style="background:#25D366;color:#fff;font-weight:700;" title="Buka Chat WhatsApp Langsung"><i class="fa fa-whatsapp"></i> Chat WA Langsung</a>
+
+  <!-- Navigation Tab Bar -->
+  <div class="nav-tabs-bar">
+    <a href="<?= site_url('administrator/rfm/dashboard' . $nav_qs); ?>" class="nav-tab-btn">
+      <i class="fa fa-tachometer"></i> 1. Dashboard RFM
+    </a>
+    <a href="<?= site_url('administrator/rfm' . $nav_qs); ?>" class="nav-tab-btn">
+      <i class="fa fa-users"></i> 2. Daftar Customer
+    </a>
+    <a href="<?= site_url('administrator/rfm/tracking' . $nav_qs); ?>" class="nav-tab-btn">
+      <i class="fa fa-line-chart"></i> 3. Tracking RFM Bulanan
+    </a>
+    <span class="nav-tab-btn active">
+      <span class="active-dot"></span> <i class="fa fa-user-circle"></i> 4. Detail Customer
+    </span>
   </div>
 </div>
 
@@ -429,12 +533,11 @@ $score_colors = [1 => '#ef4444', 2 => '#f97316', 3 => '#eab308', 4 => '#22c55e',
           <th style="min-width:110px;">Frekuensi Order</th>
           <th style="min-width:90px;">Total Qty</th>
           <th style="min-width:140px;">Total Spend (Monetary)</th>
+          <th style="min-width:120px;">Aksi</th>
         </tr>
       </thead>
       <tbody>
         <?php 
-        // Always display ALL products bought by this customer.
-        // If a product filter is active, highlight that product at the top.
         $display_products = $product_rfm;
         if (!empty($product_filter) && !empty($display_products) && is_array($display_products)) {
             usort($display_products, function($a, $b) use ($product_filter) {
@@ -545,4 +648,3 @@ $score_colors = [1 => '#ef4444', 2 => '#f97316', 3 => '#eab308', 4 => '#22c55e',
     </table>
   </div>
 </div>
-
