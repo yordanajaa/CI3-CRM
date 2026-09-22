@@ -897,7 +897,7 @@
                 </span>
               </td>
               <td style="text-align:center;">
-                <span class="label" style="background:<?= $pr->status_badge['bg']; ?>; color:<?= $pr->status_badge['color']; ?>; border-radius:6px; padding:5px 99px; font-weight:700; padding:5px 9px;">
+                <span class="label" style="background:<?= $pr->status_badge['bg']; ?>; color:<?= $pr->status_badge['color']; ?>; border-radius:6px; padding:5px 9px; font-weight:700;">
                   <i class="fa <?= $pr->status_badge['icon']; ?>"></i> <?= $pr->status_badge['label']; ?>
                 </span>
               </td>
