@@ -329,7 +329,7 @@
         </div>
 
         <div class="col-md-3 col-sm-12 col-xs-12" style="padding:0 8px; margin-bottom:8px; display:flex; gap:8px; align-items:flex-end;">
-          <button type="submit" class="btn btn-primary" style="background:#047857; border:none; border-radius:8px; font-weight:700; height:38px; flex:1; margin-top:21px; display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+          <button type="submit" class="btn btn-primary" style="background:#6366f1; border:none; border-radius:8px; font-weight:700; height:38px; flex:1; margin-top:21px; display:inline-flex; align-items:center; justify-content:center; gap:6px; box-shadow:0 2px 6px rgba(99,102,241,0.3);">
             <i class="fa fa-filter"></i> Filter
           </button>
           <?php if (!empty($product_filter) || !empty($period_filter)): ?>

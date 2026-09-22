@@ -759,20 +759,20 @@
 ?>
 <div class="row" style="margin-top:8px; margin-bottom:24px;">
   <div class="col-md-12">
-    <div class="section-card" id="section-tracking-monthly" style="border-radius:16px; overflow:hidden; border:1px solid #a7f3d0; box-shadow:0 10px 30px rgba(16,185,129,0.12); padding:0; background:#fff; transition:all 0.3s ease;">
+    <div class="section-card" id="section-tracking-monthly" style="border-radius:16px; overflow:hidden; border:1px solid #c7d2fe; box-shadow:0 10px 30px rgba(99,102,241,0.12); padding:0; background:#fff; transition:all 0.3s ease;">
       <!-- Header Banner -->
-      <div style="background:linear-gradient(135deg, #064e3b 0%, #047857 50%, #059669 100%); padding:22px 28px; color:#fff; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+      <div style="background:linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%); padding:22px 28px; color:#fff; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
         <div>
           <h3 style="margin:0 0 6px 0; font-weight:800; font-size:20px; color:#fff; display:flex; align-items:center; gap:10px;">
-            <i class="fa fa-line-chart" style="color:#6ee7b7; font-size:22px;"></i>
+            <i class="fa fa-line-chart" style="color:#818cf8; font-size:22px;"></i>
             Tracking & Tren RFM Bulanan
           </h3>
-          <p style="margin:0; opacity:0.9; font-size:13px; color:#ecfdf5;">
+          <p style="margin:0; opacity:0.9; font-size:13px; color:#e2e8f0;">
             Analisis rekapitulasi performa omset, frekuensi order, dan pembeli unik per bulan <?= !empty($product_filter) ? 'untuk produk: <strong>' . htmlspecialchars($product_filter) . '</strong>' : '(Semua Produk)'; ?>
           </p>
         </div>
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-          <a href="<?= site_url('administrator/rfm/tracking' . (!empty($product_filter) ? '?product=' . urlencode($product_filter) : '')); ?>" class="btn btn-xs" style="background:#fff; color:#047857; font-weight:800; border-radius:8px; padding:6px 14px; box-shadow:0 2px 6px rgba(0,0,0,0.1);"><i class="fa fa-external-link"></i> Halaman Khusus Tracking</a>
+          <a href="<?= site_url('administrator/rfm/tracking' . (!empty($product_filter) ? '?product=' . urlencode($product_filter) : '')); ?>" class="btn btn-xs" style="background:#fff; color:#312e81; font-weight:800; border-radius:8px; padding:6px 14px; box-shadow:0 2px 6px rgba(0,0,0,0.1);"><i class="fa fa-external-link"></i> Halaman Khusus Tracking</a>
           <?php if (!empty($period_filter)): ?>
           <span class="label" style="background:rgba(255,255,255,0.2); color:#fff; font-size:12px; padding:6px 14px; border-radius:20px; border:1px solid rgba(255,255,255,0.4); font-weight:700;"><i class="fa fa-calendar"></i> Filter Periode: <?= htmlspecialchars($period_filter); ?></span>
           <a href="<?= site_url('administrator/rfm/dashboard' . (!empty($product_filter) ? '?product=' . urlencode($product_filter) : '')); ?>" class="btn btn-xs" style="background:rgba(255,255,255,0.2); color:#fff; font-weight:700; border-radius:8px; padding:6px 14px;"><i class="fa fa-times"></i> Reset Filter Bulan</a>
