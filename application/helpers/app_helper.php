@@ -270,19 +270,38 @@ if(!function_exists('display_menu_admin')) {
 	    	}
 		   	foreach ($result as $row) {
 				
-				$row->link = parse_nav_url($row->link);		   
-
 		   		$perms = 'menu_'.strtolower(str_replace(' ', '_', $row->label));
 
-		   		$links = explode('/', $row->link);
-				$segments = array_slice($ci->uri->segment_array(), 0, count($links));
-				$current_uri = implode('/', $ci->uri->segment_array());
-
-		   		if (!empty($row->link) && $row->link != '#' && implode('/', $segments) == implode('/', $links)) {
-		   			$active = 'active';
-		   		} else {
-		   			$active = '';
-		   		}
+		   		$link_path = trim(str_replace(base_url(), '', parse_nav_url($row->link)), '/');
+				$current_uri = trim(implode('/', $ci->uri->segment_array()), '/');
+				
+				$active = '';
+				if (!empty($row->link) && $row->link != '#') {
+					if ($current_uri == $link_path || $current_uri == $link_path . '/index') {
+						$active = 'active';
+					} else {
+						$links = explode('/', $link_path);
+						$segments = array_slice($ci->uri->segment_array(), 0, count($links));
+						if (implode('/', $segments) == implode('/', $links)) {
+							$has_better_sibling = false;
+							if ($parent > 0) {
+								$siblings = $ci->db->query("SELECT link FROM `menu` WHERE parent = " . $parent . " AND active = 1 AND id != " . $row->id)->result();
+								foreach ($siblings as $sib) {
+									$sib_path = trim(str_replace(base_url(), '', parse_nav_url($sib->link)), '/');
+									if (!empty($sib_path) && $sib_path != '#' && strlen($sib_path) > strlen($link_path)) {
+										if ($current_uri == $sib_path || strpos($current_uri, $sib_path) === 0) {
+											$has_better_sibling = true;
+											break;
+										}
+									}
+								}
+							}
+							if (!$has_better_sibling) {
+								$active = 'active';
+							}
+						}
+					}
+				}
 
 				// Auto-expand treeview if child is active
 				if ($row->Count > 0) {
