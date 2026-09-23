@@ -439,7 +439,7 @@
   <div class="box-header" style="background:linear-gradient(135deg, #eef2ff, #e0e7ff); padding:18px 22px; border-bottom:2px solid #c7d2fe;">
     <h4 style="margin:0; font-weight:800; color:#1e1b4b; font-size:16px; display:flex; justify-content:space-between; align-items:center;">
       <span><i class="fa fa-shopping-bag" style="color:#6366f1;"></i> Rekapan Produk: <span style="color:#4338ca;"><?= htmlspecialchars($product_filter); ?></span></span>
-      <a href="<?= site_url('administrator/rfm'); ?>" class="btn btn-xs" style="background:#fff; color:#6366f1; border:1px solid #c7d2fe; border-radius:6px; font-weight:700;"><i class="fa fa-times"></i> Hapus Filter Produk</a>
+      <a href="<?= site_url('administrator/rfm'); ?>" class="btn" style="background:linear-gradient(135deg, #dc2626, #b91c1c); color:#ffffff; border-radius:8px; font-weight:800; font-size:12px; padding:6px 14px; box-shadow:0 3px 8px rgba(220,38,38,0.3); border:none; display:inline-flex; align-items:center; gap:5px;"><i class="fa fa-times-circle"></i> Hapus Filter Produk</a>
     </h4>
   </div>
   <div class="box-body" style="padding:20px;">
