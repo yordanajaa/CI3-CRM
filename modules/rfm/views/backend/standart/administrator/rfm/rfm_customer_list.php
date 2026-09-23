@@ -510,7 +510,7 @@
             <th style="text-align:center; min-width:105px;">Recency (R)</th>
             <th style="text-align:center; min-width:95px;">Skor RFM</th>
             <th style="text-align:center; min-width:130px;">Segmen Market</th>
-            <th style="text-align:center; min-width:130px; width:130px;">Aksi</th>
+            <th style="text-align:center; min-width:180px; width:180px;">Aksi Navigasi</th>
           </tr>
         </thead>
         <tbody>
@@ -571,7 +571,7 @@
                 <i class="fa <?= $badge['icon']; ?>" style="margin-right:4px;"></i><?= htmlspecialchars($rfm['segment']); ?>
               </span>
             </td>
-            <td style="text-align:center; white-space:nowrap; min-width:130px; width:130px;">
+            <td style="text-align:center; white-space:nowrap; min-width:180px; width:180px;">
               <?php
                 $det_qs = array_filter([
                   'phone' => $c->customer_phone,
@@ -579,8 +579,8 @@
                   'period' => $period_filter ?? ''
                 ]);
               ?>
-              <a href="<?= site_url('administrator/rfm/customer_detail?' . http_build_query($det_qs)); ?>" class="btn btn-sm" style="background:#6366f1; color:#fff; border:none; border-radius:6px; font-size:11px; font-weight:700; padding:4px 8px;" title="Detail Profil & Analisis RFM Customer">
-                <i class="fa fa-user"></i> Detail
+              <a href="<?= site_url('administrator/rfm/customer_detail?' . http_build_query($det_qs)); ?>" class="btn btn-sm" style="background:#4338ca; color:#ffffff; font-weight:800; font-size:11.5px; padding:6px 12px; border-radius:8px; box-shadow:0 2px 6px rgba(67,56,202,0.3); display:inline-flex; align-items:center; gap:5px;" title="Lihat Profil & Analisis Detail RFM Customer Ini">
+                <i class="fa fa-user"></i> Detail Customer
               </a>
               <?php 
                 $clean_phone = preg_replace('/[^0-9]/', '', $c->customer_phone ?? '');
@@ -591,8 +591,8 @@
                   $wa_msg = "Halo Kak " . $c->customer_nama . ",\n\nSalam dari Metafora! " . $wa_action . "\n\nAda yang bisa kami bantu hari ini?";
                   $direct_wa_url = 'https://api.whatsapp.com/send?phone=' . $wa_phone . '&text=' . rawurlencode($wa_msg);
               ?>
-              <a href="<?= $direct_wa_url; ?>" target="_blank" class="btn btn-sm" style="background:#25D366; color:#fff; border:none; border-radius:6px; font-size:11px; font-weight:700; padding:4px 8px; margin-left:2px;" title="Buka Chat WhatsApp Langsung">
-                <i class="fa fa-whatsapp"></i> Chat
+              <a href="<?= $direct_wa_url; ?>" target="_blank" class="btn btn-sm" style="background:#16a34a; color:#ffffff; font-weight:800; font-size:11.5px; padding:6px 12px; border-radius:8px; box-shadow:0 2px 6px rgba(22,163,74,0.3); margin-left:4px; display:inline-flex; align-items:center; gap:5px;" title="Kirim Pesan WhatsApp Langsung">
+                <i class="fa fa-whatsapp"></i> Chat WA
               </a>
               <?php endif; ?>
             </td>

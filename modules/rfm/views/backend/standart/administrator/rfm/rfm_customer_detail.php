@@ -406,9 +406,10 @@ $crm_chat_url = site_url('administrator/crm/chat?phone=' . urlencode($phone) . '
     </div>
 
     <div class="action-tools">
-      <a href="<?= site_url('administrator/crm/customer_detail?phone=' . urlencode($phone)); ?>" class="btn" style="background:#fff; color:#312e81; font-weight:700;" title="Lihat Detail CRM"><i class="fa fa-tasks"></i> CRM Detail</a>
-      <a href="<?= $crm_chat_url; ?>" class="btn" style="background:linear-gradient(135deg, #075e54, #128c7e); color:#fff; box-shadow:0 4px 12px rgba(18,140,126,0.35);" title="Buka WhatsApp Chat Center"><i class="fa fa-comments"></i> Live Chat WA</a>
-      <a href="<?= $direct_wa_url; ?>" target="_blank" class="btn" style="background:#25D366; color:#fff;" title="Buka Chat WhatsApp Langsung"><i class="fa fa-whatsapp"></i> Chat Direct WA</a>
+      <a href="<?= site_url('administrator/rfm' . $nav_qs); ?>" class="btn" style="background:rgba(255,255,255,0.22); color:#fff; border:1px solid rgba(255,255,255,0.38); font-weight:800;" title="Kembali ke Daftar Customer RFM"><i class="fa fa-arrow-left"></i> Kembali ke Daftar</a>
+      <a href="<?= site_url('administrator/crm/customer_detail?phone=' . urlencode($phone)); ?>" class="btn" style="background:#fff; color:#312e81; font-weight:800;" title="Lihat Detail CRM"><i class="fa fa-tasks"></i> CRM Detail</a>
+      <a href="<?= $crm_chat_url; ?>" class="btn" style="background:linear-gradient(135deg, #075e54, #128c7e); color:#fff; box-shadow:0 4px 12px rgba(18,140,126,0.35); font-weight:800;" title="Buka WhatsApp Chat Center"><i class="fa fa-comments"></i> Live Chat WA</a>
+      <a href="<?= $direct_wa_url; ?>" target="_blank" class="btn" style="background:#25D366; color:#fff; font-weight:800;" title="Buka Chat WhatsApp Langsung"><i class="fa fa-whatsapp"></i> Chat Direct WA</a>
     </div>
   </div>
 
@@ -431,9 +432,9 @@ $crm_chat_url = site_url('administrator/crm/chat?phone=' . urlencode($phone) . '
 
 <!-- ===== SUMMARY CARDS ===== -->
 <?php if (!empty($product_filter) || !empty($period_filter)): ?>
-<div class="alert" style="background:linear-gradient(135deg, #eef2ff, #e0e7ff); color:#312e81; border:1px solid #c7d2fe; border-radius:12px; padding:12px 18px; margin-bottom:18px; font-weight:700; font-size:13.5px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; box-shadow:0 4px 12px rgba(99,102,241,0.06);">
-  <span><i class="fa fa-cubes" style="color:#6366f1;"></i> Analisis RFM Per Produk: <strong><?= htmlspecialchars($product_filter); ?></strong></span>
-  <a href="<?= site_url('administrator/rfm/customer_detail?phone=' . urlencode($phone)); ?>" class="btn btn-xs" style="background:#fff; color:#4338ca; border:1px solid #c7d2fe; border-radius:8px; font-weight:700; padding:6px 14px; box-shadow:0 2px 4px rgba(0,0,0,0.05);"><i class="fa fa-globe"></i> Switch ke RFM Keseluruhan (Semua Produk)</a>
+<div class="alert" style="background:linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%); color:#1e1b4b; border:1.5px solid #a5b4fc; border-radius:12px; padding:14px 20px; margin-bottom:20px; font-weight:700; font-size:14px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; box-shadow:0 4px 16px rgba(99,102,241,0.08);">
+  <span><i class="fa fa-tag" style="color:#4338ca; font-size:16px;"></i> Mode Analisis RFM Produk: <strong style="color:#3730a3; font-size:15px;"><?= htmlspecialchars($product_filter); ?></strong></span>
+  <a href="<?= site_url('administrator/rfm/customer_detail?phone=' . urlencode($phone)); ?>" class="btn" style="background:#ffffff; color:#3730a3; border:1.5px solid #a5b4fc; border-radius:8px; font-weight:800; font-size:12.5px; padding:7px 16px; box-shadow:0 2px 6px rgba(0,0,0,0.06); transition:all 0.2s;"><i class="fa fa-refresh" style="color:#4338ca;"></i> Reset ke RFM Keseluruhan Customer</a>
 </div>
 <?php endif; ?>
 <div class="row summary-row">
@@ -536,7 +537,7 @@ $crm_chat_url = site_url('administrator/crm/chat?phone=' . urlencode($phone) . '
           <th style="min-width:80px;">Qty</th>
           <th style="min-width:130px;">Total Spend (M)</th>
           <th style="min-width:90px;">% Kontribusi</th>
-          <th style="min-width:230px;" class="text-center">Aksi RFM Produk</th>
+          <th style="min-width:270px;" class="text-center">Aksi Navigasi RFM</th>
         </tr>
       </thead>
       <tbody>
@@ -556,7 +557,7 @@ $crm_chat_url = site_url('administrator/crm/chat?phone=' . urlencode($phone) . '
           <td>
             <strong style="color:#0f172a;"><?= htmlspecialchars($pr->nama_produk); ?></strong>
             <?php if ($is_active_prod): ?>
-              <span class="label" style="background:#4338ca; color:#fff; font-size:10px; margin-left:6px; padding:2px 8px; border-radius:10px;"><i class="fa fa-check-circle"></i> RFM Per Produk Terpilih</span>
+              <span class="label" style="background:#4338ca; color:#fff; font-size:10px; margin-left:6px; padding:3px 8px; border-radius:10px;"><i class="fa fa-check-circle"></i> RFM Per Produk Terpilih</span>
             <?php endif; ?>
           </td>
           <td><code style="font-size:11px; background:#f1f5f9; padding:2px 6px; border-radius:4px; color:#475569; white-space:nowrap;"><?= htmlspecialchars($pr->kode_produk ?? '-'); ?></code></td>
@@ -576,11 +577,12 @@ $crm_chat_url = site_url('administrator/crm/chat?phone=' . urlencode($phone) . '
           </td>
           <td style="text-align:center; white-space:nowrap;">
             <?php if ($is_active_prod): ?>
-              <a href="<?= site_url('administrator/rfm/customer_detail?phone=' . urlencode($phone)); ?>" class="btn btn-xs" style="background:#e2e8f0; color:#334155; font-weight:600; font-size:11px; border-radius:6px; padding:4px 8px;" title="Reset ke RFM Keseluruhan Customer"><i class="fa fa-times"></i> Reset RFM</a>
+              <span class="label" style="background:#4338ca; color:#fff; font-weight:800; font-size:11px; padding:6px 10px; border-radius:8px; margin-right:4px;"><i class="fa fa-check-circle"></i> RFM Aktif</span>
+              <a href="<?= site_url('administrator/rfm/customer_detail?phone=' . urlencode($phone)); ?>" class="btn btn-sm" style="background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; font-weight:800; font-size:11px; border-radius:8px; padding:5px 10px;" title="Reset bagian atas ke RFM Keseluruhan"><i class="fa fa-times"></i> Reset</a>
             <?php else: ?>
-              <a href="<?= site_url('administrator/rfm/customer_detail?phone=' . urlencode($phone) . '&product=' . urlencode($pr->nama_produk)); ?>" class="btn btn-xs" style="background:#6366f1; color:#fff; font-weight:600; font-size:11px; border-radius:6px; padding:4px 8px;" title="Lihat Analisis RFM Produk Ini di Bagian Atas"><i class="fa fa-filter"></i> RFM Produk Ini</a>
+              <a href="<?= site_url('administrator/rfm/customer_detail?phone=' . urlencode($phone) . '&product=' . urlencode($pr->nama_produk)); ?>" class="btn btn-sm" style="background:#4338ca; color:#ffffff; font-weight:800; font-size:11px; border-radius:8px; padding:6px 12px; box-shadow:0 2px 6px rgba(67,56,202,0.3); display:inline-flex; align-items:center; gap:4px;" title="Analisis Skor & Segmen RFM Produk Ini di Bagian Atas Halaman"><i class="fa fa-search"></i> RFM Produk Ini</a>
             <?php endif; ?>
-            <a href="<?= site_url('administrator/rfm?product=' . urlencode($pr->nama_produk)); ?>" class="btn btn-xs" style="background:#e0e7ff; color:#3730a3; font-weight:700; font-size:11px; border-radius:6px; padding:4px 8px; margin-left:4px;" title="Lihat Halaman Rekap RFM Produk Ini (Seluruh Customer)"><i class="fa fa-bar-chart"></i> Halaman RFM Produk</a>
+            <a href="<?= site_url('administrator/rfm?product=' . urlencode($pr->nama_produk)); ?>" class="btn btn-sm" style="background:#0284c7; color:#ffffff; font-weight:800; font-size:11px; border-radius:8px; padding:6px 12px; margin-left:4px; box-shadow:0 2px 6px rgba(2,132,199,0.3); display:inline-flex; align-items:center; gap:4px;" title="Buka Halaman Rekap RFM Produk Ini (Untuk Seluruh Customer)"><i class="fa fa-cubes"></i> Halaman RFM Produk</a>
           </td>
         </tr>
         <?php endforeach; ?>
