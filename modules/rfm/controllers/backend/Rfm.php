@@ -205,9 +205,9 @@ class Rfm extends Admin
 			redirect('administrator/rfm');
 		}
 
-		// Main summary is ALWAYS overall across all products for this customer
-		$this->data['summary'] = $this->model_rfm->get_customer_summary($phone, '');
-		// Transactions can be filtered by product if selected
+		// Summary is evaluated for product_filter if provided, or overall if empty
+		$this->data['summary'] = $this->model_rfm->get_customer_summary($phone, $product_filter);
+		$this->data['overall_summary'] = $this->model_rfm->get_customer_summary($phone, '');
 		$this->data['transactions'] = $this->model_rfm->get_customer_transactions($phone, $product_filter);
 		$this->data['product_rfm'] = $this->model_rfm->get_customer_product_rfm($phone);
 		$this->data['phone'] = $phone;

@@ -573,11 +573,13 @@
             </td>
             <td style="text-align:center; white-space:nowrap; min-width:130px; width:130px;">
               <?php
-                $det_qs = [
-                  'phone' => $c->customer_phone
-                ];
+                $det_qs = array_filter([
+                  'phone' => $c->customer_phone,
+                  'product' => $product_filter ?? '',
+                  'period' => $period_filter ?? ''
+                ]);
               ?>
-              <a href="<?= site_url('administrator/rfm/customer_detail?' . http_build_query($det_qs)); ?>" class="btn btn-sm" style="background:#6366f1; color:#fff; border:none; border-radius:6px; font-size:11px; font-weight:700; padding:4px 8px;" title="Detail Profil RFM Keseluruhan">
+              <a href="<?= site_url('administrator/rfm/customer_detail?' . http_build_query($det_qs)); ?>" class="btn btn-sm" style="background:#6366f1; color:#fff; border:none; border-radius:6px; font-size:11px; font-weight:700; padding:4px 8px;" title="Detail Profil & Analisis RFM Customer">
                 <i class="fa fa-user"></i> Detail
               </a>
               <?php 

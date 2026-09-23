@@ -431,18 +431,14 @@ $crm_chat_url = site_url('administrator/crm/chat?phone=' . urlencode($phone) . '
 
 <!-- ===== SUMMARY CARDS ===== -->
 <?php if (!empty($product_filter) || !empty($period_filter)): ?>
-<div class="alert" style="background:#e0e7ff; color:#3730a3; border:1px solid #c7d2fe; border-radius:10px; padding:10px 16px; margin-bottom:14px; font-weight:600; font-size:13px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
-  <span><i class="fa fa-filter"></i> Transaksi terfilter: 
-    <?= !empty($product_filter) ? 'Produk <strong>' . htmlspecialchars($product_filter) . '</strong>' : ''; ?>
-    <?= (!empty($product_filter) && !empty($period_filter)) ? ' | ' : ''; ?>
-    <?= !empty($period_filter) ? 'Periode <strong>' . htmlspecialchars($period_filter) . '</strong>' : ''; ?>
-  </span>
-  <a href="<?= site_url('administrator/rfm/customer_detail?phone=' . urlencode($phone)); ?>" style="color:#3730a3; font-size:12px; font-weight:700;"><i class="fa fa-times"></i> Hapus Filter Transaksi</a>
+<div class="alert" style="background:linear-gradient(135deg, #eef2ff, #e0e7ff); color:#312e81; border:1px solid #c7d2fe; border-radius:12px; padding:12px 18px; margin-bottom:18px; font-weight:700; font-size:13.5px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; box-shadow:0 4px 12px rgba(99,102,241,0.06);">
+  <span><i class="fa fa-cubes" style="color:#6366f1;"></i> Analisis RFM Per Produk: <strong><?= htmlspecialchars($product_filter); ?></strong></span>
+  <a href="<?= site_url('administrator/rfm/customer_detail?phone=' . urlencode($phone)); ?>" class="btn btn-xs" style="background:#fff; color:#4338ca; border:1px solid #c7d2fe; border-radius:8px; font-weight:700; padding:6px 14px; box-shadow:0 2px 4px rgba(0,0,0,0.05);"><i class="fa fa-globe"></i> Switch ke RFM Keseluruhan (Semua Produk)</a>
 </div>
 <?php endif; ?>
 <div class="row summary-row">
-  <div class="col-md-3 col-sm-6 col-xs-6"><div class="summary-card sc-blue"><div class="num"><?= number_format($s['total_orders']); ?></div><div class="lbl">Total Order Customer</div></div></div>
-  <div class="col-md-3 col-sm-6 col-xs-6"><div class="summary-card sc-green"><div class="num">Rp <?= number_format($s['total_spend'], 0, ',', '.'); ?></div><div class="lbl">Total Belanja Customer</div></div></div>
+  <div class="col-md-3 col-sm-6 col-xs-6"><div class="summary-card sc-blue"><div class="num"><?= number_format($s['total_orders']); ?></div><div class="lbl"><?= !empty($product_filter) ? 'Total Order (Produk Ini)' : 'Total Order Customer'; ?></div></div></div>
+  <div class="col-md-3 col-sm-6 col-xs-6"><div class="summary-card sc-green"><div class="num">Rp <?= number_format($s['total_spend'], 0, ',', '.'); ?></div><div class="lbl"><?= !empty($product_filter) ? 'Total Belanja (Produk Ini)' : 'Total Belanja Customer'; ?></div></div></div>
   <div class="col-md-3 col-sm-6 col-xs-6"><div class="summary-card sc-orange"><div class="num"><?= $s['first_order'] ? date('d M Y', strtotime($s['first_order'])) : '-'; ?></div><div class="lbl">Order Pertama</div></div></div>
   <div class="col-md-3 col-sm-6 col-xs-6"><div class="summary-card sc-purple"><div class="num"><?= $s['last_order'] ? date('d M Y', strtotime($s['last_order'])) : '-'; ?></div><div class="lbl">Order Terakhir</div></div></div>
 </div>
@@ -451,7 +447,13 @@ $crm_chat_url = site_url('administrator/crm/chat?phone=' . urlencode($phone) . '
 <div class="row rfm-flex-row">
   <div class="col-md-7 col-sm-12 rfm-flex-col">
     <div class="rfm-detail-card" style="flex:1;">
-      <div class="card-title"><i class="fa fa-bar-chart" style="color:#6366f1;"></i> Skor & Segmentasi RFM Keseluruhan Customer</div>
+      <div class="card-title">
+        <?php if (!empty($product_filter)): ?>
+          <i class="fa fa-bar-chart" style="color:#6366f1;"></i> Skor & Segmentasi RFM Per Produk: <span class="label" style="background:#e0e7ff; color:#3730a3; font-size:12px; padding:4px 10px; border-radius:10px;"><i class="fa fa-tag"></i> <?= htmlspecialchars($product_filter); ?></span>
+        <?php else: ?>
+          <i class="fa fa-bar-chart" style="color:#6366f1;"></i> Skor & Segmentasi RFM Keseluruhan Customer
+        <?php endif; ?>
+      </div>
 
       <div class="rfm-meter">
         <div class="meter-label"><i class="fa fa-clock-o" style="color:#2563eb;"></i> Recency</div>
@@ -516,9 +518,9 @@ $crm_chat_url = site_url('administrator/crm/chat?phone=' . urlencode($phone) . '
 <!-- ===== PRODUCT RFM TABLE ===== -->
 <div class="rfm-detail-card">
   <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-    <span><i class="fa fa-cubes" style="color:#6366f1;"></i> Analisis Produk RFM (Seluruh Produk yang Dibeli Customer Ini)</span>
+    <span><i class="fa fa-cubes" style="color:#6366f1;"></i> Semua Produk yang Dibeli Customer Ini</span>
     <?php if (!empty($product_filter)): ?>
-    <a href="<?= site_url('administrator/rfm/customer_detail?phone=' . urlencode($phone)); ?>" class="btn btn-xs" style="background:#f1f5f9; color:#475569; border-radius:6px; font-weight:600; font-size:11px;"><i class="fa fa-list"></i> Tampilkan Semua Transaksi</a>
+    <a href="<?= site_url('administrator/rfm/customer_detail?phone=' . urlencode($phone)); ?>" class="btn btn-xs" style="background:#f1f5f9; color:#475569; border-radius:6px; font-weight:600; font-size:11px;"><i class="fa fa-list"></i> Switch ke RFM Keseluruhan</a>
     <?php endif; ?>
   </div>
   <div class="table-responsive">
@@ -534,27 +536,27 @@ $crm_chat_url = site_url('administrator/crm/chat?phone=' . urlencode($phone) . '
           <th style="min-width:80px;">Qty</th>
           <th style="min-width:130px;">Total Spend (M)</th>
           <th style="min-width:90px;">% Kontribusi</th>
-          <th style="min-width:170px;" class="text-center">Aksi RFM Produk</th>
+          <th style="min-width:230px;" class="text-center">Aksi RFM Produk</th>
         </tr>
       </thead>
       <tbody>
         <?php 
         $display_products = $product_rfm;
-        $cust_total_spend = max(1, $s['total_spend']);
+        $overall_spend = isset($overall_summary['total_spend']) ? max(1, $overall_summary['total_spend']) : max(1, $s['total_spend']);
         ?>
         <?php if (empty($display_products)): ?>
         <tr><td colspan="10" class="text-center" style="padding:30px !important; color:#94a3b8;"><i class="fa fa-info-circle" style="font-size:20px; display:block; margin-bottom:6px;"></i>Belum ada data transaksi produk untuk customer ini</td></tr>
         <?php else: ?>
         <?php $pno = 1; foreach ($display_products as $pr): 
           $is_active_prod = (!empty($product_filter) && isset($pr->nama_produk) && $pr->nama_produk === $product_filter);
-          $pct_contrib = round(($pr->total_spend / $cust_total_spend) * 100, 1);
+          $pct_contrib = round(($pr->total_spend / $overall_spend) * 100, 1);
         ?>
         <tr<?= $is_active_prod ? ' style="background:#eef2ff; border-left:4px solid #6366f1;"' : ''; ?>>
           <td><?= $pno++; ?></td>
           <td>
             <strong style="color:#0f172a;"><?= htmlspecialchars($pr->nama_produk); ?></strong>
             <?php if ($is_active_prod): ?>
-              <span class="label" style="background:#4338ca; color:#fff; font-size:10px; margin-left:6px; padding:2px 8px; border-radius:10px;"><i class="fa fa-check-circle"></i> Transaksi Terfilter</span>
+              <span class="label" style="background:#4338ca; color:#fff; font-size:10px; margin-left:6px; padding:2px 8px; border-radius:10px;"><i class="fa fa-check-circle"></i> RFM Per Produk Terpilih</span>
             <?php endif; ?>
           </td>
           <td><code style="font-size:11px; background:#f1f5f9; padding:2px 6px; border-radius:4px; color:#475569; white-space:nowrap;"><?= htmlspecialchars($pr->kode_produk ?? '-'); ?></code></td>
@@ -573,12 +575,12 @@ $crm_chat_url = site_url('administrator/crm/chat?phone=' . urlencode($phone) . '
             <span class="label" style="background:#e0e7ff; color:#3730a3; font-weight:700; font-size:11px; padding:3px 8px; border-radius:10px;"><?= $pct_contrib; ?>%</span>
           </td>
           <td style="text-align:center; white-space:nowrap;">
-            <a href="<?= site_url('administrator/rfm?product=' . urlencode($pr->nama_produk)); ?>" class="btn btn-xs" style="background:#6366f1; color:#fff; font-weight:700; font-size:11px; border-radius:6px; padding:4px 8px;" title="Lihat Rekap Halaman RFM Khusus Produk Ini (Seluruh Customer)"><i class="fa fa-bar-chart"></i> Halaman RFM Produk</a>
             <?php if ($is_active_prod): ?>
-              <a href="<?= site_url('administrator/rfm/customer_detail?phone=' . urlencode($phone)); ?>" class="btn btn-xs" style="background:#e2e8f0; color:#334155; font-weight:600; font-size:11px; border-radius:6px; padding:4px 8px; margin-left:4px;" title="Reset Filter Transaksi"><i class="fa fa-times"></i> Reset</a>
+              <a href="<?= site_url('administrator/rfm/customer_detail?phone=' . urlencode($phone)); ?>" class="btn btn-xs" style="background:#e2e8f0; color:#334155; font-weight:600; font-size:11px; border-radius:6px; padding:4px 8px;" title="Reset ke RFM Keseluruhan Customer"><i class="fa fa-times"></i> Reset RFM</a>
             <?php else: ?>
-              <a href="<?= site_url('administrator/rfm/customer_detail?phone=' . urlencode($phone) . '&product=' . urlencode($pr->nama_produk)); ?>" class="btn btn-xs" style="background:#f1f5f9; color:#312e81; font-weight:600; font-size:11px; border-radius:6px; padding:4px 8px; margin-left:4px;" title="Filter tabel riwayat transaksi untuk produk ini"><i class="fa fa-filter"></i> Filter Transaksi</a>
+              <a href="<?= site_url('administrator/rfm/customer_detail?phone=' . urlencode($phone) . '&product=' . urlencode($pr->nama_produk)); ?>" class="btn btn-xs" style="background:#6366f1; color:#fff; font-weight:600; font-size:11px; border-radius:6px; padding:4px 8px;" title="Lihat Analisis RFM Produk Ini di Bagian Atas"><i class="fa fa-filter"></i> RFM Produk Ini</a>
             <?php endif; ?>
+            <a href="<?= site_url('administrator/rfm?product=' . urlencode($pr->nama_produk)); ?>" class="btn btn-xs" style="background:#e0e7ff; color:#3730a3; font-weight:700; font-size:11px; border-radius:6px; padding:4px 8px; margin-left:4px;" title="Lihat Halaman Rekap RFM Produk Ini (Seluruh Customer)"><i class="fa fa-bar-chart"></i> Halaman RFM Produk</a>
           </td>
         </tr>
         <?php endforeach; ?>
