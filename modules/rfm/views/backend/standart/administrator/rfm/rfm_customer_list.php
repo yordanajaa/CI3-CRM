@@ -49,6 +49,10 @@
   border-radius: 20px;
   margin-bottom: 8px;
 }
+.rfm-header-nav .header-title {
+  flex: 1;
+  min-width: 280px;
+}
 .rfm-header-nav .header-title h2 {
   margin: 0 0 4px 0;
   font-weight: 800;
@@ -67,6 +71,8 @@
   gap: 8px;
   flex-wrap: wrap;
   align-items: center;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 .rfm-header-nav .action-tools .btn {
   border-radius: 9px;
