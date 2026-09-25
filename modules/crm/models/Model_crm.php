@@ -1013,10 +1013,6 @@ class Model_crm extends CI_Model
 			$pf_esc = $this->db->escape_like_str($product_filter);
 			$where_conds[] = "(t_data.nama_produk LIKE '%{$pf_esc}%')";
 		}
-		if (!empty($period_filter)) {
-			$period_esc = $this->db->escape_str($period_filter);
-			$where_conds[] = "DATE_FORMAT(t_data.tanggal_so, '%Y-%m') = '{$period_esc}'";
-		}
 
 		$where_sql = !empty($where_conds) ? "WHERE " . implode(' AND ', $where_conds) : "";
 
@@ -1067,7 +1063,36 @@ class Model_crm extends CI_Model
 			ORDER BY ym_period DESC
 		";
 
-		return $this->db->query($sql)->result();
+		$all_rows = $this->db->query($sql)->result();
+
+		// Calculate MoM growth percentage for each month chronologically
+		for ($i = 0; $i < count($all_rows); $i++) {
+			$all_rows[$i]->unique_buyers = (int)$all_rows[$i]->unique_buyers;
+			$all_rows[$i]->total_orders = (int)$all_rows[$i]->total_orders;
+			$all_rows[$i]->total_qty = (float)$all_rows[$i]->total_qty;
+			$all_rows[$i]->total_spend = (float)$all_rows[$i]->total_spend;
+			$all_rows[$i]->avg_recency_days = (int)$all_rows[$i]->avg_recency_days;
+
+			$prev_spend = isset($all_rows[$i + 1]) ? (float)$all_rows[$i + 1]->total_spend : 0;
+			$all_rows[$i]->prev_spend = $prev_spend;
+			if ($prev_spend > 0) {
+				$all_rows[$i]->mom_growth_pct = round((($all_rows[$i]->total_spend - $prev_spend) / $prev_spend) * 100, 1);
+			} else {
+				$all_rows[$i]->mom_growth_pct = 0.0;
+			}
+		}
+
+		if (!empty($period_filter)) {
+			$filtered = [];
+			foreach ($all_rows as $r) {
+				if ($r->ym_period === $period_filter) {
+					$filtered[] = $r;
+				}
+			}
+			return $filtered;
+		}
+
+		return $all_rows;
 	}
 
 	/**

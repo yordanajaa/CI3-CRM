@@ -479,9 +479,9 @@
             $is_active_m = (!empty($period_filter) && $period_filter === $mt->ym_period);
             
             // Calculate Month-over-Month (MoM) growth percentage
-            $prev_spend = isset($track_list[$idx + 1]) ? (float)$track_list[$idx + 1]->total_spend : 0;
-            $growth_pct = 0;
-            if ($prev_spend > 0) {
+            $prev_spend = isset($mt->prev_spend) ? (float)$mt->prev_spend : (isset($track_list[$idx + 1]) ? (float)$track_list[$idx + 1]->total_spend : 0);
+            $growth_pct = isset($mt->mom_growth_pct) ? (float)$mt->mom_growth_pct : 0;
+            if (!isset($mt->mom_growth_pct) && $prev_spend > 0) {
               $growth_pct = round((($mt->total_spend - $prev_spend) / $prev_spend) * 100, 1);
             }
           ?>
