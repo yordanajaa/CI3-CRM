@@ -1120,19 +1120,19 @@ class Model_crm extends CI_Model
 	}
 
 	/**
-	 * Daily cohort: customers grouped by the DAY of first purchase within a given month
-	 * Columns = subsequent days within the same month
+	 * Daily calendar heatmap: organized by week rows and day-of-week columns
+	 * Shows unique customers per day in a calendar grid format
 	 */
 	private function _get_daily_cohort($year, $month)
 	{
 		$ym = $year . '-' . str_pad($month, 2, '0', STR_PAD_LEFT);
 		$days_in_month = cal_days_in_month(CAL_GREGORIAN, (int)$month, (int)$year);
 
-		// Get all transactions in this month
+		// Get all transactions in this month with subtotals
 		$sql = "
-			SELECT phone, DATE(tanggal) as order_date
+			SELECT phone, DATE(tanggal) as order_date, order_id
 			FROM (
-				SELECT CAST(so.no_telepon AS CHAR) as phone, so.tanggal_so as tanggal
+				SELECT CAST(so.no_telepon AS CHAR) as phone, so.tanggal_so as tanggal, CONCAT('so_', so.id) as order_id
 				FROM sales_order so
 				WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
 				  AND so.tanggal_so IS NOT NULL AND CAST(so.tanggal_so AS CHAR) NOT LIKE '0000%' AND so.tanggal_so > '1970-01-01'
@@ -1140,7 +1140,7 @@ class Model_crm extends CI_Model
 
 				UNION ALL
 
-				SELECT CAST(pm.no_telepon AS CHAR) as phone, pm.tanggal_so as tanggal
+				SELECT CAST(pm.no_telepon AS CHAR) as phone, pm.tanggal_so as tanggal, CONCAT('mp_', pm.id) as order_id
 				FROM penjualan_marketplace pm
 				WHERE pm.no_telepon IS NOT NULL AND pm.no_telepon != ''
 				  AND pm.tanggal_so IS NOT NULL AND CAST(pm.tanggal_so AS CHAR) NOT LIKE '0000%' AND pm.tanggal_so > '1970-01-01'
@@ -1151,87 +1151,75 @@ class Model_crm extends CI_Model
 
 		$rows = $this->db->query($sql)->result();
 
-		// Find first purchase date for each customer within this month
-		$first_purchase = [];
-		$customer_dates = [];
-		foreach ($rows as $r) {
-			$phone = $r->phone;
-			$date = $r->order_date;
-			if (!isset($first_purchase[$phone]) || $date < $first_purchase[$phone]) {
-				$first_purchase[$phone] = $date;
-			}
-			if (!isset($customer_dates[$phone])) {
-				$customer_dates[$phone] = [];
-			}
-			$customer_dates[$phone][$date] = true;
-		}
-
-		// Group customers by their cohort day
-		$cohort_customers = [];
-		foreach ($first_purchase as $phone => $first_date) {
-			$day = (int)date('j', strtotime($first_date));
-			if (!isset($cohort_customers[$day])) {
-				$cohort_customers[$day] = [];
-			}
-			$cohort_customers[$day][] = $phone;
-		}
-
-		// Build cohort data
-		$cohorts = [];
-		$period_labels = [];
+		// Aggregate per day: unique customers and orders
+		$daily_stats = [];
 		for ($d = 1; $d <= $days_in_month; $d++) {
-			$period_labels[] = $d;
+			$daily_stats[$d] = ['customers' => [], 'orders' => []];
 		}
 
-		ksort($cohort_customers);
-		$total_initial = 0;
-		$total_retained_sum = [];
+		foreach ($rows as $r) {
+			$day = (int)date('j', strtotime($r->order_date));
+			if (isset($daily_stats[$day])) {
+				$daily_stats[$day]['customers'][$r->phone] = true;
+				$daily_stats[$day]['orders'][$r->order_id] = true;
+			}
+		}
 
-		foreach ($cohort_customers as $cohort_day => $phones) {
-			$cohort_size = count($phones);
-			$total_initial += $cohort_size;
-			$retention = [];
+		// Build calendar grid
+		// PHP: 1=Monday ... 7=Sunday (ISO-8601 via 'N' format)
+		$day_labels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+		$first_day_of_month = date('N', mktime(0, 0, 0, (int)$month, 1, (int)$year)); // 1=Mon ... 7=Sun
+		
+		$calendar = [];
+		$week_num = 1;
+		$col = (int)$first_day_of_month; // Start column (1-7)
 
-			for ($d = 1; $d <= $days_in_month; $d++) {
-				$target_date = sprintf('%s-%02d', $ym, $d);
-				if ($d < $cohort_day) {
-					$retention[$d] = null; // Before cohort start
-				} elseif ($d === $cohort_day) {
-					$retention[$d] = 100.0; // Cohort start = 100%
-				} else {
-					$active = 0;
-					foreach ($phones as $phone) {
-						if (isset($customer_dates[$phone][$target_date])) {
-							$active++;
-						}
-					}
-					$pct = $cohort_size > 0 ? round(($active / $cohort_size) * 100, 1) : 0;
-					$retention[$d] = $pct;
+		$total_customers_set = [];
+		$total_orders = 0;
+		$max_customers_day = 0;
 
-					if (!isset($total_retained_sum[$d])) $total_retained_sum[$d] = 0;
-					$total_retained_sum[$d] += $active;
-				}
+		for ($d = 1; $d <= $days_in_month; $d++) {
+			$cust_count = count($daily_stats[$d]['customers']);
+			$order_count = count($daily_stats[$d]['orders']);
+			
+			$calendar[$week_num][$col] = [
+				'date' => $d,
+				'customers' => $cust_count,
+				'orders' => $order_count,
+			];
+
+			// Track totals
+			foreach ($daily_stats[$d]['customers'] as $ph => $_) {
+				$total_customers_set[$ph] = true;
+			}
+			$total_orders += $order_count;
+			if ($cust_count > $max_customers_day) {
+				$max_customers_day = $cust_count;
 			}
 
-			$cohorts[] = [
-				'label' => 'Hari ' . $cohort_day,
-				'date_label' => sprintf('%s-%02d', $ym, $cohort_day),
-				'size' => $cohort_size,
-				'retention' => $retention,
-			];
+			$col++;
+			if ($col > 7) {
+				$col = 1;
+				$week_num++;
+			}
 		}
+
+		$total_weeks = $week_num;
 
 		return [
-			'cohorts' => $cohorts,
-			'periods' => $period_labels,
+			'calendar' => $calendar,
+			'day_labels' => $day_labels,
+			'total_weeks' => $total_weeks,
 			'mode' => 'daily',
 			'year' => $year,
 			'month' => $month,
 			'ym' => $ym,
+			'max_customers_day' => $max_customers_day,
 			'summary' => [
-				'total_cohorts' => count($cohorts),
-				'total_customers' => $total_initial,
+				'total_customers' => count($total_customers_set),
+				'total_orders' => $total_orders,
 				'days_in_month' => $days_in_month,
+				'days_with_transactions' => count(array_filter($daily_stats, function($s) { return count($s['customers']) > 0; })),
 			],
 		];
 	}
