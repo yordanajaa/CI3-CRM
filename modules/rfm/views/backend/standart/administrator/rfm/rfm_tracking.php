@@ -636,7 +636,7 @@
     $prev_orders = $prev_month ? (int)$prev_month->total_orders : 0;
     $prev_spend = $prev_month ? (float)$prev_month->total_spend : 0;
     
-    // Health Score (0-100)
+    // Business Performance Index (0-100)
     $health = 50; // base
     if ($trend_direction > 0) $health += min(15, $trend_direction / 2);
     if ($trend_direction < 0) $health -= min(20, abs($trend_direction) / 2);
@@ -649,7 +649,7 @@
     $health = max(0, min(100, round($health)));
     $health_color = $health >= 70 ? '#16a34a' : ($health >= 40 ? '#f59e0b' : '#dc2626');
     $health_bg = $health >= 70 ? '#dcfce7' : ($health >= 40 ? '#fef3c7' : '#fee2e2');
-    $health_label = $health >= 70 ? 'Sehat' : ($health >= 40 ? 'Perlu Perhatian' : 'Kritis');
+    $health_label = $health >= 70 ? 'Performa Optimal' : ($health >= 40 ? 'Performa Sedang' : 'Perlu Evaluasi');
     
     // Need attention flags
     $alerts = [];
@@ -663,7 +663,7 @@
     $positives = [];
     if ($trend_direction > 10) $positives[] = ['icon' => 'fa-rocket', 'title' => 'Tren Omset Naik +' . $trend_direction . '%', 'msg' => 'Rata-rata omset 3 bulan terakhir (<strong>Rp ' . number_format($recent_3_avg_spend, 0, ',', '.') . '/bln</strong>) naik dibanding sebelumnya (<strong>Rp ' . number_format($older_3_avg_spend, 0, ',', '.') . '/bln</strong>).'];
     if ($growing_months > $declining_months && $t_cnt >= 4) $positives[] = ['icon' => 'fa-thumbs-up', 'title' => 'Pertumbuhan Konsisten (' . $growing_months . '/' . ($t_cnt - 1) . ' bulan)', 'msg' => '<strong>' . $growing_months . ' dari ' . ($t_cnt - 1) . '</strong> transisi bulan menunjukkan pertumbuhan omset positif. Bisnis cenderung stabil.'];
-    if ($latest_recency <= 30) $positives[] = ['icon' => 'fa-check-circle', 'title' => 'Recency Sehat (' . round($latest_recency) . ' hari)', 'msg' => 'Customer rata-rata baru bertransaksi <strong>' . round($latest_recency) . ' hari lalu</strong>. Ini menunjukkan engagement yang baik (batas sehat: ≤30 hari).'];
+    if ($latest_recency <= 30) $positives[] = ['icon' => 'fa-check-circle', 'title' => 'Recency Baik (' . round($latest_recency) . ' hari)', 'msg' => 'Customer rata-rata baru bertransaksi <strong>' . round($latest_recency) . ' hari lalu</strong>. Ini menunjukkan engagement yang baik (batas optimal: ≤30 hari).'];
     if ($latest_buyers >= $avg_sum_buyers && $avg_sum_buyers > 0) $positives[] = ['icon' => 'fa-user-plus', 'title' => 'Pembeli Stabil/Naik', 'msg' => 'Pembeli unik bulan terakhir (<strong>' . $latest_buyers . '</strong>) sama atau di atas rata-rata bulanan (<strong>' . round($avg_sum_buyers) . '</strong>).'];
     if ($avg_orders_per_buyer > 1.5) $positives[] = ['icon' => 'fa-repeat', 'title' => 'Repeat Purchase Tinggi (' . $avg_orders_per_buyer . 'x)', 'msg' => 'Rata-rata customer melakukan <strong>' . $avg_orders_per_buyer . ' order</strong>, menunjukkan tingkat loyalitas dan kepuasan yang baik.'];
   ?>
@@ -679,12 +679,12 @@
 
     <div style="padding:20px;">
 
-      <!-- SECTION 1: Health Score + Key Metrics Grid -->
+      <!-- SECTION 1: Performance Index + Key Metrics Grid -->
       <div style="display:grid; grid-template-columns:180px 1fr; gap:20px; margin-bottom:24px; align-items:start;">
-        <!-- Health Score Gauge -->
+        <!-- Performance Index Gauge -->
         <div style="background:<?= $health_bg; ?>; border-radius:14px; padding:20px; text-align:center; border:2px solid <?= $health_color; ?>20;">
           <div style="font-size:11px; font-weight:700; color:<?= $health_color; ?>; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">
-            <i class="fa fa-heartbeat"></i> Skor Kesehatan
+            <i class="fa fa-line-chart"></i> Indeks Performa Bisnis
           </div>
           <div style="font-size:42px; font-weight:900; color:<?= $health_color; ?>; line-height:1;"><?= $health; ?></div>
           <div style="font-size:11px; color:<?= $health_color; ?>; font-weight:700; margin-top:4px;">/100 — <?= $health_label; ?></div>
