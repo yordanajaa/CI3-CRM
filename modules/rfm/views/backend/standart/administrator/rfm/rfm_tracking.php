@@ -630,11 +630,44 @@
     $latest_spend = $latest ? (float)$latest->total_spend : 0;
     $latest_qty = $latest ? (int)$latest->total_qty : 0;
     
-    // Previous month stats for comparison
-    $prev_month = isset($tl[1]) ? $tl[1] : null;
-    $prev_buyers = $prev_month ? (int)$prev_month->unique_buyers : 0;
-    $prev_orders = $prev_month ? (int)$prev_month->total_orders : 0;
-    $prev_spend = $prev_month ? (float)$prev_month->total_spend : 0;
+    // Map tracking data by ym_period for comparison lookup
+    $track_by_ym = [];
+    foreach ($tl as $mt) {
+      $track_by_ym[$mt->ym_period] = $mt;
+    }
+
+    $cmp_a_val = isset($_GET['compare_a']) && isset($track_by_ym[$_GET['compare_a']]) ? $_GET['compare_a'] : ($tl[0]->ym_period ?? '');
+    $cmp_b_val = isset($_GET['compare_b']) && isset($track_by_ym[$_GET['compare_b']]) ? $_GET['compare_b'] : (isset($tl[1]) ? $tl[1]->ym_period : ($tl[0]->ym_period ?? ''));
+
+    $obj_a = $track_by_ym[$cmp_a_val] ?? ($tl[0] ?? null);
+    $obj_b = $track_by_ym[$cmp_b_val] ?? ($tl[1] ?? $tl[0] ?? null);
+
+    $a_spend = $obj_a ? (float)$obj_a->total_spend : 0;
+    $a_buyers = $obj_a ? (int)$obj_a->unique_buyers : 0;
+    $a_orders = $obj_a ? (int)$obj_a->total_orders : 0;
+    $a_qty = $obj_a ? (int)$obj_a->total_qty : 0;
+    $a_avg_order = $a_orders > 0 ? $a_spend / $a_orders : 0;
+
+    $b_spend = $obj_b ? (float)$obj_b->total_spend : 0;
+    $b_buyers = $obj_b ? (int)$obj_b->unique_buyers : 0;
+    $b_orders = $obj_b ? (int)$obj_b->total_orders : 0;
+    $b_qty = $obj_b ? (int)$obj_b->total_qty : 0;
+    $b_avg_order = $b_orders > 0 ? $b_spend / $b_orders : 0;
+
+    $cmp_spend_pct = $b_spend > 0 ? round((($a_spend - $b_spend) / $b_spend) * 100, 1) : 0;
+    $cmp_spend_diff = $a_spend - $b_spend;
+
+    $cmp_buyers_pct = $b_buyers > 0 ? round((($a_buyers - $b_buyers) / $b_buyers) * 100, 1) : 0;
+    $cmp_buyers_diff = $a_buyers - $b_buyers;
+
+    $cmp_orders_pct = $b_orders > 0 ? round((($a_orders - $b_orders) / $b_orders) * 100, 1) : 0;
+    $cmp_orders_diff = $a_orders - $b_orders;
+
+    $cmp_aov_pct = $b_avg_order > 0 ? round((($a_avg_order - $b_avg_order) / $b_avg_order) * 100, 1) : 0;
+    $cmp_aov_diff = $a_avg_order - $b_avg_order;
+
+    $cmp_qty_pct = $b_qty > 0 ? round((($a_qty - $b_qty) / $b_qty) * 100, 1) : 0;
+    $cmp_qty_diff = $a_qty - $b_qty;
     
     // Business Performance Index (0-100)
     $health = 50; // base
@@ -731,50 +764,124 @@
         </div>
       </div>
 
-      <!-- SECTION 2: Latest vs Previous Month Comparison -->
-      <?php if ($prev_month): 
-        $cmp_spend_pct = $prev_spend > 0 ? round(($latest_spend - $prev_spend) / $prev_spend * 100, 1) : 0;
-        $cmp_buyers_pct = $prev_buyers > 0 ? round(($latest_buyers - $prev_buyers) / $prev_buyers * 100, 1) : 0;
-        $cmp_orders_pct = $prev_orders > 0 ? round(($latest_orders - $prev_orders) / $prev_orders * 100, 1) : 0;
-      ?>
-      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:18px; margin-bottom:24px;">
-        <div style="font-weight:800; font-size:13px; color:#0f172a; margin-bottom:14px; display:flex; align-items:center; gap:8px;">
-          <i class="fa fa-exchange" style="color:#6366f1;"></i> Perbandingan Bulan Terakhir vs Sebelumnya
-          <span style="font-size:11px; font-weight:600; color:#64748b; margin-left:auto;"><?= $latest->period_label; ?> vs <?= $prev_month->period_label; ?></span>
-        </div>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
+      <!-- SECTION 2: Custom Period Comparison (Bebas Pilih Bulan) -->
+      <?php if ($obj_a && $obj_b): ?>
+      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:20px; margin-bottom:24px;">
+        <form method="GET" action="<?= site_url('administrator/rfm/tracking'); ?>" id="form-compare-months" style="margin-bottom:18px;">
+          <?php if (!empty($product_filter)): ?>
+            <input type="hidden" name="product" value="<?= htmlspecialchars($product_filter); ?>">
+          <?php endif; ?>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div>
+              <div style="font-weight:800; font-size:14px; color:#0f172a; display:flex; align-items:center; gap:8px;">
+                <i class="fa fa-exchange" style="color:#6366f1; font-size:16px;"></i> Perbandingan Antar Periode / Bulan (Bebas Pilih Bulan)
+              </div>
+              <div style="font-size:12px; color:#64748b; margin-top:2px;">
+                Pilih dua bulan mana saja di bawah ini untuk membandingkan omset, customer, dan order secara langsung
+              </div>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <label style="font-size:12px; font-weight:700; color:#475569; margin:0; white-space:nowrap;">Bulan A:</label>
+                <select name="compare_a" class="form-control" style="border-radius:8px; font-weight:700; border:1px solid #cbd5e1; height:36px; font-size:12.5px; min-width:140px;" onchange="document.getElementById('form-compare-months').submit();">
+                  <?php foreach ($tl as $mitem): ?>
+                    <option value="<?= $mitem->ym_period; ?>" <?= $mitem->ym_period === $cmp_a_val ? 'selected' : ''; ?>>
+                      📅 <?= htmlspecialchars($mitem->period_label); ?>
+                    </option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+
+              <span style="font-weight:800; color:#6366f1; font-size:14px;">VS</span>
+
+              <div style="display:flex; align-items:center; gap:6px;">
+                <label style="font-size:12px; font-weight:700; color:#475569; margin:0; white-space:nowrap;">Bulan B (Pembanding):</label>
+                <select name="compare_b" class="form-control" style="border-radius:8px; font-weight:700; border:1px solid #cbd5e1; height:36px; font-size:12.5px; min-width:140px;" onchange="document.getElementById('form-compare-months').submit();">
+                  <?php foreach ($tl as $mitem): ?>
+                    <option value="<?= $mitem->ym_period; ?>" <?= $mitem->ym_period === $cmp_b_val ? 'selected' : ''; ?>>
+                      📅 <?= htmlspecialchars($mitem->period_label); ?>
+                    </option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+
+              <button type="submit" class="btn btn-sm" style="background:#6366f1; color:#fff; border-radius:8px; font-weight:700; height:36px; padding:0 14px; border:none; display:inline-flex; align-items:center; gap:6px;">
+                <i class="fa fa-refresh"></i> Bandingkan
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <!-- Metric comparison cards grid -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:14px;">
           <!-- Omset Comparison -->
-          <div style="background:#fff; border-radius:10px; padding:14px; border:1px solid #e2e8f0;">
+          <div style="background:#fff; border-radius:12px; padding:16px; border:1px solid #e2e8f0; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-              <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;">Omset</span>
-              <span style="font-size:12px; font-weight:800; color:<?= $cmp_spend_pct >= 0 ? '#16a34a' : '#dc2626'; ?>; background:<?= $cmp_spend_pct >= 0 ? '#dcfce7' : '#fee2e2'; ?>; padding:2px 8px; border-radius:6px;">
+              <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.5px;">Total Omset</span>
+              <span style="font-size:12px; font-weight:800; color:<?= $cmp_spend_pct >= 0 ? '#16a34a' : '#dc2626'; ?>; background:<?= $cmp_spend_pct >= 0 ? '#dcfce7' : '#fee2e2'; ?>; padding:3px 8px; border-radius:6px;">
                 <i class="fa fa-arrow-<?= $cmp_spend_pct >= 0 ? 'up' : 'down'; ?>"></i> <?= $cmp_spend_pct >= 0 ? '+' : ''; ?><?= $cmp_spend_pct; ?>%
               </span>
             </div>
-            <div style="font-size:14px; font-weight:800; color:#0f172a;">Rp <?= number_format($latest_spend, 0, ',', '.'); ?></div>
-            <div style="font-size:11px; color:#94a3b8;">Sebelumnya: Rp <?= number_format($prev_spend, 0, ',', '.'); ?></div>
+            <div style="font-size:18px; font-weight:800; color:#0f172a;">Rp <?= number_format($a_spend, 0, ',', '.'); ?></div>
+            <div style="font-size:11.5px; color:#64748b; margin-top:4px;">
+              <?= htmlspecialchars($obj_b->period_label); ?>: <strong>Rp <?= number_format($b_spend, 0, ',', '.'); ?></strong>
+            </div>
+            <div style="font-size:11px; font-weight:700; color:<?= $cmp_spend_diff >= 0 ? '#16a34a' : '#dc2626'; ?>; margin-top:3px;">
+              Selisih: <?= $cmp_spend_diff >= 0 ? '+' : ''; ?>Rp <?= number_format($cmp_spend_diff, 0, ',', '.'); ?>
+            </div>
           </div>
+
           <!-- Buyers Comparison -->
-          <div style="background:#fff; border-radius:10px; padding:14px; border:1px solid #e2e8f0;">
+          <div style="background:#fff; border-radius:12px; padding:16px; border:1px solid #e2e8f0; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-              <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;">Pembeli Unik</span>
-              <span style="font-size:12px; font-weight:800; color:<?= $cmp_buyers_pct >= 0 ? '#16a34a' : '#dc2626'; ?>; background:<?= $cmp_buyers_pct >= 0 ? '#dcfce7' : '#fee2e2'; ?>; padding:2px 8px; border-radius:6px;">
+              <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.5px;">Pembeli Unik</span>
+              <span style="font-size:12px; font-weight:800; color:<?= $cmp_buyers_pct >= 0 ? '#16a34a' : '#dc2626'; ?>; background:<?= $cmp_buyers_pct >= 0 ? '#dcfce7' : '#fee2e2'; ?>; padding:3px 8px; border-radius:6px;">
                 <i class="fa fa-arrow-<?= $cmp_buyers_pct >= 0 ? 'up' : 'down'; ?>"></i> <?= $cmp_buyers_pct >= 0 ? '+' : ''; ?><?= $cmp_buyers_pct; ?>%
               </span>
             </div>
-            <div style="font-size:14px; font-weight:800; color:#0f172a;"><?= number_format($latest_buyers); ?> customer</div>
-            <div style="font-size:11px; color:#94a3b8;">Sebelumnya: <?= number_format($prev_buyers); ?> customer</div>
+            <div style="font-size:18px; font-weight:800; color:#0f172a;"><?= number_format($a_buyers); ?> customer</div>
+            <div style="font-size:11.5px; color:#64748b; margin-top:4px;">
+              <?= htmlspecialchars($obj_b->period_label); ?>: <strong><?= number_format($b_buyers); ?> customer</strong>
+            </div>
+            <div style="font-size:11px; font-weight:700; color:<?= $cmp_buyers_diff >= 0 ? '#16a34a' : '#dc2626'; ?>; margin-top:3px;">
+              Selisih: <?= $cmp_buyers_diff >= 0 ? '+' : ''; ?><?= number_format($cmp_buyers_diff); ?> customer
+            </div>
           </div>
+
           <!-- Orders Comparison -->
-          <div style="background:#fff; border-radius:10px; padding:14px; border:1px solid #e2e8f0;">
+          <div style="background:#fff; border-radius:12px; padding:16px; border:1px solid #e2e8f0; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-              <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;">Jumlah Order</span>
-              <span style="font-size:12px; font-weight:800; color:<?= $cmp_orders_pct >= 0 ? '#16a34a' : '#dc2626'; ?>; background:<?= $cmp_orders_pct >= 0 ? '#dcfce7' : '#fee2e2'; ?>; padding:2px 8px; border-radius:6px;">
+              <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.5px;">Jumlah Order</span>
+              <span style="font-size:12px; font-weight:800; color:<?= $cmp_orders_pct >= 0 ? '#16a34a' : '#dc2626'; ?>; background:<?= $cmp_orders_pct >= 0 ? '#dcfce7' : '#fee2e2'; ?>; padding:3px 8px; border-radius:6px;">
                 <i class="fa fa-arrow-<?= $cmp_orders_pct >= 0 ? 'up' : 'down'; ?>"></i> <?= $cmp_orders_pct >= 0 ? '+' : ''; ?><?= $cmp_orders_pct; ?>%
               </span>
             </div>
-            <div style="font-size:14px; font-weight:800; color:#0f172a;"><?= number_format($latest_orders); ?> order</div>
-            <div style="font-size:11px; color:#94a3b8;">Sebelumnya: <?= number_format($prev_orders); ?> order</div>
+            <div style="font-size:18px; font-weight:800; color:#0f172a;"><?= number_format($a_orders); ?> order</div>
+            <div style="font-size:11.5px; color:#64748b; margin-top:4px;">
+              <?= htmlspecialchars($obj_b->period_label); ?>: <strong><?= number_format($b_orders); ?> order</strong>
+            </div>
+            <div style="font-size:11px; font-weight:700; color:<?= $cmp_orders_diff >= 0 ? '#16a34a' : '#dc2626'; ?>; margin-top:3px;">
+              Selisih: <?= $cmp_orders_diff >= 0 ? '+' : ''; ?><?= number_format($cmp_orders_diff); ?> order
+            </div>
+          </div>
+
+          <!-- AOV / Basket Size Comparison -->
+          <div style="background:#fff; border-radius:12px; padding:16px; border:1px solid #e2e8f0; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.5px;">Rata-Rata / Order</span>
+              <span style="font-size:12px; font-weight:800; color:<?= $cmp_aov_pct >= 0 ? '#16a34a' : '#dc2626'; ?>; background:<?= $cmp_aov_pct >= 0 ? '#dcfce7' : '#fee2e2'; ?>; padding:3px 8px; border-radius:6px;">
+                <i class="fa fa-arrow-<?= $cmp_aov_pct >= 0 ? 'up' : 'down'; ?>"></i> <?= $cmp_aov_pct >= 0 ? '+' : ''; ?><?= $cmp_aov_pct; ?>%
+              </span>
+            </div>
+            <div style="font-size:18px; font-weight:800; color:#0f172a;">Rp <?= number_format($a_avg_order, 0, ',', '.'); ?></div>
+            <div style="font-size:11.5px; color:#64748b; margin-top:4px;">
+              <?= htmlspecialchars($obj_b->period_label); ?>: <strong>Rp <?= number_format($b_avg_order, 0, ',', '.'); ?></strong>
+            </div>
+            <div style="font-size:11px; font-weight:700; color:<?= $cmp_aov_diff >= 0 ? '#16a34a' : '#dc2626'; ?>; margin-top:3px;">
+              Selisih: <?= $cmp_aov_diff >= 0 ? '+' : ''; ?>Rp <?= number_format($cmp_aov_diff, 0, ',', '.'); ?>
+            </div>
           </div>
         </div>
       </div>

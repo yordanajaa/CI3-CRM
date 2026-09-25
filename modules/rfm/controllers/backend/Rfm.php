@@ -71,12 +71,16 @@ class Rfm extends Admin
 	{
 		$product_filter = $this->input->get('product');
 		$period_filter = $this->input->get('period');
+		$compare_a = $this->input->get('compare_a');
+		$compare_b = $this->input->get('compare_b');
 
 		$this->data['products_list'] = $this->model_rfm->get_all_products_list();
 		$this->data['months_list'] = $this->model_rfm->get_distinct_months_list();
 		$this->data['monthly_tracking'] = $this->model_rfm->get_monthly_rfm_tracking_per_product($product_filter, $period_filter);
 		$this->data['product_filter'] = $product_filter;
 		$this->data['period_filter'] = $period_filter;
+		$this->data['compare_a'] = $compare_a;
+		$this->data['compare_b'] = $compare_b;
 
 		// Summary statistics
 		$track_data = $this->data['monthly_tracking'] ?? [];
