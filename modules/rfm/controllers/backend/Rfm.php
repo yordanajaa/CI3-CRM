@@ -91,6 +91,15 @@ class Rfm extends Admin
 		$avg_sum_buyers = $track_cnt > 0 ? $total_sum_buyers / $track_cnt : 0;
 		$total_sum_orders = array_sum(array_column($track_data, 'total_orders'));
 
+		// Fetch top products and platform breakdown for Month A and Month B comparison
+		$ym_a = !empty($compare_a) ? $compare_a : (!empty($track_data[0]->ym_period) ? $track_data[0]->ym_period : '');
+		$ym_b = !empty($compare_b) ? $compare_b : (!empty($track_data[1]->ym_period) ? $track_data[1]->ym_period : $ym_a);
+
+		$this->data['top_products_a'] = !empty($ym_a) ? $this->model_rfm->get_top_products_by_month($ym_a, $product_filter, 5) : [];
+		$this->data['top_products_b'] = !empty($ym_b) ? $this->model_rfm->get_top_products_by_month($ym_b, $product_filter, 5) : [];
+		$this->data['platform_a'] = !empty($ym_a) ? $this->model_rfm->get_platform_breakdown_by_month($ym_a, $product_filter) : [];
+		$this->data['platform_b'] = !empty($ym_b) ? $this->model_rfm->get_platform_breakdown_by_month($ym_b, $product_filter) : [];
+
 		$this->data['kpi_tracking'] = [
 			'track_cnt' => $track_cnt,
 			'total_sum_spend' => $total_sum_spend,

@@ -814,8 +814,8 @@
           </div>
         </form>
 
-        <!-- Metric comparison cards grid -->
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:14px;">
+        <!-- Metric comparison cards grid (6 Metrik Detail) -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
           <!-- Omset Comparison -->
           <div style="background:#fff; border-radius:12px; padding:16px; border:1px solid #e2e8f0; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -881,6 +881,138 @@
             </div>
             <div style="font-size:11px; font-weight:700; color:<?= $cmp_aov_diff >= 0 ? '#16a34a' : '#dc2626'; ?>; margin-top:3px;">
               Selisih: <?= $cmp_aov_diff >= 0 ? '+' : ''; ?>Rp <?= number_format($cmp_aov_diff, 0, ',', '.'); ?>
+            </div>
+          </div>
+
+          <!-- Total Qty Comparison -->
+          <div style="background:#fff; border-radius:12px; padding:16px; border:1px solid #e2e8f0; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.5px;">Total Qty Terjual</span>
+              <span style="font-size:12px; font-weight:800; color:<?= $cmp_qty_pct >= 0 ? '#16a34a' : '#dc2626'; ?>; background:<?= $cmp_qty_pct >= 0 ? '#dcfce7' : '#fee2e2'; ?>; padding:3px 8px; border-radius:6px;">
+                <i class="fa fa-arrow-<?= $cmp_qty_pct >= 0 ? 'up' : 'down'; ?>"></i> <?= $cmp_qty_pct >= 0 ? '+' : ''; ?><?= $cmp_qty_pct; ?>%
+              </span>
+            </div>
+            <div style="font-size:18px; font-weight:800; color:#0f172a;"><?= number_format($a_qty); ?> pcs</div>
+            <div style="font-size:11.5px; color:#64748b; margin-top:4px;">
+              <?= htmlspecialchars($obj_b->period_label); ?>: <strong><?= number_format($b_qty); ?> pcs</strong>
+            </div>
+            <div style="font-size:11px; font-weight:700; color:<?= $cmp_qty_diff >= 0 ? '#16a34a' : '#dc2626'; ?>; margin-top:3px;">
+              Selisih: <?= $cmp_qty_diff >= 0 ? '+' : ''; ?><?= number_format($cmp_qty_diff); ?> pcs
+            </div>
+          </div>
+        </div>
+
+        <!-- Deep Breakdown: Top Products & Platforms Comparison -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:16px; margin-top:16px;">
+          <!-- Top 5 Products Comparison -->
+          <div style="background:#fff; border-radius:12px; padding:16px; border:1px solid #e2e8f0;">
+            <div style="font-weight:800; font-size:12.5px; color:#1e1b4b; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+              <i class="fa fa-trophy" style="color:#f59e0b;"></i> Top 5 Produk Terlaris (Nominal Omset)
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+              <!-- Month A Top Products -->
+              <div>
+                <div style="font-size:11px; font-weight:700; color:#4338ca; background:#e0e7ff; padding:4px 8px; border-radius:6px; margin-bottom:8px; text-align:center;">
+                  <?= htmlspecialchars($obj_a->period_label); ?>
+                </div>
+                <?php if (empty($top_products_a)): ?>
+                  <div style="font-size:11px; color:#94a3b8; text-align:center; padding:10px;">Tidak ada data produk</div>
+                <?php else: ?>
+                  <div style="display:flex; flex-direction:column; gap:6px;">
+                    <?php foreach ($top_products_a as $pidx => $tp): ?>
+                    <div style="font-size:11px; padding:8px; background:#f8fafc; border-radius:6px; border:1px solid #e2e8f0;">
+                      <div style="font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="<?= htmlspecialchars($tp->nama_produk); ?>">
+                        <?= ($pidx+1); ?>. <?= htmlspecialchars($tp->nama_produk); ?>
+                      </div>
+                      <div style="display:flex; justify-content:space-between; color:#15803d; font-weight:700; margin-top:3px;">
+                        <span>Rp <?= number_format($tp->total_spend, 0, ',', '.'); ?></span>
+                        <span style="color:#64748b; font-weight:600;"><?= number_format($tp->total_qty); ?> pcs</span>
+                      </div>
+                    </div>
+                    <?php endforeach; ?>
+                  </div>
+                <?php endif; ?>
+              </div>
+
+              <!-- Month B Top Products -->
+              <div>
+                <div style="font-size:11px; font-weight:700; color:#475569; background:#f1f5f9; padding:4px 8px; border-radius:6px; margin-bottom:8px; text-align:center;">
+                  <?= htmlspecialchars($obj_b->period_label); ?>
+                </div>
+                <?php if (empty($top_products_b)): ?>
+                  <div style="font-size:11px; color:#94a3b8; text-align:center; padding:10px;">Tidak ada data produk</div>
+                <?php else: ?>
+                  <div style="display:flex; flex-direction:column; gap:6px;">
+                    <?php foreach ($top_products_b as $pidx => $tp): ?>
+                    <div style="font-size:11px; padding:8px; background:#f8fafc; border-radius:6px; border:1px solid #e2e8f0;">
+                      <div style="font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="<?= htmlspecialchars($tp->nama_produk); ?>">
+                        <?= ($pidx+1); ?>. <?= htmlspecialchars($tp->nama_produk); ?>
+                      </div>
+                      <div style="display:flex; justify-content:space-between; color:#15803d; font-weight:700; margin-top:3px;">
+                        <span>Rp <?= number_format($tp->total_spend, 0, ',', '.'); ?></span>
+                        <span style="color:#64748b; font-weight:600;"><?= number_format($tp->total_qty); ?> pcs</span>
+                      </div>
+                    </div>
+                    <?php endforeach; ?>
+                  </div>
+                <?php endif; ?>
+              </div>
+            </div>
+          </div>
+
+          <!-- Platform / Sales Channel Breakdown -->
+          <div style="background:#fff; border-radius:12px; padding:16px; border:1px solid #e2e8f0;">
+            <div style="font-weight:800; font-size:12.5px; color:#1e1b4b; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+              <i class="fa fa-shopping-cart" style="color:#10b981;"></i> Performa Channel / Platform Penjualan
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+              <!-- Month A Platform -->
+              <div>
+                <div style="font-size:11px; font-weight:700; color:#4338ca; background:#e0e7ff; padding:4px 8px; border-radius:6px; margin-bottom:8px; text-align:center;">
+                  <?= htmlspecialchars($obj_a->period_label); ?>
+                </div>
+                <?php if (empty($platform_a)): ?>
+                  <div style="font-size:11px; color:#94a3b8; text-align:center; padding:10px;">Tidak ada data platform</div>
+                <?php else: ?>
+                  <div style="display:flex; flex-direction:column; gap:6px;">
+                    <?php foreach ($platform_a as $pf): ?>
+                    <div style="font-size:11px; padding:8px; background:#f8fafc; border-radius:6px; border:1px solid #e2e8f0;">
+                      <div style="font-weight:700; color:#0f172a; display:flex; justify-content:space-between;">
+                        <span><?= htmlspecialchars($pf->sumber_penjualan); ?></span>
+                        <span style="color:#4338ca;"><?= number_format($pf->total_orders); ?> order</span>
+                      </div>
+                      <div style="font-size:11px; font-weight:700; color:#15803d; margin-top:3px;">
+                        Rp <?= number_format($pf->total_spend, 0, ',', '.'); ?>
+                      </div>
+                    </div>
+                    <?php endforeach; ?>
+                  </div>
+                <?php endif; ?>
+              </div>
+
+              <!-- Month B Platform -->
+              <div>
+                <div style="font-size:11px; font-weight:700; color:#475569; background:#f1f5f9; padding:4px 8px; border-radius:6px; margin-bottom:8px; text-align:center;">
+                  <?= htmlspecialchars($obj_b->period_label); ?>
+                </div>
+                <?php if (empty($platform_b)): ?>
+                  <div style="font-size:11px; color:#94a3b8; text-align:center; padding:10px;">Tidak ada data platform</div>
+                <?php else: ?>
+                  <div style="display:flex; flex-direction:column; gap:6px;">
+                    <?php foreach ($platform_b as $pf): ?>
+                    <div style="font-size:11px; padding:8px; background:#f8fafc; border-radius:6px; border:1px solid #e2e8f0;">
+                      <div style="font-weight:700; color:#0f172a; display:flex; justify-content:space-between;">
+                        <span><?= htmlspecialchars($pf->sumber_penjualan); ?></span>
+                        <span style="color:#4338ca;"><?= number_format($pf->total_orders); ?> order</span>
+                      </div>
+                      <div style="font-size:11px; font-weight:700; color:#15803d; margin-top:3px;">
+                        Rp <?= number_format($pf->total_spend, 0, ',', '.'); ?>
+                      </div>
+                    </div>
+                    <?php endforeach; ?>
+                  </div>
+                <?php endif; ?>
+              </div>
             </div>
           </div>
         </div>

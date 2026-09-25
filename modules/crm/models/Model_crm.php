@@ -1020,18 +1020,18 @@ class Model_crm extends CI_Model
 			SELECT 
 				DATE_FORMAT(t_data.tanggal_so, '%Y-%m') as ym_period,
 				DATE_FORMAT(t_data.tanggal_so, '%M %Y') as period_label,
-				COUNT(DISTINCT t_data.no_telepon) as unique_buyers,
+				COUNT(DISTINCT t_data.clean_phone) as unique_buyers,
 				COUNT(DISTINCT t_data.order_id) as total_orders,
 				SUM(t_data.qty) as total_qty,
 				SUM(t_data.subtotal) as total_spend,
 				ROUND(AVG(DATEDIFF(CURRENT_DATE(), t_data.tanggal_so)), 0) as avg_recency_days
 			FROM (
 				SELECT 
-					so.no_telepon,
+					RIGHT(REPLACE(REPLACE(REPLACE(REPLACE(so.no_telepon, ' ', ''), '-', ''), '+', ''), '628', '08'), 10) as clean_phone,
 					so.tanggal_so,
 					CONCAT('so_', so.id) as order_id,
 					soi.qty,
-					soi.subtotal,
+					COALESCE(NULLIF(soi.subtotal, 0), (soi.qty * soi.harga_satuan), 0) as subtotal,
 					COALESCE(p.nama_produk, soi.catatan, 'Produk SO') as nama_produk
 				FROM sales_order_item soi
 				JOIN sales_order so ON soi.so_id = so.id
@@ -1040,15 +1040,16 @@ class Model_crm extends CI_Model
 				  AND so.tanggal_so IS NOT NULL 
 				  AND CAST(so.tanggal_so AS CHAR) NOT LIKE '0000%' 
 				  AND so.tanggal_so > '1970-01-01'
+				  AND (so.status_pesanan IS NULL OR (LOWER(so.status_pesanan) NOT LIKE '%batal%' AND LOWER(so.status_pesanan) NOT LIKE '%cancel%'))
 
 				UNION ALL
 
 				SELECT 
-					pm.no_telepon,
+					RIGHT(REPLACE(REPLACE(REPLACE(REPLACE(pm.no_telepon, ' ', ''), '-', ''), '+', ''), '628', '08'), 10) as clean_phone,
 					pm.tanggal_so,
 					CONCAT('pm_', pm.id) as order_id,
 					pmi.qty,
-					pmi.subtotal,
+					COALESCE(NULLIF(pmi.subtotal, 0), (pmi.qty * pmi.harga_satuan), 0) as subtotal,
 					COALESCE(p2.nama_produk, pmi.catatan, pm.nama_produk_marketplace, 'Produk Marketplace') as nama_produk
 				FROM penjualan_marketplace_item pmi
 				JOIN penjualan_marketplace pm ON pmi.penjualan_marketplace_id = pm.id
@@ -1057,6 +1058,7 @@ class Model_crm extends CI_Model
 				  AND pm.tanggal_so IS NOT NULL 
 				  AND CAST(pm.tanggal_so AS CHAR) NOT LIKE '0000%' 
 				  AND pm.tanggal_so > '1970-01-01'
+				  AND (pm.status_pesanan IS NULL OR (LOWER(pm.status_pesanan) NOT LIKE '%batal%' AND LOWER(pm.status_pesanan) NOT LIKE '%cancel%'))
 			) t_data
 			{$where_sql}
 			GROUP BY ym_period, period_label
@@ -1082,17 +1084,129 @@ class Model_crm extends CI_Model
 			}
 		}
 
-		if (!empty($period_filter)) {
-			$filtered = [];
-			foreach ($all_rows as $r) {
-				if ($r->ym_period === $period_filter) {
-					$filtered[] = $r;
-				}
-			}
-			return $filtered;
-		}
-
 		return $all_rows;
+	}
+
+	/**
+	 * Get top selling products for a specific month
+	 */
+	public function get_top_products_by_month($ym_period, $product_filter = '', $limit = 5)
+	{
+		if (empty($ym_period)) return [];
+
+		$where_conds = ["DATE_FORMAT(t_data.tanggal_so, '%Y-%m') = '{$this->db->escape_str($ym_period)}'"];
+		if (!empty($product_filter)) {
+			$pf_esc = $this->db->escape_like_str($product_filter);
+			$where_conds[] = "(t_data.nama_produk LIKE '%{$pf_esc}%')";
+		}
+		$where_sql = "WHERE " . implode(' AND ', $where_conds);
+
+		$sql = "
+			SELECT 
+				t_data.nama_produk,
+				COUNT(DISTINCT t_data.order_id) as total_orders,
+				SUM(t_data.qty) as total_qty,
+				SUM(t_data.subtotal) as total_spend
+			FROM (
+				SELECT 
+					so.tanggal_so,
+					CONCAT('so_', so.id) as order_id,
+					soi.qty,
+					COALESCE(NULLIF(soi.subtotal, 0), (soi.qty * soi.harga_satuan), 0) as subtotal,
+					COALESCE(p.nama_produk, soi.catatan, 'Produk SO') as nama_produk
+				FROM sales_order_item soi
+				JOIN sales_order so ON soi.so_id = so.id
+				LEFT JOIN produk p ON soi.produk_id = p.id
+				WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
+				  AND so.tanggal_so IS NOT NULL 
+				  AND CAST(so.tanggal_so AS CHAR) NOT LIKE '0000%' 
+				  AND so.tanggal_so > '1970-01-01'
+				  AND (so.status_pesanan IS NULL OR (LOWER(so.status_pesanan) NOT LIKE '%batal%' AND LOWER(so.status_pesanan) NOT LIKE '%cancel%'))
+
+				UNION ALL
+
+				SELECT 
+					pm.tanggal_so,
+					CONCAT('pm_', pm.id) as order_id,
+					pmi.qty,
+					COALESCE(NULLIF(pmi.subtotal, 0), (pmi.qty * pmi.harga_satuan), 0) as subtotal,
+					COALESCE(p2.nama_produk, pmi.catatan, pm.nama_produk_marketplace, 'Produk Marketplace') as nama_produk
+				FROM penjualan_marketplace_item pmi
+				JOIN penjualan_marketplace pm ON pmi.penjualan_marketplace_id = pm.id
+				LEFT JOIN produk p2 ON pmi.produk_id = p2.id
+				WHERE pm.no_telepon IS NOT NULL AND pm.no_telepon != ''
+				  AND pm.tanggal_so IS NOT NULL 
+				  AND CAST(pm.tanggal_so AS CHAR) NOT LIKE '0000%' 
+				  AND pm.tanggal_so > '1970-01-01'
+				  AND (pm.status_pesanan IS NULL OR (LOWER(pm.status_pesanan) NOT LIKE '%batal%' AND LOWER(pm.status_pesanan) NOT LIKE '%cancel%'))
+			) t_data
+			{$where_sql}
+			GROUP BY t_data.nama_produk
+			ORDER BY total_spend DESC
+			LIMIT {$limit}
+		";
+
+		return $this->db->query($sql)->result();
+	}
+
+	/**
+	 * Get platform sales breakdown for a specific month
+	 */
+	public function get_platform_breakdown_by_month($ym_period, $product_filter = '')
+	{
+		if (empty($ym_period)) return [];
+
+		$where_conds = ["DATE_FORMAT(t_data.tanggal_so, '%Y-%m') = '{$this->db->escape_str($ym_period)}'"];
+		if (!empty($product_filter)) {
+			$pf_esc = $this->db->escape_like_str($product_filter);
+			$where_conds[] = "(t_data.nama_produk LIKE '%{$pf_esc}%')";
+		}
+		$where_sql = "WHERE " . implode(' AND ', $where_conds);
+
+		$sql = "
+			SELECT 
+				t_data.sumber_penjualan,
+				COUNT(DISTINCT t_data.order_id) as total_orders,
+				SUM(t_data.subtotal) as total_spend
+			FROM (
+				SELECT 
+					so.tanggal_so,
+					CONCAT('so_', so.id) as order_id,
+					COALESCE(NULLIF(so.sumber_penjualan, ''), 'Toko / Direct') as sumber_penjualan,
+					COALESCE(NULLIF(soi.subtotal, 0), (soi.qty * soi.harga_satuan), 0) as subtotal,
+					COALESCE(p.nama_produk, soi.catatan, 'Produk SO') as nama_produk
+				FROM sales_order_item soi
+				JOIN sales_order so ON soi.so_id = so.id
+				LEFT JOIN produk p ON soi.produk_id = p.id
+				WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
+				  AND so.tanggal_so IS NOT NULL 
+				  AND CAST(so.tanggal_so AS CHAR) NOT LIKE '0000%' 
+				  AND so.tanggal_so > '1970-01-01'
+				  AND (so.status_pesanan IS NULL OR (LOWER(so.status_pesanan) NOT LIKE '%batal%' AND LOWER(so.status_pesanan) NOT LIKE '%cancel%'))
+
+				UNION ALL
+
+				SELECT 
+					pm.tanggal_so,
+					CONCAT('pm_', pm.id) as order_id,
+					COALESCE(NULLIF(pm.sumber_penjualan, ''), 'Marketplace') as sumber_penjualan,
+					COALESCE(NULLIF(pmi.subtotal, 0), (pmi.qty * pmi.harga_satuan), 0) as subtotal,
+					COALESCE(p2.nama_produk, pmi.catatan, pm.nama_produk_marketplace, 'Produk Marketplace') as nama_produk
+				FROM penjualan_marketplace_item pmi
+				JOIN penjualan_marketplace pm ON pmi.penjualan_marketplace_id = pm.id
+				LEFT JOIN produk p2 ON pmi.produk_id = p2.id
+				WHERE pm.no_telepon IS NOT NULL AND pm.no_telepon != ''
+				  AND pm.tanggal_so IS NOT NULL 
+				  AND CAST(pm.tanggal_so AS CHAR) NOT LIKE '0000%' 
+				  AND pm.tanggal_so > '1970-01-01'
+				  AND (pm.status_pesanan IS NULL OR (LOWER(pm.status_pesanan) NOT LIKE '%batal%' AND LOWER(pm.status_pesanan) NOT LIKE '%cancel%'))
+			) t_data
+			{$where_sql}
+			GROUP BY t_data.sumber_penjualan
+			ORDER BY total_spend DESC
+		";
+
+		return $this->db->query($sql)->result();
 	}
 
 	/**

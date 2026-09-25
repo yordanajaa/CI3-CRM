@@ -88,6 +88,16 @@ class Model_rfm extends CI_Model
 		return $this->crm->get_monthly_rfm_tracking_per_product($product_filter, $period_filter);
 	}
 
+	public function get_top_products_by_month($ym_period, $product_filter = '', $limit = 5)
+	{
+		return $this->crm->get_top_products_by_month($ym_period, $product_filter, $limit);
+	}
+
+	public function get_platform_breakdown_by_month($ym_period, $product_filter = '')
+	{
+		return $this->crm->get_platform_breakdown_by_month($ym_period, $product_filter);
+	}
+
 	public function get_product_rfm_list($filter = '', $limit = 50, $offset = 0)
 	{
 		return $this->crm->get_product_rfm_list($filter, $limit, $offset);
