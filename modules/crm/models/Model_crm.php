@@ -1172,7 +1172,7 @@ class Model_crm extends CI_Model
 				SELECT 
 					so.tanggal_so,
 					CONCAT('so_', so.id) as order_id,
-					COALESCE(NULLIF(so.sumber_penjualan, ''), 'Toko / Direct') as sumber_penjualan,
+					'Toko Direct' as sumber_penjualan,
 					COALESCE(NULLIF(soi.subtotal, 0), (soi.qty * soi.harga_satuan), 0) as subtotal,
 					COALESCE(p.nama_produk, soi.catatan, 'Produk SO') as nama_produk
 				FROM sales_order_item soi
@@ -1189,7 +1189,15 @@ class Model_crm extends CI_Model
 				SELECT 
 					pm.tanggal_so,
 					CONCAT('pm_', pm.id) as order_id,
-					COALESCE(NULLIF(pm.sumber_penjualan, ''), 'Marketplace') as sumber_penjualan,
+					CASE 
+						WHEN LOWER(pm.source) LIKE '%tokopedia%' THEN 'Tokopedia'
+						WHEN LOWER(pm.source) LIKE '%tiktok%' THEN 'TikTok Shop'
+						WHEN LOWER(pm.source) LIKE '%shopee%' THEN 'Shopee'
+						WHEN LOWER(pm.no_pesanan) LIKE '%shp%' THEN 'Shopee'
+						WHEN LOWER(pm.no_pesanan) LIKE '%tkp%' THEN 'Tokopedia'
+						WHEN LOWER(pm.no_pesanan) LIKE '%ttk%' THEN 'TikTok Shop'
+						ELSE 'Marketplace'
+					END as sumber_penjualan,
 					COALESCE(NULLIF(pmi.subtotal, 0), (pmi.qty * pmi.harga_satuan), 0) as subtotal,
 					COALESCE(p2.nama_produk, pmi.catatan, pm.nama_produk_marketplace, 'Produk Marketplace') as nama_produk
 				FROM penjualan_marketplace_item pmi
