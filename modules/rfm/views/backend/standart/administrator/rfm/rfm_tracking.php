@@ -555,30 +555,44 @@
     $tl = array_values($track_data);
     $t_cnt = count($tl);
     
-    // Best & worst months
+    // Comprehensive metrics
     $best_spend = null; $worst_spend = null;
     $best_buyers = null; $worst_buyers = null;
+    $best_orders = null; $worst_orders = null;
     $declining_months = 0; $growing_months = 0;
     $recent_3_avg_spend = 0; $older_3_avg_spend = 0;
+    $total_all_spend = 0; $total_all_orders = 0; $total_all_buyers = 0; $total_all_qty = 0;
+    $mom_list = []; // Month-over-Month data
     
     foreach ($tl as $i => $mt) {
       $spend = (float)$mt->total_spend;
       $buyers = (int)$mt->unique_buyers;
+      $orders = (int)$mt->total_orders;
+      $qty = (int)$mt->total_qty;
+      
+      $total_all_spend += $spend;
+      $total_all_orders += $orders;
+      $total_all_buyers += $buyers;
+      $total_all_qty += $qty;
       
       if ($best_spend === null || $spend > (float)$best_spend->total_spend) $best_spend = $mt;
       if ($worst_spend === null || ($spend < (float)$worst_spend->total_spend && $spend > 0)) $worst_spend = $mt;
       if ($best_buyers === null || $buyers > (int)$best_buyers->unique_buyers) $best_buyers = $mt;
       if ($worst_buyers === null || ($buyers < (int)$worst_buyers->unique_buyers && $buyers > 0)) $worst_buyers = $mt;
+      if ($best_orders === null || $orders > (int)$best_orders->total_orders) $best_orders = $mt;
+      if ($worst_orders === null || ($orders < (int)$worst_orders->total_orders && $orders > 0)) $worst_orders = $mt;
       
       // Growth/decline calculation
+      $mom_pct = null;
       if ($i < $t_cnt - 1) {
         $prev = (float)$tl[$i + 1]->total_spend;
         if ($prev > 0) {
-          $growth = (($spend - $prev) / $prev) * 100;
-          if ($growth < 0) $declining_months++;
+          $mom_pct = round((($spend - $prev) / $prev) * 100, 1);
+          if ($mom_pct < 0) $declining_months++;
           else $growing_months++;
         }
       }
+      $mom_list[] = ['mt' => $mt, 'mom' => $mom_pct];
       
       // Recent vs older comparison
       if ($i < 3) $recent_3_avg_spend += $spend;
@@ -589,53 +603,192 @@
     $older_3_avg_spend = $t_cnt >= 6 ? $older_3_avg_spend / 3 : ($t_cnt >= 4 ? $older_3_avg_spend / min(3, $t_cnt - 3) : 0);
     $trend_direction = $older_3_avg_spend > 0 ? round((($recent_3_avg_spend - $older_3_avg_spend) / $older_3_avg_spend) * 100, 1) : 0;
     
+    // Average metrics
+    $avg_order_value = $total_all_orders > 0 ? $total_all_spend / $total_all_orders : 0;
+    $avg_orders_per_buyer = $total_all_buyers > 0 ? round($total_all_orders / $total_all_buyers, 2) : 0;
+    $avg_spend_per_buyer = $total_all_buyers > 0 ? $total_all_spend / $total_all_buyers : 0;
+    $avg_qty_per_order = $total_all_orders > 0 ? round($total_all_qty / $total_all_orders, 1) : 0;
+    
     // Latest month stats
     $latest = $tl[0] ?? null;
     $latest_recency = $latest ? ($latest->avg_recency_days ?? $latest->avg_recency ?? 0) : 0;
     $latest_buyers = $latest ? (int)$latest->unique_buyers : 0;
     $latest_orders = $latest ? (int)$latest->total_orders : 0;
     $latest_spend = $latest ? (float)$latest->total_spend : 0;
+    $latest_qty = $latest ? (int)$latest->total_qty : 0;
+    
+    // Previous month stats for comparison
+    $prev_month = isset($tl[1]) ? $tl[1] : null;
+    $prev_buyers = $prev_month ? (int)$prev_month->unique_buyers : 0;
+    $prev_orders = $prev_month ? (int)$prev_month->total_orders : 0;
+    $prev_spend = $prev_month ? (float)$prev_month->total_spend : 0;
+    
+    // Health Score (0-100)
+    $health = 50; // base
+    if ($trend_direction > 0) $health += min(15, $trend_direction / 2);
+    if ($trend_direction < 0) $health -= min(20, abs($trend_direction) / 2);
+    if ($growing_months > $declining_months) $health += 10;
+    if ($declining_months > $growing_months) $health -= 10;
+    if ($latest_recency <= 30) $health += 10;
+    if ($latest_recency > 60) $health -= 15;
+    if ($latest_buyers >= $avg_sum_buyers) $health += 10;
+    if ($latest_buyers < $avg_sum_buyers * 0.7) $health -= 10;
+    $health = max(0, min(100, round($health)));
+    $health_color = $health >= 70 ? '#16a34a' : ($health >= 40 ? '#f59e0b' : '#dc2626');
+    $health_bg = $health >= 70 ? '#dcfce7' : ($health >= 40 ? '#fef3c7' : '#fee2e2');
+    $health_label = $health >= 70 ? 'Sehat' : ($health >= 40 ? 'Perlu Perhatian' : 'Kritis');
     
     // Need attention flags
     $alerts = [];
-    if ($latest_recency > 60) $alerts[] = ['type' => 'danger', 'icon' => 'fa-exclamation-triangle', 'title' => 'Recency Terlalu Tinggi!', 'msg' => 'Rata-rata recency bulan terakhir (' . round($latest_recency) . ' hari) sangat tinggi. Customer mungkin sudah lama tidak bertransaksi. Segera lakukan follow-up!'];
-    if ($trend_direction < -20) $alerts[] = ['type' => 'danger', 'icon' => 'fa-arrow-down', 'title' => 'Omset Turun Drastis!', 'msg' => 'Rata-rata omset 3 bulan terakhir turun ' . abs($trend_direction) . '% dibanding 3 bulan sebelumnya. Perlu strategi peningkatan penjualan.'];
-    if ($declining_months > $growing_months && $t_cnt >= 4) $alerts[] = ['type' => 'warning', 'icon' => 'fa-line-chart', 'title' => 'Tren Penurunan Dominan', 'msg' => $declining_months . ' dari ' . ($t_cnt - 1) . ' periode menunjukkan penurunan omset (MoM negatif). Evaluasi strategi marketing diperlukan.'];
-    if ($latest_buyers < $avg_sum_buyers * 0.7 && $avg_sum_buyers > 0) $alerts[] = ['type' => 'warning', 'icon' => 'fa-users', 'title' => 'Pembeli Unik Menurun', 'msg' => 'Jumlah pembeli unik bulan terakhir (' . $latest_buyers . ') di bawah rata-rata bulanan (' . round($avg_sum_buyers) . '). Perlu akuisisi customer baru.'];
+    if ($latest_recency > 60) $alerts[] = ['type' => 'danger', 'icon' => 'fa-exclamation-triangle', 'title' => 'Recency Terlalu Tinggi!', 'msg' => 'Rata-rata recency bulan terakhir (<strong>' . round($latest_recency) . ' hari</strong>) sangat tinggi. Artinya customer rata-rata sudah ' . round($latest_recency) . ' hari tidak bertransaksi. <em>Segera lakukan follow-up via WhatsApp atau email!</em>', 'detail' => 'Recency mengukur berapa hari sejak transaksi terakhir customer. Semakin tinggi angkanya, semakin lama customer tidak belanja. Idealnya di bawah 30 hari.'];
+    if ($trend_direction < -20) $alerts[] = ['type' => 'danger', 'icon' => 'fa-arrow-down', 'title' => 'Omset Turun Drastis (' . abs($trend_direction) . '%)', 'msg' => 'Rata-rata omset 3 bulan terakhir (<strong>Rp ' . number_format($recent_3_avg_spend, 0, ',', '.') . '/bln</strong>) turun drastis dibanding 3 bulan sebelumnya (<strong>Rp ' . number_format($older_3_avg_spend, 0, ',', '.') . '/bln</strong>).', 'detail' => 'Penurunan >20% dianggap signifikan. Penyebab bisa karena berkurangnya customer aktif, penurunan frekuensi pembelian, atau penurunan nilai rata-rata pesanan.'];
+    if ($declining_months > $growing_months && $t_cnt >= 4) $alerts[] = ['type' => 'warning', 'icon' => 'fa-line-chart', 'title' => 'Tren Penurunan Dominan (' . $declining_months . '/' . ($t_cnt - 1) . ' bulan)', 'msg' => '<strong>' . $declining_months . ' dari ' . ($t_cnt - 1) . '</strong> transisi bulan menunjukkan penurunan omset (MoM negatif). Hanya <strong>' . $growing_months . '</strong> bulan yang tumbuh.', 'detail' => 'MoM (Month-over-Month) mengukur persentase perubahan omset dari bulan ke bulan. Jika lebih banyak bulan turun, berarti bisnis secara umum mengalami tekanan.'];
+    if ($latest_buyers < $avg_sum_buyers * 0.7 && $avg_sum_buyers > 0) $alerts[] = ['type' => 'warning', 'icon' => 'fa-users', 'title' => 'Pembeli Unik Menurun Signifikan', 'msg' => 'Bulan terakhir hanya <strong>' . $latest_buyers . ' customer</strong>, padahal rata-rata bulanan <strong>' . round($avg_sum_buyers) . ' customer</strong> (turun ' . round((1 - $latest_buyers / $avg_sum_buyers) * 100) . '%).', 'detail' => 'Pembeli unik yang menurun bisa disebabkan oleh kurangnya promosi, persaingan pasar, atau customer berpindah ke kompetitor. Perlu strategi akuisisi baru.'];
+    if ($avg_orders_per_buyer <= 1.1 && $total_all_buyers > 0) $alerts[] = ['type' => 'warning', 'icon' => 'fa-repeat', 'title' => 'Repeat Purchase Rendah (' . $avg_orders_per_buyer . 'x)', 'msg' => 'Rata-rata setiap customer hanya melakukan <strong>' . $avg_orders_per_buyer . ' order</strong>. Artinya sangat sedikit yang melakukan pembelian ulang.', 'detail' => 'Idealnya rasio order/buyer > 1.5x, menunjukkan customer melakukan repeat purchase. Jika mendekati 1x, artinya hampir semua customer hanya beli sekali.'];
     
     // Positive signals
     $positives = [];
-    if ($trend_direction > 10) $positives[] = ['icon' => 'fa-rocket', 'title' => 'Tren Omset Naik', 'msg' => 'Rata-rata omset 3 bulan terakhir naik ' . $trend_direction . '% dibanding periode sebelumnya.'];
-    if ($growing_months > $declining_months && $t_cnt >= 4) $positives[] = ['icon' => 'fa-thumbs-up', 'title' => 'Pertumbuhan Konsisten', 'msg' => $growing_months . ' dari ' . ($t_cnt - 1) . ' periode menunjukkan pertumbuhan omset positif.'];
-    if ($latest_recency <= 30) $positives[] = ['icon' => 'fa-check-circle', 'title' => 'Recency Sehat', 'msg' => 'Rata-rata recency bulan terakhir (' . round($latest_recency) . ' hari) masih dalam batas sehat (≤30 hari).'];
-    if ($latest_buyers >= $avg_sum_buyers && $avg_sum_buyers > 0) $positives[] = ['icon' => 'fa-user-plus', 'title' => 'Pembeli Stabil/Naik', 'msg' => 'Jumlah pembeli unik bulan terakhir (' . $latest_buyers . ') di atas atau sama dengan rata-rata (' . round($avg_sum_buyers) . ').'];
+    if ($trend_direction > 10) $positives[] = ['icon' => 'fa-rocket', 'title' => 'Tren Omset Naik +' . $trend_direction . '%', 'msg' => 'Rata-rata omset 3 bulan terakhir (<strong>Rp ' . number_format($recent_3_avg_spend, 0, ',', '.') . '/bln</strong>) naik dibanding sebelumnya (<strong>Rp ' . number_format($older_3_avg_spend, 0, ',', '.') . '/bln</strong>).'];
+    if ($growing_months > $declining_months && $t_cnt >= 4) $positives[] = ['icon' => 'fa-thumbs-up', 'title' => 'Pertumbuhan Konsisten (' . $growing_months . '/' . ($t_cnt - 1) . ' bulan)', 'msg' => '<strong>' . $growing_months . ' dari ' . ($t_cnt - 1) . '</strong> transisi bulan menunjukkan pertumbuhan omset positif. Bisnis cenderung stabil.'];
+    if ($latest_recency <= 30) $positives[] = ['icon' => 'fa-check-circle', 'title' => 'Recency Sehat (' . round($latest_recency) . ' hari)', 'msg' => 'Customer rata-rata baru bertransaksi <strong>' . round($latest_recency) . ' hari lalu</strong>. Ini menunjukkan engagement yang baik (batas sehat: ≤30 hari).'];
+    if ($latest_buyers >= $avg_sum_buyers && $avg_sum_buyers > 0) $positives[] = ['icon' => 'fa-user-plus', 'title' => 'Pembeli Stabil/Naik', 'msg' => 'Pembeli unik bulan terakhir (<strong>' . $latest_buyers . '</strong>) sama atau di atas rata-rata bulanan (<strong>' . round($avg_sum_buyers) . '</strong>).'];
+    if ($avg_orders_per_buyer > 1.5) $positives[] = ['icon' => 'fa-repeat', 'title' => 'Repeat Purchase Tinggi (' . $avg_orders_per_buyer . 'x)', 'msg' => 'Rata-rata customer melakukan <strong>' . $avg_orders_per_buyer . ' order</strong>, menunjukkan tingkat loyalitas dan kepuasan yang baik.'];
   ?>
   <div class="section-card-custom" style="padding:0; overflow:hidden;">
-    <div style="padding:18px 22px; background:#fafbfc; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-      <h3 style="margin:0; font-size:15px; font-weight:800; color:#0f172a; display:flex; align-items:center; gap:8px;">
-        <i class="fa fa-lightbulb-o" style="color:#f59e0b;"></i> Analisis & Insight Keseluruhan
+    <div style="padding:18px 22px; background:linear-gradient(135deg, #1e1b4b, #312e81); border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+      <h3 style="margin:0; font-size:15px; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px;">
+        <i class="fa fa-lightbulb-o" style="color:#fbbf24;"></i> Analisis & Insight Keseluruhan
       </h3>
-      <span style="font-size:12px; color:#64748b; font-weight:600;">
-        <i class="fa fa-clock-o"></i> Berdasarkan <?= $t_cnt; ?> periode data
+      <span style="font-size:12px; color:#c7d2fe; font-weight:600;">
+        <i class="fa fa-database"></i> Data dari <?= $t_cnt; ?> periode &bull; Total <?= number_format($total_all_buyers); ?> pembeli unik
       </span>
     </div>
 
     <div style="padding:20px;">
-      <!-- Need Attention Alerts -->
+
+      <!-- SECTION 1: Health Score + Key Metrics Grid -->
+      <div style="display:grid; grid-template-columns:180px 1fr; gap:20px; margin-bottom:24px; align-items:start;">
+        <!-- Health Score Gauge -->
+        <div style="background:<?= $health_bg; ?>; border-radius:14px; padding:20px; text-align:center; border:2px solid <?= $health_color; ?>20;">
+          <div style="font-size:11px; font-weight:700; color:<?= $health_color; ?>; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">
+            <i class="fa fa-heartbeat"></i> Skor Kesehatan
+          </div>
+          <div style="font-size:42px; font-weight:900; color:<?= $health_color; ?>; line-height:1;"><?= $health; ?></div>
+          <div style="font-size:11px; color:<?= $health_color; ?>; font-weight:700; margin-top:4px;">/100 — <?= $health_label; ?></div>
+          <div style="margin-top:10px; background:<?= $health_color; ?>20; border-radius:20px; height:8px; overflow:hidden;">
+            <div style="height:100%; width:<?= $health; ?>%; background:<?= $health_color; ?>; border-radius:20px; transition:width 0.5s ease;"></div>
+          </div>
+          <div style="font-size:10px; color:#64748b; margin-top:6px; line-height:1.3;">
+            Dihitung dari tren omset, recency, jumlah pembeli & konsistensi pertumbuhan
+          </div>
+        </div>
+
+        <!-- Key Metrics Grid -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(155px, 1fr)); gap:10px;">
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px;">
+            <div style="font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.4px;">Total Omset Keseluruhan</div>
+            <div style="font-size:17px; font-weight:800; color:#15803d; margin-top:4px;">Rp <?= number_format($total_all_spend, 0, ',', '.'); ?></div>
+            <div style="font-size:10.5px; color:#64748b; margin-top:2px;">dari <?= $t_cnt; ?> bulan</div>
+          </div>
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px;">
+            <div style="font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.4px;">Rata-rata Omset / Bulan</div>
+            <div style="font-size:17px; font-weight:800; color:#1d4ed8; margin-top:4px;">Rp <?= number_format($avg_sum_spend, 0, ',', '.'); ?></div>
+            <div style="font-size:10.5px; color:#64748b; margin-top:2px;">median bulanan</div>
+          </div>
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px;">
+            <div style="font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.4px;">Rata-rata per Transaksi</div>
+            <div style="font-size:17px; font-weight:800; color:#7c3aed; margin-top:4px;">Rp <?= number_format($avg_order_value, 0, ',', '.'); ?></div>
+            <div style="font-size:10.5px; color:#64748b; margin-top:2px;"><?= number_format($total_all_orders); ?> total order</div>
+          </div>
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px;">
+            <div style="font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.4px;">Rata-rata Belanja / Customer</div>
+            <div style="font-size:17px; font-weight:800; color:#0891b2; margin-top:4px;">Rp <?= number_format($avg_spend_per_buyer, 0, ',', '.'); ?></div>
+            <div style="font-size:10.5px; color:#64748b; margin-top:2px;"><?= number_format($total_all_buyers); ?> total customer</div>
+          </div>
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px;">
+            <div style="font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.4px;">Rasio Order / Customer</div>
+            <div style="font-size:17px; font-weight:800; color:<?= $avg_orders_per_buyer > 1.3 ? '#15803d' : '#dc2626'; ?>; margin-top:4px;"><?= $avg_orders_per_buyer; ?>x</div>
+            <div style="font-size:10.5px; color:#64748b; margin-top:2px;"><?= $avg_orders_per_buyer > 1.3 ? 'Repeat baik' : 'Repeat rendah'; ?></div>
+          </div>
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px;">
+            <div style="font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.4px;">Rata-rata Qty / Order</div>
+            <div style="font-size:17px; font-weight:800; color:#ea580c; margin-top:4px;"><?= $avg_qty_per_order; ?> pcs</div>
+            <div style="font-size:10.5px; color:#64748b; margin-top:2px;"><?= number_format($total_all_qty); ?> total qty</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 2: Latest vs Previous Month Comparison -->
+      <?php if ($prev_month): 
+        $cmp_spend_pct = $prev_spend > 0 ? round(($latest_spend - $prev_spend) / $prev_spend * 100, 1) : 0;
+        $cmp_buyers_pct = $prev_buyers > 0 ? round(($latest_buyers - $prev_buyers) / $prev_buyers * 100, 1) : 0;
+        $cmp_orders_pct = $prev_orders > 0 ? round(($latest_orders - $prev_orders) / $prev_orders * 100, 1) : 0;
+      ?>
+      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:18px; margin-bottom:24px;">
+        <div style="font-weight:800; font-size:13px; color:#0f172a; margin-bottom:14px; display:flex; align-items:center; gap:8px;">
+          <i class="fa fa-exchange" style="color:#6366f1;"></i> Perbandingan Bulan Terakhir vs Sebelumnya
+          <span style="font-size:11px; font-weight:600; color:#64748b; margin-left:auto;"><?= $latest->period_label; ?> vs <?= $prev_month->period_label; ?></span>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
+          <!-- Omset Comparison -->
+          <div style="background:#fff; border-radius:10px; padding:14px; border:1px solid #e2e8f0;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;">Omset</span>
+              <span style="font-size:12px; font-weight:800; color:<?= $cmp_spend_pct >= 0 ? '#16a34a' : '#dc2626'; ?>; background:<?= $cmp_spend_pct >= 0 ? '#dcfce7' : '#fee2e2'; ?>; padding:2px 8px; border-radius:6px;">
+                <i class="fa fa-arrow-<?= $cmp_spend_pct >= 0 ? 'up' : 'down'; ?>"></i> <?= $cmp_spend_pct >= 0 ? '+' : ''; ?><?= $cmp_spend_pct; ?>%
+              </span>
+            </div>
+            <div style="font-size:14px; font-weight:800; color:#0f172a;">Rp <?= number_format($latest_spend, 0, ',', '.'); ?></div>
+            <div style="font-size:11px; color:#94a3b8;">Sebelumnya: Rp <?= number_format($prev_spend, 0, ',', '.'); ?></div>
+          </div>
+          <!-- Buyers Comparison -->
+          <div style="background:#fff; border-radius:10px; padding:14px; border:1px solid #e2e8f0;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;">Pembeli Unik</span>
+              <span style="font-size:12px; font-weight:800; color:<?= $cmp_buyers_pct >= 0 ? '#16a34a' : '#dc2626'; ?>; background:<?= $cmp_buyers_pct >= 0 ? '#dcfce7' : '#fee2e2'; ?>; padding:2px 8px; border-radius:6px;">
+                <i class="fa fa-arrow-<?= $cmp_buyers_pct >= 0 ? 'up' : 'down'; ?>"></i> <?= $cmp_buyers_pct >= 0 ? '+' : ''; ?><?= $cmp_buyers_pct; ?>%
+              </span>
+            </div>
+            <div style="font-size:14px; font-weight:800; color:#0f172a;"><?= number_format($latest_buyers); ?> customer</div>
+            <div style="font-size:11px; color:#94a3b8;">Sebelumnya: <?= number_format($prev_buyers); ?> customer</div>
+          </div>
+          <!-- Orders Comparison -->
+          <div style="background:#fff; border-radius:10px; padding:14px; border:1px solid #e2e8f0;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;">Jumlah Order</span>
+              <span style="font-size:12px; font-weight:800; color:<?= $cmp_orders_pct >= 0 ? '#16a34a' : '#dc2626'; ?>; background:<?= $cmp_orders_pct >= 0 ? '#dcfce7' : '#fee2e2'; ?>; padding:2px 8px; border-radius:6px;">
+                <i class="fa fa-arrow-<?= $cmp_orders_pct >= 0 ? 'up' : 'down'; ?>"></i> <?= $cmp_orders_pct >= 0 ? '+' : ''; ?><?= $cmp_orders_pct; ?>%
+              </span>
+            </div>
+            <div style="font-size:14px; font-weight:800; color:#0f172a;"><?= number_format($latest_orders); ?> order</div>
+            <div style="font-size:11px; color:#94a3b8;">Sebelumnya: <?= number_format($prev_orders); ?> order</div>
+          </div>
+        </div>
+      </div>
+      <?php endif; ?>
+
+      <!-- SECTION 3: Need Attention & Positive Signals -->
       <?php if (!empty($alerts)): ?>
       <div style="margin-bottom:20px;">
         <div style="font-weight:800; font-size:13px; color:#991b1b; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
-          <i class="fa fa-exclamation-circle" style="font-size:16px;"></i> PERLU PERHATIAN (Need Attention)
+          <i class="fa fa-exclamation-circle" style="font-size:16px;"></i> PERLU PERHATIAN (Need Attention) — <?= count($alerts); ?> item
         </div>
         <div style="display:flex; flex-direction:column; gap:10px;">
           <?php foreach ($alerts as $alert): ?>
-          <div style="background:<?= $alert['type'] === 'danger' ? '#fef2f2' : '#fffbeb'; ?>; border:1px solid <?= $alert['type'] === 'danger' ? '#fecaca' : '#fde68a'; ?>; border-left:4px solid <?= $alert['type'] === 'danger' ? '#ef4444' : '#f59e0b'; ?>; border-radius:10px; padding:14px 18px; display:flex; align-items:flex-start; gap:12px;">
-            <div style="width:36px; height:36px; border-radius:8px; background:<?= $alert['type'] === 'danger' ? '#fee2e2' : '#fef3c7'; ?>; color:<?= $alert['type'] === 'danger' ? '#dc2626' : '#d97706'; ?>; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;">
-              <i class="fa <?= $alert['icon']; ?>"></i>
-            </div>
-            <div>
-              <div style="font-weight:800; font-size:13px; color:<?= $alert['type'] === 'danger' ? '#991b1b' : '#92400e'; ?>; margin-bottom:3px;"><?= $alert['title']; ?></div>
-              <div style="font-size:12.5px; color:<?= $alert['type'] === 'danger' ? '#b91c1c' : '#a16207'; ?>; line-height:1.5;"><?= $alert['msg']; ?></div>
+          <div style="background:<?= $alert['type'] === 'danger' ? '#fef2f2' : '#fffbeb'; ?>; border:1px solid <?= $alert['type'] === 'danger' ? '#fecaca' : '#fde68a'; ?>; border-left:4px solid <?= $alert['type'] === 'danger' ? '#ef4444' : '#f59e0b'; ?>; border-radius:10px; padding:14px 18px;">
+            <div style="display:flex; align-items:flex-start; gap:12px;">
+              <div style="width:36px; height:36px; border-radius:8px; background:<?= $alert['type'] === 'danger' ? '#fee2e2' : '#fef3c7'; ?>; color:<?= $alert['type'] === 'danger' ? '#dc2626' : '#d97706'; ?>; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;">
+                <i class="fa <?= $alert['icon']; ?>"></i>
+              </div>
+              <div style="flex:1;">
+                <div style="font-weight:800; font-size:13px; color:<?= $alert['type'] === 'danger' ? '#991b1b' : '#92400e'; ?>; margin-bottom:3px;"><?= $alert['title']; ?></div>
+                <div style="font-size:12.5px; color:<?= $alert['type'] === 'danger' ? '#b91c1c' : '#a16207'; ?>; line-height:1.6;"><?= $alert['msg']; ?></div>
+                <?php if (!empty($alert['detail'])): ?>
+                <div style="margin-top:8px; padding:10px 12px; background:<?= $alert['type'] === 'danger' ? '#fff1f2' : '#fefce8'; ?>; border-radius:8px; font-size:11.5px; color:#64748b; line-height:1.5;">
+                  <i class="fa fa-info-circle" style="color:#94a3b8;"></i> <strong>Penjelasan:</strong> <?= $alert['detail']; ?>
+                </div>
+                <?php endif; ?>
+              </div>
             </div>
           </div>
           <?php endforeach; ?>
@@ -643,11 +796,10 @@
       </div>
       <?php endif; ?>
 
-      <!-- Positive Signals -->
       <?php if (!empty($positives)): ?>
       <div style="margin-bottom:20px;">
         <div style="font-weight:800; font-size:13px; color:#166534; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
-          <i class="fa fa-check-circle" style="font-size:16px;"></i> SINYAL POSITIF
+          <i class="fa fa-check-circle" style="font-size:16px;"></i> SINYAL POSITIF — <?= count($positives); ?> item
         </div>
         <div style="display:flex; flex-direction:column; gap:10px;">
           <?php foreach ($positives as $pos): ?>
@@ -657,7 +809,7 @@
             </div>
             <div>
               <div style="font-weight:800; font-size:13px; color:#166534; margin-bottom:3px;"><?= $pos['title']; ?></div>
-              <div style="font-size:12.5px; color:#15803d; line-height:1.5;"><?= $pos['msg']; ?></div>
+              <div style="font-size:12.5px; color:#15803d; line-height:1.6;"><?= $pos['msg']; ?></div>
             </div>
           </div>
           <?php endforeach; ?>
@@ -665,9 +817,8 @@
       </div>
       <?php endif; ?>
 
-      <!-- Performance Summary Cards -->
+      <!-- SECTION 4: Performance Summary Cards -->
       <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:20px;">
-        <!-- Best Month Omset -->
         <?php if ($best_spend): ?>
         <div style="background:linear-gradient(135deg, #f0fdf4, #dcfce7); border:1px solid #bbf7d0; border-radius:12px; padding:16px;">
           <div style="font-size:11px; font-weight:700; color:#166534; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">
@@ -676,11 +827,11 @@
           <div style="font-size:18px; font-weight:800; color:#15803d;">Rp <?= number_format($best_spend->total_spend, 0, ',', '.'); ?></div>
           <div style="font-size:12px; color:#166534; font-weight:600; margin-top:4px;">
             <i class="fa fa-calendar"></i> <?= htmlspecialchars($best_spend->period_label); ?>
+            · <?= number_format($best_spend->unique_buyers); ?> pembeli · <?= number_format($best_spend->total_orders); ?> order
           </div>
         </div>
         <?php endif; ?>
 
-        <!-- Worst Month Omset -->
         <?php if ($worst_spend && $worst_spend !== $best_spend): ?>
         <div style="background:linear-gradient(135deg, #fef2f2, #fee2e2); border:1px solid #fecaca; border-radius:12px; padding:16px;">
           <div style="font-size:11px; font-weight:700; color:#991b1b; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">
@@ -689,11 +840,11 @@
           <div style="font-size:18px; font-weight:800; color:#dc2626;">Rp <?= number_format($worst_spend->total_spend, 0, ',', '.'); ?></div>
           <div style="font-size:12px; color:#991b1b; font-weight:600; margin-top:4px;">
             <i class="fa fa-calendar"></i> <?= htmlspecialchars($worst_spend->period_label); ?>
+            · <?= number_format($worst_spend->unique_buyers); ?> pembeli · <?= number_format($worst_spend->total_orders); ?> order
           </div>
         </div>
         <?php endif; ?>
 
-        <!-- Best Month Buyers -->
         <?php if ($best_buyers): ?>
         <div style="background:linear-gradient(135deg, #eef2ff, #e0e7ff); border:1px solid #c7d2fe; border-radius:12px; padding:16px;">
           <div style="font-size:11px; font-weight:700; color:#3730a3; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">
@@ -702,11 +853,11 @@
           <div style="font-size:18px; font-weight:800; color:#4338ca;"><?= number_format($best_buyers->unique_buyers); ?> Customer</div>
           <div style="font-size:12px; color:#3730a3; font-weight:600; margin-top:4px;">
             <i class="fa fa-calendar"></i> <?= htmlspecialchars($best_buyers->period_label); ?>
+            · Omset Rp <?= number_format($best_buyers->total_spend, 0, ',', '.'); ?>
           </div>
         </div>
         <?php endif; ?>
 
-        <!-- Trend Direction -->
         <div style="background:linear-gradient(135deg, <?= $trend_direction >= 0 ? '#f0fdf4, #dcfce7' : '#fef2f2, #fee2e2'; ?>); border:1px solid <?= $trend_direction >= 0 ? '#bbf7d0' : '#fecaca'; ?>; border-radius:12px; padding:16px;">
           <div style="font-size:11px; font-weight:700; color:<?= $trend_direction >= 0 ? '#166534' : '#991b1b'; ?>; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">
             <i class="fa fa-line-chart"></i> Tren 3 Bulan Terakhir
@@ -715,30 +866,112 @@
             <?= $trend_direction >= 0 ? '+' : ''; ?><?= $trend_direction; ?>%
           </div>
           <div style="font-size:12px; color:<?= $trend_direction >= 0 ? '#166534' : '#991b1b'; ?>; font-weight:600; margin-top:4px;">
-            vs 3 bulan sebelumnya
+            Rp <?= number_format($recent_3_avg_spend, 0, ',', '.'); ?>/bln vs Rp <?= number_format($older_3_avg_spend, 0, ',', '.'); ?>/bln
           </div>
         </div>
       </div>
 
-      <!-- Recommendations -->
-      <div style="background:linear-gradient(135deg, #eff6ff, #dbeafe); border:1px solid #bfdbfe; border-radius:12px; padding:18px;">
-        <div style="font-weight:800; font-size:13px; color:#1e40af; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
-          <i class="fa fa-magic" style="font-size:16px;"></i> Rekomendasi Aksi
+      <!-- SECTION 5: Detailed MoM Growth Table -->
+      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; margin-bottom:20px;">
+        <div style="padding:14px 18px; background:#fff; border-bottom:1px solid #e2e8f0; font-weight:800; font-size:13px; color:#0f172a; display:flex; align-items:center; gap:8px;">
+          <i class="fa fa-bar-chart" style="color:#6366f1;"></i> Detail Performa per Bulan
+          <span style="margin-left:auto; font-size:11px; font-weight:600; color:#94a3b8;">Menampilkan <?= min(count($mom_list), 6); ?> bulan terakhir</span>
         </div>
-        <ul style="margin:0; padding-left:18px; font-size:12.5px; color:#1e40af; line-height:2;">
+        <div style="overflow-x:auto;">
+          <table style="width:100%; border-collapse:collapse; font-size:12px;">
+            <thead>
+              <tr style="background:#f1f5f9;">
+                <th style="padding:10px 14px; text-align:left; font-weight:700; color:#475569; font-size:10.5px; text-transform:uppercase;">Periode</th>
+                <th style="padding:10px 14px; text-align:right; font-weight:700; color:#475569; font-size:10.5px; text-transform:uppercase;">Omset</th>
+                <th style="padding:10px 14px; text-align:center; font-weight:700; color:#475569; font-size:10.5px; text-transform:uppercase;">MoM</th>
+                <th style="padding:10px 14px; text-align:center; font-weight:700; color:#475569; font-size:10.5px; text-transform:uppercase;">Pembeli</th>
+                <th style="padding:10px 14px; text-align:center; font-weight:700; color:#475569; font-size:10.5px; text-transform:uppercase;">Order</th>
+                <th style="padding:10px 14px; text-align:center; font-weight:700; color:#475569; font-size:10.5px; text-transform:uppercase;">Qty</th>
+                <th style="padding:10px 14px; text-align:right; font-weight:700; color:#475569; font-size:10.5px; text-transform:uppercase;">Avg/Order</th>
+                <th style="padding:10px 14px; text-align:center; font-weight:700; color:#475569; font-size:10.5px; text-transform:uppercase;">Order/Buyer</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach (array_slice($mom_list, 0, 6) as $idx => $md): 
+                $mt = $md['mt']; $mom = $md['mom'];
+                $m_spend = (float)$mt->total_spend;
+                $m_orders = (int)$mt->total_orders;
+                $m_buyers = (int)$mt->unique_buyers;
+                $m_qty = (int)$mt->total_qty;
+                $m_avg = $m_orders > 0 ? $m_spend / $m_orders : 0;
+                $m_opb = $m_buyers > 0 ? round($m_orders / $m_buyers, 2) : 0;
+              ?>
+              <tr style="border-bottom:1px solid #f1f5f9; <?= $idx === 0 ? 'background:#eff6ff;' : ''; ?>">
+                <td style="padding:10px 14px; font-weight:700; color:#0f172a;">
+                  <?= $idx === 0 ? '<i class="fa fa-star" style="color:#f59e0b; font-size:10px;"></i> ' : ''; ?>
+                  <?= htmlspecialchars($mt->period_label); ?>
+                  <?= $idx === 0 ? '<span style="font-size:10px; background:#dbeafe; color:#2563eb; padding:1px 6px; border-radius:4px; margin-left:4px;">Terbaru</span>' : ''; ?>
+                </td>
+                <td style="padding:10px 14px; text-align:right; font-weight:700; color:#15803d;">Rp <?= number_format($m_spend, 0, ',', '.'); ?></td>
+                <td style="padding:10px 14px; text-align:center;">
+                  <?php if ($mom === null): ?>
+                    <span style="color:#94a3b8; font-size:11px;">—</span>
+                  <?php elseif ($mom >= 0): ?>
+                    <span style="background:#dcfce7; color:#16a34a; padding:2px 8px; border-radius:6px; font-weight:700; font-size:11px;"><i class="fa fa-arrow-up"></i> +<?= $mom; ?>%</span>
+                  <?php else: ?>
+                    <span style="background:#fee2e2; color:#dc2626; padding:2px 8px; border-radius:6px; font-weight:700; font-size:11px;"><i class="fa fa-arrow-down"></i> <?= $mom; ?>%</span>
+                  <?php endif; ?>
+                </td>
+                <td style="padding:10px 14px; text-align:center; font-weight:600;"><?= number_format($m_buyers); ?></td>
+                <td style="padding:10px 14px; text-align:center; font-weight:600;"><?= number_format($m_orders); ?>x</td>
+                <td style="padding:10px 14px; text-align:center; color:#64748b;"><?= number_format($m_qty); ?> pcs</td>
+                <td style="padding:10px 14px; text-align:right; color:#7c3aed; font-weight:600;">Rp <?= number_format($m_avg, 0, ',', '.'); ?></td>
+                <td style="padding:10px 14px; text-align:center;">
+                  <span style="background:<?= $m_opb > 1.3 ? '#dcfce7' : ($m_opb > 1.0 ? '#fef3c7' : '#fee2e2'); ?>; color:<?= $m_opb > 1.3 ? '#16a34a' : ($m_opb > 1.0 ? '#92400e' : '#dc2626'); ?>; padding:2px 8px; border-radius:6px; font-weight:700; font-size:11px;"><?= $m_opb; ?>x</span>
+                </td>
+              </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SECTION 6: Recommendations -->
+      <div style="background:linear-gradient(135deg, #eff6ff, #dbeafe); border:1px solid #bfdbfe; border-radius:12px; padding:18px;">
+        <div style="font-weight:800; font-size:13px; color:#1e40af; margin-bottom:14px; display:flex; align-items:center; gap:6px;">
+          <i class="fa fa-magic" style="font-size:16px;"></i> Rekomendasi Aksi Berdasarkan Data
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:12px;">
           <?php if ($latest_recency > 30): ?>
-          <li><strong>Follow-up customer lama:</strong> Kirim broadcast WhatsApp ke customer yang sudah >30 hari tidak bertransaksi. Gunakan fitur <a href="<?= site_url('administrator/crm/broadcast'); ?>" style="color:#4338ca; font-weight:700;">Broadcast WA</a>.</li>
+          <div style="background:#fff; border-radius:10px; padding:14px; border:1px solid #bfdbfe;">
+            <div style="font-weight:700; font-size:12.5px; color:#1e40af; margin-bottom:6px;"><i class="fa fa-whatsapp" style="color:#25D366;"></i> Follow-up Customer Lama</div>
+            <div style="font-size:12px; color:#475569; line-height:1.6;">Recency rata-rata <?= round($latest_recency); ?> hari. Kirim broadcast WhatsApp ke customer yang sudah >30 hari tidak beli. <a href="<?= site_url('administrator/crm/broadcast'); ?>" style="color:#4338ca; font-weight:700;">Buka Broadcast WA →</a></div>
+          </div>
           <?php endif; ?>
           <?php if ($trend_direction < 0): ?>
-          <li><strong>Tingkatkan omset:</strong> Buat promo/diskon spesial untuk menarik pembelian ulang. Target customer segment "At Risk" dan "Need Attention".</li>
+          <div style="background:#fff; border-radius:10px; padding:14px; border:1px solid #bfdbfe;">
+            <div style="font-weight:700; font-size:12.5px; color:#1e40af; margin-bottom:6px;"><i class="fa fa-gift" style="color:#f59e0b;"></i> Buat Promo Spesial</div>
+            <div style="font-size:12px; color:#475569; line-height:1.6;">Omset turun <?= abs($trend_direction); ?>%. Buat diskon/promo untuk menarik pembelian ulang. Target segment "At Risk" dan "Need Attention" di Dashboard RFM.</div>
+          </div>
           <?php endif; ?>
           <?php if ($latest_buyers < $avg_sum_buyers): ?>
-          <li><strong>Akuisisi customer baru:</strong> Pembeli unik bulan terakhir di bawah rata-rata. Perluas channel marketing atau tambah produk baru.</li>
+          <div style="background:#fff; border-radius:10px; padding:14px; border:1px solid #bfdbfe;">
+            <div style="font-weight:700; font-size:12.5px; color:#1e40af; margin-bottom:6px;"><i class="fa fa-user-plus" style="color:#10b981;"></i> Akuisisi Customer Baru</div>
+            <div style="font-size:12px; color:#475569; line-height:1.6;">Pembeli bulan terakhir (<?= $latest_buyers; ?>) di bawah rata-rata (<?= round($avg_sum_buyers); ?>). Perluas channel marketing atau tingkatkan iklan.</div>
+          </div>
           <?php endif; ?>
-          <li><strong>Analisis kohort:</strong> Lihat pola retensi customer per periode di <a href="<?= site_url('administrator/rfm/cohort'); ?>" style="color:#4338ca; font-weight:700;">halaman Analisis Kohort</a>.</li>
-          <li><strong>Segmentasi RFM:</strong> Identifikasi customer bernilai tinggi (Champions) dan yang perlu dipertahankan di <a href="<?= site_url('administrator/rfm/dashboard'); ?>" style="color:#4338ca; font-weight:700;">Dashboard RFM</a>.</li>
-        </ul>
+          <?php if ($avg_orders_per_buyer <= 1.3): ?>
+          <div style="background:#fff; border-radius:10px; padding:14px; border:1px solid #bfdbfe;">
+            <div style="font-weight:700; font-size:12.5px; color:#1e40af; margin-bottom:6px;"><i class="fa fa-repeat" style="color:#8b5cf6;"></i> Tingkatkan Repeat Purchase</div>
+            <div style="font-size:12px; color:#475569; line-height:1.6;">Rasio order/buyer hanya <?= $avg_orders_per_buyer; ?>x (rendah). Buat program loyalitas, cashback, atau paket bundle untuk dorong pembelian ulang.</div>
+          </div>
+          <?php endif; ?>
+          <div style="background:#fff; border-radius:10px; padding:14px; border:1px solid #bfdbfe;">
+            <div style="font-weight:700; font-size:12.5px; color:#1e40af; margin-bottom:6px;"><i class="fa fa-th" style="color:#6366f1;"></i> Analisis Kohort Retensi</div>
+            <div style="font-size:12px; color:#475569; line-height:1.6;">Lihat pola retensi customer per periode — berapa % yang kembali beli setelah pembelian pertama. <a href="<?= site_url('administrator/rfm/cohort'); ?>" style="color:#4338ca; font-weight:700;">Buka Analisis Kohort →</a></div>
+          </div>
+          <div style="background:#fff; border-radius:10px; padding:14px; border:1px solid #bfdbfe;">
+            <div style="font-weight:700; font-size:12.5px; color:#1e40af; margin-bottom:6px;"><i class="fa fa-diamond" style="color:#ec4899;"></i> Identifikasi Champions</div>
+            <div style="font-size:12px; color:#475569; line-height:1.6;">Temukan customer bernilai tinggi (sering beli, belanja besar) dan yang berisiko hilang di segmentasi RFM. <a href="<?= site_url('administrator/rfm/dashboard'); ?>" style="color:#4338ca; font-weight:700;">Buka Dashboard RFM →</a></div>
+          </div>
+        </div>
       </div>
+
     </div>
   </div>
   <?php endif; ?>
