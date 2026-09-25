@@ -100,6 +100,30 @@ class Rfm extends Admin
 		$this->render('backend/standart/administrator/rfm/rfm_tracking', $this->data);
 	}
 
+	public function cohort()
+	{
+		$mode = $this->input->get('mode') ?: 'monthly';
+		$year = $this->input->get('year') ?: date('Y');
+		$month = $this->input->get('month') ?: date('m');
+
+		$this->data['cohort'] = $this->model_rfm->get_cohort_analysis($mode, $year, $month);
+		$this->data['cohort_mode'] = $mode;
+		$this->data['cohort_year'] = $year;
+		$this->data['cohort_month'] = $month;
+
+		// Get available years from database
+		$this->data['available_years'] = $this->db->query("
+			SELECT DISTINCT YEAR(tanggal_so) as yr FROM (
+				SELECT tanggal_so FROM sales_order WHERE tanggal_so IS NOT NULL AND tanggal_so > '1970-01-01'
+				UNION ALL
+				SELECT tanggal_so FROM penjualan_marketplace WHERE tanggal_so IS NOT NULL AND tanggal_so > '1970-01-01'
+			) u ORDER BY yr DESC
+		")->result();
+
+		$this->template->title('Analisis RFM — Analisis Kohort');
+		$this->render('backend/standart/administrator/rfm/rfm_cohort', $this->data);
+	}
+
 	// ===== Segment Strategy CRUD =====
 
 	public function save_segment_strategy()

@@ -1096,6 +1096,260 @@ class Model_crm extends CI_Model
 	}
 
 	/**
+	 * Get Cohort Analysis Data
+	 * 
+	 * @param string $mode 'daily' (show days within 1 month) or 'monthly' (show months within 1 year)
+	 * @param string $year The year to analyze (e.g. '2026')
+	 * @param string $month The month to analyze for daily mode (e.g. '09')
+	 * @return array ['cohorts' => [...], 'periods' => [...], 'summary' => [...]]
+	 */
+	public function get_cohort_analysis($mode = 'monthly', $year = '', $month = '')
+	{
+		if (empty($year)) {
+			$year = date('Y');
+		}
+
+		if ($mode === 'daily') {
+			if (empty($month)) {
+				$month = date('m');
+			}
+			return $this->_get_daily_cohort($year, $month);
+		} else {
+			return $this->_get_monthly_cohort($year);
+		}
+	}
+
+	/**
+	 * Daily cohort: customers grouped by the DAY of first purchase within a given month
+	 * Columns = subsequent days within the same month
+	 */
+	private function _get_daily_cohort($year, $month)
+	{
+		$ym = $year . '-' . str_pad($month, 2, '0', STR_PAD_LEFT);
+		$days_in_month = cal_days_in_month(CAL_GREGORIAN, (int)$month, (int)$year);
+
+		// Get all transactions in this month
+		$sql = "
+			SELECT phone, DATE(tanggal) as order_date
+			FROM (
+				SELECT CAST(so.no_telepon AS CHAR) as phone, so.tanggal_so as tanggal
+				FROM sales_order so
+				WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
+				  AND so.tanggal_so IS NOT NULL AND CAST(so.tanggal_so AS CHAR) NOT LIKE '0000%' AND so.tanggal_so > '1970-01-01'
+				  AND DATE_FORMAT(so.tanggal_so, '%Y-%m') = '{$ym}'
+
+				UNION ALL
+
+				SELECT CAST(pm.no_telepon AS CHAR) as phone, pm.tanggal_so as tanggal
+				FROM penjualan_marketplace pm
+				WHERE pm.no_telepon IS NOT NULL AND pm.no_telepon != ''
+				  AND pm.tanggal_so IS NOT NULL AND CAST(pm.tanggal_so AS CHAR) NOT LIKE '0000%' AND pm.tanggal_so > '1970-01-01'
+				  AND DATE_FORMAT(pm.tanggal_so, '%Y-%m') = '{$ym}'
+			) u
+			ORDER BY order_date ASC
+		";
+
+		$rows = $this->db->query($sql)->result();
+
+		// Find first purchase date for each customer within this month
+		$first_purchase = [];
+		$customer_dates = [];
+		foreach ($rows as $r) {
+			$phone = $r->phone;
+			$date = $r->order_date;
+			if (!isset($first_purchase[$phone]) || $date < $first_purchase[$phone]) {
+				$first_purchase[$phone] = $date;
+			}
+			if (!isset($customer_dates[$phone])) {
+				$customer_dates[$phone] = [];
+			}
+			$customer_dates[$phone][$date] = true;
+		}
+
+		// Group customers by their cohort day
+		$cohort_customers = [];
+		foreach ($first_purchase as $phone => $first_date) {
+			$day = (int)date('j', strtotime($first_date));
+			if (!isset($cohort_customers[$day])) {
+				$cohort_customers[$day] = [];
+			}
+			$cohort_customers[$day][] = $phone;
+		}
+
+		// Build cohort data
+		$cohorts = [];
+		$period_labels = [];
+		for ($d = 1; $d <= $days_in_month; $d++) {
+			$period_labels[] = $d;
+		}
+
+		ksort($cohort_customers);
+		$total_initial = 0;
+		$total_retained_sum = [];
+
+		foreach ($cohort_customers as $cohort_day => $phones) {
+			$cohort_size = count($phones);
+			$total_initial += $cohort_size;
+			$retention = [];
+
+			for ($d = 1; $d <= $days_in_month; $d++) {
+				$target_date = sprintf('%s-%02d', $ym, $d);
+				if ($d < $cohort_day) {
+					$retention[$d] = null; // Before cohort start
+				} elseif ($d === $cohort_day) {
+					$retention[$d] = 100.0; // Cohort start = 100%
+				} else {
+					$active = 0;
+					foreach ($phones as $phone) {
+						if (isset($customer_dates[$phone][$target_date])) {
+							$active++;
+						}
+					}
+					$pct = $cohort_size > 0 ? round(($active / $cohort_size) * 100, 1) : 0;
+					$retention[$d] = $pct;
+
+					if (!isset($total_retained_sum[$d])) $total_retained_sum[$d] = 0;
+					$total_retained_sum[$d] += $active;
+				}
+			}
+
+			$cohorts[] = [
+				'label' => 'Hari ' . $cohort_day,
+				'date_label' => sprintf('%s-%02d', $ym, $cohort_day),
+				'size' => $cohort_size,
+				'retention' => $retention,
+			];
+		}
+
+		return [
+			'cohorts' => $cohorts,
+			'periods' => $period_labels,
+			'mode' => 'daily',
+			'year' => $year,
+			'month' => $month,
+			'ym' => $ym,
+			'summary' => [
+				'total_cohorts' => count($cohorts),
+				'total_customers' => $total_initial,
+				'days_in_month' => $days_in_month,
+			],
+		];
+	}
+
+	/**
+	 * Monthly cohort: customers grouped by the MONTH of first purchase within a given year
+	 * Columns = subsequent months within the same year
+	 */
+	private function _get_monthly_cohort($year)
+	{
+		// Get all transactions in this year
+		$sql = "
+			SELECT phone, DATE_FORMAT(tanggal, '%Y-%m') as order_month
+			FROM (
+				SELECT CAST(so.no_telepon AS CHAR) as phone, so.tanggal_so as tanggal
+				FROM sales_order so
+				WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
+				  AND so.tanggal_so IS NOT NULL AND CAST(so.tanggal_so AS CHAR) NOT LIKE '0000%' AND so.tanggal_so > '1970-01-01'
+				  AND YEAR(so.tanggal_so) = '{$year}'
+
+				UNION ALL
+
+				SELECT CAST(pm.no_telepon AS CHAR) as phone, pm.tanggal_so as tanggal
+				FROM penjualan_marketplace pm
+				WHERE pm.no_telepon IS NOT NULL AND pm.no_telepon != ''
+				  AND pm.tanggal_so IS NOT NULL AND CAST(pm.tanggal_so AS CHAR) NOT LIKE '0000%' AND pm.tanggal_so > '1970-01-01'
+				  AND YEAR(pm.tanggal_so) = '{$year}'
+			) u
+			ORDER BY order_month ASC
+		";
+
+		$rows = $this->db->query($sql)->result();
+
+		// Find first purchase month for each customer within this year
+		$first_purchase = [];
+		$customer_months = [];
+		foreach ($rows as $r) {
+			$phone = $r->phone;
+			$ym = $r->order_month;
+			if (!isset($first_purchase[$phone]) || $ym < $first_purchase[$phone]) {
+				$first_purchase[$phone] = $ym;
+			}
+			if (!isset($customer_months[$phone])) {
+				$customer_months[$phone] = [];
+			}
+			$customer_months[$phone][$ym] = true;
+		}
+
+		// Group customers by their cohort month
+		$cohort_customers = [];
+		foreach ($first_purchase as $phone => $first_ym) {
+			if (!isset($cohort_customers[$first_ym])) {
+				$cohort_customers[$first_ym] = [];
+			}
+			$cohort_customers[$first_ym][] = $phone;
+		}
+
+		// Build month labels
+		$month_names_id = [1=>'Jan',2=>'Feb',3=>'Mar',4=>'Apr',5=>'Mei',6=>'Jun',7=>'Jul',8=>'Ags',9=>'Sep',10=>'Okt',11=>'Nov',12=>'Des'];
+		$period_labels = [];
+		$all_months = [];
+		for ($m = 1; $m <= 12; $m++) {
+			$ym_key = sprintf('%s-%02d', $year, $m);
+			$period_labels[] = $month_names_id[$m];
+			$all_months[] = $ym_key;
+		}
+
+		ksort($cohort_customers);
+		$cohorts = [];
+		$total_initial = 0;
+
+		foreach ($cohort_customers as $cohort_ym => $phones) {
+			$cohort_size = count($phones);
+			$total_initial += $cohort_size;
+			$cohort_month_idx = (int)substr($cohort_ym, 5, 2); // 1-12
+			$retention = [];
+
+			for ($m = 1; $m <= 12; $m++) {
+				$target_ym = sprintf('%s-%02d', $year, $m);
+				if ($m < $cohort_month_idx) {
+					$retention[$m] = null; // Before cohort start
+				} elseif ($m === $cohort_month_idx) {
+					$retention[$m] = 100.0; // Cohort start = 100%
+				} else {
+					$active = 0;
+					foreach ($phones as $phone) {
+						if (isset($customer_months[$phone][$target_ym])) {
+							$active++;
+						}
+					}
+					$pct = $cohort_size > 0 ? round(($active / $cohort_size) * 100, 1) : 0;
+					$retention[$m] = $pct;
+				}
+			}
+
+			$cohorts[] = [
+				'label' => $month_names_id[$cohort_month_idx] . ' ' . $year,
+				'date_label' => $cohort_ym,
+				'size' => $cohort_size,
+				'retention' => $retention,
+			];
+		}
+
+		return [
+			'cohorts' => $cohorts,
+			'periods' => $period_labels,
+			'mode' => 'monthly',
+			'year' => $year,
+			'month' => '',
+			'ym' => '',
+			'summary' => [
+				'total_cohorts' => count($cohorts),
+				'total_customers' => $total_initial,
+			],
+		];
+	}
+
+	/**
 	 * Get aggregated RFM analysis PER PRODUCT across all customers
 	 */
 	public function get_product_rfm_list($filter = '', $limit = 50, $offset = 0)

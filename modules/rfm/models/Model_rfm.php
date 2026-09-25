@@ -93,6 +93,11 @@ class Model_rfm extends CI_Model
 		return $this->crm->get_product_rfm_list($filter, $limit, $offset);
 	}
 
+	public function get_cohort_analysis($mode = 'monthly', $year = '', $month = '')
+	{
+		return $this->crm->get_cohort_analysis($mode, $year, $month);
+	}
+
 	public function get_transaction_items($table, $order_id)
 	{
 		return $this->crm->get_transaction_items($table, $order_id);

@@ -463,6 +463,9 @@
     <a href="<?= site_url('administrator/rfm/tracking' . $nav_qs); ?>" class="nav-tab-btn">
       <i class="fa fa-line-chart"></i> 3. Tracking RFM Bulanan
     </a>
+    <a href="<?= site_url('administrator/rfm/cohort'); ?>" class="nav-tab-btn">
+      <i class="fa fa-th"></i> 4. Analisis Kohort
+    </a>
   </div>
 </div>
 
