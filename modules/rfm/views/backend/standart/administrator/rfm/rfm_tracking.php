@@ -546,6 +546,202 @@
       </table>
     </div>
   </div>
+
+  <!-- ==========================================
+       LAYER 6: ANALISIS & INSIGHT KESELURUHAN
+       ========================================== -->
+  <?php if (!empty($track_data)):
+    // Calculate insights from tracking data
+    $tl = array_values($track_data);
+    $t_cnt = count($tl);
+    
+    // Best & worst months
+    $best_spend = null; $worst_spend = null;
+    $best_buyers = null; $worst_buyers = null;
+    $declining_months = 0; $growing_months = 0;
+    $recent_3_avg_spend = 0; $older_3_avg_spend = 0;
+    
+    foreach ($tl as $i => $mt) {
+      $spend = (float)$mt->total_spend;
+      $buyers = (int)$mt->unique_buyers;
+      
+      if ($best_spend === null || $spend > (float)$best_spend->total_spend) $best_spend = $mt;
+      if ($worst_spend === null || ($spend < (float)$worst_spend->total_spend && $spend > 0)) $worst_spend = $mt;
+      if ($best_buyers === null || $buyers > (int)$best_buyers->unique_buyers) $best_buyers = $mt;
+      if ($worst_buyers === null || ($buyers < (int)$worst_buyers->unique_buyers && $buyers > 0)) $worst_buyers = $mt;
+      
+      // Growth/decline calculation
+      if ($i < $t_cnt - 1) {
+        $prev = (float)$tl[$i + 1]->total_spend;
+        if ($prev > 0) {
+          $growth = (($spend - $prev) / $prev) * 100;
+          if ($growth < 0) $declining_months++;
+          else $growing_months++;
+        }
+      }
+      
+      // Recent vs older comparison
+      if ($i < 3) $recent_3_avg_spend += $spend;
+      if ($i >= 3 && $i < 6) $older_3_avg_spend += $spend;
+    }
+    
+    $recent_3_avg_spend = $t_cnt >= 3 ? $recent_3_avg_spend / min(3, $t_cnt) : $recent_3_avg_spend;
+    $older_3_avg_spend = $t_cnt >= 6 ? $older_3_avg_spend / 3 : ($t_cnt >= 4 ? $older_3_avg_spend / min(3, $t_cnt - 3) : 0);
+    $trend_direction = $older_3_avg_spend > 0 ? round((($recent_3_avg_spend - $older_3_avg_spend) / $older_3_avg_spend) * 100, 1) : 0;
+    
+    // Latest month stats
+    $latest = $tl[0] ?? null;
+    $latest_recency = $latest ? ($latest->avg_recency_days ?? $latest->avg_recency ?? 0) : 0;
+    $latest_buyers = $latest ? (int)$latest->unique_buyers : 0;
+    $latest_orders = $latest ? (int)$latest->total_orders : 0;
+    $latest_spend = $latest ? (float)$latest->total_spend : 0;
+    
+    // Need attention flags
+    $alerts = [];
+    if ($latest_recency > 60) $alerts[] = ['type' => 'danger', 'icon' => 'fa-exclamation-triangle', 'title' => 'Recency Terlalu Tinggi!', 'msg' => 'Rata-rata recency bulan terakhir (' . round($latest_recency) . ' hari) sangat tinggi. Customer mungkin sudah lama tidak bertransaksi. Segera lakukan follow-up!'];
+    if ($trend_direction < -20) $alerts[] = ['type' => 'danger', 'icon' => 'fa-arrow-down', 'title' => 'Omset Turun Drastis!', 'msg' => 'Rata-rata omset 3 bulan terakhir turun ' . abs($trend_direction) . '% dibanding 3 bulan sebelumnya. Perlu strategi peningkatan penjualan.'];
+    if ($declining_months > $growing_months && $t_cnt >= 4) $alerts[] = ['type' => 'warning', 'icon' => 'fa-line-chart', 'title' => 'Tren Penurunan Dominan', 'msg' => $declining_months . ' dari ' . ($t_cnt - 1) . ' periode menunjukkan penurunan omset (MoM negatif). Evaluasi strategi marketing diperlukan.'];
+    if ($latest_buyers < $avg_sum_buyers * 0.7 && $avg_sum_buyers > 0) $alerts[] = ['type' => 'warning', 'icon' => 'fa-users', 'title' => 'Pembeli Unik Menurun', 'msg' => 'Jumlah pembeli unik bulan terakhir (' . $latest_buyers . ') di bawah rata-rata bulanan (' . round($avg_sum_buyers) . '). Perlu akuisisi customer baru.'];
+    
+    // Positive signals
+    $positives = [];
+    if ($trend_direction > 10) $positives[] = ['icon' => 'fa-rocket', 'title' => 'Tren Omset Naik', 'msg' => 'Rata-rata omset 3 bulan terakhir naik ' . $trend_direction . '% dibanding periode sebelumnya.'];
+    if ($growing_months > $declining_months && $t_cnt >= 4) $positives[] = ['icon' => 'fa-thumbs-up', 'title' => 'Pertumbuhan Konsisten', 'msg' => $growing_months . ' dari ' . ($t_cnt - 1) . ' periode menunjukkan pertumbuhan omset positif.'];
+    if ($latest_recency <= 30) $positives[] = ['icon' => 'fa-check-circle', 'title' => 'Recency Sehat', 'msg' => 'Rata-rata recency bulan terakhir (' . round($latest_recency) . ' hari) masih dalam batas sehat (≤30 hari).'];
+    if ($latest_buyers >= $avg_sum_buyers && $avg_sum_buyers > 0) $positives[] = ['icon' => 'fa-user-plus', 'title' => 'Pembeli Stabil/Naik', 'msg' => 'Jumlah pembeli unik bulan terakhir (' . $latest_buyers . ') di atas atau sama dengan rata-rata (' . round($avg_sum_buyers) . ').'];
+  ?>
+  <div class="section-card-custom" style="padding:0; overflow:hidden;">
+    <div style="padding:18px 22px; background:#fafbfc; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+      <h3 style="margin:0; font-size:15px; font-weight:800; color:#0f172a; display:flex; align-items:center; gap:8px;">
+        <i class="fa fa-lightbulb-o" style="color:#f59e0b;"></i> Analisis & Insight Keseluruhan
+      </h3>
+      <span style="font-size:12px; color:#64748b; font-weight:600;">
+        <i class="fa fa-clock-o"></i> Berdasarkan <?= $t_cnt; ?> periode data
+      </span>
+    </div>
+
+    <div style="padding:20px;">
+      <!-- Need Attention Alerts -->
+      <?php if (!empty($alerts)): ?>
+      <div style="margin-bottom:20px;">
+        <div style="font-weight:800; font-size:13px; color:#991b1b; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+          <i class="fa fa-exclamation-circle" style="font-size:16px;"></i> PERLU PERHATIAN (Need Attention)
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <?php foreach ($alerts as $alert): ?>
+          <div style="background:<?= $alert['type'] === 'danger' ? '#fef2f2' : '#fffbeb'; ?>; border:1px solid <?= $alert['type'] === 'danger' ? '#fecaca' : '#fde68a'; ?>; border-left:4px solid <?= $alert['type'] === 'danger' ? '#ef4444' : '#f59e0b'; ?>; border-radius:10px; padding:14px 18px; display:flex; align-items:flex-start; gap:12px;">
+            <div style="width:36px; height:36px; border-radius:8px; background:<?= $alert['type'] === 'danger' ? '#fee2e2' : '#fef3c7'; ?>; color:<?= $alert['type'] === 'danger' ? '#dc2626' : '#d97706'; ?>; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;">
+              <i class="fa <?= $alert['icon']; ?>"></i>
+            </div>
+            <div>
+              <div style="font-weight:800; font-size:13px; color:<?= $alert['type'] === 'danger' ? '#991b1b' : '#92400e'; ?>; margin-bottom:3px;"><?= $alert['title']; ?></div>
+              <div style="font-size:12.5px; color:<?= $alert['type'] === 'danger' ? '#b91c1c' : '#a16207'; ?>; line-height:1.5;"><?= $alert['msg']; ?></div>
+            </div>
+          </div>
+          <?php endforeach; ?>
+        </div>
+      </div>
+      <?php endif; ?>
+
+      <!-- Positive Signals -->
+      <?php if (!empty($positives)): ?>
+      <div style="margin-bottom:20px;">
+        <div style="font-weight:800; font-size:13px; color:#166534; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+          <i class="fa fa-check-circle" style="font-size:16px;"></i> SINYAL POSITIF
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <?php foreach ($positives as $pos): ?>
+          <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-left:4px solid #22c55e; border-radius:10px; padding:14px 18px; display:flex; align-items:flex-start; gap:12px;">
+            <div style="width:36px; height:36px; border-radius:8px; background:#dcfce7; color:#16a34a; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;">
+              <i class="fa <?= $pos['icon']; ?>"></i>
+            </div>
+            <div>
+              <div style="font-weight:800; font-size:13px; color:#166534; margin-bottom:3px;"><?= $pos['title']; ?></div>
+              <div style="font-size:12.5px; color:#15803d; line-height:1.5;"><?= $pos['msg']; ?></div>
+            </div>
+          </div>
+          <?php endforeach; ?>
+        </div>
+      </div>
+      <?php endif; ?>
+
+      <!-- Performance Summary Cards -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:20px;">
+        <!-- Best Month Omset -->
+        <?php if ($best_spend): ?>
+        <div style="background:linear-gradient(135deg, #f0fdf4, #dcfce7); border:1px solid #bbf7d0; border-radius:12px; padding:16px;">
+          <div style="font-size:11px; font-weight:700; color:#166534; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">
+            <i class="fa fa-trophy" style="color:#f59e0b;"></i> Bulan Omset Tertinggi
+          </div>
+          <div style="font-size:18px; font-weight:800; color:#15803d;">Rp <?= number_format($best_spend->total_spend, 0, ',', '.'); ?></div>
+          <div style="font-size:12px; color:#166534; font-weight:600; margin-top:4px;">
+            <i class="fa fa-calendar"></i> <?= htmlspecialchars($best_spend->period_label); ?>
+          </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- Worst Month Omset -->
+        <?php if ($worst_spend && $worst_spend !== $best_spend): ?>
+        <div style="background:linear-gradient(135deg, #fef2f2, #fee2e2); border:1px solid #fecaca; border-radius:12px; padding:16px;">
+          <div style="font-size:11px; font-weight:700; color:#991b1b; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">
+            <i class="fa fa-arrow-down"></i> Bulan Omset Terendah
+          </div>
+          <div style="font-size:18px; font-weight:800; color:#dc2626;">Rp <?= number_format($worst_spend->total_spend, 0, ',', '.'); ?></div>
+          <div style="font-size:12px; color:#991b1b; font-weight:600; margin-top:4px;">
+            <i class="fa fa-calendar"></i> <?= htmlspecialchars($worst_spend->period_label); ?>
+          </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- Best Month Buyers -->
+        <?php if ($best_buyers): ?>
+        <div style="background:linear-gradient(135deg, #eef2ff, #e0e7ff); border:1px solid #c7d2fe; border-radius:12px; padding:16px;">
+          <div style="font-size:11px; font-weight:700; color:#3730a3; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">
+            <i class="fa fa-users" style="color:#6366f1;"></i> Bulan Pembeli Terbanyak
+          </div>
+          <div style="font-size:18px; font-weight:800; color:#4338ca;"><?= number_format($best_buyers->unique_buyers); ?> Customer</div>
+          <div style="font-size:12px; color:#3730a3; font-weight:600; margin-top:4px;">
+            <i class="fa fa-calendar"></i> <?= htmlspecialchars($best_buyers->period_label); ?>
+          </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- Trend Direction -->
+        <div style="background:linear-gradient(135deg, <?= $trend_direction >= 0 ? '#f0fdf4, #dcfce7' : '#fef2f2, #fee2e2'; ?>); border:1px solid <?= $trend_direction >= 0 ? '#bbf7d0' : '#fecaca'; ?>; border-radius:12px; padding:16px;">
+          <div style="font-size:11px; font-weight:700; color:<?= $trend_direction >= 0 ? '#166534' : '#991b1b'; ?>; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">
+            <i class="fa fa-line-chart"></i> Tren 3 Bulan Terakhir
+          </div>
+          <div style="font-size:18px; font-weight:800; color:<?= $trend_direction >= 0 ? '#16a34a' : '#dc2626'; ?>;">
+            <?= $trend_direction >= 0 ? '+' : ''; ?><?= $trend_direction; ?>%
+          </div>
+          <div style="font-size:12px; color:<?= $trend_direction >= 0 ? '#166534' : '#991b1b'; ?>; font-weight:600; margin-top:4px;">
+            vs 3 bulan sebelumnya
+          </div>
+        </div>
+      </div>
+
+      <!-- Recommendations -->
+      <div style="background:linear-gradient(135deg, #eff6ff, #dbeafe); border:1px solid #bfdbfe; border-radius:12px; padding:18px;">
+        <div style="font-weight:800; font-size:13px; color:#1e40af; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+          <i class="fa fa-magic" style="font-size:16px;"></i> Rekomendasi Aksi
+        </div>
+        <ul style="margin:0; padding-left:18px; font-size:12.5px; color:#1e40af; line-height:2;">
+          <?php if ($latest_recency > 30): ?>
+          <li><strong>Follow-up customer lama:</strong> Kirim broadcast WhatsApp ke customer yang sudah >30 hari tidak bertransaksi. Gunakan fitur <a href="<?= site_url('administrator/crm/broadcast'); ?>" style="color:#4338ca; font-weight:700;">Broadcast WA</a>.</li>
+          <?php endif; ?>
+          <?php if ($trend_direction < 0): ?>
+          <li><strong>Tingkatkan omset:</strong> Buat promo/diskon spesial untuk menarik pembelian ulang. Target customer segment "At Risk" dan "Need Attention".</li>
+          <?php endif; ?>
+          <?php if ($latest_buyers < $avg_sum_buyers): ?>
+          <li><strong>Akuisisi customer baru:</strong> Pembeli unik bulan terakhir di bawah rata-rata. Perluas channel marketing atau tambah produk baru.</li>
+          <?php endif; ?>
+          <li><strong>Analisis kohort:</strong> Lihat pola retensi customer per periode di <a href="<?= site_url('administrator/rfm/cohort'); ?>" style="color:#4338ca; font-weight:700;">halaman Analisis Kohort</a>.</li>
+          <li><strong>Segmentasi RFM:</strong> Identifikasi customer bernilai tinggi (Champions) dan yang perlu dipertahankan di <a href="<?= site_url('administrator/rfm/dashboard'); ?>" style="color:#4338ca; font-weight:700;">Dashboard RFM</a>.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <?php endif; ?>
 </div>
 
 <!-- ==========================================
