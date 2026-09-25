@@ -475,7 +475,10 @@ class Model_crm extends CI_Model
 				JOIN sales_order so ON soi.so_id = so.id
 				LEFT JOIN produk p ON soi.produk_id = p.id
 				WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
-				AND (p.nama_produk LIKE '%{$p_esc}%' OR soi.catatan LIKE '%{$p_esc}%')
+				  AND so.tanggal_so IS NOT NULL 
+				  AND CAST(so.tanggal_so AS CHAR) NOT LIKE '0000%' 
+				  AND so.tanggal_so > '1970-01-01'
+				  AND (p.nama_produk LIKE '%{$p_esc}%' OR soi.catatan LIKE '%{$p_esc}%')
 
 				UNION ALL
 
@@ -502,7 +505,10 @@ class Model_crm extends CI_Model
 				LEFT JOIN produk p ON pmi.produk_id = p.id
 				LEFT JOIN crm_transaction_followup_labels lbl ON lbl.order_id = pm.id AND lbl.order_table = 'penjualan_marketplace'
 				WHERE pm.no_telepon IS NOT NULL AND pm.no_telepon != ''
-				AND (p.nama_produk LIKE '%{$p_esc}%' OR pmi.catatan LIKE '%{$p_esc}%')
+				  AND pm.tanggal_so IS NOT NULL 
+				  AND CAST(pm.tanggal_so AS CHAR) NOT LIKE '0000%' 
+				  AND pm.tanggal_so > '1970-01-01'
+				  AND (p.nama_produk LIKE '%{$p_esc}%' OR pmi.catatan LIKE '%{$p_esc}%')
 			) u";
 		} else {
 			$sql = "SELECT 
@@ -514,14 +520,18 @@ class Model_crm extends CI_Model
 				GROUP_CONCAT(DISTINCT source ORDER BY source SEPARATOR ', ') as sumber_penjualan
 			FROM (
 				SELECT 
-					CAST(no_telepon AS CHAR) COLLATE utf8mb4_unicode_ci as phone, 
-					CAST(nama_penerima AS CHAR) COLLATE utf8mb4_unicode_ci as nama, 
-					CAST(CONCAT('so_', id) AS CHAR) COLLATE utf8mb4_unicode_ci as order_id, 
-					total, 
-					CAST(tanggal_so AS DATETIME) as tanggal, 
+					CAST(so.no_telepon AS CHAR) COLLATE utf8mb4_unicode_ci as phone, 
+					CAST(so.nama_penerima AS CHAR) COLLATE utf8mb4_unicode_ci as nama, 
+					CAST(CONCAT('so_', so.id) AS CHAR) COLLATE utf8mb4_unicode_ci as order_id, 
+					soi.subtotal as total, 
+					CAST(so.tanggal_so AS DATETIME) as tanggal, 
 					'Toko' COLLATE utf8mb4_unicode_ci as source 
-				FROM sales_order 
-				WHERE no_telepon IS NOT NULL AND no_telepon != ''
+				FROM sales_order_item soi
+				JOIN sales_order so ON soi.so_id = so.id
+				WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
+				  AND so.tanggal_so IS NOT NULL 
+				  AND CAST(so.tanggal_so AS CHAR) NOT LIKE '0000%' 
+				  AND so.tanggal_so > '1970-01-01'
 
 				UNION ALL
 
@@ -529,7 +539,7 @@ class Model_crm extends CI_Model
 					CAST(pm.no_telepon AS CHAR) COLLATE utf8mb4_unicode_ci as phone, 
 					CAST(pm.nama_penerima AS CHAR) COLLATE utf8mb4_unicode_ci as nama, 
 					CAST(CONCAT('pm_', pm.id) AS CHAR) COLLATE utf8mb4_unicode_ci as order_id, 
-					pm.total, 
+					pmi.subtotal as total, 
 					CAST(pm.tanggal_so AS DATETIME) as tanggal, 
 					CAST(COALESCE(
 						lbl.order_source,
@@ -543,21 +553,13 @@ class Model_crm extends CI_Model
 							ELSE 'Shopee'
 						END
 					) AS CHAR) COLLATE utf8mb4_unicode_ci as source 
-				FROM penjualan_marketplace pm
+				FROM penjualan_marketplace_item pmi
+				JOIN penjualan_marketplace pm ON pmi.penjualan_marketplace_id = pm.id
 				LEFT JOIN crm_transaction_followup_labels lbl ON lbl.order_id = pm.id AND lbl.order_table = 'penjualan_marketplace'
 				WHERE pm.no_telepon IS NOT NULL AND pm.no_telepon != ''
-
-				UNION ALL
-
-				SELECT 
-					CAST(customer_phone AS CHAR) COLLATE utf8mb4_unicode_ci as phone,
-					CAST(customer_nama AS CHAR) COLLATE utf8mb4_unicode_ci as nama,
-					CAST(IF(order_id > 0, CONCAT(IF(order_table='sales_order','so_','pm_'), order_id), NULL) AS CHAR) COLLATE utf8mb4_unicode_ci as order_id,
-					0 as total,
-					CAST(COALESCE(tanggal_pengiriman, created_at) AS DATETIME) as tanggal,
-					CAST(order_source AS CHAR) COLLATE utf8mb4_unicode_ci as source
-				FROM crm_transaction_followup_labels
-				WHERE customer_phone IS NOT NULL AND customer_phone != ''
+				  AND pm.tanggal_so IS NOT NULL 
+				  AND CAST(pm.tanggal_so AS CHAR) NOT LIKE '0000%' 
+				  AND pm.tanggal_so > '1970-01-01'
 			) u";
 		}
 
@@ -580,6 +582,8 @@ class Model_crm extends CI_Model
 
 		// Enhance each row with RFM calculation
 		$enhanced_rows = [];
+		$total_orders_sum = 0;
+		$total_spend_sum = 0;
 		foreach ($all_rows as $r) {
 			$r->total_orders = (int)$r->total_orders;
 			$r->total_spend = (float)$r->total_spend;
@@ -592,13 +596,20 @@ class Model_crm extends CI_Model
 				}
 			}
 
+			$total_orders_sum += $r->total_orders;
+			$total_spend_sum += $r->total_spend;
 			$enhanced_rows[] = $r;
 		}
 
 		$count = count($enhanced_rows);
 		$paged_rows = array_slice($enhanced_rows, $offset, $limit);
 
-		return ['rows' => $paged_rows, 'total' => $count];
+		return [
+			'rows' => $paged_rows, 
+			'total' => $count,
+			'total_orders' => $total_orders_sum,
+			'total_spend' => $total_spend_sum
+		];
 	}
 
 	/**

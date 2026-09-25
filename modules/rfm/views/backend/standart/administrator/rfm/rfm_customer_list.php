@@ -325,13 +325,13 @@
      LAYER 2: SUMMARY METRICS & ACTIVE FILTERS
      ========================================== -->
 <?php
-  // Calculate summary for current view
-  $page_orders = 0;
-  $page_spend = 0;
-  if (!empty($customers)) {
+  // Calculate dataset summary
+  $display_orders = isset($total_orders) ? $total_orders : 0;
+  $display_spend = isset($total_spend) ? $total_spend : 0;
+  if (!isset($total_orders) && !empty($customers)) {
     foreach ($customers as $c) {
-      $page_orders += $c->total_orders;
-      $page_spend += $c->total_spend;
+      $display_orders += $c->total_orders;
+      $display_spend += $c->total_spend;
     }
   }
   $active_filters_count = (!empty($filter) ? 1 : 0) + (!empty($rfm_segment) ? 1 : 0) + (!empty($product_filter) ? 1 : 0) + (!empty($period_filter) ? 1 : 0);
@@ -345,14 +345,14 @@
   </div>
   <div class="col-md-3 col-sm-6 col-xs-6">
     <div class="stat-card" style="border-left-color:#16a34a;">
-      <div class="stat-num"><?= number_format($page_orders); ?>x</div>
-      <div class="stat-label">Total Transaksi (Halaman Ini)</div>
+      <div class="stat-num"><?= number_format($display_orders); ?>x</div>
+      <div class="stat-label">Total Transaksi (F)</div>
     </div>
   </div>
   <div class="col-md-3 col-sm-6 col-xs-6">
     <div class="stat-card" style="border-left-color:#059669;">
-      <div class="stat-num" style="font-size:18px;">Rp <?= number_format($page_spend, 0, ',', '.'); ?></div>
-      <div class="stat-label">Total Belanja (Halaman Ini)</div>
+      <div class="stat-num" style="font-size:18px;">Rp <?= number_format($display_spend, 0, ',', '.'); ?></div>
+      <div class="stat-label">Total Omset / Belanja (M)</div>
     </div>
   </div>
   <div class="col-md-3 col-sm-6 col-xs-6">

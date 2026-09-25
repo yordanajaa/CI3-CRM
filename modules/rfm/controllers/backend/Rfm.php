@@ -163,6 +163,8 @@ class Rfm extends Admin
 
 		$this->data['customers'] = $result['rows'];
 		$this->data['customer_counts'] = $result['total'];
+		$this->data['total_orders'] = $result['total_orders'] ?? 0;
+		$this->data['total_spend'] = $result['total_spend'] ?? 0;
 		$this->data['filter'] = $filter;
 		$this->data['rfm_segment'] = $rfm_segment;
 		$this->data['product_filter'] = $product_filter;
