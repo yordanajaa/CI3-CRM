@@ -1121,12 +1121,13 @@ class Model_crm extends CI_Model
 
 	/**
 	 * Daily cohort: customers grouped by the DAY of first purchase within a given month
-	 * Columns = subsequent days within the same month
+	 * Columns = relative days (Day 0, Day 1, Day 2, ...) since first purchase
 	 */
 	private function _get_daily_cohort($year, $month)
 	{
 		$ym = $year . '-' . str_pad($month, 2, '0', STR_PAD_LEFT);
 		$days_in_month = cal_days_in_month(CAL_GREGORIAN, (int)$month, (int)$year);
+		$month_names_id = [1=>'Jan',2=>'Feb',3=>'Mar',4=>'Apr',5=>'Mei',6=>'Jun',7=>'Jul',8=>'Ags',9=>'Sep',10=>'Okt',11=>'Nov',12=>'Des'];
 
 		// Get all transactions in this month
 		$sql = "
@@ -1176,28 +1177,37 @@ class Model_crm extends CI_Model
 			$cohort_customers[$day][] = $phone;
 		}
 
-		// Build cohort data
-		$cohorts = [];
-		$period_labels = [];
-		for ($d = 1; $d <= $days_in_month; $d++) {
-			$period_labels[] = $d;
+		ksort($cohort_customers);
+
+		// Determine max relative days
+		$max_rel_days = 0;
+		foreach ($cohort_customers as $cohort_day => $phones) {
+			$remaining = $days_in_month - $cohort_day;
+			if ($remaining > $max_rel_days) $max_rel_days = $remaining;
 		}
 
-		ksort($cohort_customers);
+		// Build cohort data with RELATIVE periods
+		$cohorts = [];
 		$total_initial = 0;
+		$all_users_active = []; // For "Semua Customer" aggregate row
 
 		foreach ($cohort_customers as $cohort_day => $phones) {
 			$cohort_size = count($phones);
 			$total_initial += $cohort_size;
 			$retention = [];
+			$max_for_this = $days_in_month - $cohort_day;
 
-			for ($d = 1; $d <= $days_in_month; $d++) {
-				$target_date = sprintf('%s-%02d', $ym, $d);
-				if ($d < $cohort_day) {
-					$retention[$d] = null;
-				} elseif ($d === $cohort_day) {
-					$retention[$d] = 100.0;
+			for ($rel = 0; $rel <= $max_rel_days; $rel++) {
+				if ($rel > $max_for_this) {
+					$retention[$rel] = null; // No data yet (future)
+				} elseif ($rel === 0) {
+					$retention[$rel] = 100.0;
+					if (!isset($all_users_active[$rel])) $all_users_active[$rel] = ['active' => 0, 'total' => 0];
+					$all_users_active[$rel]['active'] += $cohort_size;
+					$all_users_active[$rel]['total'] += $cohort_size;
 				} else {
+					$target_day = $cohort_day + $rel;
+					$target_date = sprintf('%s-%02d', $ym, $target_day);
 					$active = 0;
 					foreach ($phones as $phone) {
 						if (isset($customer_dates[$phone][$target_date])) {
@@ -1205,21 +1215,46 @@ class Model_crm extends CI_Model
 						}
 					}
 					$pct = $cohort_size > 0 ? round(($active / $cohort_size) * 100, 1) : 0;
-					$retention[$d] = $pct;
+					$retention[$rel] = $pct;
+
+					if (!isset($all_users_active[$rel])) $all_users_active[$rel] = ['active' => 0, 'total' => 0];
+					$all_users_active[$rel]['active'] += $active;
+					$all_users_active[$rel]['total'] += $cohort_size;
 				}
 			}
 
 			$cohorts[] = [
-				'label' => 'Hari ' . $cohort_day,
+				'label' => $month_names_id[(int)$month] . ' ' . str_pad($cohort_day, 2, '0', STR_PAD_LEFT),
 				'date_label' => sprintf('%s-%02d', $ym, $cohort_day),
 				'size' => $cohort_size,
 				'retention' => $retention,
 			];
 		}
 
+		// Build "Semua Customer" aggregate row
+		$all_retention = [];
+		for ($rel = 0; $rel <= $max_rel_days; $rel++) {
+			if (isset($all_users_active[$rel]) && $all_users_active[$rel]['total'] > 0) {
+				$all_retention[$rel] = round(($all_users_active[$rel]['active'] / $all_users_active[$rel]['total']) * 100, 1);
+			} else {
+				$all_retention[$rel] = null;
+			}
+		}
+
+		// Period labels: Day 0, Day 1, Day 2, ...
+		$period_labels = [];
+		for ($d = 0; $d <= $max_rel_days; $d++) {
+			$period_labels[] = 'Day ' . $d;
+		}
+
 		return [
 			'cohorts' => $cohorts,
 			'periods' => $period_labels,
+			'aggregate' => [
+				'label' => 'Semua Customer',
+				'size' => $total_initial,
+				'retention' => $all_retention,
+			],
 			'mode' => 'daily',
 			'year' => $year,
 			'month' => $month,
@@ -1234,7 +1269,7 @@ class Model_crm extends CI_Model
 
 	/**
 	 * Monthly cohort: customers grouped by the MONTH of first purchase within a given year
-	 * Columns = subsequent months within the same year
+	 * Columns = relative months (Bulan 0, Bulan 1, ...) since first purchase
 	 */
 	private function _get_monthly_cohort($year)
 	{
@@ -1287,31 +1322,39 @@ class Model_crm extends CI_Model
 
 		// Build month labels
 		$month_names_id = [1=>'Jan',2=>'Feb',3=>'Mar',4=>'Apr',5=>'Mei',6=>'Jun',7=>'Jul',8=>'Ags',9=>'Sep',10=>'Okt',11=>'Nov',12=>'Des'];
-		$period_labels = [];
-		$all_months = [];
-		for ($m = 1; $m <= 12; $m++) {
-			$ym_key = sprintf('%s-%02d', $year, $m);
-			$period_labels[] = $month_names_id[$m];
-			$all_months[] = $ym_key;
-		}
 
 		ksort($cohort_customers);
+
+		// Determine max relative months
+		$max_rel_months = 0;
+		foreach ($cohort_customers as $cohort_ym => $phones) {
+			$cohort_month_idx = (int)substr($cohort_ym, 5, 2);
+			$remaining = 12 - $cohort_month_idx;
+			if ($remaining > $max_rel_months) $max_rel_months = $remaining;
+		}
+
 		$cohorts = [];
 		$total_initial = 0;
+		$all_users_active = [];
 
 		foreach ($cohort_customers as $cohort_ym => $phones) {
 			$cohort_size = count($phones);
 			$total_initial += $cohort_size;
-			$cohort_month_idx = (int)substr($cohort_ym, 5, 2); // 1-12
+			$cohort_month_idx = (int)substr($cohort_ym, 5, 2);
+			$max_for_this = 12 - $cohort_month_idx;
 			$retention = [];
 
-			for ($m = 1; $m <= 12; $m++) {
-				$target_ym = sprintf('%s-%02d', $year, $m);
-				if ($m < $cohort_month_idx) {
-					$retention[$m] = null; // Before cohort start
-				} elseif ($m === $cohort_month_idx) {
-					$retention[$m] = 100.0; // Cohort start = 100%
+			for ($rel = 0; $rel <= $max_rel_months; $rel++) {
+				if ($rel > $max_for_this) {
+					$retention[$rel] = null;
+				} elseif ($rel === 0) {
+					$retention[$rel] = 100.0;
+					if (!isset($all_users_active[$rel])) $all_users_active[$rel] = ['active' => 0, 'total' => 0];
+					$all_users_active[$rel]['active'] += $cohort_size;
+					$all_users_active[$rel]['total'] += $cohort_size;
 				} else {
+					$target_month = $cohort_month_idx + $rel;
+					$target_ym = sprintf('%s-%02d', $year, $target_month);
 					$active = 0;
 					foreach ($phones as $phone) {
 						if (isset($customer_months[$phone][$target_ym])) {
@@ -1319,7 +1362,11 @@ class Model_crm extends CI_Model
 						}
 					}
 					$pct = $cohort_size > 0 ? round(($active / $cohort_size) * 100, 1) : 0;
-					$retention[$m] = $pct;
+					$retention[$rel] = $pct;
+
+					if (!isset($all_users_active[$rel])) $all_users_active[$rel] = ['active' => 0, 'total' => 0];
+					$all_users_active[$rel]['active'] += $active;
+					$all_users_active[$rel]['total'] += $cohort_size;
 				}
 			}
 
@@ -1331,9 +1378,30 @@ class Model_crm extends CI_Model
 			];
 		}
 
+		// Build "Semua Customer" aggregate
+		$all_retention = [];
+		for ($rel = 0; $rel <= $max_rel_months; $rel++) {
+			if (isset($all_users_active[$rel]) && $all_users_active[$rel]['total'] > 0) {
+				$all_retention[$rel] = round(($all_users_active[$rel]['active'] / $all_users_active[$rel]['total']) * 100, 1);
+			} else {
+				$all_retention[$rel] = null;
+			}
+		}
+
+		// Period labels: Bulan 0, Bulan 1, ...
+		$period_labels = [];
+		for ($m = 0; $m <= $max_rel_months; $m++) {
+			$period_labels[] = 'Bulan ' . $m;
+		}
+
 		return [
 			'cohorts' => $cohorts,
 			'periods' => $period_labels,
+			'aggregate' => [
+				'label' => 'Semua Customer',
+				'size' => $total_initial,
+				'retention' => $all_retention,
+			],
 			'mode' => 'monthly',
 			'year' => $year,
 			'month' => '',

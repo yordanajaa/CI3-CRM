@@ -318,6 +318,7 @@
   $cohorts = $cohort_data['cohorts'] ?? [];
   $periods = $cohort_data['periods'] ?? [];
   $summary = $cohort_data['summary'] ?? [];
+  $aggregate = $cohort_data['aggregate'] ?? null;
   $month_names_id = [1=>'Januari',2=>'Februari',3=>'Maret',4=>'April',5=>'Mei',6=>'Juni',7=>'Juli',8=>'Agustus',9=>'September',10=>'Oktober',11=>'November',12=>'Desember'];
 ?>
 
@@ -510,9 +511,9 @@
         <table class="cohort-table">
           <thead>
             <tr>
-              <th class="cohort-label-th">Kohort</th>
-              <th class="cohort-size-th">Jumlah</th>
-              <?php foreach ($periods as $p_idx => $p_label): ?>
+              <th class="cohort-label-th">Tanggal Akuisisi</th>
+              <th class="cohort-size-th">Users</th>
+              <?php foreach ($periods as $p_label): ?>
               <th><?= $p_label; ?></th>
               <?php endforeach; ?>
             </tr>
@@ -526,11 +527,10 @@
               </td>
               <td class="cohort-size-td"><?= number_format($c['size']); ?></td>
               <?php foreach ($periods as $p_idx => $p_label):
-                $key = $p_idx + 1; // 1-indexed
-                $val = $c['retention'][$key] ?? null;
+                $val = $c['retention'][$p_idx] ?? null;
                 if ($val === null):
               ?>
-              <td class="cohort-cell-null">—</td>
+              <td class="cohort-cell-null"></td>
               <?php else:
                 if ($val >= 100) {
                   $bg = '#312e81'; $fg = '#fff';
@@ -562,6 +562,37 @@
               <?php endif; endforeach; ?>
             </tr>
             <?php endforeach; ?>
+
+            <?php if ($aggregate): ?>
+            <!-- Semua Customer aggregate row -->
+            <tr style="border-top:3px solid #6366f1;">
+              <td class="cohort-label-td" style="background:#eef2ff; font-weight:800; color:#4338ca;">
+                <i class="fa fa-users" style="font-size:10px; margin-right:4px;"></i>
+                <?= $aggregate['label']; ?>
+              </td>
+              <td class="cohort-size-td" style="background:#eef2ff; font-weight:800; color:#4338ca;">
+                <?= number_format($aggregate['size']); ?>
+              </td>
+              <?php foreach ($periods as $p_idx => $p_label):
+                $val = $aggregate['retention'][$p_idx] ?? null;
+                if ($val === null):
+              ?>
+              <td style="background:#eef2ff;"></td>
+              <?php else:
+                if ($val >= 100) {
+                  $bg = '#312e81'; $fg = '#fff';
+                } elseif ($val >= 50) {
+                  $bg = '#4338ca'; $fg = '#fff';
+                } else {
+                  $bg = '#eef2ff'; $fg = '#4338ca';
+                }
+              ?>
+              <td style="background:<?= $bg; ?>; color:<?= $fg; ?>; font-weight:800;" title="<?= $aggregate['label'] . ' → ' . $p_label . ': ' . $val . '%'; ?>">
+                <?= $val > 0 ? $val . '%' : '0'; ?>
+              </td>
+              <?php endif; endforeach; ?>
+            </tr>
+            <?php endif; ?>
           </tbody>
         </table>
 
