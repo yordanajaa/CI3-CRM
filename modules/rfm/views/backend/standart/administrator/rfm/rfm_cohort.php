@@ -315,18 +315,10 @@
   $c_mode = $cohort_mode ?? 'monthly';
   $c_year = $cohort_year ?? date('Y');
   $c_month = $cohort_month ?? date('m');
-  $summary = $cohort_data['summary'] ?? [];
-  $month_names_id = [1=>'Januari',2=>'Februari',3=>'Maret',4=>'April',5=>'Mei',6=>'Juni',7=>'Juli',8=>'Agustus',9=>'September',10=>'Oktober',11=>'November',12=>'Desember'];
-
-  // Monthly mode data
   $cohorts = $cohort_data['cohorts'] ?? [];
   $periods = $cohort_data['periods'] ?? [];
-
-  // Daily calendar mode data
-  $calendar = $cohort_data['calendar'] ?? [];
-  $day_labels = $cohort_data['day_labels'] ?? ['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
-  $total_weeks = $cohort_data['total_weeks'] ?? 0;
-  $max_cust = $cohort_data['max_customers_day'] ?? 1;
+  $summary = $cohort_data['summary'] ?? [];
+  $month_names_id = [1=>'Januari',2=>'Februari',3=>'Maret',4=>'April',5=>'Mei',6=>'Juni',7=>'Juli',8=>'Agustus',9=>'September',10=>'Oktober',11=>'November',12=>'Desember'];
 ?>
 
 <div class="rfm-cohort-wrapper">
@@ -444,16 +436,11 @@
       <div class="kpi-mini-card" style="border-left:4px solid #10b981;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div>
-            <?php if ($c_mode === 'daily'): ?>
-            <div class="kpi-mini-val" style="color:#15803d;"><?= number_format($summary['total_orders'] ?? 0); ?></div>
-            <div class="kpi-mini-lbl" style="color:#166534;">Total Order</div>
-            <?php else: ?>
             <div class="kpi-mini-val" style="color:#15803d;"><?= number_format($summary['total_cohorts'] ?? 0); ?></div>
             <div class="kpi-mini-lbl" style="color:#166534;">Total Kohort</div>
-            <?php endif; ?>
           </div>
           <div style="width:42px; height:42px; border-radius:10px; background:#dcfce7; color:#166534; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;">
-            <i class="fa fa-<?= $c_mode === 'daily' ? 'shopping-cart' : 'object-group'; ?>"></i>
+            <i class="fa fa-object-group"></i>
           </div>
         </div>
       </div>
@@ -493,260 +480,100 @@
   </div>
 
   <!-- ==========================================
-       LAYER 4: HEATMAP TABLE / CALENDAR
+       LAYER 4: COHORT RETENTION HEATMAP TABLE
        ========================================== -->
   <div class="section-card-custom" style="padding:0; overflow:hidden;">
     <div style="padding:18px 22px; background:#fafbfc; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
       <h3 style="margin:0; font-size:15px; font-weight:800; color:#0f172a; display:flex; align-items:center; gap:8px;">
-        <i class="fa fa-<?= $c_mode === 'daily' ? 'calendar' : 'th'; ?>" style="color:#6366f1;"></i>
+        <i class="fa fa-th" style="color:#6366f1;"></i>
+        Tabel Heatmap Retensi Kohort
         <?php if ($c_mode === 'daily'): ?>
-          Kalender Heatmap Transaksi — <?= $month_names_id[(int)$c_month] . ' ' . $c_year; ?>
+          — <?= $month_names_id[(int)$c_month] . ' ' . $c_year; ?>
         <?php else: ?>
-          Tabel Heatmap Retensi Kohort — Tahun <?= $c_year; ?>
+          — Tahun <?= $c_year; ?>
         <?php endif; ?>
       </h3>
       <span style="font-size:12px; color:#64748b; font-weight:600;">
         <i class="fa fa-info-circle"></i>
-        <?= $c_mode === 'daily' ? 'Warna = intensitas jumlah customer unik per hari' : 'Warna = % customer yang bertransaksi lagi di periode kolom'; ?>
+        Warna = % customer yang bertransaksi lagi di periode kolom
       </span>
     </div>
 
     <div class="cohort-table-wrap" style="padding:16px;">
-      <?php if ($c_mode === 'daily'): ?>
-        <!-- ====== DAILY CALENDAR HEATMAP ====== -->
-        <?php if (empty($calendar)): ?>
-          <div class="text-center" style="padding:40px 20px; color:#94a3b8;">
-            <i class="fa fa-calendar" style="font-size:32px; display:block; margin-bottom:10px; color:#cbd5e1;"></i>
-            <strong style="font-size:14px; display:block; color:#64748b;">Belum Ada Data</strong>
-            <span style="font-size:12px;">Tidak ditemukan data transaksi untuk bulan ini.</span>
-          </div>
-        <?php else: ?>
-          <style>
-            .calendar-grid {
-              display:grid;
-              grid-template-columns: 90px repeat(7, 1fr);
-              gap:4px;
-              max-width:700px;
-              margin:0 auto;
-            }
-            .calendar-grid .cal-header {
-              background:#f1f5f9;
-              border-radius:8px;
-              padding:10px 6px;
-              text-align:center;
-              font-size:11px;
-              font-weight:800;
-              color:#475569;
-              text-transform:uppercase;
-              letter-spacing:0.5px;
-            }
-            .calendar-grid .cal-header.col-sab,
-            .calendar-grid .cal-header.col-min {
-              color:#ef4444;
-            }
-            .calendar-grid .cal-week-label {
-              background:linear-gradient(135deg, #eef2ff, #e0e7ff);
-              border-radius:8px;
-              padding:10px 8px;
-              display:flex;
-              align-items:center;
-              justify-content:center;
-              font-size:11px;
-              font-weight:800;
-              color:#4338ca;
-            }
-            .calendar-grid .cal-cell {
-              border-radius:10px;
-              padding:8px 4px;
-              text-align:center;
-              min-height:72px;
-              display:flex;
-              flex-direction:column;
-              align-items:center;
-              justify-content:center;
-              gap:3px;
-              transition:all 0.2s ease;
-              cursor:default;
-              position:relative;
-            }
-            .calendar-grid .cal-cell:hover {
-              transform:scale(1.06);
-              z-index:3;
-              box-shadow:0 4px 16px rgba(0,0,0,0.15);
-            }
-            .calendar-grid .cal-cell .cal-date {
-              font-size:16px;
-              font-weight:900;
-              line-height:1;
-            }
-            .calendar-grid .cal-cell .cal-cust {
-              font-size:10px;
-              font-weight:700;
-              line-height:1;
-              opacity:0.9;
-            }
-            .calendar-grid .cal-cell .cal-order {
-              font-size:9px;
-              font-weight:600;
-              line-height:1;
-              opacity:0.75;
-            }
-            .calendar-grid .cal-cell-empty {
-              background:#fafbfc;
-              border:1px dashed #e2e8f0;
-              border-radius:10px;
-              min-height:72px;
-            }
-            @media (max-width:767px) {
-              .calendar-grid { grid-template-columns:60px repeat(7, 1fr); gap:3px; }
-              .calendar-grid .cal-cell { min-height:56px; padding:6px 2px; border-radius:8px; }
-              .calendar-grid .cal-cell .cal-date { font-size:13px; }
-              .calendar-grid .cal-cell .cal-cust { font-size:9px; }
-              .calendar-grid .cal-cell .cal-order { font-size:8px; }
-              .calendar-grid .cal-header { font-size:9px; padding:8px 4px; }
-              .calendar-grid .cal-week-label { font-size:9px; padding:8px 4px; }
-            }
-          </style>
-
-          <div class="calendar-grid">
-            <!-- Header row: empty corner + day labels -->
-            <div class="cal-header" style="background:transparent;"></div>
-            <?php foreach ($day_labels as $di => $dl): ?>
-            <div class="cal-header <?= $di >= 5 ? ($di == 5 ? 'col-sab' : 'col-min') : ''; ?>"><?= $dl; ?></div>
-            <?php endforeach; ?>
-
-            <!-- Calendar weeks -->
-            <?php for ($w = 1; $w <= $total_weeks; $w++): ?>
-              <div class="cal-week-label">Minggu <?= $w; ?></div>
-              <?php for ($dow = 1; $dow <= 7; $dow++):
-                if (isset($calendar[$w][$dow])):
-                  $cell = $calendar[$w][$dow];
-                  $cust = $cell['customers'];
-                  $ord = $cell['orders'];
-                  $date_num = $cell['date'];
-
-                  // Color based on customer intensity
-                  if ($max_cust > 0 && $cust > 0) {
-                    $intensity = $cust / $max_cust; // 0 to 1
-                    if ($intensity >= 0.8) {
-                      $bg = '#312e81'; $fg = '#fff';
-                    } elseif ($intensity >= 0.6) {
-                      $bg = '#4338ca'; $fg = '#fff';
-                    } elseif ($intensity >= 0.4) {
-                      $bg = '#6366f1'; $fg = '#fff';
-                    } elseif ($intensity >= 0.2) {
-                      $bg = '#818cf8'; $fg = '#fff';
-                    } else {
-                      $bg = '#c7d2fe'; $fg = '#312e81';
-                    }
-                  } elseif ($cust == 0) {
-                    $bg = '#fef2f2'; $fg = '#94a3b8';
-                  } else {
-                    $bg = '#f1f5f9'; $fg = '#64748b';
-                  }
-
-                  // Weekend styling override (softer tint)
-                  $is_weekend = ($dow >= 6);
-              ?>
-              <div class="cal-cell" style="background:<?= $bg; ?>; color:<?= $fg; ?>; <?= $is_weekend && $cust == 0 ? 'border:1px solid #fecaca;' : ''; ?>" title="<?= $date_num . ' ' . $month_names_id[(int)$c_month] . ': ' . $cust . ' customer, ' . $ord . ' order'; ?>">
-                <span class="cal-date"><?= $date_num; ?></span>
-                <span class="cal-cust"><i class="fa fa-user" style="font-size:8px;"></i> <?= $cust; ?></span>
-                <span class="cal-order"><i class="fa fa-shopping-cart" style="font-size:7px;"></i> <?= $ord; ?> order</span>
-              </div>
-              <?php else: ?>
-              <div class="cal-cell-empty"></div>
-              <?php endif; endfor; ?>
-            <?php endfor; ?>
-          </div>
-
-          <!-- Calendar Legend -->
-          <div class="cohort-legend" style="justify-content:center; margin-top:18px;">
-            <span style="font-weight:700; color:#334155; margin-right:8px;">Intensitas Customer:</span>
-            <div class="cohort-legend-item" style="background:#fef2f2;"></div><span>0</span>
-            <div class="cohort-legend-item" style="background:#c7d2fe;"></div><span>Sedikit</span>
-            <div class="cohort-legend-item" style="background:#818cf8;"></div><span>Sedang</span>
-            <div class="cohort-legend-item" style="background:#6366f1;"></div><span>Banyak</span>
-            <div class="cohort-legend-item" style="background:#312e81;"></div><span>Terbanyak</span>
-          </div>
-        <?php endif; ?>
-
+      <?php if (empty($cohorts)): ?>
+        <div class="text-center" style="padding:40px 20px; color:#94a3b8;">
+          <i class="fa fa-th" style="font-size:32px; display:block; margin-bottom:10px; color:#cbd5e1;"></i>
+          <strong style="font-size:14px; display:block; color:#64748b;">Belum Ada Data Kohort</strong>
+          <span style="font-size:12px;">Tidak ditemukan data transaksi untuk periode ini.</span>
+        </div>
       <?php else: ?>
-        <!-- ====== MONTHLY COHORT RETENTION TABLE ====== -->
-        <?php if (empty($cohorts)): ?>
-          <div class="text-center" style="padding:40px 20px; color:#94a3b8;">
-            <i class="fa fa-th" style="font-size:32px; display:block; margin-bottom:10px; color:#cbd5e1;"></i>
-            <strong style="font-size:14px; display:block; color:#64748b;">Belum Ada Data Kohort</strong>
-            <span style="font-size:12px;">Tidak ditemukan data transaksi untuk periode ini.</span>
-          </div>
-        <?php else: ?>
-          <table class="cohort-table">
-            <thead>
-              <tr>
-                <th class="cohort-label-th">Kohort</th>
-                <th class="cohort-size-th">Jumlah</th>
-                <?php foreach ($periods as $p_idx => $p_label): ?>
-                <th><?= $p_label; ?></th>
-                <?php endforeach; ?>
-              </tr>
-            </thead>
-            <tbody>
-              <?php foreach ($cohorts as $c): ?>
-              <tr>
-                <td class="cohort-label-td">
-                  <i class="fa fa-circle" style="color:#6366f1; font-size:6px; margin-right:4px;"></i>
-                  <?= htmlspecialchars($c['label']); ?>
-                </td>
-                <td class="cohort-size-td"><?= number_format($c['size']); ?></td>
-                <?php foreach ($periods as $p_idx => $p_label):
-                  $key = $p_idx + 1; // 1-indexed
-                  $val = $c['retention'][$key] ?? null;
-                  if ($val === null):
-                ?>
-                <td class="cohort-cell-null">—</td>
-                <?php else:
-                  if ($val >= 100) {
-                    $bg = '#312e81'; $fg = '#fff';
-                  } elseif ($val >= 50) {
-                    $ratio = ($val - 50) / 50;
-                    $r = round(16 + (49 - 16) * (1 - $ratio));
-                    $g = round(163 + (46 - 163) * (1 - $ratio));
-                    $b = round(33 + (129 - 33) * (1 - $ratio));
-                    $bg = "rgb($r,$g,$b)"; $fg = '#fff';
-                  } elseif ($val >= 20) {
-                    $ratio = ($val - 20) / 30;
-                    $r = round(234 + (16 - 234) * $ratio);
-                    $g = round(179 + (163 - 179) * $ratio);
-                    $b = round(8 + (33 - 8) * $ratio);
-                    $bg = "rgb($r,$g,$b)"; $fg = $val >= 35 ? '#fff' : '#1e1b4b';
-                  } elseif ($val > 0) {
-                    $ratio = $val / 20;
-                    $r = round(254 + (234 - 254) * $ratio);
-                    $g = round(202 + (179 - 202) * $ratio);
-                    $b = round(202 + (8 - 202) * $ratio);
-                    $bg = "rgb($r,$g,$b)"; $fg = '#991b1b';
-                  } else {
-                    $bg = '#fef2f2'; $fg = '#f87171';
-                  }
-                ?>
-                <td style="background:<?= $bg; ?>; color:<?= $fg; ?>;" title="<?= $c['label'] . ' → ' . $p_label . ': ' . $val . '%'; ?>">
-                  <?= $val > 0 ? $val . '%' : '0'; ?>
-                </td>
-                <?php endif; endforeach; ?>
-              </tr>
+        <table class="cohort-table">
+          <thead>
+            <tr>
+              <th class="cohort-label-th">Kohort</th>
+              <th class="cohort-size-th">Jumlah</th>
+              <?php foreach ($periods as $p_idx => $p_label): ?>
+              <th><?= $p_label; ?></th>
               <?php endforeach; ?>
-            </tbody>
-          </table>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($cohorts as $c): ?>
+            <tr>
+              <td class="cohort-label-td">
+                <i class="fa fa-circle" style="color:#6366f1; font-size:6px; margin-right:4px;"></i>
+                <?= htmlspecialchars($c['label']); ?>
+              </td>
+              <td class="cohort-size-td"><?= number_format($c['size']); ?></td>
+              <?php foreach ($periods as $p_idx => $p_label):
+                $key = $p_idx + 1; // 1-indexed
+                $val = $c['retention'][$key] ?? null;
+                if ($val === null):
+              ?>
+              <td class="cohort-cell-null">—</td>
+              <?php else:
+                if ($val >= 100) {
+                  $bg = '#312e81'; $fg = '#fff';
+                } elseif ($val >= 50) {
+                  $ratio = ($val - 50) / 50;
+                  $r = round(16 + (49 - 16) * (1 - $ratio));
+                  $g = round(163 + (46 - 163) * (1 - $ratio));
+                  $b = round(33 + (129 - 33) * (1 - $ratio));
+                  $bg = "rgb($r,$g,$b)"; $fg = '#fff';
+                } elseif ($val >= 20) {
+                  $ratio = ($val - 20) / 30;
+                  $r = round(234 + (16 - 234) * $ratio);
+                  $g = round(179 + (163 - 179) * $ratio);
+                  $b = round(8 + (33 - 8) * $ratio);
+                  $bg = "rgb($r,$g,$b)"; $fg = $val >= 35 ? '#fff' : '#1e1b4b';
+                } elseif ($val > 0) {
+                  $ratio = $val / 20;
+                  $r = round(254 + (234 - 254) * $ratio);
+                  $g = round(202 + (179 - 202) * $ratio);
+                  $b = round(202 + (8 - 202) * $ratio);
+                  $bg = "rgb($r,$g,$b)"; $fg = '#991b1b';
+                } else {
+                  $bg = '#fef2f2'; $fg = '#f87171';
+                }
+              ?>
+              <td style="background:<?= $bg; ?>; color:<?= $fg; ?>;" title="<?= $c['label'] . ' → ' . $p_label . ': ' . $val . '%'; ?>">
+                <?= $val > 0 ? $val . '%' : '0'; ?>
+              </td>
+              <?php endif; endforeach; ?>
+            </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
 
-          <!-- Legend -->
-          <div class="cohort-legend">
-            <span style="font-weight:700; color:#334155; margin-right:8px;">Legenda Retensi:</span>
-            <div class="cohort-legend-item" style="background:#fef2f2;"></div><span>0%</span>
-            <div class="cohort-legend-item" style="background:#fecaca;"></div><span>1-10%</span>
-            <div class="cohort-legend-item" style="background:#eab308;"></div><span>20-30%</span>
-            <div class="cohort-legend-item" style="background:#10a321;"></div><span>50%+</span>
-            <div class="cohort-legend-item" style="background:#312e81;"></div><span>100%</span>
-          </div>
-        <?php endif; ?>
+        <!-- Legend -->
+        <div class="cohort-legend">
+          <span style="font-weight:700; color:#334155; margin-right:8px;">Legenda Retensi:</span>
+          <div class="cohort-legend-item" style="background:#fef2f2;"></div><span>0%</span>
+          <div class="cohort-legend-item" style="background:#fecaca;"></div><span>1-10%</span>
+          <div class="cohort-legend-item" style="background:#eab308;"></div><span>20-30%</span>
+          <div class="cohort-legend-item" style="background:#10a321;"></div><span>50%+</span>
+          <div class="cohort-legend-item" style="background:#312e81;"></div><span>100%</span>
+        </div>
       <?php endif; ?>
     </div>
   </div>
@@ -760,25 +587,14 @@
         <i class="fa fa-lightbulb-o"></i>
       </div>
       <div style="flex:1; min-width:250px;">
-        <?php if ($c_mode === 'daily'): ?>
-        <h4 style="margin:0 0 8px 0; font-size:14px; font-weight:800; color:#1e1b4b;">Cara Membaca Kalender Heatmap</h4>
-        <ul style="margin:0; padding-left:18px; font-size:12.5px; color:#475569; line-height:1.9;">
-          <li><strong>Baris</strong> = Minggu ke-1 sampai ke-5 dalam bulan.</li>
-          <li><strong>Kolom</strong> = Hari dalam seminggu (Senin – Minggu).</li>
-          <li><strong>Angka besar</strong> = Tanggal. <strong>Angka kecil</strong> = Jumlah customer unik & order hari tersebut.</li>
-          <li><strong>Warna gelap (ungu tua)</strong> = Customer terbanyak. <strong>Warna terang (pink)</strong> = Tidak ada transaksi.</li>
-          <li>Gunakan kalender ini untuk melihat <strong>pola hari-hari ramai vs sepi</strong> dalam 1 bulan.</li>
-        </ul>
-        <?php else: ?>
         <h4 style="margin:0 0 8px 0; font-size:14px; font-weight:800; color:#1e1b4b;">Cara Membaca Tabel Kohort</h4>
         <ul style="margin:0; padding-left:18px; font-size:12.5px; color:#475569; line-height:1.9;">
-          <li><strong>Baris (Kohort)</strong> = Kelompok customer berdasarkan bulan pembelian pertama mereka.</li>
-          <li><strong>Kolom</strong> = Bulan-bulan berikutnya dalam tahun.</li>
-          <li><strong>Sel berwarna</strong> = Persentase (%) customer dari kohort tersebut yang melakukan transaksi ulang di bulan kolom.</li>
+          <li><strong>Baris (Kohort)</strong> = Kelompok customer berdasarkan <?= $c_mode === 'daily' ? 'hari' : 'bulan'; ?> pembelian pertama mereka.</li>
+          <li><strong>Kolom</strong> = <?= $c_mode === 'daily' ? 'Tanggal dalam bulan' : 'Bulan-bulan dalam tahun'; ?>.</li>
+          <li><strong>Sel berwarna</strong> = Persentase (%) customer dari kohort tersebut yang melakukan transaksi ulang di periode kolom.</li>
           <li><strong>Warna gelap (hijau/ungu)</strong> = Retensi tinggi. <strong>Warna terang (merah/pink)</strong> = Retensi rendah.</li>
-          <li><strong>100%</strong> = Semua customer kohort bertransaksi di bulan tersebut (biasanya di kolom awal).</li>
+          <li><strong>100%</strong> = Semua customer kohort bertransaksi di periode tersebut (biasanya di kolom awal).</li>
         </ul>
-        <?php endif; ?>
       </div>
     </div>
   </div>
