@@ -49,7 +49,16 @@ class Model_utang_usaha extends MY_Model {
 			$this->db->where('utang_usaha.supplier_id', $supplier_id);
 		}
 		if (!empty($status)) {
-			$this->db->where('utang_usaha.status', $status);
+			if ($status === 'overdue') {
+				$this->db->where('utang_usaha.status !=', 'lunas');
+				$this->db->where('utang_usaha.tanggal_jatuh_tempo <', date('Y-m-d'));
+				$this->db->where('utang_usaha.tanggal_jatuh_tempo IS NOT NULL', null, false);
+				$this->db->where('utang_usaha.tanggal_jatuh_tempo >', '1970-01-01');
+			} elseif ($status === 'belum_lunas') {
+				$this->db->where('utang_usaha.status !=', 'lunas');
+			} else {
+				$this->db->where('utang_usaha.status', $status);
+			}
 		}
 
 		if (!empty($q)) {

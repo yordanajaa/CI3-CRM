@@ -37,12 +37,13 @@ class Model_sales_order extends MY_Model {
 
 	public function count_all($q = '', $field = '')
 	{
-		$this->join_available();
 		$where = $this->build_where($q, $field);
 		if (!empty($where)) {
+			$this->db->join('pelanggan', 'pelanggan.id = sales_order.pelanggan_id', 'LEFT');
+			$this->db->join('gudang', 'gudang.id = sales_order.gudang_id', 'LEFT');
 			$this->db->where($where);
 		}
-		return $this->db->get($this->table_name)->num_rows();
+		return $this->db->count_all_results($this->table_name);
 	}
 
 	public function get($q = '', $field = '', $limit = 0, $offset = 0)
@@ -94,11 +95,31 @@ class Model_sales_order extends MY_Model {
 
 		$status = $this->input->get('status');
 		if (!empty($status)) {
-			$where .= ($where ? ' AND ' : '') . "sales_order.status = " . $this->db->escape($status);
+			if ($status === 'aktif') {
+				$where .= ($where ? ' AND ' : '') . "sales_order.status IN ('draft', 'submitted', 'confirmed')";
+			} elseif ($status === 'proses') {
+				$where .= ($where ? ' AND ' : '') . "sales_order.status IN ('packing', 'processing', 'ready_to_ship', 'shipped')";
+			} elseif ($status === 'selesai') {
+				$where .= ($where ? ' AND ' : '') . "sales_order.status IN ('delivered', 'completed', 'paid')";
+			} elseif ($status === 'lunas') {
+				$where .= ($where ? ' AND ' : '') . "(sales_order.waktu_pembayaran IS NOT NULL OR EXISTS (SELECT 1 FROM invoice inv_chk WHERE inv_chk.so_id = sales_order.id AND inv_chk.status = 'paid'))";
+			} elseif ($status === 'tempo') {
+				$where .= ($where ? ' AND ' : '') . "(sales_order.waktu_pembayaran IS NULL AND NOT EXISTS (SELECT 1 FROM invoice inv_chk WHERE inv_chk.so_id = sales_order.id AND inv_chk.status = 'paid') AND sales_order.status != 'cancelled')";
+			} else {
+				$where .= ($where ? ' AND ' : '') . "sales_order.status = " . $this->db->escape($status);
+			}
 		}
 
-		// Strictly filter for Offline Sales Orders
-		$where .= ($where ? ' AND ' : '') . "(sales_order.source = 'manual' OR sales_order.source IS NULL OR sales_order.source = '')";
+		$source = $this->input->get('source');
+		if (!empty($source)) {
+			if ($source === 'pos') {
+				$where .= ($where ? ' AND ' : '') . "(sales_order.source = 'pos' OR sales_order.catatan LIKE '%[POS CEPAT%')";
+			} elseif ($source === 'manual') {
+				$where .= ($where ? ' AND ' : '') . "((sales_order.source = 'manual' OR sales_order.source IS NULL OR sales_order.source = '') AND sales_order.catatan NOT LIKE '%[POS CEPAT%')";
+			} else {
+				$where .= ($where ? ' AND ' : '') . "sales_order.source = " . $this->db->escape($source);
+			}
+		}
 
 		return $where;
 	}
@@ -129,7 +150,30 @@ class Model_sales_order extends MY_Model {
 			->limit(1)
 			->get($this->table_name)->row();
 		$num = $last ? ((int) substr($last->nomor_so, -4)) + 1 : 1;
-		return $prefix . str_pad($num, 4, '0', STR_PAD_LEFT);
+		$nomor = $prefix . str_pad($num, 4, '0', STR_PAD_LEFT);
+
+		while ($this->db->where('nomor_so', $nomor)->get($this->table_name)->num_rows() > 0) {
+			$num++;
+			$nomor = $prefix . str_pad($num, 4, '0', STR_PAD_LEFT);
+		}
+		return $nomor;
+	}
+
+	public function generate_nomor_referensi()
+	{
+		$prefix = 'REF-' . date('Ym') . '-';
+		$last = $this->db->like('nomor_referensi', $prefix, 'after')
+			->order_by('id', 'DESC')
+			->limit(1)
+			->get('pembayaran_piutang')->row();
+		$num = $last ? ((int) substr($last->nomor_referensi, -4)) + 1 : 1;
+		$nomor = $prefix . str_pad($num, 4, '0', STR_PAD_LEFT);
+
+		while ($this->db->where('nomor_referensi', $nomor)->get('pembayaran_piutang')->num_rows() > 0) {
+			$num++;
+			$nomor = $prefix . str_pad($num, 4, '0', STR_PAD_LEFT);
+		}
+		return $nomor;
 	}
 
 	public function cek_stok($so_id)
@@ -168,27 +212,35 @@ class Model_sales_order extends MY_Model {
 
 	public function get_stats()
 	{
+		$total_omset_all = $this->db->select_sum('total')
+			->where('status !=', 'cancelled')
+			->get('sales_order')->row()->total ?: 0;
+
 		$start_month = date('Y-m-01');
 		$end_month   = date('Y-m-t');
 
 		$penjualan_bulan_ini = $this->db->select_sum('total')
+			->where('status !=', 'cancelled')
 			->where('DATE(tanggal_so) >=', $start_month)
 			->where('DATE(tanggal_so) <=', $end_month)
 			->get('sales_order')->row()->total ?: 0;
 
-		$terbayar_lunas = $this->db->select_sum('sales_order.total')
-			->join('invoice', 'invoice.so_id = sales_order.id')
-			->where('invoice.status', 'paid')
-			->where('DATE(sales_order.tanggal_so) >=', $start_month)
-			->where('DATE(sales_order.tanggal_so) <=', $end_month)
-			->get('sales_order')->row()->total ?: 0;
+		$terbayar_lunas = $this->db->query("
+			SELECT SUM(total) as tot 
+			FROM sales_order 
+			WHERE status != 'cancelled' 
+			  AND (
+			      waktu_pembayaran IS NOT NULL 
+			      OR EXISTS (SELECT 1 FROM invoice WHERE invoice.so_id = sales_order.id AND invoice.status = 'paid')
+			  )
+		")->row()->tot ?: 0;
 
-		$piutang_unpaid = max(0, $penjualan_bulan_ini - $terbayar_lunas);
+		$piutang_unpaid = max(0, $total_omset_all - $terbayar_lunas);
 
-		$pesanan_aktif = $this->db->where_in('status', ['draft', 'submitted'])
+		$pesanan_aktif = $this->db->where_in('status', ['draft', 'submitted', 'confirmed'])
 			->count_all_results('sales_order');
 
-		$proses_gudang = $this->db->where_in('status', ['confirmed', 'packing'])
+		$proses_gudang = $this->db->where('status', 'packing')
 			->count_all_results('sales_order');
 
 		$siap_kirim = $this->db->where_in('status', ['ready_to_ship', 'shipped'])
@@ -198,6 +250,7 @@ class Model_sales_order extends MY_Model {
 			->count_all_results('sales_order');
 
 		return [
+			'total_omset_all'     => $total_omset_all,
 			'penjualan_bulan_ini' => $penjualan_bulan_ini,
 			'terbayar_lunas'      => $terbayar_lunas,
 			'piutang_unpaid'      => $piutang_unpaid,

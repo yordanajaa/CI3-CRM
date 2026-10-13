@@ -246,6 +246,8 @@ class Penjualan_marketplace extends Admin
 	public function import_shopee()
 	{
 		$this->is_allowed('sales_order_add');
+		@ini_set('memory_limit', '1024M');
+		@set_time_limit(0);
 
 		if (empty($_FILES['file_csv']['name'])) {
 			set_message('Silakan pilih file CSV/Excel Shopee yang akan diimport.', 'error');
@@ -266,8 +268,18 @@ class Penjualan_marketplace extends Admin
 			rewind($handle);
 		}
 
-		$header = fgetcsv($handle, 4000, ",");
+		// Auto detect delimiter (; or \t or ,)
+		$first_line = fgets($handle);
+		if ($bom !== "\xEF\xBB\xBF") {
+			rewind($handle);
+		} else {
+			fseek($handle, 3);
+		}
+		$delimiter = (strpos($first_line, ';') !== false) ? ';' : ((strpos($first_line, "\t") !== false) ? "\t" : ',');
+
+		$header = fgetcsv($handle, 4000, $delimiter);
 		if (!$header) {
+			fclose($handle);
 			set_message('File CSV kosong atau format tidak sesuai.', 'error');
 			redirect('administrator/penjualan_marketplace');
 			return;
@@ -302,14 +314,61 @@ class Penjualan_marketplace extends Admin
 		$default_gudang = !empty($post_gudang) 
 			? $this->db->get_where('gudang', ['id' => $post_gudang])->row() 
 			: ($this->db->get_where('gudang', ['status' => 'aktif'])->row() ?: $this->db->get('gudang')->row());
+		$default_pelanggan = $this->db->get_where('pelanggan', ['kode_pelanggan' => 'CUS-MARKETPLACE'])->row() ?: $this->db->get('pelanggan')->row();
 		$pelanggan_id = $default_pelanggan ? $default_pelanggan->id : 1;
 		$gudang_id = $default_gudang ? $default_gudang->id : 1;
+
+		// Pre-fetch all existing orders into memory for O(1) duplicate & update lookup
+		$existing_orders = [];
+		$res_existing = $this->db->select('id, no_pesanan, nomor_resi, status_pesanan')->get('penjualan_marketplace')->result();
+		foreach ($res_existing as $ex) {
+			if (!empty($ex->no_pesanan)) {
+				$existing_orders[$ex->no_pesanan] = $ex;
+			}
+		}
+
+		// Pre-fetch all products into memory
+		$all_products = $this->db->get('produk')->result();
+		$default_prod = !empty($all_products) ? $all_products[0] : null;
+		$prod_by_code = [];
+		$prod_by_name = [];
+		foreach ($all_products as $pr) {
+			if (!empty($pr->kode_produk)) {
+				$prod_by_code[strtolower(trim($pr->kode_produk))] = $pr;
+			}
+			if (!empty($pr->nama_produk)) {
+				$prod_by_name[strtolower(trim($pr->nama_produk))] = $pr;
+			}
+		}
+
+		// Pre-fetch all customers into array for O(1) matching by phone or name
+		$all_pelanggan = $this->db->select('id, kode_pelanggan, nama_pelanggan, telepon, no_telp')->get('pelanggan')->result();
+		$cust_by_phone = [];
+		$cust_by_name = [];
+		foreach ($all_pelanggan as $cp) {
+			$p1 = preg_replace('/[^0-9]/', '', (string)$cp->telepon);
+			$p2 = preg_replace('/[^0-9]/', '', (string)$cp->no_telp);
+			if (!empty($p1)) $cust_by_phone[$p1] = (int)$cp->id;
+			if (!empty($p2)) $cust_by_phone[$p2] = (int)$cp->id;
+			if (!empty($cp->nama_pelanggan)) {
+				$cust_by_name[strtolower(trim($cp->nama_pelanggan))] = (int)$cp->id;
+			}
+		}
+		$max_cust_row = $this->db->select_max('id')->get('pelanggan')->row();
+		$next_cust_num = ($max_cust_row && $max_cust_row->id) ? ((int)$max_cust_row->id + 1) : 1;
+
+		// Pre-fetch CRM categories
+		$crm_categories = $this->db->get_where('crm_followup_categories', ['is_active' => 1])->result();
+		$bulk_crm_labels = [];
+		$now_dt = date('Y-m-d H:i:s');
 
 		$inserted_count = 0;
 		$updated_count = 0;
 		$skipped_count = 0;
 
-		while (($row = fgetcsv($handle, 4000, ",")) !== FALSE) {
+		$this->db->trans_start();
+
+		while (($row = fgetcsv($handle, 4000, $delimiter)) !== FALSE) {
 			if (count($row) < 5 || empty(array_filter($row))) continue;
 			$data = array_combine(array_slice($header, 0, count($row)), $row);
 			if (!$data) continue;
@@ -330,8 +389,8 @@ class Penjualan_marketplace extends Admin
 
 			$no_resi = $get_val($data, ['No. Resi', 'No Resi']);
 
-			$existing = $this->db->get_where('penjualan_marketplace', ['no_pesanan' => $no_pesanan])->row();
-			if ($existing) {
+			if (isset($existing_orders[$no_pesanan])) {
+				$existing = $existing_orders[$no_pesanan];
 				$need_update = false;
 				$update_fields = [];
 
@@ -365,6 +424,7 @@ class Penjualan_marketplace extends Admin
 			$username_buyer = $get_val($data, ['Username (Pembeli)', 'Username Pembeli', 'Username']);
 			$nama_penerima  = $get_val($data, ['Nama Penerima']);
 			$no_telp       = $get_val($data, ['No. Telepon', 'No Telepon', 'Notelp']);
+			$phone_clean   = preg_replace('/[^0-9]/', '', (string)$no_telp);
 			$alamat        = $get_val($data, ['Alamat Pengiriman']);
 			$kota          = $get_val($data, ['Kota/Kabupaten', 'Kota']);
 			$provinsi      = $get_val($data, ['Provinsi']);
@@ -376,11 +436,47 @@ class Penjualan_marketplace extends Admin
 			$alasan_batal  = $get_val($data, ['Alasan Pembatalan (tambahan kolom)', 'Alasan Pembatalan']);
 			$st_batal      = $get_val($data, ['Status Pembatalan/ Pengembalian', 'Status Pembatalan/Pengembalian']);
 
+			// Dynamic customer synchronization into 'pelanggan'
+			$row_pelanggan_id = null;
+			if (!empty($phone_clean) && isset($cust_by_phone[$phone_clean])) {
+				$row_pelanggan_id = $cust_by_phone[$phone_clean];
+			} elseif (!empty($nama_penerima) && isset($cust_by_name[strtolower(trim($nama_penerima))])) {
+				$row_pelanggan_id = $cust_by_name[strtolower(trim($nama_penerima))];
+			} elseif (!empty($username_buyer) && isset($cust_by_name[strtolower(trim($username_buyer))])) {
+				$row_pelanggan_id = $cust_by_name[strtolower(trim($username_buyer))];
+			} else {
+				$c_kode = 'CUST-' . str_pad($next_cust_num++, 4, '0', STR_PAD_LEFT);
+				while ($this->db->where('kode_pelanggan', $c_kode)->get('pelanggan')->num_rows() > 0) {
+					$c_kode = 'CUST-' . str_pad($next_cust_num++, 4, '0', STR_PAD_LEFT);
+				}
+				$cust_name = !empty($nama_penerima) ? $nama_penerima : (!empty($username_buyer) ? $username_buyer : 'Customer Shopee');
+				$new_cust = [
+					'kode_pelanggan' => $c_kode,
+					'nama_pelanggan' => $cust_name,
+					'telepon'        => $phone_clean,
+					'no_telp'        => $phone_clean,
+					'alamat'         => !empty($alamat) ? $alamat : 'Imported via Shopee',
+					'kota'           => !empty($kota) ? $kota : '',
+					'tipe_pelanggan' => 'Marketplace',
+					'tier_pelanggan' => 'RETAIL',
+					'status'         => 'aktif',
+					'created_by'     => get_user_data('username') ?: 'admin',
+					'created_at'     => $now_dt,
+				];
+				$this->db->insert('pelanggan', $new_cust);
+				$row_pelanggan_id = $this->db->insert_id();
+				if (!empty($phone_clean)) $cust_by_phone[$phone_clean] = $row_pelanggan_id;
+				$cust_by_name[strtolower(trim($cust_name))] = $row_pelanggan_id;
+			}
+			if (empty($row_pelanggan_id)) {
+				$row_pelanggan_id = $pelanggan_id;
+			}
+
 			$so_data = [
 				'nomor_so'                    => $nomor_so,
 				'no_pesanan'                  => $no_pesanan,
 				'source'                      => 'shopee',
-				'pelanggan_id'                => $pelanggan_id,
+				'pelanggan_id'                => $row_pelanggan_id,
 				'gudang_id'                   => $gudang_id,
 				'tanggal_so'                  => $tanggal_so,
 				'status'                      => $status,
@@ -404,8 +500,8 @@ class Penjualan_marketplace extends Admin
 				'subtotal'                    => $total_bayar,
 				'total'                       => $total_bayar,
 				'catatan'                     => 'Import Shopee CSV - Buyer: ' . $username_buyer,
-				'created_by'                  => get_user_data('username'),
-				'created_at'                  => date('Y-m-d H:i:s'),
+				'created_by'                  => get_user_data('username') ?: 'admin',
+				'created_at'                  => $now_dt,
 			];
 
 			$so_id = $this->Model_penjualan_marketplace->store($so_data);
@@ -413,15 +509,23 @@ class Penjualan_marketplace extends Admin
 			if ($so_id) {
 				$sku = trim($sku_ref ?: $sku_induk);
 				$prod = null;
-
-				if ($sku) {
-					$prod = $this->db->get_where('produk', ['kode_produk' => $sku])->row();
+				if ($sku && isset($prod_by_code[strtolower($sku)])) {
+					$prod = $prod_by_code[strtolower($sku)];
+				}
+				if (!$prod && $nama_produk && isset($prod_by_name[strtolower($nama_produk)])) {
+					$prod = $prod_by_name[strtolower($nama_produk)];
 				}
 				if (!$prod && $nama_produk) {
-					$prod = $this->db->like('nama_produk', $nama_produk)->get('produk')->row();
+					$np_lower = strtolower($nama_produk);
+					foreach ($prod_by_name as $pn => $pobj) {
+						if (strpos($np_lower, $pn) !== false || strpos($pn, $np_lower) !== false) {
+							$prod = $pobj;
+							break;
+						}
+					}
 				}
 				if (!$prod) {
-					$prod = $this->db->get('produk')->row();
+					$prod = $default_prod;
 				}
 
 				$qty_raw = $get_val($data, ['Jumlah', 'Jumlah Produk di Pesan']);
@@ -445,9 +549,42 @@ class Penjualan_marketplace extends Admin
 					'catatan'       => $nama_produk,
 				]);
 
+				// Generate CRM labels in batch
+				if (!empty($crm_categories)) {
+					$ship_date = !empty($tanggal_so) ? $tanggal_so : date('Y-m-d');
+					foreach ($crm_categories as $cat) {
+						$target_lbl = date('Y-m-d', strtotime($ship_date . ' + ' . $cat->jumlah_hari . ' days'));
+						$bulk_crm_labels[] = [
+							'order_source'          => 'Shopee',
+							'order_id'              => $so_id,
+							'order_table'           => 'penjualan_marketplace',
+							'customer_nama'         => !empty($nama_penerima) ? $nama_penerima : (!empty($username_buyer) ? $username_buyer : 'Customer Shopee'),
+							'customer_phone'        => $phone_clean,
+							'customer_pelanggan_id' => $row_pelanggan_id,
+							'no_pesanan'            => $no_pesanan,
+							'nomor_resi'            => !empty($no_resi) ? $no_resi : '',
+							'tanggal_pengiriman'    => $ship_date,
+							'followup_category_id'  => $cat->id,
+							'tanggal_label_muncul'  => $target_lbl,
+							'created_at'            => $now_dt,
+						];
+					}
+
+					if (count($bulk_crm_labels) >= 500) {
+						$this->db->insert_batch('crm_transaction_followup_labels', $bulk_crm_labels);
+						$bulk_crm_labels = [];
+					}
+				}
+
 				$inserted_count++;
 			}
 		}
+
+		if (!empty($bulk_crm_labels)) {
+			$this->db->insert_batch('crm_transaction_followup_labels', $bulk_crm_labels);
+		}
+
+		$this->db->trans_complete();
 
 		fclose($handle);
 
@@ -467,6 +604,8 @@ class Penjualan_marketplace extends Admin
 	public function import_tokopedia()
 	{
 		$this->is_allowed('sales_order_add');
+		@ini_set('memory_limit', '1024M');
+		@set_time_limit(0);
 
 		if (empty($_FILES['file_csv']['name'])) {
 			set_message('Silakan pilih file CSV/Excel Tokopedia yang akan diimport.', 'error');
@@ -487,8 +626,18 @@ class Penjualan_marketplace extends Admin
 			rewind($handle);
 		}
 
-		$header = fgetcsv($handle, 4000, ",");
+		// Auto detect delimiter (; or \t or ,)
+		$first_line = fgets($handle);
+		if ($bom !== "\xEF\xBB\xBF") {
+			rewind($handle);
+		} else {
+			fseek($handle, 3);
+		}
+		$delimiter = (strpos($first_line, ';') !== false) ? ';' : ((strpos($first_line, "\t") !== false) ? "\t" : ',');
+
+		$header = fgetcsv($handle, 4000, $delimiter);
 		if (!$header) {
+			fclose($handle);
 			set_message('File CSV kosong atau format tidak sesuai.', 'error');
 			redirect('administrator/penjualan_marketplace');
 			return;
@@ -510,14 +659,61 @@ class Penjualan_marketplace extends Admin
 		$default_gudang = !empty($post_gudang) 
 			? $this->db->get_where('gudang', ['id' => $post_gudang])->row() 
 			: ($this->db->get_where('gudang', ['status' => 'aktif'])->row() ?: $this->db->get('gudang')->row());
+		$default_pelanggan = $this->db->get_where('pelanggan', ['kode_pelanggan' => 'CUS-MARKETPLACE'])->row() ?: $this->db->get('pelanggan')->row();
 		$pelanggan_id = $default_pelanggan ? $default_pelanggan->id : 1;
 		$gudang_id = $default_gudang ? $default_gudang->id : 1;
+
+		// Pre-fetch all existing orders into memory for O(1) duplicate & update lookup
+		$existing_orders = [];
+		$res_existing = $this->db->select('id, no_pesanan, nomor_resi, status_pesanan')->get('penjualan_marketplace')->result();
+		foreach ($res_existing as $ex) {
+			if (!empty($ex->no_pesanan)) {
+				$existing_orders[$ex->no_pesanan] = $ex;
+			}
+		}
+
+		// Pre-fetch all products into memory
+		$all_products = $this->db->get('produk')->result();
+		$default_prod = !empty($all_products) ? $all_products[0] : null;
+		$prod_by_code = [];
+		$prod_by_name = [];
+		foreach ($all_products as $pr) {
+			if (!empty($pr->kode_produk)) {
+				$prod_by_code[strtolower(trim($pr->kode_produk))] = $pr;
+			}
+			if (!empty($pr->nama_produk)) {
+				$prod_by_name[strtolower(trim($pr->nama_produk))] = $pr;
+			}
+		}
+
+		// Pre-fetch all customers into array for O(1) matching by phone or name
+		$all_pelanggan = $this->db->select('id, kode_pelanggan, nama_pelanggan, telepon, no_telp')->get('pelanggan')->result();
+		$cust_by_phone = [];
+		$cust_by_name = [];
+		foreach ($all_pelanggan as $cp) {
+			$p1 = preg_replace('/[^0-9]/', '', (string)$cp->telepon);
+			$p2 = preg_replace('/[^0-9]/', '', (string)$cp->no_telp);
+			if (!empty($p1)) $cust_by_phone[$p1] = (int)$cp->id;
+			if (!empty($p2)) $cust_by_phone[$p2] = (int)$cp->id;
+			if (!empty($cp->nama_pelanggan)) {
+				$cust_by_name[strtolower(trim($cp->nama_pelanggan))] = (int)$cp->id;
+			}
+		}
+		$max_cust_row = $this->db->select_max('id')->get('pelanggan')->row();
+		$next_cust_num = ($max_cust_row && $max_cust_row->id) ? ((int)$max_cust_row->id + 1) : 1;
+
+		// Pre-fetch CRM categories
+		$crm_categories = $this->db->get_where('crm_followup_categories', ['is_active' => 1])->result();
+		$bulk_crm_labels = [];
+		$now_dt = date('Y-m-d H:i:s');
 
 		$inserted_count = 0;
 		$updated_count = 0;
 		$skipped_count = 0;
 
-		while (($row = fgetcsv($handle, 4000, ",")) !== FALSE) {
+		$this->db->trans_start();
+
+		while (($row = fgetcsv($handle, 4000, $delimiter)) !== FALSE) {
 			if (count($row) < 4 || empty(array_filter($row))) continue;
 			$data = array_combine(array_slice($header, 0, count($row)), $row);
 			if (!$data) continue;
@@ -538,8 +734,8 @@ class Penjualan_marketplace extends Admin
 
 			$no_resi = trim($data['No. Resi'] ?? '');
 
-			$existing = $this->db->get_where('penjualan_marketplace', ['no_pesanan' => $no_pesanan])->row();
-			if ($existing) {
+			if (isset($existing_orders[$no_pesanan])) {
+				$existing = $existing_orders[$no_pesanan];
 				$need_update = false;
 				$update_fields = [];
 
@@ -568,11 +764,55 @@ class Penjualan_marketplace extends Admin
 			$waktu_bayar = !empty($data['Waktu Pembayaran']) ? date('Y-m-d H:i:s', strtotime($data['Waktu Pembayaran'])) : date('Y-m-d H:i:s');
 			$tanggal_so = !empty($data['Waktu Pembayaran']) ? date('Y-m-d', strtotime($data['Waktu Pembayaran'])) : date('Y-m-d');
 
+			$username_buyer = $data['Username Pembeli'] ?? '';
+			$nama_penerima  = $data['Nama Penerima'] ?? '';
+			$no_telp       = $data['No. Telepon'] ?? '';
+			$phone_clean   = preg_replace('/[^0-9]/', '', (string)$no_telp);
+			$alamat        = $data['Alamat Pengiriman'] ?? '';
+			$kota          = $data['Kota/Kabupaten'] ?? '';
+			$provinsi      = $data['Provinsi'] ?? '';
+
+			// Dynamic customer synchronization into 'pelanggan'
+			$row_pelanggan_id = null;
+			if (!empty($phone_clean) && isset($cust_by_phone[$phone_clean])) {
+				$row_pelanggan_id = $cust_by_phone[$phone_clean];
+			} elseif (!empty($nama_penerima) && isset($cust_by_name[strtolower(trim($nama_penerima))])) {
+				$row_pelanggan_id = $cust_by_name[strtolower(trim($nama_penerima))];
+			} elseif (!empty($username_buyer) && isset($cust_by_name[strtolower(trim($username_buyer))])) {
+				$row_pelanggan_id = $cust_by_name[strtolower(trim($username_buyer))];
+			} else {
+				$c_kode = 'CUST-' . str_pad($next_cust_num++, 4, '0', STR_PAD_LEFT);
+				while ($this->db->where('kode_pelanggan', $c_kode)->get('pelanggan')->num_rows() > 0) {
+					$c_kode = 'CUST-' . str_pad($next_cust_num++, 4, '0', STR_PAD_LEFT);
+				}
+				$cust_name = !empty($nama_penerima) ? $nama_penerima : (!empty($username_buyer) ? $username_buyer : 'Customer Tokopedia');
+				$new_cust = [
+					'kode_pelanggan' => $c_kode,
+					'nama_pelanggan' => $cust_name,
+					'telepon'        => $phone_clean,
+					'no_telp'        => $phone_clean,
+					'alamat'         => !empty($alamat) ? $alamat : 'Imported via Tokopedia',
+					'kota'           => !empty($kota) ? $kota : '',
+					'tipe_pelanggan' => 'Marketplace',
+					'tier_pelanggan' => 'RETAIL',
+					'status'         => 'aktif',
+					'created_by'     => get_user_data('username') ?: 'admin',
+					'created_at'     => $now_dt,
+				];
+				$this->db->insert('pelanggan', $new_cust);
+				$row_pelanggan_id = $this->db->insert_id();
+				if (!empty($phone_clean)) $cust_by_phone[$phone_clean] = $row_pelanggan_id;
+				$cust_by_name[strtolower(trim($cust_name))] = $row_pelanggan_id;
+			}
+			if (empty($row_pelanggan_id)) {
+				$row_pelanggan_id = $pelanggan_id;
+			}
+
 			$so_data = [
 				'nomor_so'            => $nomor_so,
 				'no_pesanan'          => $no_pesanan,
 				'source'              => 'tokopedia',
-				'pelanggan_id'        => $pelanggan_id,
+				'pelanggan_id'        => $row_pelanggan_id,
 				'gudang_id'           => $gudang_id,
 				'tanggal_so'          => $tanggal_so,
 				'status'              => $status,
@@ -580,20 +820,20 @@ class Penjualan_marketplace extends Admin
 				'nomor_resi'          => $no_resi,
 				'kurir_ekspedisi'     => $data['Kurir'] ?? '',
 				'waktu_pembayaran'    => $waktu_bayar,
-				'username_pembeli'    => $data['Username Pembeli'] ?? '',
-				'nama_penerima'       => $data['Nama Penerima'] ?? '',
-				'no_telepon'          => $data['No. Telepon'] ?? '',
-				'alamat_pengiriman'   => $data['Alamat Pengiriman'] ?? '',
-				'kota_kabupaten'      => $data['Kota/Kabupaten'] ?? '',
-				'provinsi'            => $data['Provinsi'] ?? '',
+				'username_pembeli'    => $username_buyer,
+				'nama_penerima'       => $nama_penerima,
+				'no_telepon'          => $no_telp,
+				'alamat_pengiriman'   => $alamat,
+				'kota_kabupaten'      => $kota,
+				'provinsi'            => $provinsi,
 				'sku_induk'           => $data['SKU Induk'] ?? '',
 				'nama_produk_marketplace' => $data['Nama Produk'] ?? '',
 				'nama_variasi'        => $data['Nama Variasi'] ?? '',
 				'subtotal'            => $total_bayar,
 				'total'               => $total_bayar,
-				'catatan'             => 'Import Tokopedia CSV - Buyer: ' . ($data['Username Pembeli'] ?? ''),
-				'created_by'          => get_user_data('username'),
-				'created_at'          => date('Y-m-d H:i:s'),
+				'catatan'             => 'Import Tokopedia CSV - Buyer: ' . $username_buyer,
+				'created_by'          => get_user_data('username') ?: 'admin',
+				'created_at'          => $now_dt,
 			];
 
 			$so_id = $this->Model_penjualan_marketplace->store($so_data);
@@ -603,14 +843,26 @@ class Penjualan_marketplace extends Admin
 				$nama_prod = trim($data['Nama Produk'] ?? '');
 				$prod = null;
 
-				if ($sku) {
-					$prod = $this->db->get_where('produk', ['kode_produk' => $sku])->row();
+				$sku = trim($data['SKU Induk'] ?? '');
+				$nama_prod = trim($data['Nama Produk'] ?? '');
+				$prod = null;
+				if ($sku && isset($prod_by_code[strtolower($sku)])) {
+					$prod = $prod_by_code[strtolower($sku)];
+				}
+				if (!$prod && $nama_prod && isset($prod_by_name[strtolower($nama_prod)])) {
+					$prod = $prod_by_name[strtolower($nama_prod)];
 				}
 				if (!$prod && $nama_prod) {
-					$prod = $this->db->like('nama_produk', $nama_prod)->get('produk')->row();
+					$np_lower = strtolower($nama_prod);
+					foreach ($prod_by_name as $pn => $pobj) {
+						if (strpos($np_lower, $pn) !== false || strpos($pn, $np_lower) !== false) {
+							$prod = $pobj;
+							break;
+						}
+					}
 				}
 				if (!$prod) {
-					$prod = $this->db->get('produk')->row();
+					$prod = $default_prod;
 				}
 
 				$qty = (float) str_replace(['.', ','], '', $data['Jumlah'] ?? 1);
@@ -631,9 +883,42 @@ class Penjualan_marketplace extends Admin
 					'catatan'       => $nama_prod,
 				]);
 
+				// Generate CRM labels in batch
+				if (!empty($crm_categories)) {
+					$ship_date = !empty($tanggal_so) ? $tanggal_so : date('Y-m-d');
+					foreach ($crm_categories as $cat) {
+						$target_lbl = date('Y-m-d', strtotime($ship_date . ' + ' . $cat->jumlah_hari . ' days'));
+						$bulk_crm_labels[] = [
+							'order_source'          => 'Tokopedia',
+							'order_id'              => $so_id,
+							'order_table'           => 'penjualan_marketplace',
+							'customer_nama'         => !empty($nama_penerima) ? $nama_penerima : (!empty($username_buyer) ? $username_buyer : 'Customer Tokopedia'),
+							'customer_phone'        => $phone_clean,
+							'customer_pelanggan_id' => $row_pelanggan_id,
+							'no_pesanan'            => $no_pesanan,
+							'nomor_resi'            => $no_resi,
+							'tanggal_pengiriman'    => $ship_date,
+							'followup_category_id'  => $cat->id,
+							'tanggal_label_muncul'  => $target_lbl,
+							'created_at'            => $now_dt,
+						];
+					}
+
+					if (count($bulk_crm_labels) >= 500) {
+						$this->db->insert_batch('crm_transaction_followup_labels', $bulk_crm_labels);
+						$bulk_crm_labels = [];
+					}
+				}
+
 				$inserted_count++;
 			}
 		}
+
+		if (!empty($bulk_crm_labels)) {
+			$this->db->insert_batch('crm_transaction_followup_labels', $bulk_crm_labels);
+		}
+
+		$this->db->trans_complete();
 
 		fclose($handle);
 

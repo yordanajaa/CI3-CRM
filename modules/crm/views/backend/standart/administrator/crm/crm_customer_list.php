@@ -86,49 +86,54 @@
 }
 .crm-header-nav .action-tools .btn:hover { transform: translateY(-2px); }
 
-/* Navigation Tab Bar */
+/* Navigation Tab Bar - Touch Scrollable */
 .crm-header-nav .nav-tabs-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 8px;
   padding-top: 14px;
   border-top: 1px solid rgba(255,255,255,0.18);
   position: relative;
   z-index: 2;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.crm-header-nav .nav-tabs-bar::-webkit-scrollbar {
+  display: none;
 }
 .crm-header-nav .nav-tab-btn {
-  padding: 8px 18px;
-  border-radius: 25px;
-  font-size: 12px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 12.5px;
   font-weight: 700;
-  color: #e0e7ff;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  text-decoration: none !important;
+  color: rgba(255,255,255,0.92);
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.22);
+  text-decoration: none;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 .crm-header-nav .nav-tab-btn:hover {
-  background: rgba(255, 255, 255, 0.22);
-  color: #ffffff;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  background: rgba(255,255,255,0.25);
+  color: #fff;
+  transform: translateY(-1px);
 }
 .crm-header-nav .nav-tab-btn.active {
   background: #ffffff !important;
   color: #312e81 !important;
   border-color: #ffffff !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.18) !important;
 }
-.crm-header-nav .nav-tab-btn.active .active-dot {
+.crm-header-nav .nav-tab-btn .active-dot {
   width: 7px;
   height: 7px;
-  background: #6366f1;
   border-radius: 50%;
+  background: #6366f1;
   display: inline-block;
 }
 
@@ -186,16 +191,29 @@
 .btn-wa { background: #25D366; color: #fff; border: none; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; transition: all 0.2s ease; }
 .btn-wa:hover { background: #128C7E; color: #fff; transform: translateY(-1px); }
 
+@media (max-width: 991px) {
+  .crm-header-nav { padding: 16px 16px 12px 16px; margin-bottom: 12px; }
+  .crm-header-nav .header-top-flex { flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 12px; }
+  .crm-header-nav .action-tools { width: 100%; justify-content: flex-start; gap: 6px; }
+  .crm-header-nav .action-tools .btn { font-size: 11px; padding: 6px 10px; flex: 1 1 auto; text-align: center; justify-content: center; }
+}
+
 @media (max-width: 767px) {
-  .content { padding: 10px 8px !important; }
-  .crm-header { padding: 18px 14px; text-align: center; border-radius: 12px; margin-bottom: 14px; }
-  .crm-header h2 { font-size: 17px; }
-  .crm-header p { font-size: 11.5px; }
+  .content { padding: 8px 6px !important; }
+  .crm-header-nav { padding: 14px 12px 10px 12px; border-radius: 12px; margin-bottom: 12px; }
+  .crm-header-nav .header-title h2 { font-size: 18px; }
+  .crm-header-nav .header-title p { font-size: 11px; }
+  .crm-header-nav .action-tools { width: 100%; justify-content: flex-start; gap: 6px; }
+  .crm-header-nav .action-tools .btn { font-size: 10.5px; padding: 6px 10px; flex: 1 1 auto; text-align: center; justify-content: center; }
+  .crm-header-nav .nav-tabs-bar { gap: 6px; padding-top: 10px; }
+  .crm-header-nav .nav-tab-btn { font-size: 11.5px; padding: 6px 12px; }
 
   .box-body { padding: 10px !important; }
   .input-group .form-control { font-size: 12px; height: 36px; }
   .col-md-4 .btn { font-size: 11px; padding: 5px 10px; margin-bottom: 4px; }
 
+  .table-responsive { border: none !important; margin-bottom: 0; }
+  .table-crm { min-width: 780px; }
   .table-crm th { font-size: 10px; padding: 8px 4px !important; white-space: nowrap; }
   .table-crm td { font-size: 11px; padding: 8px 4px !important; }
   .badge-source { font-size: 9.5px; padding: 2px 7px; }
@@ -208,7 +226,7 @@
 }
 
 @media (max-width: 480px) {
-  .crm-header h2 { font-size: 15px; }
+  .crm-header-nav .header-title h2 { font-size: 15px; }
   .col-md-4 { display: flex; flex-wrap: wrap; gap: 4px; }
   .col-md-4 .btn { flex: 1; min-width: 45%; font-size: 10px; }
   .table-crm th, .table-crm td { font-size: 10px; padding: 6px 3px !important; }

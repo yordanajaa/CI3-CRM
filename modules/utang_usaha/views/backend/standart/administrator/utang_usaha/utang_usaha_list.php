@@ -7,17 +7,41 @@
    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
    border-left: 4px solid #00c0ef;
    margin-bottom: 20px;
-   transition: transform 0.2s ease, box-shadow 0.2s ease;
+   transition: all 0.2s ease;
+   cursor: pointer;
+   position: relative;
+   user-select: none;
 }
 .kpi-card:hover {
-   transform: translateY(-2px);
-   box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+   transform: translateY(-3px);
+   box-shadow: 0 8px 22px rgba(0,0,0,0.12);
+}
+.kpi-card:active {
+   transform: translateY(-1px);
 }
 .kpi-card.green  { border-left-color: #00a65a; }
 .kpi-card.purple { border-left-color: #605ca8; }
 .kpi-card.red    { border-left-color: #dd4b39; }
 
-.kpi-title { font-size: 11px; text-transform: uppercase; font-weight: 700; color: #888; letter-spacing: 0.5px; }
+/* Active Card Highlights */
+.kpi-card.active-kpi {
+   background: #eff6ff;
+   box-shadow: 0 0 0 2px #00c0ef, 0 8px 24px rgba(0, 192, 239, 0.25);
+}
+.kpi-card.green.active-kpi {
+   background: #f0fdf4;
+   box-shadow: 0 0 0 2px #00a65a, 0 8px 24px rgba(0, 166, 90, 0.25);
+}
+.kpi-card.purple.active-kpi {
+   background: #faf5ff;
+   box-shadow: 0 0 0 2px #605ca8, 0 8px 24px rgba(96, 92, 168, 0.25);
+}
+.kpi-card.red.active-kpi {
+   background: #fef2f2;
+   box-shadow: 0 0 0 2px #dd4b39, 0 8px 24px rgba(221, 75, 57, 0.25);
+}
+
+.kpi-title { font-size: 11px; text-transform: uppercase; font-weight: 700; color: #888; letter-spacing: 0.5px; display:flex; justify-content:space-between; align-items:center; }
 .kpi-value { font-size: 20px; font-weight: 700; color: #222; margin: 4px 0; }
 .kpi-sub { font-size: 11px; color: #999; }
 .kpi-icon { font-size: 28px; opacity: 0.2; float: right; margin-top: -35px; }
@@ -40,41 +64,90 @@
 </section>
 
 <section class="content">
+   <?php 
+      $current_status = $this->input->get('status');
+   ?>
+
    <!-- 4 Modern Minimalist KPI Cards -->
    <div class="row">
       <div class="col-md-3 col-sm-6">
-         <div class="kpi-card">
-            <div class="kpi-title">Total Kewajiban Utang</div>
+         <div class="kpi-card <?= empty($current_status) ? '' : ''; ?>"
+              onclick="window.location.href='<?= site_url('administrator/utang_usaha'); ?>';"
+              role="button" tabindex="0" title="Klik untuk menampilkan SEMUA faktur utang usaha">
+            <div class="kpi-title">
+               <span>Total Kewajiban Utang</span>
+               <?php if (empty($current_status)): ?>
+                  <span class="badge" style="background:#e0f2fe; color:#0369a1; font-size:9px;">SEMUA</span>
+               <?php endif; ?>
+            </div>
             <div class="kpi-value">Rp <?= number_format($stats['total_kewajiban'], 0, ',', '.'); ?></div>
             <div class="kpi-sub"><i class="fa fa-calculator"></i> <?= $stats['total_faktur']; ?> Tagihan Faktur</div>
             <i class="fa fa-calculator kpi-icon text-info"></i>
          </div>
       </div>
       <div class="col-md-3 col-sm-6">
-         <div class="kpi-card green">
-            <div class="kpi-title">Total Telah Dibayar</div>
+         <div class="kpi-card green <?= $current_status == 'lunas' ? 'active-kpi' : ''; ?>"
+              onclick="window.location.href='<?= $current_status == 'lunas' ? site_url('administrator/utang_usaha') : site_url('administrator/utang_usaha?status=lunas'); ?>';"
+              role="button" tabindex="0" title="Klik untuk filter tagihan yang TELAH LUNAS">
+            <div class="kpi-title">
+               <span>Total Telah Dibayar</span>
+               <?php if ($current_status == 'lunas'): ?>
+                  <span class="badge" style="background:#00a65a; color:#fff; font-size:9px;">AKTIF</span>
+               <?php endif; ?>
+            </div>
             <div class="kpi-value">Rp <?= number_format($stats['total_dibayar'], 0, ',', '.'); ?></div>
-            <div class="kpi-sub"><i class="fa fa-check-circle"></i> Kas Keluar Terealikasi</div>
+            <div class="kpi-sub"><i class="fa fa-check-circle"></i> Kas Keluar Terealisasi</div>
             <i class="fa fa-money kpi-icon text-success"></i>
          </div>
       </div>
       <div class="col-md-3 col-sm-6">
-         <div class="kpi-card purple">
-            <div class="kpi-title">Sisa Tagihan Belum Lunas</div>
+         <div class="kpi-card purple <?= $current_status == 'belum_lunas' ? 'active-kpi' : ''; ?>"
+              onclick="window.location.href='<?= $current_status == 'belum_lunas' ? site_url('administrator/utang_usaha') : site_url('administrator/utang_usaha?status=belum_lunas'); ?>';"
+              role="button" tabindex="0" title="Klik untuk filter tagihan yang BELUM LUNAS">
+            <div class="kpi-title">
+               <span>Sisa Tagihan Belum Lunas</span>
+               <?php if ($current_status == 'belum_lunas'): ?>
+                  <span class="badge" style="background:#605ca8; color:#fff; font-size:9px;">AKTIF</span>
+               <?php endif; ?>
+            </div>
             <div class="kpi-value">Rp <?= number_format($stats['sisa_tagihan'], 0, ',', '.'); ?></div>
             <div class="kpi-sub"><i class="fa fa-hourglass-half"></i> Saldo Utang Aktif</div>
             <i class="fa fa-hourglass-half kpi-icon text-purple"></i>
          </div>
       </div>
       <div class="col-md-3 col-sm-6">
-         <div class="kpi-card red">
-            <div class="kpi-title">Lewat Jatuh Tempo (Overdue)</div>
+         <div class="kpi-card red <?= $current_status == 'overdue' ? 'active-kpi' : ''; ?>"
+              onclick="window.location.href='<?= $current_status == 'overdue' ? site_url('administrator/utang_usaha') : site_url('administrator/utang_usaha?status=overdue'); ?>';"
+              role="button" tabindex="0" title="Klik untuk filter tagihan yang LEWAT JATUH TEMPO (Overdue)">
+            <div class="kpi-title">
+               <span>Lewat Jatuh Tempo (Overdue)</span>
+               <?php if ($current_status == 'overdue'): ?>
+                  <span class="badge" style="background:#dd4b39; color:#fff; font-size:9px;">AKTIF</span>
+               <?php endif; ?>
+            </div>
             <div class="kpi-value">Rp <?= number_format($stats['overdue_nominal'], 0, ',', '.'); ?></div>
             <div class="kpi-sub"><i class="fa fa-warning"></i> <?= $stats['overdue_count']; ?> Tagihan Overdue</div>
             <i class="fa fa-bell kpi-icon text-danger"></i>
          </div>
       </div>
    </div>
+
+   <?php if (!empty($current_status)): 
+      $u_titles = [
+         'lunas'       => ['title' => 'Utang Telah Dibayar (Lunas)', 'color' => '#00a65a'],
+         'belum_lunas' => ['title' => 'Sisa Tagihan Belum Lunas (Saldo Utang Aktif)', 'color' => '#605ca8'],
+         'overdue'     => ['title' => 'Tagihan Lewat Jatuh Tempo (Overdue)', 'color' => '#dd4b39'],
+      ];
+      $u_info = $u_titles[$current_status] ?? ['title' => 'Status: ' . strtoupper($current_status), 'color' => '#00c0ef'];
+   ?>
+   <div style="background:#ffffff; border:1px solid #e2e8f0; border-left:4px solid <?= $u_info['color']; ?>; border-radius:8px; padding:10px 16px; margin-bottom:18px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+      <div>
+         <span style="font-weight:700; color:#1e293b;"><i class="fa fa-filter"></i> Filter Aktif: <?= $u_info['title']; ?></span>
+         <span class="badge" style="background:<?= $u_info['color']; ?>; margin-left:6px;"><?= number_format($utang_counts); ?> Faktur</span>
+      </div>
+      <a href="<?= site_url('administrator/utang_usaha'); ?>" class="btn btn-default btn-xs" style="font-weight:600;"><i class="fa fa-times text-danger"></i> Reset / Tampilkan Semua</a>
+   </div>
+   <?php endif; ?>
 
    <div class="row">
       <div class="col-md-12">

@@ -70,11 +70,18 @@
          <div class="box box-primary" style="border-radius:6px;">
             <div class="box-header with-border">
                <h3 class="box-title"><i class="fa fa-user-circle text-primary"></i> Informasi Profil Pelanggan</h3>
-               <div class="box-tools pull-right">
-                  <?php is_allowed('pelanggan_update', function() use ($pelanggan){ ?>
-                     <a href="<?= site_url('administrator/pelanggan/edit/'.$pelanggan->id); ?>" class="btn btn-warning btn-xs btn-flat"><i class="fa fa-edit"></i> Edit</a>
+               <div class="box-tools pull-right" style="display:flex; gap:5px; align-items:center;">
+                  <?php is_allowed('sales_order_add', function() use ($pelanggan){ ?>
+                     <a href="<?= site_url('administrator/sales_order/add?pelanggan_id='.$pelanggan->id); ?>" class="btn btn-success btn-xs btn-flat" style="border-radius:4px; font-weight:600;"><i class="fa fa-shopping-cart"></i> + Buat SO</a>
                   <?php }); ?>
-                  <a href="<?= base_url('administrator/pelanggan'); ?>" class="btn btn-default btn-xs btn-flat"><i class="fa fa-arrow-left"></i> Kembali</a>
+                  <?php if (!empty($pelanggan->telepon)): ?>
+                     <a href="<?= site_url('administrator/crm/customer_summary?phone='.urlencode(preg_replace('/[^0-9]/', '', $pelanggan->telepon))); ?>" class="btn btn-info btn-xs btn-flat" style="border-radius:4px; font-weight:600;"><i class="fa fa-line-chart"></i> RFM / CRM</a>
+                     <a href="<?= site_url('administrator/crm/journal_followup?phone='.urlencode(preg_replace('/[^0-9]/', '', $pelanggan->telepon))); ?>" class="btn btn-default btn-xs btn-flat" style="border-radius:4px; font-weight:600;"><i class="fa fa-whatsapp text-success"></i> Follow-up</a>
+                  <?php endif; ?>
+                  <?php is_allowed('pelanggan_update', function() use ($pelanggan){ ?>
+                     <a href="<?= site_url('administrator/pelanggan/edit/'.$pelanggan->id); ?>" class="btn btn-warning btn-xs btn-flat" style="border-radius:4px;"><i class="fa fa-edit"></i> Edit</a>
+                  <?php }); ?>
+                  <a href="<?= base_url('administrator/pelanggan'); ?>" class="btn btn-default btn-xs btn-flat" style="border-radius:4px;"><i class="fa fa-arrow-left"></i> Kembali</a>
                </div>
             </div>
             <div class="box-body">
@@ -83,7 +90,20 @@
                   <tr><th>Nama Pelanggan</th><td><strong><?= _ent($pelanggan->nama_pelanggan); ?></strong></td></tr>
                   <tr><th>Tipe Tier</th><td><span class="badge bg-purple"><?= strtoupper($pelanggan->tipe_pelanggan); ?></span></td></tr>
                   <tr><th>Kontak Person</th><td><?= _ent($pelanggan->kontak_person ?? '-'); ?></td></tr>
-                  <tr><th>Telepon</th><td><i class="fa fa-phone text-muted"></i> <?= _ent($pelanggan->telepon ?? '-'); ?></td></tr>
+                  <tr>
+                     <th>Telepon</th>
+                     <td>
+                        <?php $ph = preg_replace('/[^0-9]/', '', (string)$pelanggan->telepon); ?>
+                        <?php if (!empty($ph)): ?>
+                           <i class="fa fa-phone text-muted"></i> <?= _ent($pelanggan->telepon); ?>
+                           <a href="https://wa.me/<?= (substr($ph, 0, 1) === '0') ? ('62' . substr($ph, 1)) : $ph; ?>" target="_blank" class="btn btn-xs btn-success" style="margin-left:6px; border-radius:3px; padding:1px 6px;" title="Hubungi via WhatsApp">
+                              <i class="fa fa-whatsapp"></i> Chat WA
+                           </a>
+                        <?php else: ?>
+                           <span class="text-muted">-</span>
+                        <?php endif; ?>
+                     </td>
+                  </tr>
                   <tr><th>Email</th><td><i class="fa fa-envelope text-muted"></i> <?= _ent($pelanggan->email ?? '-'); ?></td></tr>
                   <tr><th>Kota / Wilayah</th><td><?= _ent($pelanggan->kota ?? '-'); ?></td></tr>
                   <tr><th>Alamat Lengkap</th><td><?= nl2br(_ent($pelanggan->alamat ?? '-')); ?></td></tr>
@@ -99,6 +119,7 @@
          <div class="nav-tabs-custom" style="border-radius:6px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
             <ul class="nav nav-tabs">
                <li class="active"><a href="#tab_so" data-toggle="tab"><i class="fa fa-shopping-cart text-primary"></i> Riwayat Sales Order (<?= count($riwayat_so); ?>)</a></li>
+               <li><a href="#tab_mp" data-toggle="tab"><i class="fa fa-globe text-info"></i> Riwayat Marketplace (<?= count($riwayat_mp); ?>)</a></li>
                <li><a href="#tab_invoice" data-toggle="tab"><i class="fa fa-file-text-o text-success"></i> Riwayat Invoice (<?= count($riwayat_invoice); ?>)</a></li>
             </ul>
             <div class="tab-content">
@@ -129,6 +150,39 @@
                         </tr>
                         <?php endforeach; ?>
                         <?php if(empty($riwayat_so)): ?><tr><td colspan="5" class="text-center text-muted">Belum ada riwayat Sales Order.</td></tr><?php endif; ?>
+                     </tbody>
+                  </table>
+               </div>
+
+               <!-- Tab Marketplace -->
+               <div class="tab-pane" id="tab_mp">
+                  <table class="table table-bordered table-striped">
+                     <thead>
+                        <tr style="background:#f8fafc;">
+                           <th>No. Pesanan</th>
+                           <th>Marketplace</th>
+                           <th>Tanggal</th>
+                           <th class="text-right">Total Transaksi</th>
+                           <th class="text-center">Status</th>
+                           <th class="text-center">Aksi</th>
+                        </tr>
+                     </thead>
+                     <tbody>
+                        <?php foreach($riwayat_mp as $mp): ?>
+                        <tr>
+                           <td><strong class="text-info"><?= _ent($mp->nomor_pesanan); ?></strong></td>
+                           <td><span class="badge bg-purple"><?= strtoupper(_ent($mp->marketplace ?? 'MP')); ?></span></td>
+                           <td><?= !empty($mp->tanggal_pesanan) ? date('d/m/Y', strtotime($mp->tanggal_pesanan)) : '-'; ?></td>
+                           <td class="text-right"><strong>Rp <?= number_format($mp->total, 0, ',', '.'); ?></strong></td>
+                           <td class="text-center">
+                              <span class="label label-default"><?= strtoupper(_ent($mp->status_pesanan ?? 'SELESAI')); ?></span>
+                           </td>
+                           <td class="text-center">
+                              <a href="<?= site_url('administrator/penjualan_marketplace/view/'.$mp->id); ?>" class="btn btn-default btn-xs"><i class="fa fa-eye"></i> Detail</a>
+                           </td>
+                        </tr>
+                        <?php endforeach; ?>
+                        <?php if(empty($riwayat_mp)): ?><tr><td colspan="6" class="text-center text-muted">Belum ada riwayat transaksi Marketplace untuk pelanggan ini.</td></tr><?php endif; ?>
                      </tbody>
                   </table>
                </div>

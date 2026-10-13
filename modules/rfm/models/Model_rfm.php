@@ -36,26 +36,26 @@ class Model_rfm extends CI_Model
 		return $this->crm->get_rfm_badge_style($segment);
 	}
 
-	public function get_rfm_percentile_thresholds($product_filter = '')
+	public function get_rfm_percentile_thresholds($product_filter = '', $period_filter = '', $category_filter = '')
 	{
-		return $this->crm->get_rfm_percentile_thresholds($product_filter);
+		return $this->crm->get_rfm_percentile_thresholds($product_filter, $period_filter, $category_filter);
 	}
 
-	public function calculate_rfm($last_order_date = null, $total_orders = 0, $total_spend = 0.0, $thresholds = null)
+	public function calculate_rfm($last_order_date = null, $total_orders = 0, $total_spend = 0.0, $thresholds = null, $reference_date = null)
 	{
-		return $this->crm->calculate_rfm($last_order_date, $total_orders, $total_spend, $thresholds);
+		return $this->crm->calculate_rfm($last_order_date, $total_orders, $total_spend, $thresholds, $reference_date);
 	}
 
 	// ===== Customer Data (delegates to Model_crm) =====
 
-	public function get_customers($filter = '', $limit = 25, $offset = 0, $rfm_segment_filter = '', $product_filter = '', $period_filter = '')
+	public function get_customers($filter = '', $limit = 25, $offset = 0, $rfm_segment_filter = '', $product_filter = '', $period_filter = '', $category_filter = '')
 	{
-		return $this->crm->get_customers($filter, $limit, $offset, $rfm_segment_filter, $product_filter, $period_filter);
+		return $this->crm->get_customers($filter, $limit, $offset, $rfm_segment_filter, $product_filter, $period_filter, $category_filter);
 	}
 
-	public function get_rfm_dashboard_distribution($product_filter = '', $period_filter = '')
+	public function get_rfm_dashboard_distribution($product_filter = '', $period_filter = '', $category_filter = '')
 	{
-		return $this->crm->get_rfm_dashboard_distribution($product_filter, $period_filter);
+		return $this->crm->get_rfm_dashboard_distribution($product_filter, $period_filter, $category_filter);
 	}
 
 	public function get_customer_summary($phone, $product_filter = '')
@@ -73,9 +73,14 @@ class Model_rfm extends CI_Model
 		return $this->crm->get_customer_product_rfm($phone);
 	}
 
-	public function get_all_products_list()
+	public function get_all_products_list($category_filter = '')
 	{
-		return $this->crm->get_all_products_list();
+		return $this->crm->get_all_products_list($category_filter);
+	}
+
+	public function get_all_categories_list()
+	{
+		return $this->crm->get_all_categories_list();
 	}
 
 	public function get_distinct_months_list()
@@ -83,9 +88,14 @@ class Model_rfm extends CI_Model
 		return $this->crm->get_distinct_months_list();
 	}
 
-	public function get_monthly_rfm_tracking_per_product($product_filter = '', $period_filter = '')
+	public function get_distinct_years_list()
 	{
-		return $this->crm->get_monthly_rfm_tracking_per_product($product_filter, $period_filter);
+		return $this->crm->get_distinct_years_list();
+	}
+
+	public function get_monthly_rfm_tracking_per_product($product_filter = '', $period_filter = '', $year_filter = '', $category_filter = '')
+	{
+		return $this->crm->get_monthly_rfm_tracking_per_product($product_filter, $period_filter, $year_filter, $category_filter);
 	}
 
 	public function get_top_products_by_month($ym_period, $product_filter = '', $limit = 5)
@@ -103,9 +113,19 @@ class Model_rfm extends CI_Model
 		return $this->crm->get_product_rfm_list($filter, $limit, $offset);
 	}
 
-	public function get_cohort_analysis($mode = 'monthly', $year = '', $month = '')
+	public function get_cohort_analysis($mode = 'monthly', $year = '', $month = '', $product = '', $category = '')
 	{
-		return $this->crm->get_cohort_analysis($mode, $year, $month);
+		return $this->crm->get_cohort_analysis($mode, $year, $month, $product, $category);
+	}
+
+	public function get_product_cohort_summary($year = '', $category = '')
+	{
+		return $this->crm->get_product_cohort_summary($year, $category);
+	}
+
+	public function get_cohort_drilldown_customers($cohort_period, $target_period, $mode = 'monthly', $product = '', $category = '')
+	{
+		return $this->crm->get_cohort_drilldown_customers($cohort_period, $target_period, $mode, $product, $category);
 	}
 
 	public function get_transaction_items($table, $order_id)

@@ -32,6 +32,10 @@
                <?php if($invoice->status=='draft'): ?><?php is_allowed('invoice_update', function() use ($invoice){ ?>
                <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#modal_kirim"><i class="fa fa-truck"></i> Kirim &amp; Potong Stok</button>
                <?php }); ?><?php endif; ?>
+               <?php if ($invoice->status != 'paid'): ?>
+               <?php $target_piutang = $this->db->get_where('piutang_usaha', ['invoice_id' => $invoice->id])->row(); ?>
+               <a href="<?= site_url('administrator/piutang_usaha?q=' . urlencode($target_piutang ? $target_piutang->nomor_piutang : $invoice->nomor_invoice)); ?>" class="btn btn-success btn-sm" style="font-weight:700;"><i class="fa fa-money"></i> Terima Pembayaran</a>
+               <?php endif; ?>
                <a href="<?= base_url('administrator/invoice'); ?>" class="btn btn-default btn-sm"><i class="fa fa-arrow-left"></i> Kembali</a>
             </div>
          </div>
@@ -44,10 +48,25 @@
                      <div class="panel-heading" style="background:#f8f9fa; font-weight:bold;"><i class="fa fa-user"></i> Informasi Pelanggan &amp; Order</div>
                      <div class="panel-body" style="padding: 10px 15px;">
                         <table class="table table-condensed table-borderless" style="margin-bottom:0;">
-                           <tr><th style="width:35%;">Pelanggan:</th><td><strong style="font-size:14px; color:#333;"><?= _ent($invoice->nama_pelanggan); ?></strong></td></tr>
+                           <tr><th style="width:35%;">Pelanggan:</th><td><a href="<?= site_url('administrator/pelanggan/view/'.$invoice->pelanggan_id); ?>"><strong style="font-size:14px; color:#0284c7;"><?= _ent($invoice->nama_pelanggan); ?> <i class="fa fa-external-link" style="font-size:11px;"></i></strong></a></td></tr>
                            <tr><th>Alamat:</th><td><?= _ent($invoice->alamat_pelanggan ?? '-'); ?></td></tr>
-                           <tr><th>No. Telp:</th><td><?= _ent($invoice->telp_pelanggan ?? '-'); ?></td></tr>
-                           <tr><th>Referensi SO:</th><td><span class="label label-info"><?= _ent($invoice->nomor_so??'-'); ?></span></td></tr>
+                           <tr>
+                               <th>No. Telp:</th>
+                               <td>
+                                  <?= _ent($invoice->telp_pelanggan ?? '-'); ?>
+                                  <?php 
+                                     $inv_ph = preg_replace('/[^0-9]/', '', (string)($invoice->telp_pelanggan ?? ''));
+                                     if(!empty($inv_ph)):
+                                        $inv_wa = (substr($inv_ph, 0, 1) === '0') ? ('62' . substr($inv_ph, 1)) : $inv_ph;
+                                        $inv_msg = "Halo Kak " . ($invoice->nama_pelanggan ?? '') . ", ini informasi Faktur/Invoice No. " . $invoice->nomor_invoice . " senilai Rp " . number_format($invoice->total, 0, ',', '.') . ". Terima kasih.";
+                                  ?>
+                                     <a href="https://wa.me/<?= $inv_wa; ?>?text=<?= urlencode($inv_msg); ?>" target="_blank" class="btn btn-xs btn-success" style="margin-left:6px; border-radius:3px; padding:1px 6px;" title="Chat WhatsApp Pelanggan">
+                                        <i class="fa fa-whatsapp"></i> Chat WA
+                                     </a>
+                                  <?php endif; ?>
+                               </td>
+                            </tr>
+                           <tr><th>Referensi SO:</th><td><?= !empty($invoice->so_id) ? '<a href="'.site_url('administrator/sales_order/view/'.$invoice->so_id).'"><span class="label label-info">' . _ent($invoice->nomor_so) . ' <i class="fa fa-external-link" style="font-size:10px;"></i></span></a>' : '-'; ?></td></tr>
                            <tr><th>Gudang Asal:</th><td><?= _ent($invoice->nama_gudang??'-'); ?></td></tr>
                         </table>
                      </div>
@@ -64,6 +83,10 @@
                            <tr><th>Status Kirim:</th><td><strong class="text-primary"><?= strtoupper(_ent($invoice->status_kirim ?? 'BELUM DIKIRIM')); ?></strong></td></tr>
                            <tr><th>No. Resi / AWB:</th><td><strong><?= _ent($invoice->nomor_resi ?? '-'); ?></strong></td></tr>
                            <tr><th>Ekspedisi / Kurir:</th><td><?= _ent($invoice->ekspedisi ?? '-'); ?></td></tr>
+                         <?php $linked_piutang = $this->db->get_where('piutang_usaha', ['invoice_id' => $invoice->id])->row(); ?>
+                         <?php if($linked_piutang): ?>
+                         <tr><th>Status Piutang:</th><td><a href="<?= site_url('administrator/piutang_usaha?q=' . urlencode($linked_piutang->nomor_piutang)); ?>"><span class="label <?= $linked_piutang->status == 'lunas' ? 'label-success' : 'label-warning'; ?>"><i class="fa fa-money"></i> <?= _ent($linked_piutang->nomor_piutang); ?> (<?= strtoupper($linked_piutang->status); ?> - Sisa Rp <?= number_format($linked_piutang->sisa, 0, ',', '.'); ?>)</span></a></td></tr>
+                         <?php endif; ?>
                         </table>
                      </div>
                   </div>
@@ -106,7 +129,7 @@
                      ?>
                      <tr>
                         <td class="text-center"><?= $i+1; ?></td>
-                        <td><strong><?= _ent($item->nama_produk); ?></strong><br><small class="text-muted">Kode: <?= _ent($item->kode_produk); ?></small></td>
+                        <td><a href="<?= site_url('administrator/stok/kartu/' . $item->produk_id); ?>" title="Lihat Kartu Stok Produk"><strong style="color:#0284c7;"><?= _ent($item->nama_produk); ?> <i class="fa fa-external-link" style="font-size:10px;"></i></strong></a><br><small class="text-muted">Kode: <?= _ent($item->kode_produk); ?></small></td>
                         <td class="text-center"><strong><?= number_format((float)$item->qty, 0, ',', '.'); ?></strong> <?= _ent($item->singkatan??$item->satuan); ?></td>
                         <td class="text-right">Rp <?= number_format($item->harga_satuan, 0, ',', '.'); ?></td>
                         <td class="text-right"><strong><?= $it_disc_fmt; ?>%</strong></td>

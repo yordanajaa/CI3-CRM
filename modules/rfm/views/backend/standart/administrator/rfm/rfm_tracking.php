@@ -10,7 +10,7 @@
 }
 
 .rfm-tracking-wrapper {
-  padding: 5px 0 30px 0;
+  padding: 12px 14px 30px 14px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
@@ -18,10 +18,10 @@
 .rfm-header-nav {
   background: var(--rfm-gradient);
   color: #fff;
-  padding: 24px 28px 20px 28px;
+  padding: 22px 26px 18px 26px;
   border-radius: 16px;
-  margin-bottom: 22px;
-  box-shadow: 0 12px 30px rgba(30, 27, 75, 0.25);
+  margin-bottom: 20px;
+  box-shadow: 0 10px 28px rgba(30, 27, 75, 0.22);
   position: relative;
   overflow: hidden;
 }
@@ -39,8 +39,8 @@
   justify-content: space-between;
   align-items: flex-start;
   flex-wrap: wrap;
-  gap: 16px;
-  margin-bottom: 18px;
+  gap: 14px;
+  margin-bottom: 16px;
   position: relative;
   z-index: 2;
 }
@@ -59,12 +59,12 @@
 }
 .rfm-header-nav .header-title {
   flex: 1;
-  min-width: 280px;
+  min-width: 250px;
 }
 .rfm-header-nav .header-title h2 {
   margin: 0 0 4px 0;
   font-weight: 800;
-  font-size: 24px;
+  font-size: 22px;
   letter-spacing: -0.5px;
   color: #fff;
 }
@@ -86,7 +86,7 @@
   border-radius: 9px;
   font-weight: 700;
   font-size: 12px;
-  padding: 7px 14px;
+  padding: 7px 13px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -97,21 +97,27 @@
 }
 .rfm-header-nav .action-tools .btn:hover { transform: translateY(-2px); }
 
-/* Navigation Tab Bar */
+/* Navigation Tab Bar - Touch Scrollable */
 .rfm-header-nav .nav-tabs-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 8px;
   padding-top: 14px;
   border-top: 1px solid rgba(255,255,255,0.18);
   position: relative;
   z-index: 2;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.rfm-header-nav .nav-tabs-bar::-webkit-scrollbar {
+  display: none;
 }
 .rfm-header-nav .nav-tab-btn {
-  padding: 8px 18px;
+  padding: 8px 16px;
   border-radius: 10px;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
   color: rgba(255,255,255,0.92);
   background: rgba(255,255,255,0.12);
@@ -121,6 +127,7 @@
   align-items: center;
   gap: 8px;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 .rfm-header-nav .nav-tab-btn:hover {
   background: rgba(255,255,255,0.25);
@@ -144,23 +151,29 @@
 .kpi-mini-card {
   background: #ffffff;
   border-radius: 14px;
-  padding: 18px 20px;
+  padding: 16px 18px;
   border: 1px solid #e2e8f0;
   box-shadow: var(--card-shadow);
-  transition: all 0.25s ease;
+  cursor: pointer;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease, border-color 0.22s ease;
   height: 100%;
+  user-select: none;
 }
 .kpi-mini-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+  border-color: #cbd5e1;
+}
+.kpi-mini-card:active {
+  transform: translateY(-1px) scale(0.99);
 }
 .kpi-mini-val {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 800;
   line-height: 1.2;
 }
 .kpi-mini-lbl {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -172,8 +185,8 @@
   border-radius: 16px;
   border: 1px solid #e2e8f0;
   box-shadow: var(--card-shadow);
-  padding: 22px;
-  margin-bottom: 22px;
+  padding: 20px;
+  margin-bottom: 20px;
 }
 
 .table-tracking {
@@ -231,36 +244,41 @@
 
 /* Mobile Responsive Media Queries */
 @media (max-width: 991px) {
-  .rfm-header-nav { padding: 20px 22px; }
+  .rfm-header-nav { padding: 18px 20px; }
   .chart-box-responsive { height: 280px !important; }
 }
 
 @media (max-width: 767px) {
-  .rfm-header-nav { padding: 18px 16px; text-align: center; }
-  .rfm-header-nav .header-top-flex { flex-direction: column; align-items: center; }
-  .rfm-header-nav .header-title h2 { font-size: 20px; }
-  .rfm-header-nav .header-title p { font-size: 12px; }
-  .rfm-header-nav .action-tools { width: 100%; justify-content: center; flex-wrap: wrap; }
-  .rfm-header-nav .action-tools .btn { font-size: 11px; padding: 6px 10px; flex: 1 1 auto; min-width: 120px; }
-  .rfm-header-nav .nav-tabs-bar { justify-content: center; width: 100%; }
-  .rfm-header-nav .nav-tab-btn { width: 100%; justify-content: center; padding: 10px; font-size: 12.5px; }
+  .rfm-tracking-wrapper { padding: 8px 8px 20px 8px; }
+  .rfm-header-nav { padding: 16px 14px; border-radius: 12px; }
+  .rfm-header-nav .header-top-flex { flex-direction: column; align-items: stretch; gap: 10px; }
+  .rfm-header-nav .header-title h2 { font-size: 18px; }
+  .rfm-header-nav .header-title p { font-size: 11.5px; }
+  .rfm-header-nav .action-tools { width: 100%; justify-content: flex-start; gap: 6px; }
+  .rfm-header-nav .action-tools .btn { font-size: 11px; padding: 6px 10px; flex: 1 1 auto; min-width: 110px; }
+  .rfm-header-nav .nav-tabs-bar { padding-top: 10px; gap: 6px; }
+  .rfm-header-nav .nav-tab-btn { padding: 7px 12px; font-size: 11.5px; }
   
-  .kpi-mini-card { padding: 14px 16px; }
-  .kpi-mini-val { font-size: 18px; }
-  .kpi-mini-lbl { font-size: 10px; }
-  .section-card-custom { padding: 16px; border-radius: 12px; margin-bottom: 16px; }
+  .kpi-mini-card { padding: 12px 14px; }
+  .kpi-mini-val { font-size: 17px; }
+  .kpi-mini-lbl { font-size: 9.5px; }
+  .section-card-custom { padding: 14px; border-radius: 12px; margin-bottom: 14px; }
   .chart-box-responsive { height: 240px !important; }
-
-  /* Filter bar */
-  .section-card-custom .row > div[class*="col-"] { padding: 0 8px; }
+  .modal-dialog {
+    width: 94% !important;
+    max-width: 520px !important;
+    margin: 15px auto !important;
+  }
+  .modal-content {
+    border-radius: 12px !important;
+  }
 }
 
 @media (max-width: 575px) {
   .rfm-header-nav { padding: 14px 12px; }
-  .rfm-header-nav .header-title h2 { font-size: 17px; }
+  .rfm-header-nav .header-title h2 { font-size: 16px; }
   .rfm-header-nav .action-tools .btn { font-size: 10.5px; padding: 5px 8px; min-width: 0; }
-  
-  .kpi-mini-val { font-size: 16px; }
+  .kpi-mini-val { font-size: 15px; }
   .kpi-mini-lbl { font-size: 9px; }
   .section-card-custom { padding: 12px; margin-bottom: 12px; }
 }
@@ -278,11 +296,11 @@
           <i class="fa fa-map-marker"></i> Analisis RFM <i class="fa fa-angle-right"></i> <span>Tracking & Tren Bulanan</span>
         </div>
         <h2><i class="fa fa-line-chart" style="color:#818cf8;"></i> Tracking & Tren RFM Bulanan</h2>
-        <p>Rekapitulasi historis omset (monetary), frekuensi order, dan pembeli unik per bulan <?= !empty($product_filter) ? 'untuk produk: <strong>' . htmlspecialchars($product_filter) . '</strong>' : '(Seluruh Produk)'; ?></p>
+        <p>Grafik dan tabel rekapitulasi riwayat omset, jumlah transaksi, dan pertumbuhan pembeli baru <?= !empty($period_filter) ? 'periode <strong>' . htmlspecialchars(!empty($track_data[0]->period_label) ? $track_data[0]->period_label : $period_filter) . '</strong>' : 'setiap bulannya'; ?> <?= !empty($product_filter) ? 'untuk produk: <strong>' . htmlspecialchars($product_filter) . '</strong>' : '(Semua Produk)'; ?></p>
       </div>
 
       <?php
-        $nav_params = array_filter(['product' => $product_filter ?? '', 'period' => $period_filter ?? '']);
+        $nav_params = array_filter(['product' => $product_filter ?? '', 'period' => $period_filter ?? '', 'year' => $year_filter ?? '', 'kategori' => $category_filter ?? '']);
         $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
       ?>
       <div class="action-tools">
@@ -304,8 +322,14 @@
       <a href="<?= site_url('administrator/rfm/tracking' . $nav_qs); ?>" class="nav-tab-btn active">
         <span class="active-dot"></span> <i class="fa fa-line-chart"></i> 3. Tracking RFM Bulanan
       </a>
-      <a href="<?= site_url('administrator/rfm/cohort'); ?>" class="nav-tab-btn">
+      <a href="<?= site_url('administrator/rfm/cohort' . $nav_qs); ?>" class="nav-tab-btn">
         <i class="fa fa-th"></i> 4. Analisis Kohort
+      </a>
+      <a href="<?= site_url('administrator/crm_segments/product_rfm' . $nav_qs); ?>" class="nav-tab-btn">
+        <i class="fa fa-th-large"></i> 5. Tren Segmen Produk
+      </a>
+      <a href="<?= site_url('administrator/rfm/matrix_rules' . $nav_qs); ?>" class="nav-tab-btn">
+        <i class="fa fa-table"></i> 6. Matriks Aturan RFM
       </a>
     </div>
   </div>
@@ -316,26 +340,73 @@
   <div class="section-card-custom" style="padding:16px 22px; margin-bottom:20px;">
     <form method="GET" action="<?= site_url('administrator/rfm/tracking'); ?>" id="form-filter-tracking">
       <div class="row" style="display:flex; align-items:center; flex-wrap:wrap; margin:0 -8px;">
-        <div class="col-md-5 col-sm-6 col-xs-12" style="padding:0 8px; margin-bottom:8px;">
+        <div class="col-md-3 col-sm-6 col-xs-12" style="padding:0 8px; margin-bottom:8px;">
+          <label style="font-weight:700; font-size:12px; color:#475569; display:block; margin-bottom:5px;">
+            <i class="fa fa-folder-open-o" style="color:#0284c7;"></i> Filter Kategori:
+          </label>
+          <select name="kategori" class="form-control" style="width:100%; border-radius:8px; height:38px; font-size:12.5px; font-weight:600;" onchange="this.form.submit();">
+            <option value="">-- Semua Kategori --</option>
+            <?php if (!empty($categories_list)): ?>
+              <?php foreach ($categories_list as $cat): 
+                $c_name = is_object($cat) ? $cat->nama_kategori : (is_array($cat) ? ($cat['nama_kategori'] ?? '') : (string)$cat);
+                if (empty($c_name)) continue;
+              ?>
+              <option value="<?= htmlspecialchars($c_name); ?>" <?= (!empty($category_filter) && $category_filter === $c_name) ? 'selected' : ''; ?>>
+                📁 <?= htmlspecialchars($c_name); ?>
+              </option>
+              <?php endforeach; ?>
+            <?php endif; ?>
+          </select>
+        </div>
+
+        <div class="col-md-3 col-sm-6 col-xs-12" style="padding:0 8px; margin-bottom:8px;">
           <label style="font-weight:700; font-size:12px; color:#475569; display:block; margin-bottom:5px;">
             <i class="fa fa-shopping-bag" style="color:#059669;"></i> Filter Produk:
           </label>
           <select name="product" class="form-control" style="width:100%; border-radius:8px; height:38px; font-size:12.5px; font-weight:600;">
             <option value="">-- Semua Produk (Keseluruhan) --</option>
-            <?php foreach ($products_list as $prod): 
+            <?php 
+            $grouped_prods = [];
+            foreach ($products_list as $prod) {
               $p_name = is_object($prod) ? $prod->item_name : (is_array($prod) ? ($prod['item_name'] ?? '') : (string)$prod);
+              $p_cat = is_object($prod) ? ($prod->nama_kategori ?? 'Lainnya') : (is_array($prod) ? ($prod['nama_kategori'] ?? 'Lainnya') : 'Lainnya');
+              if (empty($p_cat)) $p_cat = 'Tanpa Kategori';
               if (empty($p_name)) continue;
+              $grouped_prods[$p_cat][] = $p_name;
+            }
+            ksort($grouped_prods);
             ?>
-            <option value="<?= htmlspecialchars($p_name); ?>" <?= (!empty($product_filter) && $product_filter === $p_name) ? 'selected' : ''; ?>>
-              <?= htmlspecialchars($p_name); ?>
-            </option>
+            <?php foreach ($grouped_prods as $kat => $prods): ?>
+              <optgroup label="📂 <?= htmlspecialchars($kat); ?>">
+                <?php foreach ($prods as $p_name): ?>
+                  <option value="<?= htmlspecialchars($p_name); ?>" <?= (!empty($product_filter) && $product_filter === $p_name) ? 'selected' : ''; ?>>
+                    <?= htmlspecialchars($p_name); ?>
+                  </option>
+                <?php endforeach; ?>
+              </optgroup>
             <?php endforeach; ?>
           </select>
         </div>
 
-        <div class="col-md-4 col-sm-6 col-xs-12" style="padding:0 8px; margin-bottom:8px;">
+        <div class="col-md-2 col-sm-4 col-xs-6" style="padding:0 8px; margin-bottom:8px;">
           <label style="font-weight:700; font-size:12px; color:#475569; display:block; margin-bottom:5px;">
-            <i class="fa fa-calendar" style="color:#6366f1;"></i> Filter Bulan / Periode:
+            <i class="fa fa-calendar-o" style="color:#8b5cf6;"></i> Filter Tahun:
+          </label>
+          <select name="year" class="form-control" style="width:100%; border-radius:8px; height:38px; font-size:12.5px; font-weight:600;">
+            <option value="">-- Semua Tahun --</option>
+            <?php if (!empty($available_years)): ?>
+              <?php foreach ($available_years as $yr): ?>
+              <option value="<?= $yr->yr; ?>" <?= (isset($year_filter) && $year_filter == $yr->yr) ? 'selected' : ''; ?>>
+                <?= $yr->yr; ?>
+              </option>
+              <?php endforeach; ?>
+            <?php endif; ?>
+          </select>
+        </div>
+
+        <div class="col-md-2 col-sm-4 col-xs-6" style="padding:0 8px; margin-bottom:8px;">
+          <label style="font-weight:700; font-size:12px; color:#475569; display:block; margin-bottom:5px;">
+            <i class="fa fa-calendar" style="color:#6366f1;"></i> Filter Periode:
           </label>
           <select name="period" class="form-control" style="width:100%; border-radius:8px; height:38px; font-size:12.5px; font-weight:600;">
             <option value="">-- Semua Periode Bulanan --</option>
@@ -350,11 +421,11 @@
           </select>
         </div>
 
-        <div class="col-md-3 col-sm-12 col-xs-12" style="padding:0 8px; margin-bottom:8px; display:flex; gap:8px; align-items:flex-end;">
+        <div class="col-md-2 col-sm-4 col-xs-12" style="padding:0 8px; margin-bottom:8px; display:flex; gap:8px; align-items:flex-end;">
           <button type="submit" class="btn btn-primary" style="background:#6366f1; border:none; border-radius:8px; font-weight:700; height:38px; flex:1; margin-top:21px; display:inline-flex; align-items:center; justify-content:center; gap:6px; box-shadow:0 2px 6px rgba(99,102,241,0.3);">
             <i class="fa fa-filter"></i> Filter
           </button>
-          <?php if (!empty($product_filter) || !empty($period_filter)): ?>
+          <?php if (!empty($product_filter) || !empty($period_filter) || !empty($year_filter) || !empty($category_filter)): ?>
           <a href="<?= site_url('administrator/rfm/tracking'); ?>" class="btn btn-default" style="border-radius:8px; font-weight:600; height:38px; margin-top:21px; border:1px solid #cbd5e1; color:#64748b; display:inline-flex; align-items:center; justify-content:center;" title="Reset Filter">
             <i class="fa fa-refresh"></i> Reset
           </a>
@@ -372,18 +443,49 @@
   $track_cnt = $kpi_tracking['track_cnt'] ?? count($track_data);
   $total_sum_spend = $kpi_tracking['total_sum_spend'] ?? 0;
   $avg_sum_spend = $kpi_tracking['avg_sum_spend'] ?? 0;
+  $total_sum_profit = $kpi_tracking['total_sum_profit'] ?? array_sum(array_column($track_data, 'total_profit'));
+  $avg_sum_profit = $kpi_tracking['avg_sum_profit'] ?? ($track_cnt > 0 ? $total_sum_profit / $track_cnt : 0);
   $total_sum_buyers = $kpi_tracking['total_sum_buyers'] ?? 0;
   $avg_sum_buyers = $kpi_tracking['avg_sum_buyers'] ?? 0;
   $total_sum_orders = $kpi_tracking['total_sum_orders'] ?? 0;
+  $is_filtered_period = !empty($period_filter);
+  
+  // Latest profit trend
+  $latest_mt = !empty($track_data) ? array_values($track_data)[0] : null;
+  $latest_profit_status = $latest_mt ? ($latest_mt->profit_status ?? 'naik') : 'naik';
+  $latest_profit_pct = $latest_mt ? ($latest_mt->profit_growth_pct ?? 0) : 0;
   ?>
 
-  <div class="row" style="margin-bottom:22px;">
-    <div class="col-md-3 col-sm-6 col-xs-6" style="margin-bottom:12px;">
-      <div class="kpi-mini-card" style="border-left:4px solid #10b981;">
+  <?php if ($is_filtered_period): ?>
+  <div style="background:#eff6ff; border:1px solid #bfdbfe; border-left:4px solid #3b82f6; border-radius:12px; padding:14px 18px; margin-bottom:18px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+    <div style="font-size:12.5px; color:#1e40af; line-height:1.5;">
+      <i class="fa fa-info-circle" style="font-size:16px; margin-right:6px; color:#2563eb;"></i>
+      <strong>Filter Periode Aktif: <?= htmlspecialchars($track_data[0]->period_label ?? $period_filter); ?></strong> &bull;
+      Menampilkan <strong><?= number_format($total_sum_orders); ?> transaksi</strong> dengan omset <strong>Rp <?= number_format($total_sum_spend, 0, ',', '.'); ?></strong> dari <strong><?= number_format($total_sum_buyers); ?> pembeli aktif</strong>.
+      <?php if ($period_filter === '2026-10'): ?>
+        <div style="margin-top:4px; color:#2563eb; font-size:11.5px;">
+          <i class="fa fa-clock-o"></i> <em>Catatan: Bulan Oktober 2026 merupakan bulan berjalan (baru tanggal 1–3 Oktober), sehingga akumulasi transaksi masih bergerak dan akan terus bertambah.</em>
+        </div>
+      <?php endif; ?>
+    </div>
+    <a href="<?= site_url('administrator/rfm/tracking'); ?>" class="btn btn-xs btn-default" style="font-weight:700; border-radius:6px; background:#fff; border:1px solid #93c5fd; color:#1d4ed8; padding:5px 12px;">
+      <i class="fa fa-refresh"></i> Tampilkan Semua Bulan
+    </a>
+  </div>
+  <?php endif; ?>
+
+  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-bottom:22px;">
+    <div>
+      <div class="kpi-mini-card" role="button" tabindex="0" onclick="var el=document.getElementById('section-monthly-table'); if(el){ el.scrollIntoView({behavior:'smooth'}); }" title="Klik untuk menuju ke tabel rekapitulasi performa bulanan" style="border-left:4px solid #10b981;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div>
-            <div class="kpi-mini-val" style="color:#15803d;"><?= number_format($track_cnt); ?> Bulan</div>
-            <div class="kpi-mini-lbl" style="color:#166534;">Total Periode Teracak</div>
+            <?php if ($is_filtered_period): ?>
+              <div class="kpi-mini-val" style="color:#15803d; font-size:16px;"><?= !empty($track_data[0]->period_label) ? htmlspecialchars($track_data[0]->period_label) : $period_filter; ?></div>
+              <div class="kpi-mini-lbl" style="color:#166534;">Periode Terpilih &darr;</div>
+            <?php else: ?>
+              <div class="kpi-mini-val" style="color:#15803d;"><?= number_format($track_cnt); ?> Bulan</div>
+              <div class="kpi-mini-lbl" style="color:#166534;">Total Bulan Terdata &darr;</div>
+            <?php endif; ?>
           </div>
           <div style="width:42px; height:42px; border-radius:10px; background:#dcfce7; color:#166534; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;">
             <i class="fa fa-calendar-check-o"></i>
@@ -392,12 +494,17 @@
       </div>
     </div>
 
-    <div class="col-md-3 col-sm-6 col-xs-6" style="margin-bottom:12px;">
-      <div class="kpi-mini-card" style="border-left:4px solid #3b82f6;">
+    <div>
+      <div class="kpi-mini-card" role="button" tabindex="0" onclick="var el=document.getElementById('section-monthly-chart'); if(el){ el.scrollIntoView({behavior:'smooth'}); }" title="Klik untuk melihat grafik historis tren omset bulanan" style="border-left:4px solid #3b82f6;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div>
-            <div class="kpi-mini-val" style="color:#1d4ed8; font-size:18px;">Rp <?= number_format($avg_sum_spend, 0, ',', '.'); ?></div>
-            <div class="kpi-mini-lbl" style="color:#1e40af;">Rata2 Omset / Bulan</div>
+            <?php if ($is_filtered_period): ?>
+              <div class="kpi-mini-val" style="color:#1d4ed8; font-size:17px;">Rp <?= number_format($total_sum_spend, 0, ',', '.'); ?></div>
+              <div class="kpi-mini-lbl" style="color:#1e40af;">Total Omset Bulan Ini &darr;</div>
+            <?php else: ?>
+              <div class="kpi-mini-val" style="color:#1d4ed8; font-size:17px;">Rp <?= number_format($avg_sum_spend, 0, ',', '.'); ?></div>
+              <div class="kpi-mini-lbl" style="color:#1e40af;">Rata-rata Omset / Bulan &darr;</div>
+            <?php endif; ?>
           </div>
           <div style="width:42px; height:42px; border-radius:10px; background:#dbeafe; color:#1e40af; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;">
             <i class="fa fa-money"></i>
@@ -406,12 +513,46 @@
       </div>
     </div>
 
-    <div class="col-md-3 col-sm-6 col-xs-6" style="margin-bottom:12px;">
-      <div class="kpi-mini-card" style="border-left:4px solid #8b5cf6;">
+    <div>
+      <?php 
+        $display_profit = $is_filtered_period ? $total_sum_profit : $avg_sum_profit; 
+        $profit_lbl = $is_filtered_period ? 'Estimasi Laba Bulan Ini &darr;' : 'Rata-rata Laba / Bulan &darr;';
+      ?>
+      <div class="kpi-mini-card" role="button" tabindex="0" onclick="var el=document.getElementById('section-monthly-chart'); if(el){ el.scrollIntoView({behavior:'smooth'}); }" title="Klik untuk melihat grafik tren laba bersih bulanan" style="border-left:4px solid <?= $display_profit < 0 ? '#ef4444' : '#059669'; ?>; background:linear-gradient(135deg, #ffffff, <?= $display_profit < 0 ? '#fef2f2' : '#f0fdf4'; ?>);">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div>
-            <div class="kpi-mini-val" style="color:#6b21a8;"><?= number_format($avg_sum_buyers); ?> Cust</div>
-            <div class="kpi-mini-lbl" style="color:#7e22ce;">Rata2 Pembeli / Bulan</div>
+            <div class="kpi-mini-val" style="color:<?= $display_profit < 0 ? '#b91c1c' : '#047857'; ?>; font-size:17px;">
+              Rp <?= number_format($display_profit, 0, ',', '.'); ?>
+            </div>
+            <div class="kpi-mini-lbl" style="color:<?= $display_profit < 0 ? '#991b1b' : '#065f46'; ?>; display:flex; align-items:center; gap:4px; margin-top:3px;">
+              <span><?= $profit_lbl; ?></span>
+              <?php if ($display_profit < 0 || $latest_profit_status === 'rugi'): ?>
+                <span class="badge" style="background:#fee2e2; color:#b91c1c; font-size:10px; padding:2px 6px;">📉 Defisit</span>
+              <?php elseif ($latest_profit_status === 'naik'): ?>
+                <span class="badge" style="background:#dcfce7; color:#15803d; font-size:10px; padding:2px 6px;">📈 Naik</span>
+              <?php else: ?>
+                <span class="badge" style="background:#fee2e2; color:#b91c1c; font-size:10px; padding:2px 6px;">📉 Turun</span>
+              <?php endif; ?>
+            </div>
+          </div>
+          <div style="width:42px; height:42px; border-radius:10px; background:<?= $display_profit < 0 ? '#fee2e2' : '#d1fae5'; ?>; color:<?= $display_profit < 0 ? '#b91c1c' : '#047857'; ?>; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;">
+            <i class="fa fa-line-chart"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="kpi-mini-card" role="button" tabindex="0" onclick="window.location.href='<?= site_url('administrator/rfm' . $nav_qs); ?>';" title="Klik untuk membuka dan melihat daftar customer di Daftar Customer RFM" style="border-left:4px solid #8b5cf6;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <?php if ($is_filtered_period): ?>
+              <div class="kpi-mini-val" style="color:#6b21a8;"><?= number_format($total_sum_buyers); ?> Orang</div>
+              <div class="kpi-mini-lbl" style="color:#7e22ce;">Pembeli Aktif Bulan Ini &rarr;</div>
+            <?php else: ?>
+              <div class="kpi-mini-val" style="color:#6b21a8;"><?= number_format($avg_sum_buyers); ?> Orang</div>
+              <div class="kpi-mini-lbl" style="color:#7e22ce;">Rata-rata Pembeli / Bulan &rarr;</div>
+            <?php endif; ?>
           </div>
           <div style="width:42px; height:42px; border-radius:10px; background:#f3e8ff; color:#7e22ce; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;">
             <i class="fa fa-users"></i>
@@ -420,12 +561,17 @@
       </div>
     </div>
 
-    <div class="col-md-3 col-sm-6 col-xs-6" style="margin-bottom:12px;">
-      <div class="kpi-mini-card" style="border-left:4px solid #f97316;">
+    <div>
+      <div class="kpi-mini-card" role="button" tabindex="0" onclick="var el=document.getElementById('section-monthly-table'); if(el){ el.scrollIntoView({behavior:'smooth'}); }" title="Klik untuk melihat rincian transaksi di tabel bulanan" style="border-left:4px solid #f97316;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div>
-            <div class="kpi-mini-val" style="color:#c2410c;"><?= number_format($total_sum_orders); ?>x</div>
-            <div class="kpi-mini-lbl" style="color:#ea580c;">Total Transaksi (F)</div>
+            <?php if ($is_filtered_period): ?>
+              <div class="kpi-mini-val" style="color:#c2410c;"><?= number_format($total_sum_orders); ?>x</div>
+              <div class="kpi-mini-lbl" style="color:#ea580c;">Total Transaksi Bulan Ini &darr;</div>
+            <?php else: ?>
+              <div class="kpi-mini-val" style="color:#c2410c;"><?= number_format($total_sum_orders); ?>x</div>
+              <div class="kpi-mini-lbl" style="color:#ea580c;">Total Transaksi (F) &darr;</div>
+            <?php endif; ?>
           </div>
           <div style="width:42px; height:42px; border-radius:10px; background:#ffedd5; color:#c2410c; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;">
             <i class="fa fa-shopping-cart"></i>
@@ -439,7 +585,7 @@
        LAYER 4: MONTHLY DUAL-AXIS VISUAL TREND CHART
        ========================================== -->
   <?php if (!empty($track_data)): ?>
-  <div class="section-card-custom">
+  <div class="section-card-custom" id="section-monthly-chart">
     <div style="font-weight:800; font-size:15px; color:#0f172a; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
       <span><i class="fa fa-area-chart" style="color:#059669; font-size:18px; margin-right:6px;"></i> Grafik Historis Omset (Rp) & Pembeli Unik Per Bulan</span>
       <span class="badge" style="background:#ecfdf5; color:#047857; font-weight:700; padding:6px 12px; font-size:11.5px; border:1px solid #a7f3d0;"><i class="fa fa-bar-chart"></i> Dual-Axis Analytics</span>
@@ -453,35 +599,41 @@
   <!-- ==========================================
        LAYER 5: MONTHLY PERFORMANCE DATA TABLE
        ========================================== -->
-  <div class="section-card-custom" style="padding:0; overflow:hidden;">
+  <div class="section-card-custom" id="section-monthly-table" style="padding:0; overflow:hidden;">
     <div style="padding:18px 22px; background:#fafbfc; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
       <h3 style="margin:0; font-size:15px; font-weight:800; color:#0f172a; display:flex; align-items:center; gap:8px;">
-        <i class="fa fa-table" style="color:#6366f1;"></i> Tabel Rekapitulasi Performa Bulanan
+        <i class="fa fa-table" style="color:#6366f1;"></i> Tabel Rekapitulasi Performa Bulanan & Profit
       </h3>
       <span style="font-size:12px; color:#64748b; font-weight:600;">
-        Total Data: <strong><?= count($track_data); ?> Periode Bulan</strong>
+        <?php if ($is_filtered_period): ?>
+          Menampilkan Data: <strong>Periode <?= htmlspecialchars($track_data[0]->period_label ?? $period_filter); ?></strong>
+        <?php else: ?>
+          Total Data: <strong><?= count($track_data); ?> Periode Bulan</strong>
+        <?php endif; ?>
       </span>
     </div>
 
     <div class="table-responsive" style="overflow-x:auto;">
-      <table class="table table-hover table-striped table-tracking" style="min-width:880px;">
+      <table class="table table-hover table-striped table-tracking" style="min-width:1050px;">
         <thead>
           <tr>
-            <th style="width:4%;">#</th>
-            <th style="min-width:150px;">Bulan / Periode</th>
-            <th style="text-align:center; min-width:130px;">Pembeli Unik</th>
-            <th style="text-align:center; min-width:130px;">Jumlah Order (F)</th>
-            <th style="text-align:center; min-width:100px;">Total Qty</th>
-            <th style="text-align:right; min-width:170px;">Total Omset (Monetary)</th>
-            <th style="text-align:center; min-width:130px;">Tren Omset (MoM)</th>
-            <th style="text-align:center; min-width:130px;">Rata2 Recency (R)</th>
-            <th style="text-align:center; min-width:140px;">Aksi / Filter</th>
+            <th style="width:3%;">#</th>
+            <th style="min-width:140px;">Bulan / Periode</th>
+            <th style="text-align:center; min-width:120px;">Pembeli Unik</th>
+            <th style="text-align:center; min-width:110px;">Jumlah Order (F)</th>
+            <th style="text-align:center; min-width:90px;">Total Qty</th>
+            <th style="text-align:right; min-width:160px;">Total Omset (Monetary)</th>
+            <th style="text-align:center; min-width:110px;">Tren Omset</th>
+            <th style="text-align:right; min-width:160px; background:#f0fdf4; color:#166534;">Estimasi Profit</th>
+            <th style="text-align:center; min-width:140px; background:#f0fdf4; color:#166534;">Tren Profit (Naik/Turun)</th>
+            <th style="text-align:center; min-width:120px;">Rata2 Recency (R)</th>
+            <th style="text-align:center; min-width:120px;">Aksi / Filter</th>
           </tr>
         </thead>
         <tbody>
           <?php if (empty($track_data)): ?>
           <tr>
-            <td colspan="9" class="text-center" style="padding:40px !important; color:#94a3b8;">
+            <td colspan="11" class="text-center" style="padding:40px !important; color:#94a3b8;">
               <i class="fa fa-calendar-o" style="font-size:32px; display:block; margin-bottom:10px; color:#cbd5e1;"></i>
               <strong style="font-size:14px; display:block; color:#64748b;">Belum Ada Data Transaksi Bulanan</strong>
               <span style="font-size:12px;">Tidak ditemukan rekapan transaksi untuk kriteria filter ini.</span>
@@ -500,6 +652,14 @@
             if (!isset($mt->mom_growth_pct) && $prev_spend > 0) {
               $growth_pct = round((($mt->total_spend - $prev_spend) / $prev_spend) * 100, 1);
             }
+
+            // Profit calculation & status
+            $prev_profit = isset($mt->prev_profit) ? (float)$mt->prev_profit : (isset($track_list[$idx + 1]) ? (float)$track_list[$idx + 1]->total_profit : 0);
+            $profit_pct = isset($mt->profit_growth_pct) ? (float)$mt->profit_growth_pct : 0;
+            if (!isset($mt->profit_growth_pct) && $prev_profit > 0) {
+              $profit_pct = round((($mt->total_profit - $prev_profit) / $prev_profit) * 100, 1);
+            }
+            $is_profit_up = (isset($mt->profit_status) && $mt->profit_status === 'naik') || $profit_pct >= 0;
           ?>
           <tr<?= $is_active_m ? ' style="background:#ecfdf5; border-left:4px solid #10b981;"' : ''; ?>>
             <td><?= $m_no++; ?></td>
@@ -541,14 +701,34 @@
               </span>
               <?php endif; ?>
             </td>
+            <td style="text-align:right; background:<?= ($mt->total_profit ?? 0) < 0 ? '#fef2f2' : '#f0fdf4'; ?>;">
+              <strong style="color:<?= ($mt->total_profit ?? 0) < 0 ? '#b91c1c' : '#047857'; ?>; font-size:14px;">Rp <?= number_format($mt->total_profit ?? 0, 0, ',', '.'); ?></strong>
+            </td>
+            <td style="text-align:center; background:<?= ($mt->total_profit ?? 0) < 0 ? '#fef2f2' : '#f0fdf4'; ?>;">
+              <?php if (($mt->total_profit ?? 0) < 0): ?>
+                <span class="label" style="background:#fee2e2; color:#b91c1c; font-size:11.5px; font-weight:800; padding:4px 8px; border-radius:6px;" title="Rugi / Defisit Operasional">
+                  📉 Defisit / Rugi
+                </span>
+              <?php elseif ($prev_profit <= 0): ?>
+                <span class="label" style="background:#f1f5f9; color:#64748b; font-size:11px; font-weight:600;">-- (Awal)</span>
+              <?php elseif ($is_profit_up): ?>
+                <span class="label" style="background:#dcfce7; color:#15803d; font-size:11.5px; font-weight:800; padding:4px 8px; border-radius:6px;" title="Profit Naik dari Bulan Sebelumnya">
+                  📈 Naik <?= $profit_pct > 0 ? '+'.$profit_pct.'%' : ''; ?>
+                </span>
+              <?php else: ?>
+                <span class="label" style="background:#fee2e2; color:#b91c1c; font-size:11.5px; font-weight:800; padding:4px 8px; border-radius:6px;" title="Profit Turun dari Bulan Sebelumnya">
+                  📉 Turun <?= $profit_pct < 0 ? $profit_pct.'%' : ''; ?>
+                </span>
+              <?php endif; ?>
+            </td>
             <td style="text-align:center;">
               <?php $r_days = is_object($mt) ? ($mt->avg_recency_days ?? $mt->avg_recency ?? 0) : ($mt['avg_recency_days'] ?? $mt['avg_recency'] ?? 0); ?>
-              <span class="label" style="background:<?= $r_days <= 30 ? '#dcfce7; color:#166534;' : ($r_days <= 90 ? '#fef3c7; color:#92400e;' : '#fee2e2; color:#991b1b;'); ?> border-radius:6px; padding:5px 99px; font-weight:700; padding:5px 9px;">
+              <span class="label" style="background:<?= $r_days <= 30 ? '#dcfce7; color:#166534;' : ($r_days <= 90 ? '#fef3c7; color:#92400e;' : '#fee2e2; color:#991b1b;'); ?> border-radius:6px; font-weight:700; padding:5px 9px;">
                 <i class="fa fa-clock-o"></i> <?= round($r_days); ?> hr lalu
               </span>
             </td>
             <td style="text-align:center;">
-              <a href="<?= site_url('administrator/rfm?period=' . urlencode($mt->ym_period) . (!empty($product_filter) ? '&product=' . urlencode($product_filter) : '')); ?>" class="btn btn-xs" style="background:#6366f1; color:#fff; border-radius:6px; font-weight:600; padding:5px 10px;" title="Filter Customer di Bulan Ini">
+              <a href="<?= site_url('administrator/rfm?period=' . urlencode($mt->ym_period) . (!empty($product_filter) ? '&product=' . urlencode($product_filter) : '') . (!empty($category_filter) ? '&kategori=' . urlencode($category_filter) : '')); ?>" class="btn btn-xs" style="background:#6366f1; color:#fff; border-radius:6px; font-weight:600; padding:5px 10px;" title="Filter Customer di Bulan Ini">
                 <i class="fa fa-users"></i> Filter Customer
               </a>
             </td>
@@ -563,9 +743,11 @@
   <!-- ==========================================
        LAYER 6: ANALISIS & INSIGHT KESELURUHAN
        ========================================== -->
-  <?php if (!empty($track_data)):
-    // Calculate insights from tracking data
-    $tl = array_values($track_data);
+  <?php 
+  $source_for_insights = !empty($all_historical_tracking) ? $all_historical_tracking : $track_data;
+  if (!empty($source_for_insights)):
+    // Calculate insights from historical tracking data
+    $tl = array_values($source_for_insights);
     $t_cnt = count($tl);
     
     // Comprehensive metrics
@@ -595,18 +777,20 @@
       if ($best_orders === null || $orders > (int)$best_orders->total_orders) $best_orders = $mt;
       if ($worst_orders === null || ($orders < (int)$worst_orders->total_orders && $orders > 0)) $worst_orders = $mt;
       
-      // Growth/decline calculation
-      $mom_pct = null;
-      if ($i < $t_cnt - 1) {
+      // Growth/decline calculation (use precalculated MoM from model if available)
+      $mom_pct = isset($mt->mom_growth_pct) ? (float)$mt->mom_growth_pct : null;
+      if ($mom_pct === null && $i < $t_cnt - 1) {
         $prev = (float)$tl[$i + 1]->total_spend;
         if ($prev > 0) {
           $mom_pct = round((($spend - $prev) / $prev) * 100, 1);
-          if ($mom_pct < 0) $declining_months++;
-          else $growing_months++;
         }
       }
+      if ($mom_pct !== null) {
+        if ($mom_pct < 0) $declining_months++;
+        else $growing_months++;
+      }
       $mom_list[] = ['mt' => $mt, 'mom' => $mom_pct];
-      
+
       // Recent vs older comparison
       if ($i < 3) $recent_3_avg_spend += $spend;
       if ($i >= 3 && $i < 6) $older_3_avg_spend += $spend;
@@ -771,6 +955,9 @@
           <?php if (!empty($product_filter)): ?>
             <input type="hidden" name="product" value="<?= htmlspecialchars($product_filter); ?>">
           <?php endif; ?>
+          <?php if (!empty($category_filter)): ?>
+            <input type="hidden" name="kategori" value="<?= htmlspecialchars($category_filter); ?>">
+          <?php endif; ?>
 
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
             <div>
@@ -909,55 +1096,56 @@
             <div style="font-weight:800; font-size:12.5px; color:#1e1b4b; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
               <i class="fa fa-trophy" style="color:#f59e0b;"></i> Top 5 Produk Terlaris (Nominal Omset)
             </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-              <!-- Month A Top Products -->
-              <div>
-                <div style="font-size:11px; font-weight:700; color:#4338ca; background:#e0e7ff; padding:4px 8px; border-radius:6px; margin-bottom:8px; text-align:center;">
-                  <?= htmlspecialchars($obj_a->period_label); ?>
-                </div>
-                <?php if (empty($top_products_a)): ?>
-                  <div style="font-size:11px; color:#94a3b8; text-align:center; padding:10px;">Tidak ada data produk</div>
-                <?php else: ?>
-                  <div style="display:flex; flex-direction:column; gap:6px;">
-                    <?php foreach ($top_products_a as $pidx => $tp): ?>
-                    <div style="font-size:11px; padding:8px; background:#f8fafc; border-radius:6px; border:1px solid #e2e8f0;">
-                      <div style="font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="<?= htmlspecialchars($tp->nama_produk); ?>">
-                        <?= ($pidx+1); ?>. <?= htmlspecialchars($tp->nama_produk); ?>
-                      </div>
-                      <div style="display:flex; justify-content:space-between; color:#15803d; font-weight:700; margin-top:3px;">
-                        <span>Rp <?= number_format($tp->total_spend, 0, ',', '.'); ?></span>
-                        <span style="color:#64748b; font-weight:600;"><?= number_format($tp->total_qty); ?> pcs</span>
-                      </div>
-                    </div>
-                    <?php endforeach; ?>
-                  </div>
-                <?php endif; ?>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:8px;">
+              <div style="font-size:11px; font-weight:700; color:#4338ca; background:#e0e7ff; padding:4px 8px; border-radius:6px; text-align:center;">
+                <?= htmlspecialchars($obj_a->period_label); ?>
               </div>
-
-              <!-- Month B Top Products -->
-              <div>
-                <div style="font-size:11px; font-weight:700; color:#475569; background:#f1f5f9; padding:4px 8px; border-radius:6px; margin-bottom:8px; text-align:center;">
-                  <?= htmlspecialchars($obj_b->period_label); ?>
-                </div>
-                <?php if (empty($top_products_b)): ?>
-                  <div style="font-size:11px; color:#94a3b8; text-align:center; padding:10px;">Tidak ada data produk</div>
-                <?php else: ?>
-                  <div style="display:flex; flex-direction:column; gap:6px;">
-                    <?php foreach ($top_products_b as $pidx => $tp): ?>
-                    <div style="font-size:11px; padding:8px; background:#f8fafc; border-radius:6px; border:1px solid #e2e8f0;">
-                      <div style="font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="<?= htmlspecialchars($tp->nama_produk); ?>">
-                        <?= ($pidx+1); ?>. <?= htmlspecialchars($tp->nama_produk); ?>
-                      </div>
-                      <div style="display:flex; justify-content:space-between; color:#15803d; font-weight:700; margin-top:3px;">
-                        <span>Rp <?= number_format($tp->total_spend, 0, ',', '.'); ?></span>
-                        <span style="color:#64748b; font-weight:600;"><?= number_format($tp->total_qty); ?> pcs</span>
-                      </div>
-                    </div>
-                    <?php endforeach; ?>
-                  </div>
-                <?php endif; ?>
+              <div style="font-size:11px; font-weight:700; color:#475569; background:#f1f5f9; padding:4px 8px; border-radius:6px; text-align:center;">
+                <?= htmlspecialchars($obj_b->period_label); ?>
               </div>
             </div>
+            
+            <?php if (empty($top_products_a) && empty($top_products_b)): ?>
+              <div style="font-size:11px; color:#94a3b8; text-align:center; padding:10px;">Tidak ada data produk</div>
+            <?php else: ?>
+              <div style="display:flex; flex-direction:column; gap:6px;">
+                <?php 
+                  $max_len = max(count($top_products_a), count($top_products_b));
+                  for ($i = 0; $i < $max_len; $i++): 
+                ?>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                  <!-- Month A Item -->
+                  <div>
+                    <?php if (isset($top_products_a[$i])): $tp = $top_products_a[$i]; ?>
+                    <div style="height:100%; font-size:11px; padding:8px; background:#f8fafc; border-radius:6px; border:1px solid #e2e8f0; display:flex; flex-direction:column; justify-content:center;">
+                      <div style="font-weight:700; color:#0f172a; white-space:normal; line-height:1.3;" title="<?= htmlspecialchars($tp->nama_produk); ?>">
+                        <?= ($i+1); ?>. <?= htmlspecialchars($tp->nama_produk); ?>
+                      </div>
+                      <div style="display:flex; justify-content:space-between; align-items:flex-end; color:#15803d; font-weight:700; margin-top:4px;">
+                        <span>Rp <?= number_format($tp->total_spend, 0, ',', '.'); ?></span>
+                        <span style="color:#64748b; font-weight:600;"><?= number_format($tp->total_qty); ?> pcs</span>
+                      </div>
+                    </div>
+                    <?php endif; ?>
+                  </div>
+                  <!-- Month B Item -->
+                  <div>
+                    <?php if (isset($top_products_b[$i])): $tp = $top_products_b[$i]; ?>
+                    <div style="height:100%; font-size:11px; padding:8px; background:#f8fafc; border-radius:6px; border:1px solid #e2e8f0; display:flex; flex-direction:column; justify-content:center;">
+                      <div style="font-weight:700; color:#0f172a; white-space:normal; line-height:1.3;" title="<?= htmlspecialchars($tp->nama_produk); ?>">
+                        <?= ($i+1); ?>. <?= htmlspecialchars($tp->nama_produk); ?>
+                      </div>
+                      <div style="display:flex; justify-content:space-between; align-items:flex-end; color:#15803d; font-weight:700; margin-top:4px;">
+                        <span>Rp <?= number_format($tp->total_spend, 0, ',', '.'); ?></span>
+                        <span style="color:#64748b; font-weight:600;"><?= number_format($tp->total_qty); ?> pcs</span>
+                      </div>
+                    </div>
+                    <?php endif; ?>
+                  </div>
+                </div>
+                <?php endfor; ?>
+              </div>
+            <?php endif; ?>
           </div>
 
           <!-- Platform / Sales Channel Breakdown -->
@@ -965,55 +1153,56 @@
             <div style="font-weight:800; font-size:12.5px; color:#1e1b4b; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
               <i class="fa fa-shopping-cart" style="color:#10b981;"></i> Performa Channel / Platform Penjualan
             </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-              <!-- Month A Platform -->
-              <div>
-                <div style="font-size:11px; font-weight:700; color:#4338ca; background:#e0e7ff; padding:4px 8px; border-radius:6px; margin-bottom:8px; text-align:center;">
-                  <?= htmlspecialchars($obj_a->period_label); ?>
-                </div>
-                <?php if (empty($platform_a)): ?>
-                  <div style="font-size:11px; color:#94a3b8; text-align:center; padding:10px;">Tidak ada data platform</div>
-                <?php else: ?>
-                  <div style="display:flex; flex-direction:column; gap:6px;">
-                    <?php foreach ($platform_a as $pf): ?>
-                    <div style="font-size:11px; padding:8px; background:#f8fafc; border-radius:6px; border:1px solid #e2e8f0;">
-                      <div style="font-weight:700; color:#0f172a; display:flex; justify-content:space-between;">
-                        <span><?= htmlspecialchars($pf->sumber_penjualan); ?></span>
-                        <span style="color:#4338ca;"><?= number_format($pf->total_orders); ?> order</span>
-                      </div>
-                      <div style="font-size:11px; font-weight:700; color:#15803d; margin-top:3px;">
-                        Rp <?= number_format($pf->total_spend, 0, ',', '.'); ?>
-                      </div>
-                    </div>
-                    <?php endforeach; ?>
-                  </div>
-                <?php endif; ?>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:8px;">
+              <div style="font-size:11px; font-weight:700; color:#4338ca; background:#e0e7ff; padding:4px 8px; border-radius:6px; text-align:center;">
+                <?= htmlspecialchars($obj_a->period_label); ?>
               </div>
-
-              <!-- Month B Platform -->
-              <div>
-                <div style="font-size:11px; font-weight:700; color:#475569; background:#f1f5f9; padding:4px 8px; border-radius:6px; margin-bottom:8px; text-align:center;">
-                  <?= htmlspecialchars($obj_b->period_label); ?>
-                </div>
-                <?php if (empty($platform_b)): ?>
-                  <div style="font-size:11px; color:#94a3b8; text-align:center; padding:10px;">Tidak ada data platform</div>
-                <?php else: ?>
-                  <div style="display:flex; flex-direction:column; gap:6px;">
-                    <?php foreach ($platform_b as $pf): ?>
-                    <div style="font-size:11px; padding:8px; background:#f8fafc; border-radius:6px; border:1px solid #e2e8f0;">
-                      <div style="font-weight:700; color:#0f172a; display:flex; justify-content:space-between;">
-                        <span><?= htmlspecialchars($pf->sumber_penjualan); ?></span>
-                        <span style="color:#4338ca;"><?= number_format($pf->total_orders); ?> order</span>
-                      </div>
-                      <div style="font-size:11px; font-weight:700; color:#15803d; margin-top:3px;">
-                        Rp <?= number_format($pf->total_spend, 0, ',', '.'); ?>
-                      </div>
-                    </div>
-                    <?php endforeach; ?>
-                  </div>
-                <?php endif; ?>
+              <div style="font-size:11px; font-weight:700; color:#475569; background:#f1f5f9; padding:4px 8px; border-radius:6px; text-align:center;">
+                <?= htmlspecialchars($obj_b->period_label); ?>
               </div>
             </div>
+
+            <?php if (empty($platform_a) && empty($platform_b)): ?>
+              <div style="font-size:11px; color:#94a3b8; text-align:center; padding:10px;">Tidak ada data platform</div>
+            <?php else: ?>
+              <div style="display:flex; flex-direction:column; gap:6px;">
+                <?php 
+                  $max_len = max(count($platform_a), count($platform_b));
+                  for ($i = 0; $i < $max_len; $i++): 
+                ?>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                  <!-- Month A Item -->
+                  <div>
+                    <?php if (isset($platform_a[$i])): $pf = $platform_a[$i]; ?>
+                    <div style="height:100%; font-size:11px; padding:8px; background:#f8fafc; border-radius:6px; border:1px solid #e2e8f0; display:flex; flex-direction:column; justify-content:center;">
+                      <div style="font-weight:700; color:#0f172a; display:flex; justify-content:space-between; align-items:flex-start;">
+                        <span style="white-space:normal; line-height:1.3;"><?= htmlspecialchars($pf->sumber_penjualan); ?></span>
+                        <span style="color:#4338ca; white-space:nowrap; margin-left:8px;"><?= number_format($pf->total_orders); ?> order</span>
+                      </div>
+                      <div style="font-size:11px; font-weight:700; color:#15803d; margin-top:4px;">
+                        Rp <?= number_format($pf->total_spend, 0, ',', '.'); ?>
+                      </div>
+                    </div>
+                    <?php endif; ?>
+                  </div>
+                  <!-- Month B Item -->
+                  <div>
+                    <?php if (isset($platform_b[$i])): $pf = $platform_b[$i]; ?>
+                    <div style="height:100%; font-size:11px; padding:8px; background:#f8fafc; border-radius:6px; border:1px solid #e2e8f0; display:flex; flex-direction:column; justify-content:center;">
+                      <div style="font-weight:700; color:#0f172a; display:flex; justify-content:space-between; align-items:flex-start;">
+                        <span style="white-space:normal; line-height:1.3;"><?= htmlspecialchars($pf->sumber_penjualan); ?></span>
+                        <span style="color:#4338ca; white-space:nowrap; margin-left:8px;"><?= number_format($pf->total_orders); ?> order</span>
+                      </div>
+                      <div style="font-size:11px; font-weight:700; color:#15803d; margin-top:4px;">
+                        Rp <?= number_format($pf->total_spend, 0, ',', '.'); ?>
+                      </div>
+                    </div>
+                    <?php endif; ?>
+                  </div>
+                </div>
+                <?php endfor; ?>
+              </div>
+            <?php endif; ?>
           </div>
         </div>
       </div>
@@ -1295,14 +1484,29 @@ window.addEventListener('DOMContentLoaded', function() {
   var trendCtx = document.getElementById('monthlyTrendChart');
   if (trendCtx) {
     <?php 
-    $chart_data = !empty($track_data) ? array_reverse(array_values($track_data)) : [];
+    $chart_source = (!empty($all_historical_tracking) && count($all_historical_tracking) > 1) ? $all_historical_tracking : $track_data;
+    $chart_data = !empty($chart_source) ? array_reverse(array_values($chart_source)) : [];
     $chart_labels = array_map(function($m) { return $m->period_label; }, $chart_data);
     $chart_spends = array_map(function($m) { return (float)$m->total_spend; }, $chart_data);
     $chart_buyers = array_map(function($m) { return (int)$m->unique_buyers; }, $chart_data);
+    $chart_bg_spends = array_map(function($m) use ($period_filter) {
+        if (!empty($period_filter) && $m->ym_period === $period_filter) {
+            return 'rgba(79, 70, 229, 0.95)'; // Highlight active period
+        }
+        return 'rgba(16, 185, 129, 0.75)';
+    }, $chart_data);
+    $chart_border_spends = array_map(function($m) use ($period_filter) {
+        if (!empty($period_filter) && $m->ym_period === $period_filter) {
+            return '#312e81';
+        }
+        return '#10b981';
+    }, $chart_data);
     ?>
     var trendLabels = <?= json_encode($chart_labels); ?>;
     var trendSpends = <?= json_encode($chart_spends); ?>;
     var trendBuyers = <?= json_encode($chart_buyers); ?>;
+    var trendBgSpends = <?= json_encode($chart_bg_spends); ?>;
+    var trendBorderSpends = <?= json_encode($chart_border_spends); ?>;
 
     new Chart(trendCtx, {
       type: 'bar',
@@ -1312,8 +1516,8 @@ window.addEventListener('DOMContentLoaded', function() {
           {
             label: 'Total Omset (Rp)',
             data: trendSpends,
-            backgroundColor: 'rgba(16, 185, 129, 0.75)',
-            borderColor: '#10b981',
+            backgroundColor: trendBgSpends,
+            borderColor: trendBorderSpends,
             borderWidth: 2,
             borderRadius: 6,
             yAxisID: 'ySpend',

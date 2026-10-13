@@ -19,24 +19,46 @@ class Model_stok extends MY_Model {
 		parent::__construct($config);
 	}
 
-	public function count_all($q = '', $field = '', $gudang_id = null)
+	public function count_all($q = '', $field = '', $gudang_id = null, $status = null)
 	{
 		$this->join_available();
 		$where = $this->build_where($q, $field);
-        $this->db->where($where);
+		if ($where) $this->db->where($where);
 		if ($gudang_id) $this->db->where('stok.gudang_id', $gudang_id);
+		$this->apply_status_filter($status, $gudang_id);
 		return $this->db->get($this->table_name)->num_rows();
 	}
 
-	public function get($q = '', $field = '', $limit = 0, $offset = 0, $gudang_id = null)
+	public function get($q = '', $field = '', $limit = 0, $offset = 0, $gudang_id = null, $status = null)
 	{
 		$this->join_available();
 		$where = $this->build_where($q, $field);
-        $this->db->where($where);
+		if ($where) $this->db->where($where);
 		if ($gudang_id) $this->db->where('stok.gudang_id', $gudang_id);
-        $this->db->limit($limit, $offset);
-        $this->db->order_by('produk.nama_produk', 'ASC');
+		$this->apply_status_filter($status, $gudang_id);
+		if ($limit) $this->db->limit($limit, $offset);
+		$this->db->order_by('produk.id', 'ASC')->order_by('stok.gudang_id', 'ASC');
 		return $this->db->get($this->table_name)->result();
+	}
+
+	private function apply_status_filter($status, $gudang_id = null)
+	{
+		if ($status === 'habis') {
+			if ($gudang_id) {
+				$this->db->where('stok.qty', 0);
+			} else {
+				$this->db->where("stok.produk_id IN (SELECT s_habis.produk_id FROM stok s_habis JOIN gudang g_habis ON g_habis.id = s_habis.gudang_id WHERE g_habis.status = 'aktif' GROUP BY s_habis.produk_id HAVING SUM(s_habis.qty) = 0)", null, false);
+			}
+		} elseif ($status === 'menipis') {
+			if ($gudang_id) {
+				$this->db->where('stok.qty > 0', null, false);
+				$this->db->where('stok.qty <= produk.stok_minimum', null, false);
+			} else {
+				$this->db->where("stok.produk_id IN (SELECT s_men.produk_id FROM stok s_men JOIN produk p_men ON p_men.id = s_men.produk_id JOIN gudang g_men ON g_men.id = s_men.gudang_id WHERE g_men.status = 'aktif' GROUP BY s_men.produk_id HAVING SUM(s_men.qty) > 0 AND SUM(s_men.qty) <= p_men.stok_minimum)", null, false);
+			}
+		} elseif ($status === 'ada' || $status === 'tersedia') {
+			$this->db->where('stok.qty > 0', null, false);
+		}
 	}
 
 	public function join_available()
@@ -47,6 +69,8 @@ class Model_stok extends MY_Model {
 		$this->db->join('gudang', 'gudang.id = stok.gudang_id');
 		$this->db->join('kategori_produk', 'kategori_produk.id = produk.kategori_id', 'LEFT');
 		$this->db->join('rak', 'rak.id = IFNULL(stok.rak_id, produk.default_rak_id)', 'LEFT');
+		$this->db->where('produk.status', 'aktif');
+		$this->db->where('gudang.status', 'aktif');
 		return $this;
 	}
 
@@ -81,8 +105,12 @@ class Model_stok extends MY_Model {
 		$this->db->join('produk', 'produk.id = stok.produk_id');
 		$this->db->join('satuan', 'satuan.id = produk.satuan_id', 'LEFT');
 		$this->db->join('gudang', 'gudang.id = stok.gudang_id');
+		$this->db->where('produk.status', 'aktif');
+		$this->db->where('gudang.status', 'aktif');
+		$this->db->where('stok.qty > 0', null, false);
 		$this->db->where('stok.qty <= produk.stok_minimum', null, false);
 		if ($gudang_id) $this->db->where('stok.gudang_id', $gudang_id);
+		$this->db->order_by('produk.id', 'ASC')->order_by('stok.gudang_id', 'ASC');
 		return $this->db->get('stok')->result();
 	}
 
@@ -102,23 +130,56 @@ class Model_stok extends MY_Model {
 	public function get_summary_dashboard($gudang_id = null)
 	{
 		// Total nilai stok, total produk, & total keseluruhan stok
-		$q = $this->db->select('SUM(stok.qty * produk.harga_beli) AS total_nilai, COUNT(DISTINCT stok.produk_id) AS total_produk, SUM(stok.qty + stok.qty_rusak) AS total_keseluruhan_stok');
+		$q = $this->db->select('SUM(stok.qty * produk.harga_beli) AS total_nilai, COUNT(DISTINCT stok.produk_id) AS total_produk, SUM(stok.qty) AS total_keseluruhan_stok');
 		$q->join('produk', 'produk.id = stok.produk_id');
+		$q->join('gudang', 'gudang.id = stok.gudang_id');
+		$q->where('produk.status', 'aktif');
+		$q->where('gudang.status', 'aktif');
 		if ($gudang_id) $q->where('stok.gudang_id', $gudang_id);
 		$summary = $q->get('stok')->row();
 
-		// Produk stok menipis (0 < qty <= stok_minimum)
-		$q_menipis = $this->db->where('stok.qty > 0', null, false)
-			->where('stok.qty <= produk.stok_minimum', null, false)
-			->join('produk', 'produk.id = stok.produk_id');
-		if ($gudang_id) $q_menipis->where('stok.gudang_id', $gudang_id);
-		$menipis_count = $q_menipis->count_all_results('stok');
+		if ($gudang_id) {
+			// Jika filter gudang spesifik dipilih
+			$q_menipis = $this->db->where('stok.qty > 0', null, false)
+				->where('stok.qty <= produk.stok_minimum', null, false)
+				->join('produk', 'produk.id = stok.produk_id')
+				->join('gudang', 'gudang.id = stok.gudang_id')
+				->where('produk.status', 'aktif')
+				->where('gudang.status', 'aktif')
+				->where('stok.gudang_id', $gudang_id);
+			$menipis_count = $q_menipis->count_all_results('stok');
 
-		// Produk stok habis (qty == 0)
-		$q_habis = $this->db->where('stok.qty', 0)
-			->join('produk', 'produk.id = stok.produk_id');
-		if ($gudang_id) $q_habis->where('stok.gudang_id', $gudang_id);
-		$habis_count = $q_habis->count_all_results('stok');
+			$q_habis = $this->db->where('stok.qty', 0)
+				->join('produk', 'produk.id = stok.produk_id')
+				->join('gudang', 'gudang.id = stok.gudang_id')
+				->where('produk.status', 'aktif')
+				->where('gudang.status', 'aktif')
+				->where('stok.gudang_id', $gudang_id);
+			$habis_count = $q_habis->count_all_results('stok');
+		} else {
+			// Jika semua gudang: hitung produk distinct berdasarkan total stok fisiknya di seluruh gudang
+			$habis_res = $this->db->query("SELECT COUNT(*) as c FROM (
+				SELECT p.id, COALESCE(SUM(s.qty), 0) as tot_qty 
+				FROM produk p 
+				LEFT JOIN stok s ON s.produk_id = p.id 
+				JOIN gudang g ON g.id = s.gudang_id 
+				WHERE p.status = 'aktif' AND g.status = 'aktif' 
+				GROUP BY p.id 
+				HAVING tot_qty = 0
+			) t")->row();
+			$habis_count = $habis_res ? (int)$habis_res->c : 0;
+
+			$menipis_res = $this->db->query("SELECT COUNT(*) as c FROM (
+				SELECT p.id, p.stok_minimum, COALESCE(SUM(s.qty), 0) as tot_qty 
+				FROM produk p 
+				LEFT JOIN stok s ON s.produk_id = p.id 
+				JOIN gudang g ON g.id = s.gudang_id 
+				WHERE p.status = 'aktif' AND g.status = 'aktif' 
+				GROUP BY p.id 
+				HAVING tot_qty > 0 AND tot_qty <= p.stok_minimum
+			) t")->row();
+			$menipis_count = $menipis_res ? (int)$menipis_res->c : 0;
+		}
 
 		return (object) [
 			'total_nilai'     => $summary ? (float) $summary->total_nilai : 0,

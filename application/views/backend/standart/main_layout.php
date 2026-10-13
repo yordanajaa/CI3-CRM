@@ -153,7 +153,7 @@
       }
 
       var f_message = '<?= str_replace("'", "\'", $this->session->flashdata('f_message') ?? ''); ?>';
-      var f_type = '<?= $this->session->flashdata('f_type'); ?>';
+      var f_type = '<?= $this->session->flashdata('f_type') ?: 'info'; ?>';
       <?php 
       // Force clear flashdata to prevent it from persisting across pages due to session race conditions
       $this->session->unset_userdata('f_message'); 
@@ -161,7 +161,11 @@
       ?>
 
       if (f_message.length > 0) {
-        toastr[f_type](f_message);
+        if (typeof toastr !== 'undefined' && typeof toastr[f_type] === 'function') {
+          toastr[f_type](f_message);
+        } else if (typeof toastr !== 'undefined' && typeof toastr.info === 'function') {
+          toastr.info(f_message);
+        }
       }
 
       $('input[type="checkbox"].flat-red, input[type="radio"].flat-red').iCheck({
@@ -328,30 +332,61 @@ $(document).ready(function(){
    });
 
    // Web Audio API Synth Chime for Ultra-Realtime WA Notification Sound
+   var sharedAudioCtx = null;
+   function getAudioContext() {
+      try {
+         if (!sharedAudioCtx) {
+            var AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) sharedAudioCtx = new AudioCtx();
+         }
+         if (sharedAudioCtx && sharedAudioCtx.state === 'suspended') {
+            sharedAudioCtx.resume();
+         }
+      } catch(e) {}
+      return sharedAudioCtx;
+   }
+
+   $(document).on('click keydown touchstart', function() {
+      getAudioContext();
+   });
+
    function playNotifChime() {
       try {
-         var AudioCtx = window.AudioContext || window.webkitAudioContext;
-         if (!AudioCtx) return;
-         var ctx = new AudioCtx();
+         var ctx = getAudioContext();
+         if (!ctx) return;
          if (ctx.state === 'suspended') {
-            ctx.resume();
+            ctx.resume().then(function() {
+               _executeNotifChime(ctx);
+            }).catch(function() {
+               _executeNotifChime(ctx);
+            });
+         } else {
+            _executeNotifChime(ctx);
          }
-         var osc = ctx.createOscillator();
-         var gain = ctx.createGain();
-         osc.type = 'sine';
-         osc.frequency.setValueAtTime(659.25, ctx.currentTime);
-         osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.12);
-         gain.gain.setValueAtTime(0.2, ctx.currentTime);
-         gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
-         osc.connect(gain);
-         gain.connect(ctx.destination);
-         osc.start();
-         osc.stop(ctx.currentTime + 0.35);
       } catch(e) {}
    }
 
-   // Instant Real-Time Notification Loader (3-second polling)
-   var lastNotifiedWaId = 0;
+   function _executeNotifChime(ctx) {
+      try {
+         var now = ctx.currentTime;
+         var osc = ctx.createOscillator();
+         var gain = ctx.createGain();
+         osc.type = 'sine';
+         // Crisp 3-tone WhatsApp/iOS chime: E6 (1318 Hz) -> A6 (1760 Hz) -> B6 (1975 Hz)
+         osc.frequency.setValueAtTime(1318.5, now);
+         osc.frequency.exponentialRampToValueAtTime(1760.0, now + 0.08);
+         osc.frequency.exponentialRampToValueAtTime(1975.5, now + 0.16);
+         gain.gain.setValueAtTime(0.65, now);
+         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+         osc.connect(gain);
+         gain.connect(ctx.destination);
+         osc.start(now);
+         osc.stop(now + 0.45);
+      } catch(e) {}
+   }
+
+   // Instant Real-Time Notification Loader (2-second polling with sessionStorage persistence)
+   var lastNotifiedWaId = parseInt(sessionStorage.getItem('lastNotifiedWaId') || '0');
    function loadApprovalNotifications() {
       $.ajax({
          url: BASE_URL + 'administrator/dashboard/get_notifications',
@@ -391,13 +426,23 @@ $(document).ready(function(){
                                  '<b>' + item.title + '</b><br>' + item.subtitle,
                                  '💬 Pesan WhatsApp Masuk',
                                  {
-                                    timeOut: 10000,
+                                    timeOut: 8000,
                                     extendedTimeOut: 3000,
                                     closeButton: true,
                                     progressBar: true,
                                     onclick: function() { window.location.href = item.url; }
                                  }
                               );
+                           }
+
+                           // HTML5 Desktop Notification
+                           if (window.Notification && Notification.permission === 'granted') {
+                              try {
+                                 new Notification(item.title, {
+                                    body: item.subtitle,
+                                    icon: BASE_URL + 'asset/img/icon-wide.png'
+                                 });
+                              } catch(e) {}
                            }
                         }
                      }
@@ -420,6 +465,7 @@ $(document).ready(function(){
                      } else if (maxWaId > lastNotifiedWaId) {
                         lastNotifiedWaId = maxWaId;
                      }
+                     sessionStorage.setItem('lastNotifiedWaId', lastNotifiedWaId);
                   }
                } else {
                   html = '<li style="text-align: center; padding: 25px 15px; color: #7f8c8d; font-size: 13px;"><i class="fa fa-check-circle-o text-green" style="font-size: 24px; display: block; margin-bottom: 5px;"></i> Tidak ada notifikasi baru</li>';
@@ -432,7 +478,7 @@ $(document).ready(function(){
 
    if ($('#notif-approval-menu').length > 0) {
       loadApprovalNotifications();
-      setInterval(loadApprovalNotifications, 3000);
+      setInterval(loadApprovalNotifications, 2000);
 
       // Click handler: mark notification as read, remove from list, then navigate
       $(document).on('click', '.notif-link', function(e) {

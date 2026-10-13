@@ -19,7 +19,10 @@
             <div class="box-header with-border">
                <h3 class="box-title"><i class="fa fa-info-circle"></i> <?= _ent($supplier->nama_supplier); ?></h3>
                <div class="box-tools pull-right">
-                  <?php is_allowed('supplier_update', function() use ($supplier){ ?>
+                  <?php is_allowed('purchase_order_add', function() use ($supplier){ ?>
+                   <a href="<?= site_url('administrator/purchase_order/add?supplier_id='.$supplier->id); ?>" class="btn btn-primary btn-sm"><i class="fa fa-cart-plus"></i> Buat PO Baru</a>
+                   <?php }); ?>
+                   <?php is_allowed('supplier_update', function() use ($supplier){ ?>
                   <a href="<?= site_url('administrator/supplier/edit/'.$supplier->id); ?>" class="btn btn-warning btn-sm"><i class="fa fa-edit"></i> Edit</a>
                   <?php }); ?>
                   <a href="<?= base_url('administrator/supplier'); ?>" class="btn btn-default btn-sm"><i class="fa fa-arrow-left"></i> Kembali</a>
@@ -30,7 +33,7 @@
                   <tr><th width="30%">Kode Supplier</th><td><span class="label label-default"><?= _ent($supplier->kode_supplier); ?></span></td></tr>
                   <tr><th>Nama Supplier</th><td><strong><?= _ent($supplier->nama_supplier); ?></strong></td></tr>
                   <tr><th>Kontak Person</th><td><?= _ent($supplier->kontak_person); ?></td></tr>
-                  <tr><th>Telepon</th><td><?= _ent($supplier->telepon); ?></td></tr>
+                  <tr><th>Telepon</th><td><?php $sph = preg_replace("/[^0-9]/", "", (string)$supplier->telepon); ?><?= _ent($supplier->telepon); ?><?php if(!empty($sph)): ?> <a href="https://wa.me/<?= (substr($sph,0,1)==="0")?("62".substr($sph,1)):$sph; ?>" target="_blank" class="btn btn-xs btn-success" style="margin-left:6px; border-radius:3px; padding:1px 6px;"><i class="fa fa-whatsapp"></i> Chat WA</a><?php endif; ?></td></tr>
                   <tr><th>Email</th><td><?= _ent($supplier->email); ?></td></tr>
                   <tr><th>Alamat</th><td><?= nl2br(_ent($supplier->alamat)); ?></td></tr>
                   <tr><th>Kota</th><td><?= _ent($supplier->kota); ?></td></tr>

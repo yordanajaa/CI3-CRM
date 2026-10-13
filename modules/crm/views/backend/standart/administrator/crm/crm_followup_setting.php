@@ -161,36 +161,45 @@
 .var-tag:hover { background: #6366f1; color: #fff; transform: translateY(-1px); }
 
 @media (max-width: 991px) {
+  .crm-header-nav { padding: 16px 16px 12px 16px; margin-bottom: 12px; }
+  .crm-header-nav .header-top-flex { flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 12px; }
+  .crm-header-nav .action-tools { width: 100%; justify-content: flex-start; gap: 6px; }
+  .crm-header-nav .action-tools .btn { font-size: 11px; padding: 6px 10px; flex: 1 1 auto; text-align: center; justify-content: center; }
   .col-md-7, .col-md-5 { width: 100%; }
 }
 
 @media (max-width: 767px) {
-  .content { padding: 10px 8px !important; }
-  .crm-header { padding: 18px 14px; text-align: center; border-radius: 12px; margin-bottom: 14px; }
-  .crm-header h2 { font-size: 17px; }
-  .crm-header p { font-size: 11.5px; }
-  .crm-header .text-right { text-align: center !important; margin-top: 10px; }
-  .crm-header .text-right .btn { font-size: 11px; }
+  .content { padding: 8px 6px !important; }
+  .crm-header-nav { padding: 14px 12px 10px 12px; border-radius: 12px; margin-bottom: 12px; }
+  .crm-header-nav .header-top-flex { flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 10px; }
+  .crm-header-nav .header-title h2 { font-size: 18px; }
+  .crm-header-nav .header-title p { font-size: 11px; }
+  .crm-header-nav .action-tools { width: 100%; justify-content: flex-start; gap: 6px; }
+  .crm-header-nav .action-tools .btn { font-size: 10.5px; padding: 6px 10px; flex: 1 1 auto; text-align: center; justify-content: center; }
+  .crm-header-nav .nav-tabs-bar { gap: 6px; padding-top: 10px; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+  .crm-header-nav .nav-tab-btn { font-size: 11.5px; padding: 6px 12px; }
 
-  .cat-card { padding: 14px 12px; margin-bottom: 10px; border-radius: 10px; }
-  .cat-card .cat-title { font-size: 14px; }
-  .cat-card .cat-code { font-size: 10px; }
-  .cat-card .cat-days { font-size: 12px; padding: 3px 10px; }
-  .cat-card .cat-template { font-size: 11px; padding: 10px 12px; max-height: 100px; }
+  .cat-card { padding: 12px 10px; margin-bottom: 10px; border-radius: 10px; }
+  .cat-card .cat-title { font-size: 13.5px; }
+  .cat-card .cat-code { font-size: 9.5px; }
+  .cat-card .cat-days { font-size: 11px; padding: 2px 8px; }
+  .cat-card .cat-template { font-size: 10.5px; padding: 8px 10px; max-height: 100px; }
   .cat-card .col-md-8, .cat-card .col-md-4 { width: 100%; }
   .cat-card .col-md-4 { text-align: left !important; margin-top: 8px; }
 
-  .var-tag { font-size: 10px; padding: 2px 8px; margin: 2px; }
+  .var-tag { font-size: 9.5px; padding: 2px 7px; margin: 2px; }
 
-  .box-body { padding: 14px !important; }
+  .box-body { padding: 12px !important; }
   .box-body .form-control { font-size: 12px; }
-  .box-body label { font-size: 12px; }
-  .box-footer { padding: 10px 14px !important; }
-  .box-footer .btn { font-size: 12px; }
+  .box-body label { font-size: 11.5px; }
+  .box-footer { padding: 10px 12px !important; }
+  .box-footer .btn { font-size: 11.5px; }
 }
 
 @media (max-width: 480px) {
-  .crm-header h2 { font-size: 15px; }
+  .crm-header-nav .header-title h2 { font-size: 15px; }
+  .crm-header-nav .action-tools { flex-direction: column; width: 100%; }
+  .crm-header-nav .action-tools .btn { width: 100%; }
   .cat-card .cat-title { font-size: 13px; }
   .cat-card .btn { font-size: 10px; padding: 3px 8px; }
 }

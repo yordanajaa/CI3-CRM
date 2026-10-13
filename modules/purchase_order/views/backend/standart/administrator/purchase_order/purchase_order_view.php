@@ -46,7 +46,7 @@ $status_color = ['draft'=>'default','submitted'=>'info','approved'=>'primary','r
                <div class="col-md-6">
                   <table class="table table-condensed">
                      <tr><th>Nomor PO</th><td><?= _ent($po->nomor_po); ?></td></tr>
-                     <tr><th>Supplier</th><td><strong><?= _ent($po->nama_supplier); ?></strong></td></tr>
+                     <tr><th>Supplier</th><td><a href="<?= site_url('administrator/supplier/view/'.$po->supplier_id); ?>"><strong><?= _ent($po->nama_supplier); ?> <i class="fa fa-external-link" style="font-size:11px;"></i></strong></a></td></tr>
                      <tr><th>Gudang</th><td><?= _ent($po->nama_gudang??'-'); ?></td></tr>
                      <tr><th>Tanggal PO</th><td><?= date('d/m/Y',strtotime($po->tanggal_po)); ?></td></tr>
                      <tr><th>Est. Terima</th><td><?= $po->tanggal_estimasi ? date('d/m/Y',strtotime($po->tanggal_estimasi)) : '-'; ?></td></tr>

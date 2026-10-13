@@ -11,10 +11,10 @@
 .crm-header-nav {
   background: var(--crm-gradient);
   color: #fff;
-  padding: 24px 28px 20px 28px;
+  padding: 22px 26px 18px 26px;
   border-radius: 16px;
-  margin-bottom: 24px;
-  box-shadow: 0 12px 30px rgba(30, 27, 75, 0.25);
+  margin-bottom: 20px;
+  box-shadow: 0 10px 28px rgba(30, 27, 75, 0.22);
   position: relative;
   overflow: hidden;
 }
@@ -32,8 +32,8 @@
   justify-content: space-between;
   align-items: flex-start;
   flex-wrap: wrap;
-  gap: 16px;
-  margin-bottom: 18px;
+  gap: 14px;
+  margin-bottom: 16px;
   position: relative;
   z-index: 2;
 }
@@ -53,7 +53,7 @@
 .crm-header-nav .header-title h2 {
   margin: 0 0 4px 0;
   font-weight: 800;
-  font-size: 24px;
+  font-size: 22px;
   letter-spacing: -0.5px;
   color: #fff;
 }
@@ -73,7 +73,7 @@
   border-radius: 9px;
   font-weight: 700;
   font-size: 12px;
-  padding: 7px 14px;
+  padding: 7px 13px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -84,21 +84,27 @@
 }
 .crm-header-nav .action-tools .btn:hover { transform: translateY(-2px); }
 
-/* Navigation Tab Bar */
+/* Navigation Tab Bar - Touch Scrollable */
 .crm-header-nav .nav-tabs-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 8px;
   padding-top: 14px;
   border-top: 1px solid rgba(255,255,255,0.18);
   position: relative;
   z-index: 2;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.crm-header-nav .nav-tabs-bar::-webkit-scrollbar {
+  display: none;
 }
 .crm-header-nav .nav-tab-btn {
-  padding: 8px 18px;
+  padding: 8px 16px;
   border-radius: 10px;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
   color: rgba(255,255,255,0.92);
   background: rgba(255,255,255,0.12);
@@ -108,6 +114,7 @@
   align-items: center;
   gap: 8px;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 .crm-header-nav .nav-tab-btn:hover {
   background: rgba(255,255,255,0.25);
@@ -132,38 +139,43 @@
 .kpi-card {
   background: #fff;
   border-radius: 12px;
-  padding: 20px 22px;
+  padding: 18px 20px;
   box-shadow: var(--card-shadow);
   margin-bottom: 20px;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  cursor: pointer;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease, border-color 0.22s ease;
   position: relative;
   overflow: hidden;
   border: 1px solid rgba(0,0,0,0.04);
+  user-select: none;
 }
 .kpi-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.12);
 }
+.kpi-card:active {
+  transform: translateY(-1px) scale(0.99);
+}
 .kpi-card .kpi-icon {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
-  margin-bottom: 12px;
+  font-size: 19px;
+  margin-bottom: 10px;
 }
 .kpi-card .kpi-value {
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 800;
   color: #0f172a;
   line-height: 1.2;
 }
 .kpi-card .kpi-label {
-  font-size: 12px;
+  font-size: 11px;
   color: #64748b;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-top: 4px;
@@ -179,14 +191,14 @@
 .chart-box {
   background: #fff;
   border-radius: 12px;
-  padding: 22px;
+  padding: 20px 22px;
   box-shadow: var(--card-shadow);
-  margin-bottom: 25px;
+  margin-bottom: 20px;
   border: 1px solid rgba(0,0,0,0.04);
 }
 .chart-box .chart-title {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 800;
   color: #1e293b;
   margin-bottom: 15px;
   display: flex;
@@ -200,7 +212,8 @@
 /* Custom Leaderboard & List Table */
 .leader-table th {
   background: #f8fafc;
-  font-size: 11px;
+  font-size: 10.5px;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: #64748b;
@@ -208,7 +221,7 @@
 }
 .leader-table td {
   vertical-align: middle !important;
-  font-size: 13px;
+  font-size: 12.5px;
 }
 .avatar-circle {
   width: 36px;
@@ -231,56 +244,6 @@
   border-radius: 12px;
   font-size: 11px;
   font-weight: 600;
-}
-
-/* Mobile Responsiveness & Fluid Layout */
-@media (max-width: 991px) {
-  .crm-dash-header .row { text-align: center; }
-  .crm-dash-header .col-md-4.text-right { text-align: center !important; margin-top: 12px; }
-}
-
-@media (max-width: 767px) {
-  .content { padding: 10px 8px !important; }
-  .crm-dash-header {
-    padding: 18px 14px;
-    text-align: center;
-    border-radius: 10px;
-    margin-bottom: 16px;
-  }
-  .crm-dash-header h2 { font-size: 18px; }
-  .crm-dash-header p { font-size: 12px; }
-  .crm-dash-header .text-right {
-    text-align: center !important;
-    margin-top: 12px;
-  }
-  .crm-dash-header .text-right .btn {
-    font-size: 11px;
-    padding: 6px 12px;
-    margin-bottom: 4px;
-  }
-  .kpi-card {
-    padding: 14px 12px;
-    margin-bottom: 10px;
-    border-radius: 10px;
-  }
-  .kpi-card .kpi-icon { width: 38px; height: 38px; font-size: 16px; margin-bottom: 8px; }
-  .kpi-card .kpi-value { font-size: 18px; }
-  .kpi-card .kpi-label { font-size: 9.5px; }
-  .chart-box {
-    padding: 14px 12px;
-    margin-bottom: 14px;
-    border-radius: 10px;
-  }
-  .chart-box .chart-title {
-    font-size: 13px;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
-  .leader-table th { font-size: 10px; padding: 6px 4px !important; }
-  .leader-table td { font-size: 11.5px; padding: 8px 4px !important; }
-  .avatar-circle { width: 30px; height: 30px; font-size: 12px; margin-right: 6px !important; }
-  .badge-urgent { font-size: 10px; padding: 2px 8px; }
 }
 
 /* RFM Card Grid */
@@ -331,21 +294,37 @@
   scrollbar-color: #cbd5e1 #f8fafc;
 }
 
-@media (max-width: 767px) {
-  .crm-dash-header { padding: 20px 16px; border-radius: 12px; text-align: center; }
-  .crm-dash-header h2 { font-size: 20px; }
-  .crm-dash-header p { font-size: 12.5px; }
-  .crm-dash-header .text-right { text-align: center !important; margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
-  .crm-dash-header .text-right .btn { width: 100%; justify-content: center; }
-  .chart-box { padding: 16px; margin-bottom: 16px; }
-  .kpi-card { padding: 14px 12px; }
-  .kpi-card .kpi-value { font-size: 20px; }
+@media (max-width: 991px) {
+  .crm-header-nav { padding: 18px 20px; }
 }
 
-@media (max-width: 480px) {
-  .crm-dash-header h2 { font-size: 16px; }
+@media (max-width: 767px) {
+  .content { padding: 8px 8px !important; }
+  .crm-header-nav { padding: 16px 14px; border-radius: 12px; }
+  .crm-header-nav .header-top-flex { flex-direction: column; align-items: stretch; gap: 10px; }
+  .crm-header-nav .header-title h2 { font-size: 18px; }
+  .crm-header-nav .header-title p { font-size: 11.5px; }
+  .crm-header-nav .action-tools { width: 100%; justify-content: flex-start; gap: 6px; }
+  .crm-header-nav .action-tools .btn, .crm-header-nav .action-tools > a { font-size: 11px; padding: 6px 10px; flex: 1 1 auto; text-align: center; justify-content: center; }
+  .crm-header-nav .nav-tabs-bar { padding-top: 10px; gap: 6px; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+  .crm-header-nav .nav-tab-btn { padding: 7px 12px; font-size: 11.5px; }
+  
+  .kpi-card { padding: 12px 14px; margin-bottom: 10px; border-radius: 10px; }
+  .kpi-card .kpi-icon { width: 36px; height: 36px; font-size: 16px; margin-bottom: 6px; }
   .kpi-card .kpi-value { font-size: 17px; }
   .kpi-card .kpi-label { font-size: 9.5px; }
+  
+  .chart-box { padding: 14px 12px; margin-bottom: 14px; border-radius: 10px; }
+  .chart-box .chart-title { font-size: 13px; flex-direction: column; align-items: flex-start; gap: 4px; }
+  
+  .leader-table th { font-size: 10px; padding: 6px 4px !important; }
+  .leader-table td { font-size: 11.5px; padding: 8px 4px !important; }
+  .avatar-circle { width: 28px; height: 28px; font-size: 11px; margin-right: 6px !important; }
+}
+
+@media (max-width: 575px) {
+  .kpi-card .kpi-value { font-size: 15px; }
+  .kpi-card .kpi-label { font-size: 9px; }
   .rfm-card-grid { grid-template-columns: 1fr; }
 }
 </style>
@@ -364,6 +343,11 @@
       </div>
 
       <div class="action-tools">
+        <!-- Live WhatsApp Status Pill -->
+        <a href="<?= site_url('administrator/crm/chat'); ?>" style="display:inline-flex; align-items:center; gap:8px; background:rgba(0,0,0,0.32); border:1px solid rgba(255,255,255,0.25); border-radius:24px; padding:6px 14px; text-decoration:none; color:#fff;" title="WhatsApp Terkoneksi (Buka Live Chat)">
+          <span class="waha-pulsing-dot" style="width:10px; height:10px; border-radius:50%; background:#22c55e; display:inline-block; box-shadow:0 0 8px #22c55e;"></span>
+          <span id="waha-dash-text" style="font-size:12px; font-weight:700;">WhatsApp Terkoneksi</span>
+        </a>
         <a href="<?= site_url('administrator/crm/chat'); ?>" class="btn" style="background:linear-gradient(135deg, #075e54, #128c7e); color:#fff; box-shadow:0 4px 12px rgba(18,140,126,0.35);" title="Live Chat WA"><i class="fa fa-whatsapp"></i> Live Chat WA</a>
         <a href="<?= site_url('administrator/crm/broadcast'); ?>" class="btn" style="background:#25D366; color:#fff;" title="Broadcast WA"><i class="fa fa-bullhorn"></i> Broadcast WA</a>
         <a href="<?= site_url('administrator/rfm/dashboard'); ?>" class="btn" style="background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.3);"><i class="fa fa-bar-chart"></i> Analisis RFM</a>
@@ -393,39 +377,40 @@
   <!-- KPI Cards Row -->
   <div class="row">
     <div class="col-md-2 col-sm-4 col-xs-6">
-      <div class="kpi-card kpi-blue">
+      <div class="kpi-card kpi-blue" role="button" tabindex="0" onclick="window.location.href='<?= site_url('administrator/crm/customer_list'); ?>';" title="Klik untuk membuka Daftar Customer CRM">
         <div class="kpi-icon"><i class="fa fa-users"></i></div>
         <div class="kpi-value"><?= number_format($kpis['total_customers']); ?></div>
-        <div class="kpi-label">Total Pelanggan</div>
+        <div class="kpi-label">Total Pelanggan &rarr;</div>
       </div>
     </div>
     <div class="col-md-3 col-sm-4 col-xs-6">
-      <div class="kpi-card kpi-emerald">
+      <div class="kpi-card kpi-emerald" role="button" tabindex="0" onclick="window.location.href='<?= site_url('administrator/rfm/tracking'); ?>';" title="Klik untuk melihat riwayat volume transaksi di Tracking Bulanan">
         <div class="kpi-icon"><i class="fa fa-money"></i></div>
         <div class="kpi-value">Rp <?= number_format($kpis['total_spend'], 0, ',', '.'); ?></div>
-        <div class="kpi-label">Total Volume Transaksi</div>
+        <div class="kpi-label">Total Volume Transaksi &rarr;</div>
       </div>
     </div>
     <div class="col-md-2 col-sm-4 col-xs-6">
-      <div class="kpi-card kpi-purple">
+      <div class="kpi-card kpi-purple" role="button" tabindex="0" onclick="window.location.href='<?= site_url('administrator/rfm/cohort'); ?>';" title="Klik untuk melihat analisis retensi kohort">
         <div class="kpi-icon"><i class="fa fa-refresh"></i></div>
         <div class="kpi-value"><?= $kpis['repeat_rate']; ?>%</div>
-        <div class="kpi-label">Repeat Order Rate</div>
+        <div class="kpi-label">Repeat Order Rate &rarr;</div>
       </div>
     </div>
     <div class="col-md-2 col-sm-4 col-xs-6">
-      <div class="kpi-card kpi-amber">
+      <div class="kpi-card kpi-amber" role="button" tabindex="0" onclick="window.location.href='<?= site_url('administrator/crm/journal_followup'); ?>';" title="Klik untuk melihat jadwal follow-up pelanggan pending">
         <div class="kpi-icon"><i class="fa fa-clock-o"></i></div>
         <div class="kpi-value"><?= $kpis['pending_today']; ?> <small style="font-size:12px;color:#d97706;">(<?= $kpis['overdue']; ?> late)</small></div>
-        <div class="kpi-label">Pending Hari Ini</div>
+        <div class="kpi-label">Pending Hari Ini &rarr;</div>
       </div>
     </div>
-    <div class="col-md-3 col-sm-4 col-xs-6">
-      <div class="kpi-card kpi-rose">
+    <div class="col-md-3 col-sm-4 col-xs-12">
+      <div class="kpi-card kpi-rose" role="button" tabindex="0" onclick="window.location.href='<?= site_url('administrator/crm/broadcast'); ?>';" title="Klik untuk membuka riwayat broadcast WA">
         <div class="kpi-icon"><i class="fa fa-paper-plane"></i></div>
         <div class="kpi-value"><?= number_format($kpis['total_broadcast']); ?></div>
-        <div class="kpi-label">WA Broadcast Terkirim</div>
+        <div class="kpi-label">WA Broadcast Terkirim &rarr;</div>
       </div>
+    </div>
   </div>
 
   <!-- RFM Link Card (now in separate module) -->

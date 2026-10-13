@@ -112,7 +112,10 @@ $kirim_c = [
                                           <a href="<?= site_url('administrator/invoice/view/' . $inv->id); ?>" class="btn btn-xs btn-info" style="margin: 2px 1px;" title="Detail">
                                              <i class="fa fa-eye"></i> Detail
                                           </a>
-                                          <a href="<?= site_url('administrator/invoice/print_invoice/' . $inv->id); ?>" class="btn btn-xs btn-default" style="margin: 2px 1px;" target="_blank" title="Cetak Invoice">
+                                          <?php if ($inv->status != 'paid'): ?>
+                                           <a href="<?= site_url('administrator/piutang_usaha?q=' . urlencode($inv->nomor_invoice)); ?>" class="btn btn-xs btn-success" style="margin: 2px 1px; font-weight:700;" title="Terima Pembayaran di Piutang Usaha"><i class="fa fa-money"></i> Bayar</a>
+                                        <?php endif; ?>
+                                        <a href="<?= site_url('administrator/invoice/print_invoice/' . $inv->id); ?>" class="btn btn-xs btn-default" style="margin: 2px 1px;" target="_blank" title="Cetak Invoice">
                                              <i class="fa fa-print"></i> Cetak
                                           </a>
                                        <?php endif; ?>

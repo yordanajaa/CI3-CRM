@@ -6,7 +6,7 @@ class Model_pelanggan extends MY_Model {
 
 	private $primary_key 	= 'id';
 	private $table_name 	= 'pelanggan';
-	private $field_search 	= ['kode_pelanggan', 'nama_pelanggan', 'kontak_person', 'telepon', 'email', 'kota', 'tipe_pelanggan'];
+	private $field_search 	= ['kode_pelanggan', 'nama_pelanggan', 'kontak_person', 'telepon', 'no_telp', 'email', 'kota', 'tipe_pelanggan'];
 
 	public function __construct()
 	{
@@ -43,6 +43,9 @@ class Model_pelanggan extends MY_Model {
         }
 
         $this->db->where($where);
+        if ($this->input->get('tipe_pelanggan')) {
+            $this->db->where('tipe_pelanggan', $this->input->get('tipe_pelanggan'));
+        }
 		$query = $this->db->get($this->table_name);
 
 		return $query->num_rows();
@@ -72,6 +75,9 @@ class Model_pelanggan extends MY_Model {
         }
 
         $this->db->where($where);
+        if ($this->input->get('tipe_pelanggan')) {
+            $this->db->where('tipe_pelanggan', $this->input->get('tipe_pelanggan'));
+        }
         $this->db->limit($limit, $offset);
         $this->db->order_by($this->primary_key, "DESC");
 		$query = $this->db->get($this->table_name);
@@ -81,9 +87,14 @@ class Model_pelanggan extends MY_Model {
 
 	public function generate_kode()
 	{
-		$last = $this->db->order_by('id', 'DESC')->limit(1)->get($this->table_name)->row();
-		$num = $last ? ((int) substr($last->kode_pelanggan, -4)) + 1 : 1;
-		return 'CUS-' . str_pad($num, 4, '0', STR_PAD_LEFT);
+		$row = $this->db->select_max('id')->get($this->table_name)->row();
+		$next = ($row && $row->id) ? ((int)$row->id + 1) : 1;
+		$kode = sprintf('CUST-%04d', $next);
+		while ($this->db->get_where($this->table_name, ['kode_pelanggan' => $kode])->num_rows() > 0) {
+			$next++;
+			$kode = sprintf('CUST-%04d', $next);
+		}
+		return $kode;
 	}
 
 	public function get_harga($produk_id, $tipe, $qty = 1)

@@ -1,4 +1,5 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
+<style>
 :root {
   --crm-gradient: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4338ca 100%);
 }
@@ -79,21 +80,27 @@
 }
 .crm-header-nav .action-tools .btn:hover { transform: translateY(-2px); }
 
-/* Navigation Tab Bar */
+/* Navigation Tab Bar - Touch Scrollable */
 .crm-header-nav .nav-tabs-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 8px;
   padding-top: 14px;
   border-top: 1px solid rgba(255,255,255,0.18);
   position: relative;
   z-index: 2;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.crm-header-nav .nav-tabs-bar::-webkit-scrollbar {
+  display: none;
 }
 .crm-header-nav .nav-tab-btn {
-  padding: 8px 18px;
+  padding: 8px 16px;
   border-radius: 10px;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
   color: rgba(255,255,255,0.92);
   background: rgba(255,255,255,0.12);
@@ -103,6 +110,7 @@
   align-items: center;
   gap: 8px;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 .crm-header-nav .nav-tab-btn:hover {
   background: rgba(255,255,255,0.25);
@@ -160,6 +168,8 @@
 .badge-shopee { background: linear-gradient(135deg, #ee4d2d, #ff6b4a); }
 .badge-tokopedia { background: linear-gradient(135deg, #059669, #10b981); }
 .badge-tiktok { background: linear-gradient(135deg, #09090b, #18181b); }
+.badge-whatsapp { background: linear-gradient(135deg, #16a34a, #22c55e); }
+.badge-wa-group { background: linear-gradient(135deg, #0284c7, #38bdf8); }
 
 .status-select { padding: 5px 10px; font-size: 12px; font-weight: 600; border-radius: 8px; border: 1px solid #cbd5e1; background: #f8fafc; color: #1e293b; transition: all 0.2s ease; cursor: pointer; }
 .status-select:hover, .status-select:focus { border-color: #6366f1; background: #ffffff; outline: none; }
@@ -270,18 +280,23 @@
 }
 
 @media (max-width: 991px) {
-  .crm-header > div { flex-direction: column; align-items: center; text-align: center; }
-  .crm-header > div > div:last-child { justify-content: center; margin-top: 12px; width: 100%; }
+  .crm-header-nav { padding: 16px 16px 12px 16px; margin-bottom: 12px; }
+  .crm-header-nav .header-top-flex { flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 12px; }
+  .crm-header-nav .action-tools { width: 100%; justify-content: flex-start; gap: 6px; }
+  .crm-header-nav .action-tools .btn, .crm-header-nav .action-tools > a { font-size: 11px; padding: 6px 10px; flex: 1 1 auto; text-align: center; justify-content: center; }
   .filter-section .col-md-2 { margin-bottom: 8px; }
 }
 
 @media (max-width: 767px) {
-  .content { padding: 10px 8px !important; }
-  .crm-header { padding: 18px 14px; text-align: center; border-radius: 12px; margin-bottom: 14px; }
-  .crm-header h2 { font-size: 17px; }
-  .crm-header p { font-size: 11.5px; }
-  .crm-header .text-right { text-align: center !important; margin-top: 12px; }
-  .crm-header > div > div:last-child .btn { font-size: 10.5px; padding: 6px 10px; margin-bottom: 4px; flex: 1; min-width: 120px; justify-content: center; }
+  .content { padding: 8px 6px !important; }
+  .crm-header-nav { padding: 14px 12px 10px 12px; border-radius: 12px; margin-bottom: 12px; }
+  .crm-header-nav .header-top-flex { flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 10px; }
+  .crm-header-nav .header-title h2 { font-size: 18px; }
+  .crm-header-nav .header-title p { font-size: 11px; }
+  .crm-header-nav .action-tools { width: 100%; justify-content: flex-start; gap: 6px; }
+  .crm-header-nav .action-tools .btn, .crm-header-nav .action-tools > a { font-size: 10.5px; padding: 6px 10px; flex: 1 1 auto; text-align: center; justify-content: center; }
+  .crm-header-nav .nav-tabs-bar { gap: 6px; padding-top: 10px; }
+  .crm-header-nav .nav-tab-btn { font-size: 11.5px; padding: 6px 12px; }
 
   .stat-box { padding: 12px 10px; margin-bottom: 8px; border-radius: 10px; }
   .stat-box .num { font-size: 20px; }
@@ -299,6 +314,8 @@
   .box-header .box-title { font-size: 13px; }
   .box-header .box-tools .btn { font-size: 10px; padding: 4px 8px; }
 
+  .table-responsive { border: none !important; margin-bottom: 0; }
+  .table-journal { min-width: 840px; }
   .table-journal th { font-size: 10px; padding: 8px 4px !important; white-space: nowrap; }
   .table-journal td { font-size: 11px; padding: 8px 4px !important; }
   .status-select { font-size: 10.5px; padding: 3px 6px; }
@@ -397,6 +414,12 @@
           </ul>
         </div>
 
+        <!-- Live WhatsApp Status Pill -->
+        <a href="<?= site_url('administrator/crm/chat'); ?>" style="display:inline-flex; align-items:center; gap:8px; background:rgba(0,0,0,0.32); border:1px solid rgba(255,255,255,0.25); border-radius:24px; padding:6px 14px; text-decoration:none; color:#fff;" title="WhatsApp Terkoneksi (Buka Live Chat)">
+          <span class="waha-pulsing-dot" style="width:10px; height:10px; border-radius:50%; background:#22c55e; display:inline-block; box-shadow:0 0 8px #22c55e;"></span>
+          <span style="font-size:12px; font-weight:700;">WhatsApp Terkoneksi</span>
+        </a>
+
         <a href="<?= site_url('administrator/crm/chat'); ?>" class="btn" style="background:linear-gradient(135deg, #075e54, #128c7e); color:#fff; box-shadow:0 4px 12px rgba(18,140,126,0.35);" title="Live Chat WA Center"><i class="fa fa-whatsapp"></i> Live Chat WA</a>
         <a href="<?= site_url('administrator/crm/followup_setting'); ?>" class="btn" style="background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.3);"><i class="fa fa-cogs"></i> Settings</a>
       </div>
@@ -491,6 +514,8 @@
               <option value="Shopee" <?= ($filters['order_source'] ?? '') == 'Shopee' ? 'selected' : ''; ?>>Shopee</option>
               <option value="Tokopedia" <?= ($filters['order_source'] ?? '') == 'Tokopedia' ? 'selected' : ''; ?>>Tokopedia</option>
               <option value="TikTok Shop" <?= ($filters['order_source'] ?? '') == 'TikTok Shop' ? 'selected' : ''; ?>>TikTok Shop</option>
+              <option value="WhatsApp Live" <?= ($filters['order_source'] ?? '') == 'WhatsApp Live' ? 'selected' : ''; ?>>WhatsApp Live</option>
+              <option value="WhatsApp Group" <?= ($filters['order_source'] ?? '') == 'WhatsApp Group' ? 'selected' : ''; ?>>WhatsApp Group</option>
             </select>
           </div>
           <div class="col-md-2">
@@ -566,6 +591,8 @@
               if (stripos($e->order_source, 'Shopee') !== false) $cls = 'badge-shopee';
               elseif (stripos($e->order_source, 'Tokopedia') !== false) $cls = 'badge-tokopedia';
               elseif (stripos($e->order_source, 'TikTok') !== false) $cls = 'badge-tiktok';
+              elseif (stripos($e->order_source, 'Group') !== false) $cls = 'badge-wa-group';
+              elseif (stripos($e->order_source, 'WhatsApp') !== false) $cls = 'badge-whatsapp';
               ?>
               <span class="badge-source <?= $cls; ?>"><?= $e->order_source; ?></span>
             </td>
@@ -1017,6 +1044,61 @@
   font-weight: 600;
   background: #fff;
 }
+
+/* ========================================================
+   RICH MEDIA & DOCUMENT PREVIEWS (WHATSAPP STYLE)
+   ======================================================== */
+.chat-media-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.chat-media-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12) !important;
+}
+.chat-media-clickable {
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px 10px 0 0;
+}
+.chat-media-clickable:hover .chat-img-hover-overlay {
+  opacity: 1 !important;
+}
+.chat-media-clickable:hover img {
+  transform: scale(1.03);
+}
+
+.chat-doc-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.chat-doc-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12) !important;
+}
+
+.btn-open-preview {
+  transition: all 0.15s ease;
+}
+.btn-open-preview:hover {
+  filter: brightness(0.92);
+  transform: scale(1.02);
+}
+
+/* Lightbox Modal */
+#modal-media-lightbox .modal-content {
+  background: #0f172a !important;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.65) !important;
+}
+.btn-lightbox-tool {
+  transition: all 0.15s ease;
+}
+.btn-lightbox-tool:hover {
+  background: rgba(255,255,255,0.3) !important;
+  color: #fff !important;
+}
+#lightbox-img {
+  user-select: none;
+  -webkit-user-drag: none;
+}
 </style>
 
 <div class="modal fade chat-modal" id="modal-note" tabindex="-1">
@@ -1400,6 +1482,87 @@
   </div>
 </div>
 
+<!-- Modal Media Lightbox & Document Preview -->
+<div class="modal fade" id="modal-media-lightbox" tabindex="-1" role="dialog" style="z-index: 10050;">
+  <div class="modal-dialog modal-lg" role="document" style="max-width: 920px; width: 92%; margin: 30px auto;">
+    <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none; box-shadow: 0 25px 50px rgba(0,0,0,0.5); background: #0f172a; color: #fff;">
+      
+      <!-- Lightbox Header -->
+      <div class="modal-header" style="background: rgba(30, 41, 59, 0.9); backdrop-filter: blur(8px); border-bottom: 1px solid rgba(255,255,255,0.1); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 10px; overflow: hidden; padding-right: 12px;">
+          <span id="lightbox-badge" class="badge" style="background: #3b82f6; font-size: 11px; padding: 4px 8px; border-radius: 6px; text-transform: uppercase;">PRATINJAU</span>
+          <div id="lightbox-filename" style="font-weight: 700; font-size: 13.5px; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 420px;">Lampiran Media</div>
+        </div>
+        
+        <!-- Toolbar Actions -->
+        <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+          <div id="lightbox-img-tools" style="display: none; align-items: center; gap: 4px; margin-right: 6px;">
+            <button type="button" class="btn btn-xs btn-default btn-lightbox-tool" id="btn-lightbox-zoomin" title="Perbesar (+)" style="background: rgba(255,255,255,0.15); border: none; color: #fff; border-radius: 6px; width: 30px; height: 28px;"><i class="fa fa-search-plus"></i></button>
+            <button type="button" class="btn btn-xs btn-default btn-lightbox-tool" id="btn-lightbox-zoomout" title="Perkecil (-)" style="background: rgba(255,255,255,0.15); border: none; color: #fff; border-radius: 6px; width: 30px; height: 28px;"><i class="fa fa-search-minus"></i></button>
+            <button type="button" class="btn btn-xs btn-default btn-lightbox-tool" id="btn-lightbox-rotate" title="Putar 90°" style="background: rgba(255,255,255,0.15); border: none; color: #fff; border-radius: 6px; width: 30px; height: 28px;"><i class="fa fa-repeat"></i></button>
+            <button type="button" class="btn btn-xs btn-default btn-lightbox-tool" id="btn-lightbox-zoomreset" title="Reset Ukuran" style="background: rgba(255,255,255,0.15); border: none; color: #fff; border-radius: 6px; font-size: 10px; padding: 0 8px; height: 28px; font-weight: 700;">1:1</button>
+          </div>
+
+          <a href="#" id="btn-lightbox-open-tab" target="_blank" class="btn btn-xs btn-default" title="Buka di Tab Baru" style="background: rgba(255,255,255,0.15); border: none; color: #fff; border-radius: 6px; padding: 5px 10px; font-size: 11px; font-weight: 600;">
+            <i class="fa fa-external-link"></i> Tab Baru
+          </a>
+          <a href="#" id="btn-lightbox-download" download class="btn btn-xs btn-success" title="Unduh File" style="background: #10b981; border: none; color: #fff; border-radius: 6px; padding: 5px 12px; font-size: 11px; font-weight: 700;">
+            <i class="fa fa-download"></i> Unduh
+          </a>
+          <button type="button" class="close" data-dismiss="modal" style="color: #fff; opacity: 0.8; font-size: 24px; margin-left: 8px; line-height: 24px;">&times;</button>
+        </div>
+      </div>
+
+      <!-- Lightbox Body -->
+      <div class="modal-body" style="padding: 0; background: #020617; position: relative; min-height: 400px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+        
+        <!-- Loading Spinner -->
+        <div id="lightbox-loading" style="display: none; position: absolute; z-index: 10; color: #94a3b8; text-align: center;">
+          <i class="fa fa-spinner fa-spin" style="font-size: 32px; color: #6366f1;"></i>
+          <p style="margin-top: 8px; font-size: 12px;">Memuat pratinjau...</p>
+        </div>
+
+        <!-- Image Viewer Container -->
+        <div id="lightbox-img-container" style="display: none; width: 100%; height: 75vh; overflow: auto; align-items: center; justify-content: center; padding: 20px;">
+          <img id="lightbox-img" src="" alt="Pratinjau Foto" style="max-width: 100%; max-height: 100%; object-fit: contain; transition: transform 0.15s ease-out; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border-radius: 8px;">
+        </div>
+
+        <!-- PDF / Document iframe Viewer -->
+        <div id="lightbox-doc-container" style="display: none; width: 100%; height: 78vh;">
+          <iframe id="lightbox-iframe" src="" style="width: 100%; height: 100%; border: none; background: #fff;"></iframe>
+        </div>
+
+        <!-- Video Viewer -->
+        <div id="lightbox-video-container" style="display: none; width: 100%; max-height: 75vh; padding: 20px; text-align: center;">
+          <video id="lightbox-video" controls autoplay style="max-width: 100%; max-height: 70vh; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);"></video>
+        </div>
+
+        <!-- Audio Viewer -->
+        <div id="lightbox-audio-container" style="display: none; padding: 50px 20px; text-align: center; width: 100%;">
+          <div style="width: 70px; height: 70px; border-radius: 50%; background: #059669; color: #fff; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 28px;">
+            <i class="fa fa-music"></i>
+          </div>
+          <h4 id="lightbox-audio-title" style="color: #fff; font-weight: 700; margin-bottom: 16px;">Pemutar Audio</h4>
+          <audio id="lightbox-audio" controls style="width: 80%; max-width: 450px;"></audio>
+        </div>
+
+        <!-- Generic / Fallback Viewer -->
+        <div id="lightbox-generic-container" style="display: none; padding: 50px 20px; text-align: center;">
+          <div id="lightbox-generic-icon" style="font-size: 56px; color: #60a5fa; margin-bottom: 16px;">
+            <i class="fa fa-file-text-o"></i>
+          </div>
+          <h4 id="lightbox-generic-title" style="color: #fff; font-weight: 700; margin-bottom: 8px;">Dokumen Terlampir</h4>
+          <p id="lightbox-generic-desc" style="color: #94a3b8; font-size: 13px; max-width: 420px; margin: 0 auto 20px;">File ini siap diunduh atau dibuka di aplikasi eksternal.</p>
+          <a href="#" id="lightbox-generic-download" download class="btn btn-primary" style="border-radius: 8px; font-weight: 700; padding: 8px 20px; background: #3b82f6; border: none;">
+            <i class="fa fa-download"></i> Unduh File Sekarang
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 $(document).ready(function() {
   var csrf_name = '<?= $this->security->get_csrf_token_name(); ?>';
@@ -1411,6 +1574,7 @@ $(document).ready(function() {
   if ($('#modal-note').length) $('#modal-note').appendTo('body');
   if ($('#modal-wa-preview').length) $('#modal-wa-preview').appendTo('body');
   if ($('#modal-manual-add').length) $('#modal-manual-add').appendTo('body');
+  if ($('#modal-media-lightbox').length) $('#modal-media-lightbox').appendTo('body');
 
   $('.modal-backdrop').remove();
   $('body').removeClass('modal-open');
@@ -1932,36 +2096,120 @@ $(document).ready(function() {
       }
 
       if (isVideo) {
-        return '<div style="margin-top:6px;display:inline-block;max-width:280px;">' +
-                 '<video controls preload="metadata" style="max-width:100%;max-height:220px;border-radius:10px;border:1px solid #cbd5e1;box-shadow:0 3px 8px rgba(0,0,0,0.12);display:block;margin-bottom:6px;">' +
+        var cleanFileName = cleanUrl.split('/').pop().split('?')[0] || 'Video WhatsApp';
+        return '<div class="chat-media-card" style="margin-top:6px;max-width:280px;background:rgba(0,0,0,0.03);border:1px solid rgba(0,0,0,0.08);border-radius:12px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,0.08);">' +
+                 '<video controls preload="metadata" style="max-width:100%;max-height:220px;display:block;background:#000;">' +
                    '<source src="' + fullUrl + '" type="video/mp4">' +
                    '<source src="' + fullUrl + '" type="video/webm">' +
                    'Browser tidak mendukung video.' +
                  '</video>' +
-                 '<a href="' + fullUrl + '" target="_blank" download style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;background:#7c3aed;color:#ffffff;border-radius:6px;font-weight:700;font-size:11px;text-decoration:none;box-shadow:0 2px 4px rgba(124,58,237,0.3);">' +
-                   '<i class="fa fa-download"></i> Unduh Video' +
-                 '</a>' +
+                 '<div style="padding:6px 10px;background:#ffffff;display:flex;align-items:center;justify-content:space-between;gap:6px;border-top:1px solid rgba(0,0,0,0.06);">' +
+                   '<button type="button" class="btn-open-preview" data-media-url="' + fullUrl + '" data-media-type="video" data-media-title="' + htmlEntities(cleanFileName) + '" style="background:#7c3aed;color:#ffffff;border:none;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:4px;cursor:pointer;">' +
+                     '<i class="fa fa-arrows-alt"></i> Pratinjau' +
+                   '</button>' +
+                   '<a href="' + fullUrl + '" target="_blank" download style="color:#64748b;font-size:13px;padding:3px 6px;text-decoration:none;" title="Unduh Video">' +
+                     '<i class="fa fa-download"></i>' +
+                   '</a>' +
+                 '</div>' +
+               '</div>';
+      } else if (isAudio) {
+        var cleanFileName = cleanUrl.split('/').pop().split('?')[0] || 'Voice Note';
+        return '<div class="chat-audio-card" style="margin-top:6px;max-width:280px;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:8px 12px;box-shadow:0 2px 6px rgba(0,0,0,0.06);">' +
+                 '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' +
+                   '<div style="width:26px;height:26px;border-radius:50%;background:#d1fae5;color:#059669;display:flex;align-items:center;justify-content:center;font-size:12px;"><i class="fa fa-microphone"></i></div>' +
+                   '<div style="font-size:11.5px;font-weight:700;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">' + htmlEntities(cleanFileName) + '</div>' +
+                 '</div>' +
+                 '<audio controls preload="metadata" style="max-width:100%;width:100%;height:36px;display:block;">' +
+                   '<source src="' + fullUrl + '">' +
+                 '</audio>' +
+                 '<div style="display:flex;justify-content:flex-end;margin-top:4px;">' +
+                   '<a href="' + fullUrl + '" target="_blank" download style="font-size:10.5px;color:#059669;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:3px;"><i class="fa fa-download"></i> Unduh Suara</a>' +
+                 '</div>' +
                '</div>';
       } else if (isImg) {
-        return '<div style="margin-top:6px;display:inline-block;max-width:260px;">' +
-                 '<a href="' + fullUrl + '" target="_blank" style="display:block;">' +
-                   '<img src="' + fullUrl + '" alt="Foto" style="max-width:100%;max-height:220px;border-radius:10px;border:1px solid #cbd5e1;box-shadow:0 3px 8px rgba(0,0,0,0.12);display:block;margin-bottom:6px;object-fit:cover;" onerror="this.style.display=\'none\';this.parentElement.nextElementSibling.style.display=\'inline-flex\';">' +
-                 '</a>' +
-                 '<a href="' + fullUrl + '" target="_blank" download style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;background:#3b82f6;color:#ffffff;border-radius:6px;font-weight:700;font-size:11px;text-decoration:none;box-shadow:0 2px 4px rgba(59,130,246,0.3);">' +
-                   '<i class="fa fa-download"></i> Lihat / Unduh Foto' +
-                 '</a>' +
+        var cleanFileName = cleanUrl.split('/').pop().split('?')[0] || 'Foto WhatsApp';
+        return '<div class="chat-media-card" style="margin-top:6px;max-width:260px;background:#ffffff;border:1px solid rgba(0,0,0,0.08);border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">' +
+                 '<div class="chat-media-clickable" data-media-url="' + fullUrl + '" data-media-type="image" data-media-title="' + htmlEntities(cleanFileName) + '" style="cursor:pointer;position:relative;background:#f1f5f9;display:block;text-align:center;">' +
+                   '<img src="' + fullUrl + '" alt="Foto" style="width:100%;max-height:220px;object-fit:cover;display:block;transition:transform 0.2s;" onerror="this.onerror=null;this.parentElement.style.display=\'none\';this.parentElement.nextElementSibling.style.display=\'block\';">' +
+                   '<div class="chat-img-hover-overlay" style="position:absolute;inset:0;background:rgba(15,23,42,0.38);opacity:0;transition:opacity 0.2s;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12px;gap:6px;">' +
+                     '<i class="fa fa-search-plus" style="font-size:16px;"></i> Pratinjau Foto' +
+                   '</div>' +
+                 '</div>' +
+                 '<div style="padding:6px 10px;background:#ffffff;display:flex;align-items:center;justify-content:space-between;gap:6px;border-top:1px solid rgba(0,0,0,0.06);">' +
+                   '<button type="button" class="btn-open-preview" data-media-url="' + fullUrl + '" data-media-type="image" data-media-title="' + htmlEntities(cleanFileName) + '" style="background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:4px;cursor:pointer;">' +
+                     '<i class="fa fa-eye"></i> Pratinjau' +
+                   '</button>' +
+                   '<a href="' + fullUrl + '" target="_blank" download style="color:#64748b;font-size:13px;padding:3px 6px;text-decoration:none;" title="Unduh Foto">' +
+                     '<i class="fa fa-download"></i>' +
+                   '</a>' +
+                 '</div>' +
                '</div>';
       } else if (isDoc) {
-        var docIcon = 'fa-file-text-o';
-        if (/\.pdf/i.test(cleanUrl)) docIcon = 'fa-file-pdf-o';
-        else if (/\.(doc|docx)/i.test(cleanUrl)) docIcon = 'fa-file-word-o';
-        else if (/\.(xls|xlsx)/i.test(cleanUrl)) docIcon = 'fa-file-excel-o';
-        else if (/\.(zip|rar)/i.test(cleanUrl)) docIcon = 'fa-file-archive-o';
+        var cleanFileName = cleanUrl.split('/').pop().split('?')[0] || 'Dokumen';
+        var isPdf = /\.pdf/i.test(cleanUrl);
+        var isWord = /\.(doc|docx)/i.test(cleanUrl);
+        var isExcel = /\.(xls|xlsx|csv)/i.test(cleanUrl);
+        var isPpt = /\.(ppt|pptx)/i.test(cleanUrl);
+        var isZip = /\.(zip|rar|7z|tar|gz)/i.test(cleanUrl);
 
-        return '<div style="margin-top:6px;">' +
-                 '<a href="' + fullUrl + '" target="_blank" download style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:#0284c7;color:#ffffff;border-radius:8px;font-weight:700;font-size:11.5px;text-decoration:none;box-shadow:0 2px 6px rgba(2,132,199,0.3);">' +
-                   '<i class="fa ' + docIcon + '" style="font-size:14px;color:#fff;"></i> Lihat / Unduh Dokumen' +
-                 '</a>' +
+        var docIcon = 'fa-file-text-o';
+        var docColor = '#0284c7';
+        var docBg = '#e0f2fe';
+        var docBadge = 'DOKUMEN';
+        var previewBtnText = 'Pratinjau';
+        var previewType = 'generic';
+
+        if (isPdf) {
+          docIcon = 'fa-file-pdf-o';
+          docColor = '#dc2626';
+          docBg = '#fee2e2';
+          docBadge = 'PDF';
+          previewBtnText = 'Pratinjau PDF';
+          previewType = 'pdf';
+        } else if (isWord) {
+          docIcon = 'fa-file-word-o';
+          docColor = '#2563eb';
+          docBg = '#dbeafe';
+          docBadge = 'WORD';
+          previewType = 'office';
+        } else if (isExcel) {
+          docIcon = 'fa-file-excel-o';
+          docColor = '#059669';
+          docBg = '#d1fae5';
+          docBadge = 'EXCEL';
+          previewType = 'office';
+        } else if (isPpt) {
+          docIcon = 'fa-file-powerpoint-o';
+          docColor = '#d97706';
+          docBg = '#fef3c7';
+          docBadge = 'POWERPOINT';
+          previewType = 'office';
+        } else if (isZip) {
+          docIcon = 'fa-file-archive-o';
+          docColor = '#7c3aed';
+          docBg = '#ede9fe';
+          docBadge = 'ZIP ARSIP';
+          previewType = 'generic';
+        }
+
+        return '<div class="chat-doc-card" style="margin-top:6px;max-width:280px;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,0.06);">' +
+                 '<div style="padding:10px 12px;display:flex;align-items:center;gap:10px;">' +
+                   '<div style="width:42px;height:42px;border-radius:10px;background:' + docBg + ';color:' + docColor + ';display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">' +
+                     '<i class="fa ' + docIcon + '"></i>' +
+                   '</div>' +
+                   '<div style="flex:1;min-width:0;">' +
+                     '<div style="font-weight:700;font-size:12px;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + htmlEntities(cleanFileName) + '">' + htmlEntities(cleanFileName) + '</div>' +
+                     '<span style="display:inline-block;font-size:9.5px;font-weight:800;color:' + docColor + ';background:' + docBg + ';padding:1px 6px;border-radius:4px;margin-top:2px;">' + docBadge + '</span>' +
+                   '</div>' +
+                 '</div>' +
+                 '<div style="padding:6px 10px;background:#f8fafc;border-top:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;gap:6px;">' +
+                   '<button type="button" class="btn-open-preview" data-media-url="' + fullUrl + '" data-media-type="' + previewType + '" data-media-title="' + htmlEntities(cleanFileName) + '" style="flex:1;background:' + docColor + ';color:#ffffff;border:none;border-radius:6px;padding:4px 8px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:4px;cursor:pointer;">' +
+                     '<i class="fa fa-eye"></i> ' + previewBtnText +
+                   '</button>' +
+                   '<a href="' + fullUrl + '" target="_blank" download style="display:inline-flex;align-items:center;justify-content:center;padding:4px 10px;background:#ffffff;border:1px solid #cbd5e1;color:#475569;border-radius:6px;font-size:11px;font-weight:700;text-decoration:none;" title="Unduh Dokumen">' +
+                     '<i class="fa fa-download"></i> Unduh' +
+                   '</a>' +
+                 '</div>' +
                '</div>';
       } else {
         return '<a href="' + fullUrl + '" target="_blank" style="color:#2563eb;text-decoration:underline;word-break:break-all;"><i class="fa fa-external-link"></i> ' + cleanUrl + '</a>';
@@ -2610,6 +2858,158 @@ $(document).ready(function() {
         notify('error', 'Terjadi kesalahan: ' + (xhr.statusText || 'Error'));
       }
     });
+  });
+
+  /* ========================================================
+     UNIVERSAL MEDIA LIGHTBOX VIEWER (Foto & Dokumen)
+     ======================================================== */
+  var currentScale = 1;
+  var currentRotate = 0;
+
+  function openMediaPreview(url, type, title) {
+    if (!url) return;
+    title = title || url.split('/').pop().split('?')[0] || 'Media Preview';
+
+    $('#lightbox-filename').text(title);
+    $('#btn-lightbox-open-tab').attr('href', url);
+    $('#btn-lightbox-download').attr('href', url).attr('download', title);
+    $('#lightbox-generic-download').attr('href', url).attr('download', title);
+
+    // Reset displays
+    $('#lightbox-img-container').hide();
+    $('#lightbox-doc-container').hide();
+    $('#lightbox-video-container').hide();
+    $('#lightbox-audio-container').hide();
+    $('#lightbox-generic-container').hide();
+    $('#lightbox-img-tools').hide();
+    $('#lightbox-loading').hide();
+
+    // Stop previous media
+    var videoEl = document.getElementById('lightbox-video');
+    if (videoEl) { videoEl.pause(); videoEl.src = ''; }
+    var audioEl = document.getElementById('lightbox-audio');
+    if (audioEl) { audioEl.pause(); audioEl.src = ''; }
+    var iframeEl = document.getElementById('lightbox-iframe');
+    if (iframeEl) { iframeEl.src = ''; }
+
+    // Auto-detect type
+    if (!type || type === 'auto') {
+      if (/\.(jpeg|jpg|png|webp|gif|bmp|svg)(\?.*)?$/i.test(url) || url.indexOf('data:image/') === 0) type = 'image';
+      else if (/\.(mp4|webm|avi|mov|3gp)(\?.*)?$/i.test(url)) type = 'video';
+      else if (/\.(mp3|wav|ogg|m4a|aac|opus)(\?.*)?$/i.test(url)) type = 'audio';
+      else if (/\.pdf(\?.*)?$/i.test(url) || url.indexOf('blob:') === 0) type = 'pdf';
+      else if (/\.(doc|docx|xls|xlsx|ppt|pptx)(\?.*)?$/i.test(url)) type = 'office';
+      else type = 'generic';
+    }
+
+    if (type === 'image') {
+      $('#lightbox-badge').text('FOTO').css('background', '#3b82f6');
+      $('#lightbox-img-tools').css('display', 'flex');
+      currentScale = 1;
+      currentRotate = 0;
+      applyImageTransform();
+
+      $('#lightbox-loading').show();
+      var $img = $('#lightbox-img');
+      $img.off('load error').on('load', function() {
+        $('#lightbox-loading').hide();
+      }).on('error', function() {
+        $('#lightbox-loading').hide();
+        notify('error', 'Gagal memuat gambar');
+      });
+      $img.attr('src', url);
+      $('#lightbox-img-container').css('display', 'flex');
+
+    } else if (type === 'pdf') {
+      $('#lightbox-badge').text('DOKUMEN PDF').css('background', '#dc2626');
+      $('#lightbox-loading').show();
+      $('#lightbox-iframe').off('load').on('load', function() {
+        $('#lightbox-loading').hide();
+      }).attr('src', url);
+      $('#lightbox-doc-container').show();
+
+    } else if (type === 'office') {
+      $('#lightbox-badge').text('DOKUMEN OFFICE').css('background', '#2563eb');
+      if (/^https?:\/\//i.test(url) && !/localhost|127\.0\.0\.1/i.test(url)) {
+        var gDocUrl = 'https://docs.google.com/viewer?url=' + encodeURIComponent(url) + '&embedded=true';
+        $('#lightbox-loading').show();
+        $('#lightbox-iframe').off('load').on('load', function() {
+          $('#lightbox-loading').hide();
+        }).attr('src', gDocUrl);
+        $('#lightbox-doc-container').show();
+      } else {
+        $('#lightbox-generic-icon').html('<i class="fa fa-file-word-o" style="color:#2563eb;"></i>');
+        $('#lightbox-generic-title').text(title);
+        $('#lightbox-generic-desc').text('Dokumen siap diunduh untuk dibuka pada perangkat Anda.');
+        $('#lightbox-generic-container').show();
+      }
+
+    } else if (type === 'video') {
+      $('#lightbox-badge').text('VIDEO').css('background', '#7c3aed');
+      var $video = $('#lightbox-video');
+      $video.attr('src', url);
+      $('#lightbox-video-container').show();
+
+    } else if (type === 'audio') {
+      $('#lightbox-badge').text('PESAN SUARA').css('background', '#059669');
+      $('#lightbox-audio-title').text(title);
+      var $audio = $('#lightbox-audio');
+      $audio.attr('src', url);
+      $('#lightbox-audio-container').show();
+
+    } else {
+      $('#lightbox-badge').text('FILE').css('background', '#64748b');
+      $('#lightbox-generic-icon').html('<i class="fa fa-file-text-o" style="color:#64748b;"></i>');
+      $('#lightbox-generic-title').text(title);
+      $('#lightbox-generic-desc').text('File lampiran siap diunduh.');
+      $('#lightbox-generic-container').show();
+    }
+
+    $('#modal-media-lightbox').modal('show');
+  }
+
+  function applyImageTransform() {
+    $('#lightbox-img').css('transform', 'scale(' + currentScale + ') rotate(' + currentRotate + 'deg)');
+  }
+
+  $(document).on('click', '#btn-lightbox-zoomin', function() {
+    if (currentScale < 3) {
+      currentScale += 0.25;
+      applyImageTransform();
+    }
+  });
+  $(document).on('click', '#btn-lightbox-zoomout', function() {
+    if (currentScale > 0.5) {
+      currentScale -= 0.25;
+      applyImageTransform();
+    }
+  });
+  $(document).on('click', '#btn-lightbox-zoomreset', function() {
+    currentScale = 1;
+    currentRotate = 0;
+    applyImageTransform();
+  });
+  $(document).on('click', '#btn-lightbox-rotate', function() {
+    currentRotate = (currentRotate + 90) % 360;
+    applyImageTransform();
+  });
+
+  $('#modal-media-lightbox').on('hidden.bs.modal', function() {
+    var videoEl = document.getElementById('lightbox-video');
+    if (videoEl) { videoEl.pause(); videoEl.src = ''; }
+    var audioEl = document.getElementById('lightbox-audio');
+    if (audioEl) { audioEl.pause(); audioEl.src = ''; }
+    var iframeEl = document.getElementById('lightbox-iframe');
+    if (iframeEl) { iframeEl.src = ''; }
+  });
+
+  // Click on chat preview buttons or media items
+  $(document).on('click', '.btn-open-preview, .chat-media-clickable', function(e) {
+    e.preventDefault();
+    var url = $(this).data('media-url');
+    var type = $(this).data('media-type');
+    var title = $(this).data('media-title');
+    openMediaPreview(url, type, title);
   });
 
 });

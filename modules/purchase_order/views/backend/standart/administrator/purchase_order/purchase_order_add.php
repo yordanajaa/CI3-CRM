@@ -24,7 +24,7 @@ $action_url = $is_edit
 </section>
 
 <section class="content">
-<form id="form_po">
+<form id="form_po" onsubmit="return false;">
 <input type="hidden" name="nomor_po" value="<?= _ent($nomor_baru ?? ''); ?>">
 <div class="row">
    <div class="col-md-12">
@@ -45,7 +45,7 @@ $action_url = $is_edit
                      <select class="form-control chosen" name="supplier_id" id="supplier_id" required>
                         <option value="">-- Pilih Supplier --</option>
                         <?php foreach($suppliers as $s): ?>
-                           <option value="<?= $s->id; ?>" data-currency="<?= _ent($s->mata_uang ?? 'IDR'); ?>">
+                           <option value="<?= $s->id; ?>" data-currency="<?= _ent($s->mata_uang ?? 'IDR'); ?>" <?= ((isset($po) && $po->supplier_id == $s->id) || ($this->input->get('supplier_id') == $s->id)) ? 'selected' : ''; ?>>
                               <?= _ent($s->kode_supplier.' - '.$s->nama_supplier.' ('.($s->mata_uang ?? 'IDR').')'); ?>
                            </option>
                         <?php endforeach; ?>
@@ -317,6 +317,7 @@ function add_item_row(){
 
 $(document).ready(function(){
    fetch_live_rates_api(true);
+   if ($('#supplier_id').val()) { $('#supplier_id').trigger('change'); }
    update_currency_labels();
 
    if ($('#mata_uang').val() !== 'IDR') {
@@ -433,7 +434,18 @@ $(document).ready(function(){
                btn.prop('disabled', false).html('<i class="fa fa-save"></i> <?= $is_edit ? 'Update Purchase Order' : 'Simpan Purchase Order'; ?>'); 
             } 
          },
-         error: function(){ 
+         error: function(xhr){ 
+            var errMsg = 'Terjadi kesalahan sistem saat menyimpan PO.';
+            if (xhr.responseText) {
+               try {
+                  var parsed = JSON.parse(xhr.responseText);
+                  if (parsed.message) errMsg = parsed.message;
+               } catch(e) {
+                  var m = xhr.responseText.match(/<p>(.*?)<\/p>/i);
+                  if (m && m[1]) errMsg = m[1];
+               }
+            }
+            show_alert(errMsg, 'error');
             btn.prop('disabled', false).html('<i class="fa fa-save"></i> <?= $is_edit ? 'Update Purchase Order' : 'Simpan Purchase Order'; ?>'); 
          }
       });

@@ -101,7 +101,13 @@ class Model_invoice extends MY_Model {
 			->limit(1)
 			->get($this->table_name)->row();
 		$num = $last ? ((int) substr($last->nomor_invoice, -4)) + 1 : 1;
-		return $prefix . str_pad($num, 4, '0', STR_PAD_LEFT);
+		$nomor = $prefix . str_pad($num, 4, '0', STR_PAD_LEFT);
+
+		while ($this->db->where('nomor_invoice', $nomor)->get($this->table_name)->num_rows() > 0) {
+			$num++;
+			$nomor = $prefix . str_pad($num, 4, '0', STR_PAD_LEFT);
+		}
+		return $nomor;
 	}
 
 	public function get_items($invoice_id)
@@ -138,6 +144,11 @@ class Model_invoice extends MY_Model {
 		$last = $this->db->like('nomor_piutang', $prefix, 'after')->order_by('id', 'DESC')->limit(1)->get('piutang_usaha')->row();
 		$num = $last ? ((int) substr($last->nomor_piutang, -4)) + 1 : 1;
 		$nomor = $prefix . str_pad($num, 4, '0', STR_PAD_LEFT);
+
+		while ($this->db->where('nomor_piutang', $nomor)->get('piutang_usaha')->num_rows() > 0) {
+			$num++;
+			$nomor = $prefix . str_pad($num, 4, '0', STR_PAD_LEFT);
+		}
 
 		$this->db->insert('piutang_usaha', [
 			'nomor_piutang' => $nomor,
@@ -188,6 +199,14 @@ class Model_invoice extends MY_Model {
 			if ($stok) {
 				$new_qty = max(0, $stok->qty - $item->qty);
 				$this->db->update('stok', ['qty' => $new_qty, 'updated_at' => date('Y-m-d H:i:s')], ['id' => $stok->id]);
+			} else {
+				$this->db->insert('stok', [
+					'produk_id'  => $item->produk_id,
+					'gudang_id'  => $gudang_id,
+					'qty'        => 0,
+					'qty_rusak'  => 0,
+					'updated_at' => date('Y-m-d H:i:s'),
+				]);
 			}
 
 			// Ambil batch teratas sesuai alur FIFO / FEFO dari log penerimaan

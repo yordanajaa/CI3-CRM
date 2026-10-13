@@ -91,7 +91,13 @@ class Model_purchase_order extends MY_Model {
 			->limit(1)
 			->get($this->table_name)->row();
 		$num = $last ? ((int) substr($last->nomor_po, -4)) + 1 : 1;
-		return $prefix . str_pad($num, 4, '0', STR_PAD_LEFT);
+		$nomor = $prefix . str_pad($num, 4, '0', STR_PAD_LEFT);
+
+		while ($this->db->where('nomor_po', $nomor)->get($this->table_name)->num_rows() > 0) {
+			$num++;
+			$nomor = $prefix . str_pad($num, 4, '0', STR_PAD_LEFT);
+		}
+		return $nomor;
 	}
 
 	public function update_total($po_id)

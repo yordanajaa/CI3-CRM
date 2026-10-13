@@ -77,7 +77,12 @@ $route[ADMIN_NAMESPACE_URL.'/absensi/laporan'] = 'hr/backend/hr_rekap/index';
 $route[ADMIN_NAMESPACE_URL.'/manage-form/(:any)'] = 'form/backend/$1';
 $route[ADMIN_NAMESPACE_URL.'/manage-form/(:any)/(:any)'] = 'form/backend/$1/$2';
 $route[ADMIN_NAMESPACE_URL.'/manage-form/(:any)/(:any)/(:any)'] = 'form/backend/$1/$2/$3';
-$route[ADMIN_NAMESPACE_URL.'/manage-form/(:any)/(:any)/(:any)/(:any)'] = 'form/backend/$1/$2/$3/$4';
+// Custom Routes for CRM Segments Module (Product RFM Matrix)
+$route[ADMIN_NAMESPACE_URL.'/crm_segments'] = 'crm_segments/backend/crm_segments/product_rfm';
+$route[ADMIN_NAMESPACE_URL.'/crm_segments/product_rfm'] = 'crm_segments/backend/crm_segments/product_rfm';
+$route[ADMIN_NAMESPACE_URL.'/crm_segments/product_rfm_drilldown_ajax'] = 'crm_segments/backend/crm_segments/product_rfm_drilldown_ajax';
+$route[ADMIN_NAMESPACE_URL.'/crm_segments/(:any)'] = 'crm_segments/backend/crm_segments/$1';
+$route[ADMIN_NAMESPACE_URL.'/crm_segments/(:any)/(:any)'] = 'crm_segments/backend/crm_segments/$1/$2';
 
 $route[ADMIN_NAMESPACE_URL.'/(:any)'] = '$1/backend/$1';
 $route[ADMIN_NAMESPACE_URL.'/(:any)/(:any)'] = '$1/backend/$1/$2';

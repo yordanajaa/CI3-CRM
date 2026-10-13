@@ -85,21 +85,27 @@
 }
 .crm-header-nav .action-tools .btn:hover { transform: translateY(-2px); }
 
-/* Navigation Tab Bar */
+/* Navigation Tab Bar - Touch Scrollable */
 .crm-header-nav .nav-tabs-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 8px;
   padding-top: 14px;
   border-top: 1px solid rgba(255,255,255,0.18);
   position: relative;
   z-index: 2;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.crm-header-nav .nav-tabs-bar::-webkit-scrollbar {
+  display: none;
 }
 .crm-header-nav .nav-tab-btn {
-  padding: 8px 18px;
+  padding: 8px 16px;
   border-radius: 10px;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
   color: rgba(255,255,255,0.92);
   background: rgba(255,255,255,0.12);
@@ -109,6 +115,7 @@
   align-items: center;
   gap: 8px;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 .crm-header-nav .nav-tab-btn:hover {
   background: rgba(255,255,255,0.25);
@@ -172,17 +179,22 @@
 .btn-indigo:hover { background: #4338ca; color: #fff; }
 
 @media (max-width: 991px) {
-  .crm-banner { flex-direction: column; text-align: center; }
-  .crm-banner .btn-area { margin-top: 10px; justify-content: center; }
+  .crm-header-nav { padding: 16px 16px 12px 16px; margin-bottom: 12px; }
+  .crm-header-nav .header-top-flex { flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 12px; }
+  .crm-header-nav .action-tools { width: 100%; justify-content: flex-start; gap: 6px; }
+  .crm-header-nav .action-tools .btn { font-size: 11px; padding: 6px 10px; flex: 1 1 auto; text-align: center; justify-content: center; }
+  .box-clean .form-group { margin-bottom: 10px !important; }
 }
 
 @media (max-width: 767px) {
-  .content { padding: 10px 8px !important; }
-  .crm-banner { padding: 16px 14px; text-align: center; justify-content: center; border-radius: 10px; margin-bottom: 14px; }
-  .crm-banner .title-area h2 { font-size: 17px; }
-  .crm-banner .title-area p { font-size: 11px; }
-  .crm-banner .btn-area { margin-top: 10px; flex-wrap: wrap; justify-content: center; }
-  .crm-banner .btn-area .btn { font-size: 10.5px; padding: 5px 10px; }
+  .content { padding: 8px 6px !important; }
+  .crm-header-nav { padding: 14px 12px 10px 12px; border-radius: 12px; margin-bottom: 12px; }
+  .crm-header-nav .header-title h2 { font-size: 18px; }
+  .crm-header-nav .header-title p { font-size: 11px; }
+  .crm-header-nav .action-tools { width: 100%; justify-content: flex-start; gap: 6px; }
+  .crm-header-nav .action-tools .btn { font-size: 10.5px; padding: 6px 10px; flex: 1 1 auto; text-align: center; justify-content: center; }
+  .crm-header-nav .nav-tabs-bar { gap: 6px; padding-top: 10px; }
+  .crm-header-nav .nav-tab-btn { font-size: 11.5px; padding: 6px 12px; }
 
   .box-clean { border-radius: 10px; margin-bottom: 14px; }
   .box-clean .box-header { padding: 12px 14px; }
@@ -190,22 +202,24 @@
   .box-clean .box-body { padding: 14px !important; }
 
   .box-body .row { margin-left: -4px; margin-right: -4px; }
-  .box-body .row > [class*="col-"] { padding-left: 4px; padding-right: 4px; margin-bottom: 8px; }
+  .box-body .row > [class*="col-"] { padding-left: 4px; padding-right: 4px; margin-bottom: 10px; }
   .box-body .form-control { font-size: 12px; height: 36px; }
   .box-body label { font-size: 11px !important; }
 
   #recipients-list { max-height: 200px; padding: 10px; font-size: 11.5px; }
   #btn-execute-broadcast { font-size: 13px !important; padding: 10px !important; border-radius: 8px !important; }
 
+  .table-responsive { border: none !important; margin-bottom: 0; }
+  .table-log { min-width: 650px; }
   .table-log th { font-size: 9.5px; padding: 6px 4px !important; }
   .table-log td { font-size: 10.5px; padding: 6px 4px !important; }
   .badge-source { font-size: 9px; padding: 2px 6px; }
 }
 
 @media (max-width: 480px) {
-  .crm-banner .title-area h2 { font-size: 15px; }
-  .crm-banner .btn-area { flex-direction: column; width: 100%; }
-  .crm-banner .btn-area .btn { width: 100%; }
+  .crm-header-nav .header-title h2 { font-size: 15px; }
+  .crm-header-nav .action-tools { flex-direction: column; width: 100%; }
+  .crm-header-nav .action-tools .btn { width: 100%; }
   .table-log th, .table-log td { font-size: 9.5px; padding: 5px 3px !important; }
 }
 </style>

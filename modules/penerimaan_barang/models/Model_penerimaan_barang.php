@@ -79,7 +79,13 @@ class Model_penerimaan_barang extends MY_Model {
 			->limit(1)
 			->get($this->table_name)->row();
 		$num = $last ? ((int) substr($last->nomor_penerimaan, -4)) + 1 : 1;
-		return $prefix . str_pad($num, 4, '0', STR_PAD_LEFT);
+		$nomor = $prefix . str_pad($num, 4, '0', STR_PAD_LEFT);
+
+		while ($this->db->where('nomor_penerimaan', $nomor)->get($this->table_name)->num_rows() > 0) {
+			$num++;
+			$nomor = $prefix . str_pad($num, 4, '0', STR_PAD_LEFT);
+		}
+		return $nomor;
 	}
 
 	public function get_items($penerimaan_id)
@@ -163,13 +169,18 @@ class Model_penerimaan_barang extends MY_Model {
 			$prefix = 'UTG-' . date('Ym') . '-';
 			$last = $this->db->like('nomor_utang', $prefix, 'after')->order_by('id', 'DESC')->limit(1)->get('utang_usaha')->row();
 			$num = $last ? ((int) substr($last->nomor_utang, -4)) + 1 : 1;
+			$nomor_utang = $prefix . str_pad($num, 4, '0', STR_PAD_LEFT);
+			while ($this->db->where('nomor_utang', $nomor_utang)->get('utang_usaha')->num_rows() > 0) {
+				$num++;
+				$nomor_utang = $prefix . str_pad($num, 4, '0', STR_PAD_LEFT);
+			}
 
 			$catatan_utang = $mata_uang !== 'IDR'
 				? 'Penerimaan GRN #' . $penerimaan->nomor_penerimaan . ' (' . $mata_uang . ' ' . number_format($total_nilai, 2, '.', ',') . ' @ Kurs Rp ' . number_format($kurs, 0, ',', '.') . ')'
 				: 'Penerimaan GRN #' . $penerimaan->nomor_penerimaan;
 
 			$this->db->insert('utang_usaha', [
-				'nomor_utang' => $prefix . str_pad($num, 4, '0', STR_PAD_LEFT),
+				'nomor_utang' => $nomor_utang,
 				'supplier_id' => $penerimaan->supplier_id,
 				'penerimaan_id' => $penerimaan_id,
 				'po_id'         => $penerimaan->po_id ?: null,

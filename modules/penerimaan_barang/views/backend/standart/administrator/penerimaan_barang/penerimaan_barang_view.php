@@ -57,9 +57,13 @@ $status_color = ['draft'=>'default','confirmed'=>'success','cancelled'=>'danger'
                <div class="col-md-6">
                   <table class="table table-condensed table-borderless" style="font-size: 13px;">
                      <tr><th width="140">No Penerimaan</th><td>: <strong class="text-primary"><?= _ent($penerimaan->nomor_penerimaan); ?></strong></td></tr>
-                     <tr><th>Referensi PO</th><td>: <?= !empty($penerimaan_detail->nomor_po) ? '<strong class="text-info">'._ent($penerimaan_detail->nomor_po).'</strong>' : '<span class="text-muted">- Tanpa PO -</span>'; ?></td></tr>
+                     <tr><th>Referensi PO</th><td>: <?= !empty($penerimaan_detail->nomor_po) ? '<a href="'.site_url('administrator/purchase_order/view/'.$penerimaan->po_id).'"><strong class="text-info">' . _ent($penerimaan_detail->nomor_po) . ' <i class="fa fa-external-link" style="font-size:11px;"></i></strong></a>' : '<span class="text-muted">- Tanpa PO -</span>'; ?></td></tr>
                      <tr><th>Supplier</th><td>: <strong><?= _ent($penerimaan_detail->nama_supplier ?? '-'); ?></strong></td></tr>
                      <tr><th>Gudang Tujuan</th><td>: <span class="label label-primary"><i class="fa fa-building"></i> <?= _ent($penerimaan_detail->nama_gudang ?? '-'); ?></span></td></tr>
+                      <?php $linked_utang = $this->db->get_where('utang_usaha', ['penerimaan_id' => $penerimaan->id])->row(); ?>
+                      <?php if($linked_utang): ?>
+                      <tr><th>Tagihan Utang</th><td>: <a href="<?= site_url('administrator/utang_usaha?q=' . urlencode($linked_utang->nomor_utang)); ?>" class="label label-warning"><i class="fa fa-credit-card"></i> <?= _ent($linked_utang->nomor_utang); ?> (<?= strtoupper($linked_utang->status); ?> - Sisa Rp <?= number_format($linked_utang->sisa, 0, ',', '.'); ?>)</a></td></tr>
+                      <?php endif; ?>
                   </table>
                </div>
                <div class="col-md-6">
@@ -123,7 +127,7 @@ $status_color = ['draft'=>'default','confirmed'=>'success','cancelled'=>'danger'
                      <tr>
                         <td><?= $i+1; ?></td>
                         <td>
-                           <strong class="text-dark" style="font-size: 13px;"><?= _ent($item->nama_produk); ?></strong><br>
+                           <a href="<?= site_url('administrator/stok/kartu/' . $item->produk_id); ?>" title="Buka Kartu Stok Produk"><strong class="text-primary" style="font-size: 13px;"><?= _ent($item->nama_produk); ?> <i class="fa fa-external-link" style="font-size:10px;"></i></strong></a><br>
                            <small class="text-muted"><i class="fa fa-barcode"></i> <?= _ent($item->kode_produk); ?></small>
                         </td>
                         <td>

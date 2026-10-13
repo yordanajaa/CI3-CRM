@@ -1,6 +1,9 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
+/**
+ * @property CI_DB_query_builder $db
+ */
 class Model_crm extends CI_Model
 {
 	public function __construct()
@@ -211,16 +214,28 @@ class Model_crm extends CI_Model
 	/**
 	 * Calculate quantitative percentile thresholds (20%, 40%, 60%, 80%) across active customers (optionally filtered by product)
 	 */
-	public function get_rfm_percentile_thresholds($product_filter = '')
+	public function get_rfm_percentile_thresholds($product_filter = '', $period_filter = '', $category_filter = '')
 	{
 		static $cached_thresholds = [];
-		$cache_key = md5((string)$product_filter);
+		$cache_key = md5((string)$product_filter . '_' . (string)$period_filter . '_' . (string)$category_filter);
 		if (isset($cached_thresholds[$cache_key])) {
 			return $cached_thresholds[$cache_key];
 		}
 
-		if (!empty($product_filter)) {
-			$p_esc = $this->db->escape_like_str($product_filter);
+		if (!empty($product_filter) || !empty($category_filter)) {
+			$product_so_where = '';
+			$product_pm_where = '';
+			if (!empty($product_filter)) {
+				$pf = $this->db->escape(trim($product_filter));
+				$product_so_where .= " AND (TRIM(p.nama_produk) = " . $pf . " OR TRIM(soi.catatan) = " . $pf . ")";
+				$product_pm_where .= " AND (TRIM(p.nama_produk) = " . $pf . " OR TRIM(pmi.catatan) = " . $pf . " OR TRIM(pm.nama_produk_marketplace) = " . $pf . ")";
+			}
+			if (!empty($category_filter)) {
+				$cf = $this->db->escape(trim($category_filter));
+				$product_so_where .= " AND (kp.nama_kategori = " . $cf . " OR p.kategori_id = " . $cf . ")";
+				$product_pm_where .= " AND (kp.nama_kategori = " . $cf . " OR p.kategori_id = " . $cf . ")";
+			}
+
 			$sql = "
 				SELECT 
 					c_data.no_telepon,
@@ -236,8 +251,10 @@ class Model_crm extends CI_Model
 					FROM sales_order_item soi
 					JOIN sales_order so ON soi.so_id = so.id
 					LEFT JOIN produk p ON soi.produk_id = p.id
+					LEFT JOIN kategori_produk kp ON kp.id = p.kategori_id
 					WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
-					AND (p.nama_produk LIKE '%{$p_esc}%' OR soi.catatan LIKE '%{$p_esc}%')
+					  AND (so.status_pesanan IS NULL OR (LOWER(so.status_pesanan) NOT LIKE '%batal%' AND LOWER(so.status_pesanan) NOT LIKE '%cancel%'))
+					" . $product_so_where . "
 
 					UNION ALL
 
@@ -249,8 +266,10 @@ class Model_crm extends CI_Model
 					FROM penjualan_marketplace_item pmi
 					JOIN penjualan_marketplace pm ON pmi.penjualan_marketplace_id = pm.id
 					LEFT JOIN produk p ON pmi.produk_id = p.id
+					LEFT JOIN kategori_produk kp ON kp.id = p.kategori_id
 					WHERE pm.no_telepon IS NOT NULL AND pm.no_telepon != ''
-					AND (p.nama_produk LIKE '%{$p_esc}%' OR pmi.catatan LIKE '%{$p_esc}%')
+					  AND (pm.status_pesanan IS NULL OR (LOWER(pm.status_pesanan) NOT LIKE '%batal%' AND LOWER(pm.status_pesanan) NOT LIKE '%cancel%'))
+					" . $product_pm_where . "
 				) c_data
 				GROUP BY c_data.no_telepon
 			";
@@ -265,12 +284,14 @@ class Model_crm extends CI_Model
 					SELECT no_telepon, tanggal_so as last_date, CONCAT('so_', id) as order_id, total 
 					FROM sales_order 
 					WHERE no_telepon IS NOT NULL AND no_telepon != ''
+					  AND (status_pesanan IS NULL OR (LOWER(status_pesanan) NOT LIKE '%batal%' AND LOWER(status_pesanan) NOT LIKE '%cancel%'))
 					
 					UNION ALL
 					
 					SELECT no_telepon, tanggal_so as last_date, CONCAT('pm_', id) as order_id, total 
 					FROM penjualan_marketplace 
 					WHERE no_telepon IS NOT NULL AND no_telepon != ''
+					  AND (status_pesanan IS NULL OR (LOWER(status_pesanan) NOT LIKE '%batal%' AND LOWER(status_pesanan) NOT LIKE '%cancel%'))
 				) c_data
 				GROUP BY c_data.no_telepon
 			";
@@ -350,7 +371,7 @@ class Model_crm extends CI_Model
 	/**
 	 * Calculate RFM Score and Segment for a customer using percentile quantiles (20%, 40%, 60%, 80%)
 	 */
-	public function calculate_rfm($last_order_date = null, $total_orders = 0, $total_spend = 0.0, $thresholds = null)
+	public function calculate_rfm($last_order_date = null, $total_orders = 0, $total_spend = 0.0, $thresholds = null, $reference_date = null)
 	{
 		if ($thresholds === null) {
 			$thresholds = $this->get_rfm_percentile_thresholds();
@@ -367,7 +388,8 @@ class Model_crm extends CI_Model
 		if (!empty($last_order_date) && $last_order_date !== '0000-00-00') {
 			$ts_last = strtotime($last_order_date);
 			if ($ts_last && $ts_last > 0) {
-				$days_since_last = (int)floor((time() - $ts_last) / 86400);
+				$ref_ts = !empty($reference_date) ? (is_numeric($reference_date) ? (int)$reference_date : strtotime($reference_date)) : time();
+				$days_since_last = max(0, (int)floor(($ref_ts - $ts_last) / 86400));
 				if ($days_since_last <= $t_r[20]) {
 					$r_score = 5; $r_label = 'Sangat baru';
 				} elseif ($days_since_last <= $t_r[40]) {
@@ -414,7 +436,7 @@ class Model_crm extends CI_Model
 			$m_score = 1; $m_label = 'Sangat kecil';
 		}
 
-		$rfm_code = "{$r_score}{$f_score}{$m_score}";
+		$rfm_code = $r_score . $f_score . $m_score;
 
 		$matrix = $this->get_rfm_matrix();
 		$rule = isset($matrix[$rfm_code]) ? $matrix[$rfm_code] : [
@@ -437,7 +459,7 @@ class Model_crm extends CI_Model
 			'f_label' => $f_label,
 			'm_label' => $m_label,
 			'rfm_code' => $rfm_code,
-			'rfm_display' => "{$r_score}-{$f_score}-{$m_score}",
+			'rfm_display' => $r_score . '-' . $f_score . '-' . $m_score,
 			'segment' => $rule['segment'],
 			'goal' => $rule['goal'],
 			'action' => $rule['action'],
@@ -450,12 +472,24 @@ class Model_crm extends CI_Model
 	 * Get consolidated customer list directly from sales_order + penjualan_marketplace
 	 * Grouped by phone number (primary key for customer identity)
 	 */
-	public function get_customers($filter = '', $limit = 25, $offset = 0, $rfm_segment_filter = '', $product_filter = '', $period_filter = '')
+	public function get_customers($filter = '', $limit = 25, $offset = 0, $rfm_segment_filter = '', $product_filter = '', $period_filter = '', $category_filter = '')
 	{
-		$thresholds = $this->get_rfm_percentile_thresholds($product_filter, $period_filter);
+		$thresholds = $this->get_rfm_percentile_thresholds($product_filter, $period_filter, $category_filter);
 
-		if (!empty($product_filter)) {
-			$p_esc = $this->db->escape_like_str($product_filter);
+		if (!empty($product_filter) || !empty($category_filter)) {
+			$product_so_where = '';
+			$product_pm_where = '';
+			if (!empty($product_filter)) {
+				$pf = $this->db->escape(trim($product_filter));
+				$product_so_where .= " AND (TRIM(p.nama_produk) = " . $pf . " OR TRIM(soi.catatan) = " . $pf . ")";
+				$product_pm_where .= " AND (TRIM(p.nama_produk) = " . $pf . " OR TRIM(pmi.catatan) = " . $pf . " OR TRIM(pm.nama_produk_marketplace) = " . $pf . ")";
+			}
+			if (!empty($category_filter)) {
+				$cf = $this->db->escape(trim($category_filter));
+				$product_so_where .= " AND (kp.nama_kategori = " . $cf . " OR p.kategori_id = " . $cf . ")";
+				$product_pm_where .= " AND (kp.nama_kategori = " . $cf . " OR p.kategori_id = " . $cf . ")";
+			}
+
 			$sql = "SELECT 
 				phone as customer_phone,
 				COALESCE(NULLIF(MAX(nama), ''), 'Customer') as customer_nama,
@@ -465,26 +499,29 @@ class Model_crm extends CI_Model
 				GROUP_CONCAT(DISTINCT source ORDER BY source SEPARATOR ', ') as sumber_penjualan
 			FROM (
 				SELECT 
-					CAST(so.no_telepon AS CHAR) COLLATE utf8mb4_unicode_ci as phone, 
-					CAST(so.nama_penerima AS CHAR) COLLATE utf8mb4_unicode_ci as nama, 
+					CAST(COALESCE(NULLIF(so.no_telepon, ''), p_cust.no_telp, p_cust.telepon) AS CHAR) COLLATE utf8mb4_unicode_ci as phone, 
+					CAST(COALESCE(NULLIF(so.nama_penerima, ''), p_cust.nama_pelanggan, 'Customer') AS CHAR) COLLATE utf8mb4_unicode_ci as nama, 
 					CAST(CONCAT('so_', so.id) AS CHAR) COLLATE utf8mb4_unicode_ci as order_id, 
 					soi.subtotal as total, 
 					CAST(so.tanggal_so AS DATETIME) as tanggal, 
 					'Toko' COLLATE utf8mb4_unicode_ci as source 
 				FROM sales_order_item soi
 				JOIN sales_order so ON soi.so_id = so.id
+				LEFT JOIN pelanggan p_cust ON so.pelanggan_id = p_cust.id
 				LEFT JOIN produk p ON soi.produk_id = p.id
-				WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
+				LEFT JOIN kategori_produk kp ON kp.id = p.kategori_id
+				WHERE (so.no_telepon IS NOT NULL AND so.no_telepon != '' OR p_cust.telepon IS NOT NULL AND p_cust.telepon != '' OR p_cust.no_telp IS NOT NULL AND p_cust.no_telp != '')
 				  AND so.tanggal_so IS NOT NULL 
 				  AND CAST(so.tanggal_so AS CHAR) NOT LIKE '0000%' 
 				  AND so.tanggal_so > '1970-01-01'
-				  AND (p.nama_produk LIKE '%{$p_esc}%' OR soi.catatan LIKE '%{$p_esc}%')
+				  AND (so.status_pesanan IS NULL OR (LOWER(so.status_pesanan) NOT LIKE '%batal%' AND LOWER(so.status_pesanan) NOT LIKE '%cancel%'))
+				  " . $product_so_where . "
 
 				UNION ALL
 
 				SELECT 
 					CAST(pm.no_telepon AS CHAR) COLLATE utf8mb4_unicode_ci as phone, 
-					CAST(pm.nama_penerima AS CHAR) COLLATE utf8mb4_unicode_ci as nama, 
+					CAST(COALESCE(NULLIF(TRIM(pm.nama_penerima), ''), NULLIF(TRIM(pm.username_pembeli), ''), 'Customer') AS CHAR) COLLATE utf8mb4_unicode_ci as nama, 
 					CAST(CONCAT('pm_', pm.id) AS CHAR) COLLATE utf8mb4_unicode_ci as order_id, 
 					pmi.subtotal as total, 
 					CAST(pm.tanggal_so AS DATETIME) as tanggal, 
@@ -503,12 +540,14 @@ class Model_crm extends CI_Model
 				FROM penjualan_marketplace_item pmi
 				JOIN penjualan_marketplace pm ON pmi.penjualan_marketplace_id = pm.id
 				LEFT JOIN produk p ON pmi.produk_id = p.id
+				LEFT JOIN kategori_produk kp ON kp.id = p.kategori_id
 				LEFT JOIN crm_transaction_followup_labels lbl ON lbl.order_id = pm.id AND lbl.order_table = 'penjualan_marketplace'
 				WHERE pm.no_telepon IS NOT NULL AND pm.no_telepon != ''
 				  AND pm.tanggal_so IS NOT NULL 
 				  AND CAST(pm.tanggal_so AS CHAR) NOT LIKE '0000%' 
 				  AND pm.tanggal_so > '1970-01-01'
-				  AND (p.nama_produk LIKE '%{$p_esc}%' OR pmi.catatan LIKE '%{$p_esc}%')
+				  AND (pm.status_pesanan IS NULL OR (LOWER(pm.status_pesanan) NOT LIKE '%batal%' AND LOWER(pm.status_pesanan) NOT LIKE '%cancel%'))
+				  " . $product_pm_where . "
 			) u";
 		} else {
 			$sql = "SELECT 
@@ -520,24 +559,26 @@ class Model_crm extends CI_Model
 				GROUP_CONCAT(DISTINCT source ORDER BY source SEPARATOR ', ') as sumber_penjualan
 			FROM (
 				SELECT 
-					CAST(so.no_telepon AS CHAR) COLLATE utf8mb4_unicode_ci as phone, 
-					CAST(so.nama_penerima AS CHAR) COLLATE utf8mb4_unicode_ci as nama, 
+					CAST(COALESCE(NULLIF(so.no_telepon, ''), p_cust.no_telp, p_cust.telepon) AS CHAR) COLLATE utf8mb4_unicode_ci as phone, 
+					CAST(COALESCE(NULLIF(so.nama_penerima, ''), p_cust.nama_pelanggan, 'Customer') AS CHAR) COLLATE utf8mb4_unicode_ci as nama, 
 					CAST(CONCAT('so_', so.id) AS CHAR) COLLATE utf8mb4_unicode_ci as order_id, 
 					soi.subtotal as total, 
 					CAST(so.tanggal_so AS DATETIME) as tanggal, 
 					'Toko' COLLATE utf8mb4_unicode_ci as source 
 				FROM sales_order_item soi
 				JOIN sales_order so ON soi.so_id = so.id
-				WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
+				LEFT JOIN pelanggan p_cust ON so.pelanggan_id = p_cust.id
+				WHERE (so.no_telepon IS NOT NULL AND so.no_telepon != '' OR p_cust.telepon IS NOT NULL AND p_cust.telepon != '' OR p_cust.no_telp IS NOT NULL AND p_cust.no_telp != '')
 				  AND so.tanggal_so IS NOT NULL 
 				  AND CAST(so.tanggal_so AS CHAR) NOT LIKE '0000%' 
 				  AND so.tanggal_so > '1970-01-01'
+				  AND (so.status_pesanan IS NULL OR (LOWER(so.status_pesanan) NOT LIKE '%batal%' AND LOWER(so.status_pesanan) NOT LIKE '%cancel%'))
 
 				UNION ALL
 
 				SELECT 
 					CAST(pm.no_telepon AS CHAR) COLLATE utf8mb4_unicode_ci as phone, 
-					CAST(pm.nama_penerima AS CHAR) COLLATE utf8mb4_unicode_ci as nama, 
+					CAST(COALESCE(NULLIF(TRIM(pm.nama_penerima), ''), NULLIF(TRIM(pm.username_pembeli), ''), 'Customer') AS CHAR) COLLATE utf8mb4_unicode_ci as nama, 
 					CAST(CONCAT('pm_', pm.id) AS CHAR) COLLATE utf8mb4_unicode_ci as order_id, 
 					pmi.subtotal as total, 
 					CAST(pm.tanggal_so AS DATETIME) as tanggal, 
@@ -560,17 +601,18 @@ class Model_crm extends CI_Model
 				  AND pm.tanggal_so IS NOT NULL 
 				  AND CAST(pm.tanggal_so AS CHAR) NOT LIKE '0000%' 
 				  AND pm.tanggal_so > '1970-01-01'
+				  AND (pm.status_pesanan IS NULL OR (LOWER(pm.status_pesanan) NOT LIKE '%batal%' AND LOWER(pm.status_pesanan) NOT LIKE '%cancel%'))
 			) u";
 		}
 
 		$where_conditions = [];
 		if (!empty($filter)) {
 			$f_esc = $this->db->escape_like_str($filter);
-			$where_conditions[] = "(nama LIKE '%{$f_esc}%' OR phone LIKE '%{$f_esc}%')";
+			$where_conditions[] = "(nama LIKE '%" . $f_esc . "%' OR phone LIKE '%" . $f_esc . "%')";
 		}
 		if (!empty($period_filter)) {
 			$period_esc = $this->db->escape_str($period_filter);
-			$where_conditions[] = "DATE_FORMAT(tanggal, '%Y-%m') = '{$period_esc}'";
+			$where_conditions[] = "DATE_FORMAT(tanggal, '%Y-%m') = '" . $period_esc . "'";
 		}
 		if (!empty($where_conditions)) {
 			$sql .= " WHERE " . implode(" AND ", $where_conditions);
@@ -588,7 +630,15 @@ class Model_crm extends CI_Model
 			$r->total_orders = (int)$r->total_orders;
 			$r->total_spend = (float)$r->total_spend;
 
-			$r->rfm = $this->calculate_rfm($r->last_order_date, $r->total_orders, $r->total_spend, $thresholds);
+			$ref_date = null;
+			if (!empty($period_filter)) {
+				$ref_date = date('Y-m-t 23:59:59', strtotime($period_filter . '-01'));
+				if ($ref_date > date('Y-m-d H:i:s')) {
+					$ref_date = date('Y-m-d H:i:s');
+				}
+			}
+
+			$r->rfm = $this->calculate_rfm($r->last_order_date, $r->total_orders, $r->total_spend, $thresholds, $ref_date);
 
 			if (!empty($rfm_segment_filter)) {
 				if (strcasecmp($r->rfm['segment'], $rfm_segment_filter) !== 0) {
@@ -615,9 +665,9 @@ class Model_crm extends CI_Model
 	/**
 	 * Get RFM Segmentation Breakdown for Dashboard Cards
 	 */
-	public function get_rfm_dashboard_distribution($product_filter = '', $period_filter = '')
+	public function get_rfm_dashboard_distribution($product_filter = '', $period_filter = '', $category_filter = '')
 	{
-		$result = $this->get_customers('', 10000, 0, '', $product_filter, $period_filter);
+		$result = $this->get_customers('', 10000, 0, '', $product_filter, $period_filter, $category_filter);
 		$rows = $result['rows'];
 		$total = count($rows);
 
@@ -665,7 +715,7 @@ class Model_crm extends CI_Model
 		$phone_esc = $this->db->escape_str($phone);
 		$clean = preg_replace('/[^0-9]/', '', (string)$phone);
 		if (empty($clean)) {
-			return "{$column} = '{$phone_esc}'";
+			return $column . " = '" . $phone_esc . "'";
 		}
 		
 		$raw_tail = strlen($clean) >= 9 ? substr($clean, -9) : $clean;
@@ -676,7 +726,7 @@ class Model_crm extends CI_Model
 		$sixty_esc = $this->db->escape_str($sixty_format);
 		$tail_esc = $this->db->escape_str($raw_tail);
 
-		return "({$column} = '{$phone_esc}' OR {$column} = '{$zero_esc}' OR {$column} = '{$sixty_esc}' OR (LENGTH({$column}) >= 9 AND RIGHT({$column}, 9) = '{$tail_esc}'))";
+		return "(" . $column . " = '" . $phone_esc . "' OR " . $column . " = '" . $zero_esc . "' OR " . $column . " = '" . $sixty_esc . "' OR (LENGTH(" . $column . ") >= 9 AND RIGHT(" . $column . ", 9) = '" . $tail_esc . "'))";
 	}
 
 	/**
@@ -696,28 +746,28 @@ class Model_crm extends CI_Model
 		if (!empty($product_filter)) {
 			$pf = $this->db->escape($product_filter);
 			$so_join = "INNER JOIN sales_order_item soi ON soi.so_id = so.id LEFT JOIN produk p ON soi.produk_id = p.id";
-			$so_product_where = " AND (p.nama_produk = {$pf} OR soi.catatan = {$pf})";
+			$so_product_where = " AND (p.nama_produk = " . $pf . " OR soi.catatan = " . $pf . ")";
 			$pm_join = "INNER JOIN penjualan_marketplace_item pmi ON pmi.penjualan_marketplace_id = pm.id LEFT JOIN produk p2 ON pmi.produk_id = p2.id";
-			$pm_product_where = " AND (p2.nama_produk = {$pf} OR pmi.catatan = {$pf} OR pm.nama_produk_marketplace = {$pf})";
+			$pm_product_where = " AND (p2.nama_produk = " . $pf . " OR pmi.catatan = " . $pf . " OR pm.nama_produk_marketplace = " . $pf . ")";
 
 			// Get total spend from SO item subtotal for this product
-			$so_spend = $this->get_query_sum("SELECT COALESCE(SUM(soi.subtotal),0) as t FROM sales_order so {$so_join} WHERE {$where_so}{$so_product_where}");
+			$so_spend = $this->get_query_sum("SELECT COALESCE(SUM(soi.subtotal),0) as t FROM sales_order so " . $so_join . " WHERE " . $where_so . $so_product_where);
 			
 			// Get total spend from marketplace item subtotal for this product
-			$mp_spend = $this->get_query_sum("SELECT COALESCE(SUM(pmi.subtotal),0) as t FROM penjualan_marketplace pm {$pm_join} WHERE {$where_pm}{$pm_product_where}");
+			$mp_spend = $this->get_query_sum("SELECT COALESCE(SUM(pmi.subtotal),0) as t FROM penjualan_marketplace pm " . $pm_join . " WHERE " . $where_pm . $pm_product_where);
 		} else {
 			// Get overall total spend across all products
-			$so_spend = $this->get_query_sum("SELECT COALESCE(SUM(so.total),0) as t FROM sales_order so WHERE {$where_so}");
-			$mp_spend = $this->get_query_sum("SELECT COALESCE(SUM(pm.total),0) as t FROM penjualan_marketplace pm WHERE {$where_pm}");
+			$so_spend = $this->get_query_sum("SELECT COALESCE(SUM(so.total),0) as t FROM sales_order so WHERE " . $where_so);
+			$mp_spend = $this->get_query_sum("SELECT COALESCE(SUM(pm.total),0) as t FROM penjualan_marketplace pm WHERE " . $where_pm);
 		}
 
 		// Get order counts
-		$so_count = $this->get_query_count("SELECT COUNT(DISTINCT so.id) as cnt FROM sales_order so {$so_join} WHERE {$where_so}{$so_product_where}");
-		$mp_count = $this->get_query_count("SELECT COUNT(DISTINCT pm.id) as cnt FROM penjualan_marketplace pm {$pm_join} WHERE {$where_pm}{$pm_product_where}");
+		$so_count = $this->get_query_count("SELECT COUNT(DISTINCT so.id) as cnt FROM sales_order so " . $so_join . " WHERE " . $where_so . $so_product_where);
+		$mp_count = $this->get_query_count("SELECT COUNT(DISTINCT pm.id) as cnt FROM penjualan_marketplace pm " . $pm_join . " WHERE " . $where_pm . $pm_product_where);
 
 		// Get dates & names
-		$dates_so = $this->db->query("SELECT MIN(so.tanggal_so) as first_order, MAX(so.tanggal_so) as last_order, MAX(so.nama_penerima) as nama FROM sales_order so {$so_join} WHERE {$where_so}{$so_product_where}")->row();
-		$dates_pm = $this->db->query("SELECT MIN(pm.tanggal_so) as first_order, MAX(pm.tanggal_so) as last_order, MAX(pm.nama_penerima) as nama, GROUP_CONCAT(DISTINCT COALESCE(lbl.order_source, CASE WHEN LOWER(pm.source) LIKE '%tokopedia%' THEN 'Tokopedia' WHEN LOWER(pm.source) LIKE '%tiktok%' THEN 'TikTok Shop' WHEN LOWER(pm.source) LIKE '%shopee%' THEN 'Shopee' WHEN LOWER(pm.no_pesanan) LIKE '%shp%' THEN 'Shopee' WHEN LOWER(pm.no_pesanan) LIKE '%tkp%' THEN 'Tokopedia' WHEN LOWER(pm.no_pesanan) LIKE '%ttk%' THEN 'TikTok Shop' ELSE 'Shopee' END) SEPARATOR ', ') as sources FROM penjualan_marketplace pm {$pm_join} LEFT JOIN crm_transaction_followup_labels lbl ON lbl.order_id = pm.id AND lbl.order_table = 'penjualan_marketplace' WHERE {$where_pm}{$pm_product_where}")->row();
+		$dates_so = $this->db->query("SELECT MIN(so.tanggal_so) as first_order, MAX(so.tanggal_so) as last_order, MAX(so.nama_penerima) as nama FROM sales_order so " . $so_join . " WHERE " . $where_so . $so_product_where)->row();
+		$dates_pm = $this->db->query("SELECT MIN(pm.tanggal_so) as first_order, MAX(pm.tanggal_so) as last_order, MAX(pm.nama_penerima) as nama, GROUP_CONCAT(DISTINCT COALESCE(lbl.order_source, CASE WHEN LOWER(pm.source) LIKE '%tokopedia%' THEN 'Tokopedia' WHEN LOWER(pm.source) LIKE '%tiktok%' THEN 'TikTok Shop' WHEN LOWER(pm.source) LIKE '%shopee%' THEN 'Shopee' WHEN LOWER(pm.no_pesanan) LIKE '%shp%' THEN 'Shopee' WHEN LOWER(pm.no_pesanan) LIKE '%tkp%' THEN 'Tokopedia' WHEN LOWER(pm.no_pesanan) LIKE '%ttk%' THEN 'TikTok Shop' ELSE 'Shopee' END) SEPARATOR ', ') as sources FROM penjualan_marketplace pm " . $pm_join . " LEFT JOIN crm_transaction_followup_labels lbl ON lbl.order_id = pm.id AND lbl.order_table = 'penjualan_marketplace' WHERE " . $where_pm . $pm_product_where)->row();
 
 		$first_candidates = array_filter([$dates_so ? $dates_so->first_order : null, $dates_pm ? $dates_pm->first_order : null]);
 		$last_candidates = array_filter([$dates_so ? $dates_so->last_order : null, $dates_pm ? $dates_pm->last_order : null]);
@@ -732,7 +782,7 @@ class Model_crm extends CI_Model
 				if ($s && !in_array($s, $sources_arr)) $sources_arr[] = $s;
 			}
 		}
-		$lbl_sources = $this->db->query("SELECT GROUP_CONCAT(DISTINCT order_source SEPARATOR ', ') as sources FROM crm_transaction_followup_labels WHERE {$where_lbl}")->row();
+		$lbl_sources = $this->db->query("SELECT GROUP_CONCAT(DISTINCT order_source SEPARATOR ', ') as sources FROM crm_transaction_followup_labels WHERE " . $where_lbl)->row();
 		if ($lbl_sources && !empty($lbl_sources->sources)) {
 			foreach (explode(', ', $lbl_sources->sources) as $s) {
 				if ($s && !in_array($s, $sources_arr)) $sources_arr[] = $s;
@@ -743,7 +793,7 @@ class Model_crm extends CI_Model
 		if ($dates_so && !empty($dates_so->nama)) $name = $dates_so->nama;
 		elseif ($dates_pm && !empty($dates_pm->nama)) $name = $dates_pm->nama;
 		else {
-			$name_lbl = $this->db->query("SELECT customer_nama FROM crm_transaction_followup_labels WHERE {$where_lbl} LIMIT 1")->row();
+			$name_lbl = $this->db->query("SELECT customer_nama FROM crm_transaction_followup_labels WHERE " . $where_lbl . " LIMIT 1")->row();
 			if ($name_lbl) $name = $name_lbl->customer_nama;
 		}
 
@@ -787,9 +837,9 @@ class Model_crm extends CI_Model
 		if (!empty($product_filter)) {
 			$pf = $this->db->escape($product_filter);
 			$so_join = "INNER JOIN sales_order_item soi_f ON soi_f.so_id = so.id LEFT JOIN produk p_f ON soi_f.produk_id = p_f.id";
-			$so_product_where = " AND (p_f.nama_produk = {$pf} OR soi_f.catatan = {$pf})";
+			$so_product_where = " AND (p_f.nama_produk = " . $pf . " OR soi_f.catatan = " . $pf . ")";
 			$pm_join_extra = "INNER JOIN penjualan_marketplace_item pmi_f ON pmi_f.penjualan_marketplace_id = pm.id LEFT JOIN produk p2_f ON pmi_f.produk_id = p2_f.id";
-			$pm_product_where = " AND (p2_f.nama_produk = {$pf} OR pmi_f.catatan = {$pf} OR pm.nama_produk_marketplace = {$pf})";
+			$pm_product_where = " AND (p2_f.nama_produk = " . $pf . " OR pmi_f.catatan = " . $pf . " OR pm.nama_produk_marketplace = " . $pf . ")";
 		}
 
 		$sql = "
@@ -815,8 +865,8 @@ class Model_crm extends CI_Model
 					'Produk SO'
 				) AS CHAR) COLLATE utf8mb4_unicode_ci as produk_ringkasan
 			FROM sales_order so 
-			{$so_join}
-			WHERE {$where_so}{$so_product_where})
+			" . $so_join . "
+			WHERE " . $where_so . $so_product_where . ")
 			UNION ALL
 			(SELECT DISTINCT
 				CAST('penjualan_marketplace' AS CHAR) COLLATE utf8mb4_unicode_ci as tbl, 
@@ -851,10 +901,12 @@ class Model_crm extends CI_Model
 					'Produk Marketplace'
 				) AS CHAR) COLLATE utf8mb4_unicode_ci as produk_ringkasan
 			FROM penjualan_marketplace pm 
-			{$pm_join_extra}
+			" . $pm_join_extra . "
 			LEFT JOIN crm_transaction_followup_labels lbl ON lbl.order_id = pm.id AND lbl.order_table = 'penjualan_marketplace'
-			WHERE {$where_pm}{$pm_product_where})
-			" . (empty($product_filter) ? "UNION ALL
+			WHERE " . $where_pm . $pm_product_where . ")";
+
+		if (empty($product_filter)) {
+			$sql .= " UNION ALL
 			(SELECT 
 				CAST('crm_transaction_followup_labels' AS CHAR) COLLATE utf8mb4_unicode_ci as tbl, 
 				lbl.id, 
@@ -873,8 +925,10 @@ class Model_crm extends CI_Model
 				COALESCE(lbl.converted_amount, 0) as total, 
 				CAST('Transaksi Follow-up Toko/CRM' AS CHAR) COLLATE utf8mb4_unicode_ci as produk_ringkasan
 			FROM crm_transaction_followup_labels lbl 
-			WHERE {$where_lbl} AND (lbl.order_id = 0 OR lbl.order_id IS NULL))" : "") . "
-			ORDER BY tanggal DESC";
+			WHERE " . $where_lbl . " AND (lbl.order_id = 0 OR lbl.order_id IS NULL))";
+		}
+
+		$sql .= " ORDER BY tanggal DESC";
 
 		return $this->db->query($sql)->result();
 	}
@@ -931,7 +985,7 @@ class Model_crm extends CI_Model
 				FROM sales_order_item soi
 				JOIN sales_order so ON soi.so_id = so.id
 				LEFT JOIN produk p ON soi.produk_id = p.id
-				WHERE {$where_so}
+				WHERE " . $where_so . "
 
 				UNION ALL
 
@@ -946,7 +1000,7 @@ class Model_crm extends CI_Model
 				FROM penjualan_marketplace_item pmi
 				JOIN penjualan_marketplace pm ON pmi.penjualan_marketplace_id = pm.id
 				LEFT JOIN produk p ON pmi.produk_id = p.id
-				WHERE {$where_pm}
+				WHERE " . $where_pm . "
 			) item_data
 			GROUP BY item_data.nama_produk, item_data.kode_produk, item_data.produk_id
 			ORDER BY total_spend DESC, last_bought_date DESC
@@ -956,20 +1010,55 @@ class Model_crm extends CI_Model
 	}
 
 	/**
-	 * Get list of all distinct products for dropdown filters
+	 * Get list of all distinct products for dropdown filters with category info
 	 */
-	public function get_all_products_list()
+	public function get_all_products_list($category_filter = '')
+	{
+		$where_conditions = ["u.item_name IS NOT NULL", "u.item_name != ''"];
+		if (!empty($category_filter)) {
+			$cf = $this->db->escape(trim($category_filter));
+			$where_conditions[] = "(u.nama_kategori = " . $cf . " OR u.kategori_id = " . $cf . ")";
+		}
+		$where_sql = " WHERE " . implode(' AND ', $where_conditions);
+
+		$sql = "
+			SELECT DISTINCT u.item_name, u.nama_kategori, u.kategori_id FROM (
+				SELECT 
+					COALESCE(NULLIF(soi.catatan, ''), p.nama_produk) as item_name,
+					COALESCE(kp.nama_kategori, 'Tanpa Kategori') as nama_kategori,
+					p.kategori_id
+				FROM sales_order_item soi 
+				LEFT JOIN produk p ON soi.produk_id = p.id
+				LEFT JOIN kategori_produk kp ON kp.id = p.kategori_id
+				WHERE (soi.catatan IS NOT NULL AND soi.catatan != '') OR (p.nama_produk IS NOT NULL AND p.nama_produk != '')
+
+				UNION
+
+				SELECT 
+					COALESCE(NULLIF(pmi.catatan, ''), p.nama_produk) as item_name,
+					COALESCE(kp.nama_kategori, 'Tanpa Kategori') as nama_kategori,
+					p.kategori_id
+				FROM penjualan_marketplace_item pmi 
+				LEFT JOIN produk p ON pmi.produk_id = p.id
+				LEFT JOIN kategori_produk kp ON kp.id = p.kategori_id
+				WHERE (pmi.catatan IS NOT NULL AND pmi.catatan != '') OR (p.nama_produk IS NOT NULL AND p.nama_produk != '')
+			) u
+			" . $where_sql . "
+			ORDER BY u.nama_kategori ASC, u.item_name ASC
+		";
+		return $this->db->query($sql)->result();
+	}
+
+	/**
+	 * Get list of all categories for dropdown filters
+	 */
+	public function get_all_categories_list()
 	{
 		$sql = "
-			SELECT DISTINCT item_name FROM (
-				SELECT COALESCE(NULLIF(soi.catatan, ''), p.nama_produk) as item_name
-				FROM sales_order_item soi LEFT JOIN produk p ON soi.produk_id = p.id
-				UNION
-				SELECT COALESCE(NULLIF(pmi.catatan, ''), p.nama_produk) as item_name
-				FROM penjualan_marketplace_item pmi LEFT JOIN produk p ON pmi.produk_id = p.id
-			) u
-			WHERE item_name IS NOT NULL AND item_name != ''
-			ORDER BY item_name ASC
+			SELECT DISTINCT kp.id, kp.nama_kategori 
+			FROM kategori_produk kp
+			JOIN produk p ON p.kategori_id = kp.id
+			ORDER BY kp.nama_kategori ASC
 		";
 		return $this->db->query($sql)->result();
 	}
@@ -1004,26 +1093,61 @@ class Model_crm extends CI_Model
 	}
 
 	/**
+	 * Get list of available distinct years for filter dropdowns
+	 */
+	public function get_distinct_years_list()
+	{
+		$sql = "
+			SELECT DISTINCT YEAR(tanggal_so) as yr 
+			FROM (
+				SELECT tanggal_so FROM sales_order 
+				WHERE tanggal_so IS NOT NULL 
+				  AND CAST(tanggal_so AS CHAR) NOT LIKE '0000%' 
+				  AND tanggal_so > '1970-01-01'
+
+				UNION ALL
+
+				SELECT tanggal_so FROM penjualan_marketplace 
+				WHERE tanggal_so IS NOT NULL 
+				  AND CAST(tanggal_so AS CHAR) NOT LIKE '0000%' 
+				  AND tanggal_so > '1970-01-01'
+			) d
+			WHERE YEAR(tanggal_so) IS NOT NULL AND YEAR(tanggal_so) > 1970
+			ORDER BY yr DESC
+		";
+		return $this->db->query($sql)->result();
+	}
+
+	/**
 	 * Get monthly RFM tracking & trend data per product
 	 */
-	public function get_monthly_rfm_tracking_per_product($product_filter = '', $period_filter = '')
+	public function get_monthly_rfm_tracking_per_product($product_filter = '', $period_filter = '', $year_filter = '', $category_filter = '')
 	{
 		$where_conds = [];
 		if (!empty($product_filter)) {
-			$pf_esc = $this->db->escape_like_str($product_filter);
-			$where_conds[] = "(t_data.nama_produk LIKE '%{$pf_esc}%')";
+			$pf = $this->db->escape(trim($product_filter));
+			$where_conds[] = "(TRIM(t_data.nama_produk) = " . $pf . ")";
+		}
+		if (!empty($category_filter)) {
+			$cf = $this->db->escape(trim($category_filter));
+			$where_conds[] = "(TRIM(t_data.nama_kategori) = " . $cf . " OR t_data.kategori_id = " . $cf . ")";
+		}
+		if (!empty($year_filter)) {
+			$y_esc = $this->db->escape_str($year_filter);
+			$where_conds[] = "(YEAR(t_data.tanggal_so) = '" . $y_esc . "')";
 		}
 
 		$where_sql = !empty($where_conds) ? "WHERE " . implode(' AND ', $where_conds) : "";
 
-		$sql = "
-			SELECT 
+		$sql = "SELECT 
 				DATE_FORMAT(t_data.tanggal_so, '%Y-%m') as ym_period,
 				DATE_FORMAT(t_data.tanggal_so, '%M %Y') as period_label,
 				COUNT(DISTINCT t_data.clean_phone) as unique_buyers,
 				COUNT(DISTINCT t_data.order_id) as total_orders,
 				SUM(t_data.qty) as total_qty,
 				SUM(t_data.subtotal) as total_spend,
+				SUM(t_data.subtotal - t_data.total_hpp) as total_profit,
+				SUM(t_data.total_hpp) as total_hpp,
 				ROUND(AVG(DATEDIFF(CURRENT_DATE(), t_data.tanggal_so)), 0) as avg_recency_days
 			FROM (
 				SELECT 
@@ -1031,11 +1155,15 @@ class Model_crm extends CI_Model
 					so.tanggal_so,
 					CONCAT('so_', so.id) as order_id,
 					soi.qty,
-					COALESCE(NULLIF(soi.subtotal, 0), (soi.qty * soi.harga_satuan), 0) as subtotal,
-					COALESCE(p.nama_produk, soi.catatan, 'Produk SO') as nama_produk
+					COALESCE(soi.subtotal, (soi.qty * soi.harga_satuan), 0) as subtotal,
+					(soi.qty * (CASE WHEN (p.harga_beli > 0 AND p.harga_beli < soi.harga_satuan) THEN p.harga_beli ELSE (soi.harga_satuan * 0.65) END)) as total_hpp,
+					COALESCE(p.nama_produk, soi.catatan, 'Produk SO') as nama_produk,
+					COALESCE(kp.nama_kategori, 'Tanpa Kategori') as nama_kategori,
+					p.kategori_id
 				FROM sales_order_item soi
 				JOIN sales_order so ON soi.so_id = so.id
 				LEFT JOIN produk p ON soi.produk_id = p.id
+				LEFT JOIN kategori_produk kp ON kp.id = p.kategori_id
 				WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
 				  AND so.tanggal_so IS NOT NULL 
 				  AND CAST(so.tanggal_so AS CHAR) NOT LIKE '0000%' 
@@ -1049,39 +1177,76 @@ class Model_crm extends CI_Model
 					pm.tanggal_so,
 					CONCAT('pm_', pm.id) as order_id,
 					pmi.qty,
-					COALESCE(NULLIF(pmi.subtotal, 0), (pmi.qty * pmi.harga_satuan), 0) as subtotal,
-					COALESCE(p2.nama_produk, pmi.catatan, pm.nama_produk_marketplace, 'Produk Marketplace') as nama_produk
+					COALESCE(pmi.subtotal, (pmi.qty * pmi.harga_satuan), 0) as subtotal,
+					(pmi.qty * (CASE WHEN (p2.harga_beli > 0 AND p2.harga_beli < pmi.harga_satuan) THEN p2.harga_beli ELSE (pmi.harga_satuan * 0.65) END)) as total_hpp,
+					COALESCE(p2.nama_produk, pmi.catatan, pm.nama_produk_marketplace, 'Produk Marketplace') as nama_produk,
+					COALESCE(kp2.nama_kategori, 'Tanpa Kategori') as nama_kategori,
+					p2.kategori_id
 				FROM penjualan_marketplace_item pmi
 				JOIN penjualan_marketplace pm ON pmi.penjualan_marketplace_id = pm.id
 				LEFT JOIN produk p2 ON pmi.produk_id = p2.id
+				LEFT JOIN kategori_produk kp2 ON kp2.id = p2.kategori_id
 				WHERE pm.no_telepon IS NOT NULL AND pm.no_telepon != ''
 				  AND pm.tanggal_so IS NOT NULL 
 				  AND CAST(pm.tanggal_so AS CHAR) NOT LIKE '0000%' 
 				  AND pm.tanggal_so > '1970-01-01'
 				  AND (pm.status_pesanan IS NULL OR (LOWER(pm.status_pesanan) NOT LIKE '%batal%' AND LOWER(pm.status_pesanan) NOT LIKE '%cancel%'))
-			) t_data
-			{$where_sql}
-			GROUP BY ym_period, period_label
-			ORDER BY ym_period DESC
-		";
+			) t_data 
+";
+
+		if (!empty($where_sql)) {
+			$sql .= " " . $where_sql;
+		}
+
+		$sql .= " GROUP BY ym_period, period_label ORDER BY ym_period DESC";
 
 		$all_rows = $this->db->query($sql)->result();
 
-		// Calculate MoM growth percentage for each month chronologically
+		// Calculate MoM growth percentage for spend & profit chronologically
 		for ($i = 0; $i < count($all_rows); $i++) {
 			$all_rows[$i]->unique_buyers = (int)$all_rows[$i]->unique_buyers;
 			$all_rows[$i]->total_orders = (int)$all_rows[$i]->total_orders;
 			$all_rows[$i]->total_qty = (float)$all_rows[$i]->total_qty;
 			$all_rows[$i]->total_spend = (float)$all_rows[$i]->total_spend;
+			$all_rows[$i]->total_profit = (float)$all_rows[$i]->total_profit;
+			$all_rows[$i]->total_hpp = (float)$all_rows[$i]->total_hpp;
 			$all_rows[$i]->avg_recency_days = (int)$all_rows[$i]->avg_recency_days;
 
 			$prev_spend = isset($all_rows[$i + 1]) ? (float)$all_rows[$i + 1]->total_spend : 0;
+			$prev_profit = isset($all_rows[$i + 1]) ? (float)$all_rows[$i + 1]->total_profit : 0;
+
 			$all_rows[$i]->prev_spend = $prev_spend;
+			$all_rows[$i]->prev_profit = $prev_profit;
+
 			if ($prev_spend > 0) {
 				$all_rows[$i]->mom_growth_pct = round((($all_rows[$i]->total_spend - $prev_spend) / $prev_spend) * 100, 1);
 			} else {
 				$all_rows[$i]->mom_growth_pct = 0.0;
 			}
+
+			if ($prev_profit != 0) {
+				$all_rows[$i]->profit_growth_pct = round((($all_rows[$i]->total_profit - $prev_profit) / abs($prev_profit)) * 100, 1);
+			} else {
+				$all_rows[$i]->profit_growth_pct = 0.0;
+			}
+
+			$all_rows[$i]->spend_status = ($all_rows[$i]->total_spend >= $prev_spend) ? 'naik' : 'turun';
+
+			if ($all_rows[$i]->total_profit < 0) {
+				$all_rows[$i]->profit_status = 'rugi';
+			} else {
+				$all_rows[$i]->profit_status = ($all_rows[$i]->total_profit >= $prev_profit) ? 'naik' : 'turun';
+			}
+		}
+
+		if (!empty($period_filter)) {
+			$filtered = [];
+			foreach ($all_rows as $row) {
+				if ($row->ym_period === $period_filter) {
+					$filtered[] = $row;
+				}
+			}
+			return $filtered;
 		}
 
 		return $all_rows;
@@ -1094,15 +1259,14 @@ class Model_crm extends CI_Model
 	{
 		if (empty($ym_period)) return [];
 
-		$where_conds = ["DATE_FORMAT(t_data.tanggal_so, '%Y-%m') = '{$this->db->escape_str($ym_period)}'"];
+		$where_conds = ["DATE_FORMAT(t_data.tanggal_so, '%Y-%m') = '" . $this->db->escape_str($ym_period) . "'"];
 		if (!empty($product_filter)) {
-			$pf_esc = $this->db->escape_like_str($product_filter);
-			$where_conds[] = "(t_data.nama_produk LIKE '%{$pf_esc}%')";
+			$pf = $this->db->escape(trim($product_filter));
+			$where_conds[] = "(TRIM(t_data.nama_produk) = " . $pf . ")";
 		}
 		$where_sql = "WHERE " . implode(' AND ', $where_conds);
 
-		$sql = "
-			SELECT 
+		$sql = "SELECT 
 				t_data.nama_produk,
 				COUNT(DISTINCT t_data.order_id) as total_orders,
 				SUM(t_data.qty) as total_qty,
@@ -1112,7 +1276,7 @@ class Model_crm extends CI_Model
 					so.tanggal_so,
 					CONCAT('so_', so.id) as order_id,
 					soi.qty,
-					COALESCE(NULLIF(soi.subtotal, 0), (soi.qty * soi.harga_satuan), 0) as subtotal,
+					COALESCE(soi.subtotal, (soi.qty * soi.harga_satuan), 0) as subtotal,
 					COALESCE(p.nama_produk, soi.catatan, 'Produk SO') as nama_produk
 				FROM sales_order_item soi
 				JOIN sales_order so ON soi.so_id = so.id
@@ -1129,7 +1293,7 @@ class Model_crm extends CI_Model
 					pm.tanggal_so,
 					CONCAT('pm_', pm.id) as order_id,
 					pmi.qty,
-					COALESCE(NULLIF(pmi.subtotal, 0), (pmi.qty * pmi.harga_satuan), 0) as subtotal,
+					COALESCE(pmi.subtotal, (pmi.qty * pmi.harga_satuan), 0) as subtotal,
 					COALESCE(p2.nama_produk, pmi.catatan, pm.nama_produk_marketplace, 'Produk Marketplace') as nama_produk
 				FROM penjualan_marketplace_item pmi
 				JOIN penjualan_marketplace pm ON pmi.penjualan_marketplace_id = pm.id
@@ -1139,12 +1303,13 @@ class Model_crm extends CI_Model
 				  AND CAST(pm.tanggal_so AS CHAR) NOT LIKE '0000%' 
 				  AND pm.tanggal_so > '1970-01-01'
 				  AND (pm.status_pesanan IS NULL OR (LOWER(pm.status_pesanan) NOT LIKE '%batal%' AND LOWER(pm.status_pesanan) NOT LIKE '%cancel%'))
-			) t_data
-			{$where_sql}
-			GROUP BY t_data.nama_produk
-			ORDER BY total_spend DESC
-			LIMIT {$limit}
-		";
+			) t_data ";
+
+		if (!empty($where_sql)) {
+			$sql .= " " . $where_sql;
+		}
+
+		$sql .= " GROUP BY t_data.nama_produk ORDER BY total_spend DESC LIMIT " . (int)$limit;
 
 		return $this->db->query($sql)->result();
 	}
@@ -1156,15 +1321,14 @@ class Model_crm extends CI_Model
 	{
 		if (empty($ym_period)) return [];
 
-		$where_conds = ["DATE_FORMAT(t_data.tanggal_so, '%Y-%m') = '{$this->db->escape_str($ym_period)}'"];
+		$where_conds = ["DATE_FORMAT(t_data.tanggal_so, '%Y-%m') = '" . $this->db->escape_str($ym_period) . "'"];
 		if (!empty($product_filter)) {
-			$pf_esc = $this->db->escape_like_str($product_filter);
-			$where_conds[] = "(t_data.nama_produk LIKE '%{$pf_esc}%')";
+			$pf = $this->db->escape(trim($product_filter));
+			$where_conds[] = "(TRIM(t_data.nama_produk) = " . $pf . ")";
 		}
 		$where_sql = "WHERE " . implode(' AND ', $where_conds);
 
-		$sql = "
-			SELECT 
+		$sql = "SELECT 
 				t_data.sumber_penjualan,
 				COUNT(DISTINCT t_data.order_id) as total_orders,
 				SUM(t_data.subtotal) as total_spend
@@ -1173,7 +1337,7 @@ class Model_crm extends CI_Model
 					so.tanggal_so,
 					CONCAT('so_', so.id) as order_id,
 					'Toko Direct' as sumber_penjualan,
-					COALESCE(NULLIF(soi.subtotal, 0), (soi.qty * soi.harga_satuan), 0) as subtotal,
+					COALESCE(soi.subtotal, (soi.qty * soi.harga_satuan), 0) as subtotal,
 					COALESCE(p.nama_produk, soi.catatan, 'Produk SO') as nama_produk
 				FROM sales_order_item soi
 				JOIN sales_order so ON soi.so_id = so.id
@@ -1198,7 +1362,7 @@ class Model_crm extends CI_Model
 						WHEN LOWER(pm.no_pesanan) LIKE '%ttk%' THEN 'TikTok Shop'
 						ELSE 'Marketplace'
 					END as sumber_penjualan,
-					COALESCE(NULLIF(pmi.subtotal, 0), (pmi.qty * pmi.harga_satuan), 0) as subtotal,
+					COALESCE(pmi.subtotal, (pmi.qty * pmi.harga_satuan), 0) as subtotal,
 					COALESCE(p2.nama_produk, pmi.catatan, pm.nama_produk_marketplace, 'Produk Marketplace') as nama_produk
 				FROM penjualan_marketplace_item pmi
 				JOIN penjualan_marketplace pm ON pmi.penjualan_marketplace_id = pm.id
@@ -1208,11 +1372,13 @@ class Model_crm extends CI_Model
 				  AND CAST(pm.tanggal_so AS CHAR) NOT LIKE '0000%' 
 				  AND pm.tanggal_so > '1970-01-01'
 				  AND (pm.status_pesanan IS NULL OR (LOWER(pm.status_pesanan) NOT LIKE '%batal%' AND LOWER(pm.status_pesanan) NOT LIKE '%cancel%'))
-			) t_data
-			{$where_sql}
-			GROUP BY t_data.sumber_penjualan
-			ORDER BY total_spend DESC
-		";
+			) t_data ";
+
+		if (!empty($where_sql)) {
+			$sql .= " " . $where_sql;
+		}
+
+		$sql .= " GROUP BY t_data.sumber_penjualan ORDER BY total_spend DESC";
 
 		return $this->db->query($sql)->result();
 	}
@@ -1225,7 +1391,7 @@ class Model_crm extends CI_Model
 	 * @param string $month The month to analyze for daily mode (e.g. '09')
 	 * @return array ['cohorts' => [...], 'periods' => [...], 'summary' => [...]]
 	 */
-	public function get_cohort_analysis($mode = 'monthly', $year = '', $month = '')
+	public function get_cohort_analysis($mode = 'monthly', $year = '', $month = '', $product = '', $category = '')
 	{
 		if (empty($year)) {
 			$year = date('Y');
@@ -1235,9 +1401,9 @@ class Model_crm extends CI_Model
 			if (empty($month)) {
 				$month = date('m');
 			}
-			return $this->_get_daily_cohort($year, $month);
+			return $this->_get_daily_cohort($year, $month, $product, $category);
 		} else {
-			return $this->_get_monthly_cohort($year);
+			return $this->_get_monthly_cohort($year, $product, $category);
 		}
 	}
 
@@ -1245,41 +1411,61 @@ class Model_crm extends CI_Model
 	 * Daily cohort: customers grouped by the DAY of first purchase within a given month
 	 * Columns = relative days (Day 0, Day 1, Day 2, ...) since first purchase
 	 */
-	private function _get_daily_cohort($year, $month)
+	private function _get_daily_cohort($year, $month, $product = '', $category = '')
 	{
 		$ym = $year . '-' . str_pad($month, 2, '0', STR_PAD_LEFT);
 		$days_in_month = cal_days_in_month(CAL_GREGORIAN, (int)$month, (int)$year);
 		$month_names_id = [1=>'Jan',2=>'Feb',3=>'Mar',4=>'Apr',5=>'Mei',6=>'Jun',7=>'Jul',8=>'Ags',9=>'Sep',10=>'Okt',11=>'Nov',12=>'Des'];
 
-		// Get all transactions in this month
-		$sql = "
-			SELECT phone, DATE(tanggal) as order_date
+		$where_conds = [];
+		if (!empty($product)) {
+			$p_esc = $this->db->escape(trim($product));
+			$where_conds[] = "TRIM(u.nama_produk) = " . $p_esc;
+		}
+		if (!empty($category)) {
+			$c_esc = $this->db->escape(trim($category));
+			$where_conds[] = "(TRIM(u.nama_kategori) = " . $c_esc . " OR u.kategori_id = " . $c_esc . ")";
+		}
+		$filter_where = !empty($where_conds) ? " WHERE " . implode(" AND ", $where_conds) : "";
+
+		// Get all transactions in this month with subtotal revenue
+		$sql = "SELECT phone, DATE(tanggal) as order_date, subtotal
 			FROM (
-				SELECT CAST(so.no_telepon AS CHAR) as phone, so.tanggal_so as tanggal
-				FROM sales_order so
+				SELECT CAST(so.no_telepon AS CHAR) as phone, so.tanggal_so as tanggal, COALESCE(soi.subtotal, (soi.qty * soi.harga_satuan), 0) as subtotal, COALESCE(p.nama_produk, soi.catatan, 'Produk SO') as nama_produk, p.kategori_id, COALESCE(NULLIF(kp.nama_kategori, ''), 'Tanpa Kategori') as nama_kategori
+				FROM sales_order_item soi
+				JOIN sales_order so ON soi.so_id = so.id
+				LEFT JOIN produk p ON soi.produk_id = p.id
+				LEFT JOIN kategori_produk kp ON p.kategori_id = kp.id
 				WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
 				  AND so.tanggal_so IS NOT NULL AND CAST(so.tanggal_so AS CHAR) NOT LIKE '0000%' AND so.tanggal_so > '1970-01-01'
-				  AND DATE_FORMAT(so.tanggal_so, '%Y-%m') = '{$ym}'
+				  AND (so.status_pesanan IS NULL OR (LOWER(so.status_pesanan) NOT LIKE '%batal%' AND LOWER(so.status_pesanan) NOT LIKE '%cancel%'))
+				  AND DATE_FORMAT(so.tanggal_so, '%Y-%m') = '" . $this->db->escape_str($ym) . "'
 
 				UNION ALL
 
-				SELECT CAST(pm.no_telepon AS CHAR) as phone, pm.tanggal_so as tanggal
-				FROM penjualan_marketplace pm
+				SELECT CAST(pm.no_telepon AS CHAR) as phone, pm.tanggal_so as tanggal, COALESCE(pmi.subtotal, (pmi.qty * pmi.harga_satuan), 0) as subtotal, COALESCE(p2.nama_produk, pmi.catatan, pm.nama_produk_marketplace, 'Produk Marketplace') as nama_produk, p2.kategori_id, COALESCE(NULLIF(kp2.nama_kategori, ''), 'Tanpa Kategori') as nama_kategori
+				FROM penjualan_marketplace_item pmi
+				JOIN penjualan_marketplace pm ON pmi.penjualan_marketplace_id = pm.id
+				LEFT JOIN produk p2 ON pmi.produk_id = p2.id
+				LEFT JOIN kategori_produk kp2 ON p2.kategori_id = kp2.id
 				WHERE pm.no_telepon IS NOT NULL AND pm.no_telepon != ''
 				  AND pm.tanggal_so IS NOT NULL AND CAST(pm.tanggal_so AS CHAR) NOT LIKE '0000%' AND pm.tanggal_so > '1970-01-01'
-				  AND DATE_FORMAT(pm.tanggal_so, '%Y-%m') = '{$ym}'
-			) u
-			ORDER BY order_date ASC
-		";
+				  AND (pm.status_pesanan IS NULL OR (LOWER(pm.status_pesanan) NOT LIKE '%batal%' AND LOWER(pm.status_pesanan) NOT LIKE '%cancel%'))
+				  AND DATE_FORMAT(pm.tanggal_so, '%Y-%m') = '" . $this->db->escape_str($ym) . "'
+			) u " . $filter_where . " ORDER BY order_date ASC";
 
 		$rows = $this->db->query($sql)->result();
 
-		// Find first purchase date for each customer within this month
+		// Find first purchase date for each customer within this month & track revenue per date
 		$first_purchase = [];
 		$customer_dates = [];
+		$customer_revenue_by_date = [];
+
 		foreach ($rows as $r) {
 			$phone = $r->phone;
 			$date = $r->order_date;
+			$subtotal = (float)$r->subtotal;
+
 			if (!isset($first_purchase[$phone]) || $date < $first_purchase[$phone]) {
 				$first_purchase[$phone] = $date;
 			}
@@ -1287,6 +1473,11 @@ class Model_crm extends CI_Model
 				$customer_dates[$phone] = [];
 			}
 			$customer_dates[$phone][$date] = true;
+
+			if (!isset($customer_revenue_by_date[$phone][$date])) {
+				$customer_revenue_by_date[$phone][$date] = 0.0;
+			}
+			$customer_revenue_by_date[$phone][$date] += $subtotal;
 		}
 
 		// Group customers by their cohort day
@@ -1311,33 +1502,49 @@ class Model_crm extends CI_Model
 		// Build cohort data with RELATIVE periods
 		$cohorts = [];
 		$total_initial = 0;
+		$overall_total_revenue = 0.0;
 		$all_users_active = []; // For "Semua Customer" aggregate row
+		$all_revenue_by_period = []; // For aggregate revenue
 
 		foreach ($cohort_customers as $cohort_day => $phones) {
 			$cohort_size = count($phones);
 			$total_initial += $cohort_size;
 			$retention = [];
+			$revenue = [];
+			$cohort_total_rev = 0.0;
 			$max_for_this = $days_in_month - $cohort_day;
 
 			for ($rel = 0; $rel <= $max_rel_days; $rel++) {
+				if (!isset($all_revenue_by_period[$rel])) $all_revenue_by_period[$rel] = 0.0;
+
 				if ($rel > $max_for_this) {
 					$retention[$rel] = null; // No data yet (future)
-				} elseif ($rel === 0) {
-					$retention[$rel] = 100.0;
-					if (!isset($all_users_active[$rel])) $all_users_active[$rel] = ['active' => 0, 'total' => 0];
-					$all_users_active[$rel]['active'] += $cohort_size;
-					$all_users_active[$rel]['total'] += $cohort_size;
+					$revenue[$rel] = null;
 				} else {
 					$target_day = $cohort_day + $rel;
 					$target_date = sprintf('%s-%02d', $ym, $target_day);
 					$active = 0;
+					$rel_rev = 0.0;
+
 					foreach ($phones as $phone) {
 						if (isset($customer_dates[$phone][$target_date])) {
 							$active++;
 						}
+						if (isset($customer_revenue_by_date[$phone][$target_date])) {
+							$rel_rev += $customer_revenue_by_date[$phone][$target_date];
+						}
 					}
-					$pct = $cohort_size > 0 ? round(($active / $cohort_size) * 100, 1) : 0;
-					$retention[$rel] = $pct;
+
+					if ($rel === 0) {
+						$retention[$rel] = 100.0;
+					} else {
+						$pct = $cohort_size > 0 ? round(($active / $cohort_size) * 100, 1) : 0;
+						$retention[$rel] = $pct;
+					}
+
+					$revenue[$rel] = $rel_rev;
+					$cohort_total_rev += $rel_rev;
+					$all_revenue_by_period[$rel] += $rel_rev;
 
 					if (!isset($all_users_active[$rel])) $all_users_active[$rel] = ['active' => 0, 'total' => 0];
 					$all_users_active[$rel]['active'] += $active;
@@ -1345,11 +1552,15 @@ class Model_crm extends CI_Model
 				}
 			}
 
+			$overall_total_revenue += $cohort_total_rev;
+
 			$cohorts[] = [
 				'label' => $month_names_id[(int)$month] . ' ' . str_pad($cohort_day, 2, '0', STR_PAD_LEFT),
 				'date_label' => sprintf('%s-%02d', $ym, $cohort_day),
 				'size' => $cohort_size,
 				'retention' => $retention,
+				'revenue' => $revenue,
+				'total_revenue' => $cohort_total_rev,
 			];
 		}
 
@@ -1376,6 +1587,8 @@ class Model_crm extends CI_Model
 				'label' => 'Semua Customer',
 				'size' => $total_initial,
 				'retention' => $all_retention,
+				'revenue' => $all_revenue_by_period,
+				'total_revenue' => $overall_total_revenue,
 			],
 			'mode' => 'daily',
 			'year' => $year,
@@ -1384,6 +1597,7 @@ class Model_crm extends CI_Model
 			'summary' => [
 				'total_cohorts' => count($cohorts),
 				'total_customers' => $total_initial,
+				'total_revenue' => $overall_total_revenue,
 				'days_in_month' => $days_in_month,
 			],
 		];
@@ -1393,37 +1607,61 @@ class Model_crm extends CI_Model
 	 * Monthly cohort: customers grouped by the MONTH of first purchase within a given year
 	 * Columns = actual month names (Jan, Feb, Mar... Des)
 	 */
-	private function _get_monthly_cohort($year)
+	private function _get_monthly_cohort($year, $product = '', $category = '')
 	{
-		// Get all transactions in this year
+		$where_conds = [];
+		if (!empty($product)) {
+			$p_esc = $this->db->escape(trim($product));
+			$where_conds[] = "TRIM(u.nama_produk) = " . $p_esc;
+		}
+		if (!empty($category)) {
+			$c_esc = $this->db->escape(trim($category));
+			$where_conds[] = "(TRIM(u.nama_kategori) = " . $c_esc . " OR u.kategori_id = " . $c_esc . ")";
+		}
+		$filter_where = !empty($where_conds) ? " WHERE " . implode(" AND ", $where_conds) : "";
+
+		// Get all transactions in this year with subtotal revenue
 		$sql = "
-			SELECT phone, DATE_FORMAT(tanggal, '%Y-%m') as order_month
+			SELECT phone, DATE_FORMAT(tanggal, '%Y-%m') as order_month, subtotal
 			FROM (
-				SELECT CAST(so.no_telepon AS CHAR) as phone, so.tanggal_so as tanggal
-				FROM sales_order so
+				SELECT CAST(so.no_telepon AS CHAR) as phone, so.tanggal_so as tanggal, COALESCE(soi.subtotal, (soi.qty * soi.harga_satuan), 0) as subtotal, COALESCE(p.nama_produk, soi.catatan, 'Produk SO') as nama_produk, p.kategori_id, COALESCE(NULLIF(kp.nama_kategori, ''), 'Tanpa Kategori') as nama_kategori
+				FROM sales_order_item soi
+				JOIN sales_order so ON soi.so_id = so.id
+				LEFT JOIN produk p ON soi.produk_id = p.id
+				LEFT JOIN kategori_produk kp ON p.kategori_id = kp.id
 				WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
 				  AND so.tanggal_so IS NOT NULL AND CAST(so.tanggal_so AS CHAR) NOT LIKE '0000%' AND so.tanggal_so > '1970-01-01'
-				  AND YEAR(so.tanggal_so) = '{$year}'
+				  AND (so.status_pesanan IS NULL OR (LOWER(so.status_pesanan) NOT LIKE '%batal%' AND LOWER(so.status_pesanan) NOT LIKE '%cancel%'))
+				  AND YEAR(so.tanggal_so) = '" . $this->db->escape_str($year) . "'
 
 				UNION ALL
 
-				SELECT CAST(pm.no_telepon AS CHAR) as phone, pm.tanggal_so as tanggal
-				FROM penjualan_marketplace pm
+				SELECT CAST(pm.no_telepon AS CHAR) as phone, pm.tanggal_so as tanggal, COALESCE(pmi.subtotal, (pmi.qty * pmi.harga_satuan), 0) as subtotal, COALESCE(p2.nama_produk, pmi.catatan, pm.nama_produk_marketplace, 'Produk Marketplace') as nama_produk, p2.kategori_id, COALESCE(NULLIF(kp2.nama_kategori, ''), 'Tanpa Kategori') as nama_kategori
+				FROM penjualan_marketplace_item pmi
+				JOIN penjualan_marketplace pm ON pmi.penjualan_marketplace_id = pm.id
+				LEFT JOIN produk p2 ON pmi.produk_id = p2.id
+				LEFT JOIN kategori_produk kp2 ON p2.kategori_id = kp2.id
 				WHERE pm.no_telepon IS NOT NULL AND pm.no_telepon != ''
 				  AND pm.tanggal_so IS NOT NULL AND CAST(pm.tanggal_so AS CHAR) NOT LIKE '0000%' AND pm.tanggal_so > '1970-01-01'
-				  AND YEAR(pm.tanggal_so) = '{$year}'
+				  AND (pm.status_pesanan IS NULL OR (LOWER(pm.status_pesanan) NOT LIKE '%batal%' AND LOWER(pm.status_pesanan) NOT LIKE '%cancel%'))
+				  AND YEAR(pm.tanggal_so) = '" . $this->db->escape_str($year) . "'
 			) u
+			" . $filter_where . "
 			ORDER BY order_month ASC
 		";
 
 		$rows = $this->db->query($sql)->result();
 
-		// Find first purchase month for each customer within this year
+		// Find first purchase month for each customer within this year & track revenue per month
 		$first_purchase = [];
 		$customer_months = [];
+		$customer_revenue_by_month = [];
+
 		foreach ($rows as $r) {
 			$phone = $r->phone;
 			$ym = $r->order_month;
+			$subtotal = (float)$r->subtotal;
+
 			if (!isset($first_purchase[$phone]) || $ym < $first_purchase[$phone]) {
 				$first_purchase[$phone] = $ym;
 			}
@@ -1431,6 +1669,11 @@ class Model_crm extends CI_Model
 				$customer_months[$phone] = [];
 			}
 			$customer_months[$phone][$ym] = true;
+
+			if (!isset($customer_revenue_by_month[$phone][$ym])) {
+				$customer_revenue_by_month[$phone][$ym] = 0.0;
+			}
+			$customer_revenue_by_month[$phone][$ym] += $subtotal;
 		}
 
 		// Group customers by their cohort month
@@ -1452,32 +1695,48 @@ class Model_crm extends CI_Model
 		ksort($cohort_customers);
 		$cohorts = [];
 		$total_initial = 0;
+		$overall_total_revenue = 0.0;
 		$all_users_active = []; // For aggregate row
+		$all_revenue_by_period = []; // For aggregate revenue row
 
 		foreach ($cohort_customers as $cohort_ym => $phones) {
 			$cohort_size = count($phones);
 			$total_initial += $cohort_size;
 			$cohort_month_idx = (int)substr($cohort_ym, 5, 2);
 			$retention = [];
+			$revenue = [];
+			$cohort_total_rev = 0.0;
 
 			for ($m = 1; $m <= 12; $m++) {
+				if (!isset($all_revenue_by_period[$m])) $all_revenue_by_period[$m] = 0.0;
+
 				$target_ym = sprintf('%s-%02d', $year, $m);
 				if ($m < $cohort_month_idx) {
 					$retention[$m] = null; // Before cohort start
-				} elseif ($m === $cohort_month_idx) {
-					$retention[$m] = 100.0;
-					if (!isset($all_users_active[$m])) $all_users_active[$m] = ['active' => 0, 'total' => 0];
-					$all_users_active[$m]['active'] += $cohort_size;
-					$all_users_active[$m]['total'] += $cohort_size;
+					$revenue[$m] = null;
 				} else {
 					$active = 0;
+					$rel_rev = 0.0;
+
 					foreach ($phones as $phone) {
 						if (isset($customer_months[$phone][$target_ym])) {
 							$active++;
 						}
+						if (isset($customer_revenue_by_month[$phone][$target_ym])) {
+							$rel_rev += $customer_revenue_by_month[$phone][$target_ym];
+						}
 					}
-					$pct = $cohort_size > 0 ? round(($active / $cohort_size) * 100, 1) : 0;
-					$retention[$m] = $pct;
+
+					if ($m === $cohort_month_idx) {
+						$retention[$m] = 100.0;
+					} else {
+						$pct = $cohort_size > 0 ? round(($active / $cohort_size) * 100, 1) : 0;
+						$retention[$m] = $pct;
+					}
+
+					$revenue[$m] = $rel_rev;
+					$cohort_total_rev += $rel_rev;
+					$all_revenue_by_period[$m] += $rel_rev;
 
 					if (!isset($all_users_active[$m])) $all_users_active[$m] = ['active' => 0, 'total' => 0];
 					$all_users_active[$m]['active'] += $active;
@@ -1485,11 +1744,15 @@ class Model_crm extends CI_Model
 				}
 			}
 
+			$overall_total_revenue += $cohort_total_rev;
+
 			$cohorts[] = [
 				'label' => $month_names_id[$cohort_month_idx] . ' ' . $year,
 				'date_label' => $cohort_ym,
 				'size' => $cohort_size,
 				'retention' => $retention,
+				'revenue' => $revenue,
+				'total_revenue' => $cohort_total_rev,
 			];
 		}
 
@@ -1510,6 +1773,8 @@ class Model_crm extends CI_Model
 				'label' => 'Semua Customer',
 				'size' => $total_initial,
 				'retention' => $all_retention,
+				'revenue' => $all_revenue_by_period,
+				'total_revenue' => $overall_total_revenue,
 			],
 			'mode' => 'monthly',
 			'year' => $year,
@@ -1518,8 +1783,307 @@ class Model_crm extends CI_Model
 			'summary' => [
 				'total_cohorts' => count($cohorts),
 				'total_customers' => $total_initial,
+				'total_revenue' => $overall_total_revenue,
 			],
 		];
+	}
+
+	/**
+	 * Get list of customers for a specific cohort cell drill-down
+	 *
+	 * @param string $cohort_period e.g. '2026-01' (monthly) or '2026-09-01' (daily)
+	 * @param string $target_period e.g. '2026-02' (monthly) or '2026-09-05' (daily)
+	 * @param string $mode 'monthly' or 'daily'
+	 * @param string $product Optional product filter
+	 * @return array
+	 */
+	public function get_cohort_drilldown_customers($cohort_period, $target_period, $mode = 'monthly', $product = '', $category = '')
+	{
+		$where_conds = [];
+		if (!empty($product)) {
+			$p_esc = $this->db->escape(trim($product));
+			$where_conds[] = "TRIM(u.nama_produk) = " . $p_esc;
+		}
+		if (!empty($category)) {
+			$c_esc = $this->db->escape(trim($category));
+			$where_conds[] = "(TRIM(u.nama_kategori) = " . $c_esc . " OR u.kategori_id = " . $c_esc . ")";
+		}
+		$filter_where = !empty($where_conds) ? " WHERE " . implode(" AND ", $where_conds) : "";
+
+		if ($mode === 'daily') {
+			$year_month = substr($cohort_period, 0, 7); // '2026-09'
+			$sql = "
+				SELECT phone, nama, DATE(tanggal) as order_period, subtotal
+				FROM (
+					SELECT CAST(so.no_telepon AS CHAR) as phone, 
+						CAST(COALESCE(NULLIF(TRIM(so.nama_penerima), ''), NULLIF(TRIM(so.username_pembeli), ''), NULLIF(TRIM(pel.nama_pelanggan), ''), 'Customer') AS CHAR) as nama, 
+						so.tanggal_so as tanggal, 
+						COALESCE(soi.subtotal, (soi.qty * soi.harga_satuan), 0) as subtotal, 
+						COALESCE(p.nama_produk, soi.catatan, 'Produk SO') as nama_produk,
+						p.kategori_id,
+						COALESCE(NULLIF(kp.nama_kategori, ''), 'Tanpa Kategori') as nama_kategori
+					FROM sales_order_item soi
+					JOIN sales_order so ON soi.so_id = so.id
+					LEFT JOIN pelanggan pel ON so.pelanggan_id = pel.id
+					LEFT JOIN produk p ON soi.produk_id = p.id
+					LEFT JOIN kategori_produk kp ON p.kategori_id = kp.id
+					WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
+					  AND so.tanggal_so IS NOT NULL AND CAST(so.tanggal_so AS CHAR) NOT LIKE '0000%' AND so.tanggal_so > '1970-01-01'
+					  AND (so.status_pesanan IS NULL OR (LOWER(so.status_pesanan) NOT LIKE '%batal%' AND LOWER(so.status_pesanan) NOT LIKE '%cancel%'))
+					  AND DATE_FORMAT(so.tanggal_so, '%Y-%m') = '" . $this->db->escape_str($year_month) . "'
+
+					UNION ALL
+
+					SELECT CAST(pm.no_telepon AS CHAR) as phone, 
+						CAST(COALESCE(NULLIF(TRIM(pm.nama_penerima), ''), NULLIF(TRIM(pm.username_pembeli), ''), NULLIF(TRIM(pel2.nama_pelanggan), ''), 'Customer') AS CHAR) as nama, 
+						pm.tanggal_so as tanggal, 
+						COALESCE(pmi.subtotal, (pmi.qty * pmi.harga_satuan), 0) as subtotal, 
+						COALESCE(p2.nama_produk, pmi.catatan, pm.nama_produk_marketplace, 'Produk Marketplace') as nama_produk,
+						p2.kategori_id,
+						COALESCE(NULLIF(kp2.nama_kategori, ''), 'Tanpa Kategori') as nama_kategori
+					FROM penjualan_marketplace_item pmi
+					JOIN penjualan_marketplace pm ON pmi.penjualan_marketplace_id = pm.id
+					LEFT JOIN pelanggan pel2 ON pm.pelanggan_id = pel2.id
+					LEFT JOIN produk p2 ON pmi.produk_id = p2.id
+					LEFT JOIN kategori_produk kp2 ON p2.kategori_id = kp2.id
+					WHERE pm.no_telepon IS NOT NULL AND pm.no_telepon != ''
+					  AND pm.tanggal_so IS NOT NULL AND CAST(pm.tanggal_so AS CHAR) NOT LIKE '0000%' AND pm.tanggal_so > '1970-01-01'
+					  AND (pm.status_pesanan IS NULL OR (LOWER(pm.status_pesanan) NOT LIKE '%batal%' AND LOWER(pm.status_pesanan) NOT LIKE '%cancel%'))
+					  AND DATE_FORMAT(pm.tanggal_so, '%Y-%m') = '" . $this->db->escape_str($year_month) . "'
+				) u
+				" . $filter_where . "
+				ORDER BY order_period ASC
+			";
+		} else {
+			$year = substr($cohort_period, 0, 4); // '2026'
+			$sql = "
+				SELECT phone, nama, DATE_FORMAT(tanggal, '%Y-%m') as order_period, subtotal
+				FROM (
+					SELECT CAST(so.no_telepon AS CHAR) as phone, 
+						CAST(COALESCE(NULLIF(TRIM(so.nama_penerima), ''), NULLIF(TRIM(so.username_pembeli), ''), NULLIF(TRIM(pel.nama_pelanggan), ''), 'Customer') AS CHAR) as nama, 
+						so.tanggal_so as tanggal, 
+						COALESCE(soi.subtotal, (soi.qty * soi.harga_satuan), 0) as subtotal, 
+						COALESCE(p.nama_produk, soi.catatan, 'Produk SO') as nama_produk,
+						p.kategori_id,
+						COALESCE(NULLIF(kp.nama_kategori, ''), 'Tanpa Kategori') as nama_kategori
+					FROM sales_order_item soi
+					JOIN sales_order so ON soi.so_id = so.id
+					LEFT JOIN pelanggan pel ON so.pelanggan_id = pel.id
+					LEFT JOIN produk p ON soi.produk_id = p.id
+					LEFT JOIN kategori_produk kp ON p.kategori_id = kp.id
+					WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
+					  AND so.tanggal_so IS NOT NULL AND CAST(so.tanggal_so AS CHAR) NOT LIKE '0000%' AND so.tanggal_so > '1970-01-01'
+					  AND (so.status_pesanan IS NULL OR (LOWER(so.status_pesanan) NOT LIKE '%batal%' AND LOWER(so.status_pesanan) NOT LIKE '%cancel%'))
+					  AND YEAR(so.tanggal_so) = '" . $this->db->escape_str($year) . "'
+
+					UNION ALL
+
+					SELECT CAST(pm.no_telepon AS CHAR) as phone, 
+						CAST(COALESCE(NULLIF(TRIM(pm.nama_penerima), ''), NULLIF(TRIM(pm.username_pembeli), ''), NULLIF(TRIM(pel2.nama_pelanggan), ''), 'Customer') AS CHAR) as nama, 
+						pm.tanggal_so as tanggal, 
+						COALESCE(pmi.subtotal, (pmi.qty * pmi.harga_satuan), 0) as subtotal, 
+						COALESCE(p2.nama_produk, pmi.catatan, pm.nama_produk_marketplace, 'Produk Marketplace') as nama_produk,
+						p2.kategori_id,
+						COALESCE(NULLIF(kp2.nama_kategori, ''), 'Tanpa Kategori') as nama_kategori
+					FROM penjualan_marketplace_item pmi
+					JOIN penjualan_marketplace pm ON pmi.penjualan_marketplace_id = pm.id
+					LEFT JOIN pelanggan pel2 ON pm.pelanggan_id = pel2.id
+					LEFT JOIN produk p2 ON pmi.produk_id = p2.id
+					LEFT JOIN kategori_produk kp2 ON p2.kategori_id = kp2.id
+					WHERE pm.no_telepon IS NOT NULL AND pm.no_telepon != ''
+					  AND pm.tanggal_so IS NOT NULL AND CAST(pm.tanggal_so AS CHAR) NOT LIKE '0000%' AND pm.tanggal_so > '1970-01-01'
+					  AND (pm.status_pesanan IS NULL OR (LOWER(pm.status_pesanan) NOT LIKE '%batal%' AND LOWER(pm.status_pesanan) NOT LIKE '%cancel%'))
+					  AND YEAR(pm.tanggal_so) = '" . $this->db->escape_str($year) . "'
+				) u
+				" . $filter_where . "
+				ORDER BY order_period ASC
+			";
+		}
+
+		$rows = $this->db->query($sql)->result();
+
+		$first_purchase = [];
+		$customer_names = [];
+		$customer_orders = [];
+		$customer_total_spend = [];
+		$customer_total_orders = [];
+		$customer_last_date = [];
+
+		foreach ($rows as $r) {
+			$p = $r->phone;
+			$p_period = $r->order_period;
+			if (!isset($first_purchase[$p]) || $p_period < $first_purchase[$p]) {
+				$first_purchase[$p] = $p_period;
+			}
+			if (!empty($r->nama) && (!isset($customer_names[$p]) || empty($customer_names[$p]) || $customer_names[$p] === 'Customer')) {
+				$customer_names[$p] = $r->nama;
+			}
+			if (!isset($customer_orders[$p])) {
+				$customer_orders[$p] = [];
+			}
+			if (!isset($customer_orders[$p][$p_period])) {
+				$customer_orders[$p][$p_period] = ['count' => 0, 'spend' => 0.0];
+			}
+			$customer_orders[$p][$p_period]['count']++;
+			$customer_orders[$p][$p_period]['spend'] += (float)$r->subtotal;
+
+			if (!isset($customer_total_spend[$p])) {
+				$customer_total_spend[$p] = 0.0;
+				$customer_total_orders[$p] = 0;
+				$customer_last_date[$p] = $r->order_period;
+			}
+			$customer_total_spend[$p] += (float)$r->subtotal;
+			$customer_total_orders[$p]++;
+			if ($r->order_period > $customer_last_date[$p]) {
+				$customer_last_date[$p] = $r->order_period;
+			}
+		}
+
+		$cohort_phones = [];
+		foreach ($first_purchase as $p => $f_period) {
+			if ($f_period === $cohort_period) {
+				$cohort_phones[] = $p;
+			}
+		}
+
+		$retained = [];
+		$churned = [];
+
+		foreach ($cohort_phones as $p) {
+			$nama = !empty($customer_names[$p]) ? $customer_names[$p] : 'Pelanggan ' . substr($p, -4);
+			$clean_phone = preg_replace('/[^0-9]/', '', $p);
+			if (substr($clean_phone, 0, 1) === '0') {
+				$wa_phone = '62' . substr($clean_phone, 1);
+			} else {
+				$wa_phone = $clean_phone;
+			}
+
+			if (isset($customer_orders[$p][$target_period])) {
+				$orders = $customer_orders[$p][$target_period]['count'];
+				$spend = $customer_orders[$p][$target_period]['spend'];
+				$wa_text = rawurlencode("Halo Kak {$nama}, terima kasih banyak ya sudah setia berbelanja kembali di toko kami! Semoga produknya bermanfaat selalu. Ada yang bisa kami bantu lagi?");
+				$retained[] = [
+					'phone' => $p,
+					'nama' => $nama,
+					'is_retained' => true,
+					'orders' => $orders,
+					'spend' => $spend,
+					'target_spend' => $spend,
+					'total_spend' => $customer_total_spend[$p] ?? $spend,
+					'total_orders' => $customer_total_orders[$p] ?? $orders,
+					'last_order_date' => $customer_last_date[$p] ?? '-',
+					'spend_formatted' => 'Rp ' . number_format($spend, 0, ',', '.'),
+					'wa_link' => 'https://wa.me/' . $wa_phone . '?text=' . $wa_text,
+					'crm_link' => site_url('administrator/crm/customer_detail?phone=' . urlencode($p)),
+				];
+			} else {
+				$wa_text = rawurlencode("Halo Kak {$nama}, apa kabar? Kami kangen nih! Kebetulan kami sedang ada promo spesial/voucher belanja untuk Kakak. Yuk cek penawaran menarik hari ini!");
+				$churned[] = [
+					'phone' => $p,
+					'nama' => $nama,
+					'is_retained' => false,
+					'orders' => 0,
+					'spend' => 0,
+					'target_spend' => 0,
+					'total_spend' => $customer_total_spend[$p] ?? 0,
+					'total_orders' => $customer_total_orders[$p] ?? 0,
+					'last_order_date' => $customer_last_date[$p] ?? '-',
+					'spend_formatted' => 'Rp 0',
+					'wa_link' => 'https://wa.me/' . $wa_phone . '?text=' . $wa_text,
+					'crm_link' => site_url('administrator/crm/customer_detail?phone=' . urlencode($p)),
+				];
+			}
+		}
+
+		// Sort retained by spend DESC, churned by name ASC
+		usort($retained, function($a, $b) {
+			return $b['spend'] <=> $a['spend'];
+		});
+		usort($churned, function($a, $b) {
+			return strcmp($a['nama'], $b['nama']);
+		});
+
+		$total_cohort = count($cohort_phones);
+		$retention_pct = $total_cohort > 0 ? round((count($retained) / $total_cohort) * 100, 1) : 0;
+
+		return [
+			'cohort_period' => $cohort_period,
+			'target_period' => $target_period,
+			'mode' => $mode,
+			'total_cohort' => $total_cohort,
+			'retained_count' => count($retained),
+			'churned_count' => count($churned),
+			'retention_pct' => $retention_pct,
+			'retained_customers' => $retained,
+			'churned_customers' => $churned,
+		];
+	}
+
+	/**
+	 * Get product breakdown summary for cohort analysis page
+	 */
+	public function get_product_cohort_summary($year = '', $category = '')
+	{
+		if (empty($year)) $year = date('Y');
+		$year_esc = $this->db->escape_str($year);
+
+		$cat_where = "";
+		if (!empty($category)) {
+			$c_esc = $this->db->escape(trim($category));
+			$cat_where = " WHERE (TRIM(u.nama_kategori) = " . $c_esc . " OR u.kategori_id = " . $c_esc . ") ";
+		}
+
+		$sql = "
+			SELECT 
+				u.nama_produk,
+				COUNT(DISTINCT u.phone) as total_customers,
+				COUNT(DISTINCT u.order_id) as total_orders,
+				SUM(u.subtotal) as total_revenue
+			FROM (
+				SELECT 
+					CAST(so.no_telepon AS CHAR) as phone,
+					CONCAT('so_', so.id) as order_id,
+					so.tanggal_so as tanggal,
+					COALESCE(soi.subtotal, (soi.qty * soi.harga_satuan), 0) as subtotal,
+					COALESCE(p.nama_produk, soi.catatan, 'Produk SO') as nama_produk,
+					p.kategori_id,
+					COALESCE(NULLIF(kp.nama_kategori, ''), 'Tanpa Kategori') as nama_kategori
+				FROM sales_order_item soi
+				JOIN sales_order so ON soi.so_id = so.id
+				LEFT JOIN produk p ON soi.produk_id = p.id
+				LEFT JOIN kategori_produk kp ON p.kategori_id = kp.id
+				WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
+				  AND so.tanggal_so IS NOT NULL AND CAST(so.tanggal_so AS CHAR) NOT LIKE '0000%' AND so.tanggal_so > '1970-01-01'
+				  AND (so.status_pesanan IS NULL OR (LOWER(so.status_pesanan) NOT LIKE '%batal%' AND LOWER(so.status_pesanan) NOT LIKE '%cancel%'))
+				  AND YEAR(so.tanggal_so) = '" . $year_esc . "'
+
+				UNION ALL
+
+				SELECT 
+					CAST(pm.no_telepon AS CHAR) as phone,
+					CONCAT('pm_', pm.id) as order_id,
+					pm.tanggal_so as tanggal,
+					COALESCE(pmi.subtotal, (pmi.qty * pmi.harga_satuan), 0) as subtotal,
+					COALESCE(p2.nama_produk, pmi.catatan, pm.nama_produk_marketplace, 'Produk Marketplace') as nama_produk,
+					p2.kategori_id,
+					COALESCE(NULLIF(kp2.nama_kategori, ''), 'Tanpa Kategori') as nama_kategori
+				FROM penjualan_marketplace_item pmi
+				JOIN penjualan_marketplace pm ON pmi.penjualan_marketplace_id = pm.id
+				LEFT JOIN produk p2 ON pmi.produk_id = p2.id
+				LEFT JOIN kategori_produk kp2 ON p2.kategori_id = kp2.id
+				WHERE pm.no_telepon IS NOT NULL AND pm.no_telepon != ''
+				  AND pm.tanggal_so IS NOT NULL AND CAST(pm.tanggal_so AS CHAR) NOT LIKE '0000%' AND pm.tanggal_so > '1970-01-01'
+				  AND (pm.status_pesanan IS NULL OR (LOWER(pm.status_pesanan) NOT LIKE '%batal%' AND LOWER(pm.status_pesanan) NOT LIKE '%cancel%'))
+				  AND YEAR(pm.tanggal_so) = '" . $year_esc . "'
+			) u
+			" . $cat_where . "
+			GROUP BY u.nama_produk
+			HAVING total_customers > 0
+			ORDER BY total_customers DESC, total_revenue DESC
+			LIMIT 15
+		";
+
+		return $this->db->query($sql)->result();
 	}
 
 	/**
@@ -1530,7 +2094,7 @@ class Model_crm extends CI_Model
 		$where_clause = "";
 		if (!empty($filter)) {
 			$f_esc = $this->db->escape_like_str($filter);
-			$where_clause = " WHERE item_name LIKE '%{$f_esc}%'";
+			$where_clause = " WHERE item_name LIKE '%" . $f_esc . "%'";
 		}
 
 		$sql = "
@@ -1569,7 +2133,7 @@ class Model_crm extends CI_Model
 				LEFT JOIN produk p ON pmi.produk_id = p.id
 				WHERE pm.no_telepon IS NOT NULL AND pm.no_telepon != ''
 			) u
-			{$where_clause}
+			" . $where_clause . "
 			GROUP BY item_name
 			ORDER BY total_spend DESC, last_order_date DESC
 		";
@@ -1626,7 +2190,7 @@ class Model_crm extends CI_Model
 
 		$apply_where = function() use ($filters) {
 			$this->db->from('crm_transaction_followup_labels tfl');
-			$this->db->join('crm_followup_categories fc', 'tfl.followup_category_id = fc.id');
+			$this->db->join('crm_followup_categories fc', 'tfl.followup_category_id = fc.id', 'left');
 
 			if (!empty($filters['category_id'])) {
 				$this->db->where('tfl.followup_category_id', $filters['category_id']);
@@ -1700,40 +2264,49 @@ class Model_crm extends CI_Model
 	/**
 	 * Ensure at least one followup label exists for a given phone number so that 2-way chat modal can open
 	 */
-	public function ensure_label_for_phone($phone)
+	public function ensure_label_for_phone($phone, $nama_fallback = '')
 	{
-		$clean_phone = preg_replace('/[^0-9]/', '', (string)$phone);
-		if (empty($clean_phone)) return null;
+		$is_jid = (strpos($phone, '@') !== false);
+		if ($is_jid) {
+			$existing = $this->db->get_where('crm_transaction_followup_labels', ['customer_phone' => $phone])->row();
+			if ($existing) {
+				return $existing->id;
+			}
+		} else {
+			$clean_phone = preg_replace('/[^0-9]/', '', (string)$phone);
+			if (empty($clean_phone)) return null;
 
-		$where_clause = $this->get_phone_where_clause('tfl.customer_phone', $phone);
-		$existing = $this->db->query("SELECT id FROM crm_transaction_followup_labels tfl WHERE {$where_clause} LIMIT 1")->row();
-		if ($existing) {
-			return $existing->id;
+			$where_clause = $this->get_phone_where_clause('tfl.customer_phone', $phone);
+			$existing = $this->db->query("SELECT id FROM crm_transaction_followup_labels tfl WHERE " . $where_clause . " ORDER BY tfl.id DESC LIMIT 1")->row();
+			if ($existing) {
+				return $existing->id;
+			}
 		}
 
 		// Find customer name from sales_order or marketplace
-		$so_cust = $this->db->query("SELECT nama_penerima as nama FROM sales_order so WHERE " . $this->get_phone_where_clause('so.no_telepon', $phone) . " LIMIT 1")->row();
-		$pm_cust = $this->db->query("SELECT nama_penerima as nama FROM penjualan_marketplace pm WHERE " . $this->get_phone_where_clause('pm.no_telepon', $phone) . " LIMIT 1")->row();
-
-		$nama = 'Customer';
-		if (!empty($so_cust->nama)) $nama = $so_cust->nama;
-		elseif (!empty($pm_cust->nama)) $nama = $pm_cust->nama;
+		$nama = !empty($nama_fallback) ? $nama_fallback : ($is_jid ? 'WhatsApp Group' : 'Customer');
+		if (!$is_jid) {
+			$so_cust = $this->db->query("SELECT nama_penerima as nama FROM sales_order so WHERE " . $this->get_phone_where_clause('so.no_telepon', $phone) . " LIMIT 1")->row();
+			$pm_cust = $this->db->query("SELECT nama_penerima as nama FROM penjualan_marketplace pm WHERE " . $this->get_phone_where_clause('pm.no_telepon', $phone) . " LIMIT 1")->row();
+			if (!empty($so_cust->nama)) $nama = $so_cust->nama;
+			elseif (!empty($pm_cust->nama)) $nama = $pm_cust->nama;
+		}
 
 		$categories = $this->get_categories(true);
 		$cat_id = !empty($categories) ? $categories[0]->id : 1;
 		$now = date('Y-m-d H:i:s');
 
 		$this->db->insert('crm_transaction_followup_labels', [
-			'order_source' => 'Direct',
+			'order_source' => $is_jid ? 'GROUP' : 'WAHA-LIVE',
 			'order_id' => 0,
-			'order_table' => 'manual_entry',
+			'order_table' => $is_jid ? 'whatsapp_group' : 'manual_entry',
 			'customer_nama' => $nama,
 			'customer_phone' => $phone,
-			'no_pesanan' => 'RFM-' . date('YmdHis'),
+			'no_pesanan' => $is_jid ? 'GROUP' : 'WAHA-LIVE',
 			'tanggal_pengiriman' => date('Y-m-d'),
 			'followup_category_id' => $cat_id,
 			'tanggal_label_muncul' => date('Y-m-d'),
-			'status_label' => 'Pending',
+			'status_label' => 'Direspon',
 			'created_at' => $now,
 			'updated_at' => $now,
 		]);
@@ -1756,15 +2329,15 @@ class Model_crm extends CI_Model
 				tfl.order_source,
 				tfl.status_label,
 				tfl.updated_at,
-				(SELECT message FROM crm_chat_history ch WHERE LENGTH(ch.customer_phone) >= 9 AND RIGHT(ch.customer_phone, 9) = RIGHT(tfl.customer_phone, 9) ORDER BY ch.id DESC LIMIT 1) as last_message,
-				(SELECT created_at FROM crm_chat_history ch WHERE LENGTH(ch.customer_phone) >= 9 AND RIGHT(ch.customer_phone, 9) = RIGHT(tfl.customer_phone, 9) ORDER BY ch.id DESC LIMIT 1) as last_message_at,
-				(SELECT COUNT(*) FROM crm_chat_history ch WHERE LENGTH(ch.customer_phone) >= 9 AND RIGHT(ch.customer_phone, 9) = RIGHT(tfl.customer_phone, 9) AND ch.direction = 'in' AND ch.status != 'read') as unread_count
+				(SELECT message FROM crm_chat_history ch WHERE (ch.label_id = tfl.id OR (LENGTH(ch.customer_phone) >= 9 AND RIGHT(ch.customer_phone, 9) = RIGHT(tfl.customer_phone, 9))) ORDER BY ch.created_at DESC, ch.id DESC LIMIT 1) as last_message,
+				(SELECT created_at FROM crm_chat_history ch WHERE (ch.label_id = tfl.id OR (LENGTH(ch.customer_phone) >= 9 AND RIGHT(ch.customer_phone, 9) = RIGHT(tfl.customer_phone, 9))) ORDER BY ch.created_at DESC, ch.id DESC LIMIT 1) as last_message_at,
+				(SELECT COUNT(*) FROM crm_chat_history ch WHERE (ch.label_id = tfl.id OR (LENGTH(ch.customer_phone) >= 9 AND RIGHT(ch.customer_phone, 9) = RIGHT(tfl.customer_phone, 9))) AND ch.direction = 'in' AND ch.status != 'read') as unread_count
 			FROM crm_transaction_followup_labels tfl
 			INNER JOIN (
 				SELECT MAX(id) as max_id
 				FROM crm_transaction_followup_labels
 				WHERE customer_phone IS NOT NULL AND customer_phone != ''
-				GROUP BY RIGHT(customer_phone, 9)
+				GROUP BY IF(customer_phone LIKE '%@g.us', customer_phone, RIGHT(customer_phone, 9))
 			) latest ON latest.max_id = tfl.id
 			WHERE 1=1
 		";
@@ -1773,27 +2346,30 @@ class Model_crm extends CI_Model
 			$s = $this->db->escape_like_str($search);
 			$clean_search = preg_replace('/[^0-9]/', '', $search);
 			
-			$phone_conds = ["tfl.customer_phone LIKE '%{$s}%'"];
+			$phone_conds = ["tfl.customer_phone LIKE '%" . $s . "%'"];
 			if (strlen($clean_search) >= 4) {
 				$tail = strlen($clean_search) >= 8 ? substr($clean_search, -8) : $clean_search;
 				$tail_esc = $this->db->escape_like_str($tail);
-				$phone_conds[] = "RIGHT(tfl.customer_phone, 8) LIKE '%{$tail_esc}%'";
+				$phone_conds[] = "RIGHT(tfl.customer_phone, 8) LIKE '%" . $tail_esc . "%'";
 				
 				if (substr($clean_search, 0, 2) === '08') {
 					$alt = '628' . substr($clean_search, 2);
-					$phone_conds[] = "tfl.customer_phone LIKE '%{$alt}%'";
+					$phone_conds[] = "tfl.customer_phone LIKE '%" . $alt . "%'";
 				} elseif (substr($clean_search, 0, 3) === '628') {
 					$alt = '08' . substr($clean_search, 3);
-					$phone_conds[] = "tfl.customer_phone LIKE '%{$alt}%'";
+					$phone_conds[] = "tfl.customer_phone LIKE '%" . $alt . "%'";
 				}
 			}
 			$phone_sql = implode(' OR ', $phone_conds);
 
-			$sql .= " AND (tfl.customer_nama LIKE '%{$s}%' OR ({$phone_sql}) OR tfl.no_pesanan LIKE '%{$s}%')";
+			$sql .= " AND (tfl.customer_nama LIKE '%" . $s . "%' OR (" . $phone_sql . ") OR tfl.no_pesanan LIKE '%" . $s . "%')";
+		} else {
+			$sql .= " HAVING (last_message_at IS NOT NULL OR order_source IN ('WhatsApp Live', 'WhatsApp Group', 'WAHA-LIVE', 'GROUP'))";
 		}
 
 		$sql .= " ORDER BY 
 			unread_count DESC,
+			(last_message_at IS NOT NULL) DESC,
 			last_message_at DESC,
 			tfl.updated_at DESC
 			LIMIT 100
@@ -1854,8 +2430,8 @@ class Model_crm extends CI_Model
 			$phone_tails[$tail] = true;
 
 			$tail_esc = $this->db->escape_str($tail);
-			$conditions_so[] = "(LENGTH(so.no_telepon) >= 9 AND RIGHT(so.no_telepon, 9) = '{$tail_esc}')";
-			$conditions_pm[] = "(LENGTH(pm.no_telepon) >= 9 AND RIGHT(pm.no_telepon, 9) = '{$tail_esc}')";
+			$conditions_so[] = "(LENGTH(so.no_telepon) >= 9 AND RIGHT(so.no_telepon, 9) = '" . $tail_esc . "')";
+			$conditions_pm[] = "(LENGTH(pm.no_telepon) >= 9 AND RIGHT(pm.no_telepon, 9) = '" . $tail_esc . "')";
 		}
 
 		if (empty($conditions_so)) return [];
@@ -1868,7 +2444,7 @@ class Model_crm extends CI_Model
 			COALESCE(SUM(so.total), 0) as spend,
 			MAX(so.tanggal_so) as last_date
 		FROM sales_order so
-		WHERE so.no_telepon IS NOT NULL AND so.no_telepon != '' AND ({$so_where})
+		WHERE so.no_telepon IS NOT NULL AND so.no_telepon != '' AND (" . $so_where . ")
 		GROUP BY phone_tail";
 
 		// Query 2: penjualan_marketplace summary grouped by phone tail
@@ -1879,7 +2455,7 @@ class Model_crm extends CI_Model
 			COALESCE(SUM(pm.total), 0) as spend,
 			MAX(pm.tanggal_so) as last_date
 		FROM penjualan_marketplace pm
-		WHERE pm.no_telepon IS NOT NULL AND pm.no_telepon != '' AND ({$pm_where})
+		WHERE pm.no_telepon IS NOT NULL AND pm.no_telepon != '' AND (" . $pm_where . ")
 		GROUP BY phone_tail";
 
 		$so_data = [];
@@ -2022,6 +2598,10 @@ class Model_crm extends CI_Model
 			return 0;
 		}
 
+		if (empty($phone) || strpos($phone, '@newsletter') !== false || strpos($phone, '@broadcast') !== false || $phone === '0@c.us' || $phone === '0') {
+			return 0;
+		}
+
 		$clean_input_phone = $this->normalize_phone_number($phone);
 		if (empty($clean_input_phone)) {
 			$clean_input_phone = preg_replace('/[^0-9]/', '', $phone);
@@ -2039,14 +2619,19 @@ class Model_crm extends CI_Model
 		]);
 		$webhook_log_id = $this->db->insert_id();
 
-		// Find active labels for this phone by comparing canonical numbers
+		// Find active labels for this phone by comparing canonical numbers (newest first)
 		$all_labels = $this->db
-			->order_by('tanggal_label_muncul', 'DESC')
+			->order_by('id', 'DESC')
 			->get('crm_transaction_followup_labels')
 			->result();
 
+		$is_jid = (strpos($phone, '@') !== false);
 		$matched_labels = [];
 		foreach ($all_labels as $lbl) {
+			if ($is_jid && $lbl->customer_phone === $phone) {
+				$matched_labels[] = $lbl;
+				break;
+			}
 			$clean_db_phone = $this->normalize_phone_number($lbl->customer_phone);
 			if ($clean_db_phone === $clean_input_phone || (!empty($phone_tail) && strlen($clean_db_phone) >= 9 && substr($clean_db_phone, -9) === $phone_tail)) {
 				// Prefer active labels
@@ -2059,6 +2644,10 @@ class Model_crm extends CI_Model
 		// Fallback: if all existing labels are Selesai, select the most recent label for this phone
 		if (empty($matched_labels)) {
 			foreach ($all_labels as $lbl) {
+				if ($is_jid && $lbl->customer_phone === $phone) {
+					$matched_labels[] = $lbl;
+					break;
+				}
 				$clean_db_phone = $this->normalize_phone_number($lbl->customer_phone);
 				if ($clean_db_phone === $clean_input_phone || (!empty($phone_tail) && strlen($clean_db_phone) >= 9 && substr($clean_db_phone, -9) === $phone_tail)) {
 					$matched_labels[] = $lbl;
@@ -2070,27 +2659,30 @@ class Model_crm extends CI_Model
 		// Fallback 2: If no label exists at all for this customer phone, check sales_order / penjualan_marketplace
 		if (empty($matched_labels)) {
 			$cust_name = !empty($sender_name) ? $sender_name : '';
-			$so_match = $this->db->query("SELECT id, nama_penerima FROM sales_order WHERE no_telepon LIKE ? ORDER BY id DESC LIMIT 1", ["%{$phone_tail}%"])->row();
+			$so_match = $this->db->query("SELECT id, nama_penerima FROM sales_order WHERE no_telepon LIKE ? ORDER BY id DESC LIMIT 1", ["%" . $phone_tail . "%"])->row();
 			if ($so_match && !empty($so_match->nama_penerima)) {
 				$cust_name = $so_match->nama_penerima;
 			} else {
-				$mp_match = $this->db->query("SELECT id, nama_penerima FROM penjualan_marketplace WHERE no_telepon LIKE ? ORDER BY id DESC LIMIT 1", ["%{$phone_tail}%"])->row();
+				$mp_match = $this->db->query("SELECT id, nama_penerima FROM penjualan_marketplace WHERE no_telepon LIKE ? ORDER BY id DESC LIMIT 1", ["%" . $phone_tail . "%"])->row();
 				if ($mp_match && !empty($mp_match->nama_penerima)) {
 					$cust_name = $mp_match->nama_penerima;
 				}
 			}
 
-			if (!empty($cust_name)) {
-				$first_cat = $this->db->query("SELECT id FROM crm_followup_categories WHERE is_active = 1 ORDER BY urutan ASC LIMIT 1")->row();
-				$cat_id = $first_cat ? $first_cat->id : 1;
+			if (empty($cust_name)) {
+				$cust_name = !empty($sender_name) ? $sender_name : ($is_jid ? 'WhatsApp Group' : ('+' . $phone));
+			}
 
-				$new_label_data = [
-					'order_source' => 'Toko',
-					'order_id' => 0,
-					'order_table' => 'sales_order',
-					'customer_nama' => $cust_name,
-					'customer_phone' => $clean_input_phone,
-					'no_pesanan' => 'WA-INCOMING',
+			$first_cat = $this->db->query("SELECT id FROM crm_followup_categories WHERE is_active = 1 ORDER BY urutan ASC LIMIT 1")->row();
+			$cat_id = $first_cat ? $first_cat->id : 1;
+
+			$new_label_data = [
+				'order_source' => $is_jid ? 'GROUP' : 'WAHA-LIVE',
+				'order_id' => 0,
+				'order_table' => $is_jid ? 'whatsapp_group' : 'manual_entry',
+				'customer_nama' => $cust_name,
+				'customer_phone' => $phone,
+				'no_pesanan' => $is_jid ? 'GROUP' : 'WAHA-LIVE',
 					'tanggal_pengiriman' => date('Y-m-d'),
 					'followup_category_id' => $cat_id,
 					'tanggal_label_muncul' => date('Y-m-d'),
@@ -2107,62 +2699,40 @@ class Model_crm extends CI_Model
 					$matched_labels[] = $new_label;
 				}
 			}
-		}
 
 		$logged_count = 0;
 
 		if (!empty($matched_labels)) {
-			// If sender_name was provided, narrow matched_labels down to ones matching customer_nama
-			if (count($matched_labels) > 1 && !empty($sender_name)) {
-				$clean_sname = strtolower(trim($sender_name));
-				$filtered = [];
-				foreach ($matched_labels as $lbl) {
-					if (strtolower(trim($lbl->customer_nama)) === $clean_sname) {
-						$filtered[] = $lbl;
-					}
-				}
-				if (!empty($filtered)) {
-					$matched_labels = $filtered;
-				}
-			}
-
+			// Always pick the newest active label as primary
 			$primary_label = $matched_labels[0];
 			$cust_username = !empty($primary_label->customer_nama) ? $primary_label->customer_nama : (!empty($sender_name) ? $sender_name : 'Customer');
 
-			// Idempotency check: Skip duplicate insert if same message was logged for this label within 5 minutes
-			// Or if CS sent an outgoing message matching this text in the last 3 minutes
-			$three_mins_ago = date('Y-m-d H:i:s', time() - 180);
+			// Idempotency check: Skip echo of CS outgoing message only if EXACT match and within 60s
+			$one_min_ago = date('Y-m-d H:i:s', time() - 60);
 			$clean_check_msg = trim(str_replace(['> _Sent via fonnte.com_', '_Sent via fonnte.com_', 'Sent via fonnte.com'], '', $message));
 
-			$cs_outgoing_exists = $this->db->query("
-				SELECT id FROM crm_chat_history 
-				WHERE label_id = ? AND created_at >= ? 
-				  AND (direction = 'out' OR is_internal_note = 0)
-				  AND (message = ? OR message LIKE ?)
-				LIMIT 1
-			", [$primary_label->id, $three_mins_ago, $clean_check_msg, '%' . $this->db->escape_like_str($clean_check_msg) . '%'])->num_rows();
+			if (mb_strlen($clean_check_msg) >= 3) {
+				$cs_outgoing_exists = $this->db->query("
+					SELECT id FROM crm_chat_history 
+					WHERE label_id = ? AND created_at >= ? 
+					  AND direction = 'out' AND is_internal_note = 0
+					  AND TRIM(message) = ?
+					LIMIT 1
+				", [$primary_label->id, $one_min_ago, $clean_check_msg])->num_rows();
 
-			if ($cs_outgoing_exists > 0) {
-				return 0; // Skip echo of CS outgoing message
+				if ($cs_outgoing_exists > 0) {
+					return 0; // Skip echo of CS outgoing message
+				}
 			}
 
-			$five_mins_ago = date('Y-m-d H:i:s', time() - 300);
+			// Prevent rapid duplicate webhook retries (within 10 seconds only)
+			$ten_secs_ago = date('Y-m-d H:i:s', time() - 10);
 			$dup_check = $this->db->where([
 				'label_id' => $primary_label->id,
 				'direction' => 'in',
 				'message' => $message,
-				'created_at >=' => $five_mins_ago
+				'created_at >=' => $ten_secs_ago
 			])->count_all_results('crm_chat_history');
-
-			// Also check legacy notes table for backward compat
-			if ($dup_check == 0) {
-				$dup_check = $this->db->where([
-					'followup_label_id' => $primary_label->id,
-					'sender_type' => 'customer',
-					'catatan' => $message,
-					'created_at >=' => $five_mins_ago
-				])->count_all_results('crm_followup_notes');
-			}
 
 			if ($dup_check == 0) {
 				$now = date('Y-m-d H:i:s');
@@ -2303,6 +2873,7 @@ class Model_crm extends CI_Model
 	{
 		$label = $this->get_label($label_id);
 		if (!$label) return [];
+		if ($last_id <= 0) return [];
 
 		$label_ids = $this->get_related_label_ids($label);
 		$clean_phone = $this->normalize_phone_number($label->customer_phone);
@@ -2313,7 +2884,9 @@ class Model_crm extends CI_Model
 
 		$this->db->group_start();
 		$this->db->where_in('label_id', $label_ids);
-		if (!empty($phone_tail)) {
+		if (strpos($label->customer_phone, '@') !== false) {
+			$this->db->or_where('customer_phone', $label->customer_phone);
+		} elseif (!empty($phone_tail)) {
 			$this->db->or_like('customer_phone', $phone_tail);
 		}
 		$this->db->group_end();
@@ -2373,7 +2946,7 @@ class Model_crm extends CI_Model
 	 * @param object $label
 	 * @return array of label IDs
 	 */
-	private function get_related_label_ids($label)
+	public function get_related_label_ids($label)
 	{
 		$clean_phone = $this->normalize_phone_number($label->customer_phone);
 		$phone_tail = strlen($clean_phone) >= 9 ? substr($clean_phone, -9) : $clean_phone;
@@ -2384,7 +2957,7 @@ class Model_crm extends CI_Model
 
 		$tail_esc = $this->db->escape_str($phone_tail);
 		$sql = "SELECT id FROM crm_transaction_followup_labels 
-				WHERE LENGTH(customer_phone) >= 9 AND RIGHT(customer_phone, 9) = '{$tail_esc}'";
+				WHERE LENGTH(customer_phone) >= 9 AND RIGHT(customer_phone, 9) = '" . $tail_esc . "'";
 		$rows = $this->db->query($sql)->result();
 
 		$label_ids = [];
@@ -2420,7 +2993,9 @@ class Model_crm extends CI_Model
 
 			$this->db->group_start();
 			$this->db->where_in('label_id', $label_ids);
-			if (!empty($phone_tail)) {
+			if (strpos($label->customer_phone, '@') !== false) {
+				$this->db->or_where('customer_phone', $label->customer_phone);
+			} elseif (!empty($phone_tail)) {
 				$this->db->or_like('customer_phone', $phone_tail);
 			}
 			$this->db->group_end();
@@ -2536,8 +3111,14 @@ class Model_crm extends CI_Model
 
 			$key = md5((isset($item['direction']) ? $item['direction'] : '') . '|' . $msg_clean . '|' . substr(isset($item['created_at']) ? $item['created_at'] : '', 0, 16));
 			if (!isset($seen[$key])) {
-				$seen[$key] = true;
+				$seen[$key] = count($timeline);
 				$timeline[] = $item;
+			} else {
+				// If duplicate has higher ID, update the ID so cursor tracking always uses the latest DB ID
+				$idx = $seen[$key];
+				if ((int)$item['id'] > (int)$timeline[$idx]['id']) {
+					$timeline[$idx]['id'] = (int)$item['id'];
+				}
 			}
 		}
 
@@ -2575,14 +3156,31 @@ class Model_crm extends CI_Model
 			$kurir = $order->kurir_ekspedisi ?: ($order->opsi_pengiriman ?? '-');
 		}
 
+		$cust_nama = $label->customer_nama ?: '-';
+		$no_pesanan = $label->no_pesanan ?: '-';
+		$nomor_resi = $label->nomor_resi ?: '-';
+		$sumber_penjualan = $label->order_source ?: '-';
+		$tgl_kirim = $label->tanggal_pengiriman ? date('d/m/Y', strtotime($label->tanggal_pengiriman)) : '-';
+
 		$vars = [
-			'{{nama_customer}}' => $label->customer_nama ?: '-',
-			'{{no_pesanan}}' => $label->no_pesanan ?: '-',
-			'{{nomor_resi}}' => $label->nomor_resi ?: '-',
-			'{{sumber_penjualan}}' => $label->order_source ?: '-',
+			'{{nama_customer}}' => $cust_nama,
+			'{{nama}}' => $cust_nama,
+			'{nama_customer}' => $cust_nama,
+			'{nama}' => $cust_nama,
+			'{{no_pesanan}}' => $no_pesanan,
+			'{no_pesanan}' => $no_pesanan,
+			'{{nomor_resi}}' => $nomor_resi,
+			'{nomor_resi}' => $nomor_resi,
+			'{{resi}}' => $nomor_resi,
+			'{resi}' => $nomor_resi,
+			'{{sumber_penjualan}}' => $sumber_penjualan,
+			'{sumber_penjualan}' => $sumber_penjualan,
 			'{{produk}}' => $produk,
-			'{{tanggal_kirim}}' => $label->tanggal_pengiriman ? date('d/m/Y', strtotime($label->tanggal_pengiriman)) : '-',
+			'{produk}' => $produk,
+			'{{tanggal_kirim}}' => $tgl_kirim,
+			'{tanggal_kirim}' => $tgl_kirim,
 			'{{kurir}}' => $kurir,
+			'{kurir}' => $kurir,
 		];
 
 		return str_replace(array_keys($vars), array_values($vars), $template);
@@ -2629,10 +3227,10 @@ class Model_crm extends CI_Model
 		$row = $this->db->get('crm_wa_gateway_config')->row();
 		if (!$row) {
 			return (object)[
-				'provider' => 'fonnte',
-				'mode' => 'wa_direct',
-				'api_key' => '',
-				'api_url' => 'https://api.fonnte.com/send',
+				'provider' => 'waha',
+				'mode' => 'wa_gateway',
+				'api_key' => 'metafora123',
+				'api_url' => 'http://localhost:3000',
 				'sender_phone' => '',
 				'additional_headers' => '',
 				'is_active' => 1
@@ -2654,20 +3252,346 @@ class Model_crm extends CI_Model
 	}
 
 	/**
+	 * Save WA LID (Linked Identity) to customer phone mapping in database
+	 */
+	public function save_wa_lid_map($lid, $phone, $pushname = null)
+	{
+		$lid = preg_replace('/@(lid|c\.us|s\.whatsapp\.net)$/', '', trim($lid));
+		$phone = preg_replace('/@(lid|c\.us|s\.whatsapp\.net)$/', '', trim($phone));
+		$phone = preg_replace('/[^0-9]/', '', $phone);
+
+		if (empty($lid) || empty($phone) || strlen($phone) < 8) {
+			return false;
+		}
+
+		$data = [
+			'lid' => $lid,
+			'phone' => $phone,
+			'updated_at' => date('Y-m-d H:i:s')
+		];
+		if (!empty($pushname)) {
+			$data['pushname'] = $pushname;
+		}
+
+		$existing = $this->db->get_where('crm_wa_lid_map', ['lid' => $lid])->row();
+		if ($existing) {
+			$this->db->where('lid', $lid)->update('crm_wa_lid_map', $data);
+		} else {
+			$data['created_at'] = date('Y-m-d H:i:s');
+			$this->db->insert('crm_wa_lid_map', $data);
+		}
+		return true;
+	}
+
+	/**
+	 * Resolve sender identifier to a canonical customer phone number.
+	 * Modern WhatsApp uses LID (Linked Identity, e.g. 83889670369419@lid) instead of phone numbers.
+	 * This resolver maps the LID to the customer's real phone number using:
+	 * 1. crm_wa_lid_map table
+	 * 2. crm_chat_history outgoing responses
+	 * 3. WAHA contact API (/api/{session}/contacts/{lid})
+	 * 4. WAHA chats API (/api/{session}/chats)
+	 */
+	public function resolve_waha_sender_phone($from, $payload = [], $session = 'default')
+	{
+		$is_group = (strpos($from, '@g.us') !== false);
+		if ($is_group) {
+			return ['phone' => $from, 'is_group' => true, 'name' => ''];
+		}
+
+		$is_lid = (strpos($from, '@lid') !== false);
+		$lid_clean = preg_replace('/@(lid|c\.us|s\.whatsapp\.net)$/', '', trim($from));
+
+		// If it's already a standard phone number (numeric and <= 15 digits)
+		if (!$is_lid && is_numeric($lid_clean) && strlen($lid_clean) <= 15 && strlen($lid_clean) >= 8) {
+			return ['phone' => $lid_clean, 'is_group' => false, 'name' => ''];
+		}
+
+		// 1. Check local crm_wa_lid_map table
+		$mapped = $this->db->get_where('crm_wa_lid_map', ['lid' => $lid_clean])->row();
+		if ($mapped && !empty($mapped->phone)) {
+			return [
+				'phone' => $mapped->phone,
+				'is_group' => false,
+				'name' => $mapped->pushname ?: ''
+			];
+		}
+
+		// 2. Check crm_chat_history outgoing messages where fonnte_response recorded this LID
+		$history = $this->db->query(
+			"SELECT customer_phone FROM crm_chat_history WHERE direction = 'out' AND fonnte_response LIKE ? ORDER BY id DESC LIMIT 1",
+			['%' . $lid_clean . '%']
+		)->row();
+		if ($history && !empty($history->customer_phone)) {
+			$clean_ph = preg_replace('/[^0-9]/', '', $history->customer_phone);
+			if (strlen($clean_ph) >= 8) {
+				$this->save_wa_lid_map($lid_clean, $clean_ph);
+				return ['phone' => $clean_ph, 'is_group' => false, 'name' => ''];
+			}
+		}
+
+		// 3. Query WAHA Contact API
+		$config = $this->get_wa_gateway_config();
+		$api_url = rtrim($config->api_url ?: 'http://localhost:3000', '/');
+		$api_key = trim($config->api_key ?: '');
+
+		$sess_name = !empty($session) ? $session : 'default';
+		$ch = curl_init($api_url . '/api/' . urlencode($sess_name) . '/contacts/' . urlencode($lid_clean . '@lid'));
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_TIMEOUT, 4);
+		if (!empty($api_key)) {
+			curl_setopt($ch, CURLOPT_HTTPHEADER, ['x-api-key: ' . $api_key]);
+		}
+		$res = curl_exec($ch);
+		$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		curl_close($ch);
+
+		if ($http_code == 200 && !empty($res)) {
+			$c_data = json_decode($res, true);
+			if (!empty($c_data['id'])) {
+				$real_ph = preg_replace('/@(c\.us|lid|s\.whatsapp\.net)$/', '', $c_data['id']);
+				$real_ph = preg_replace('/[^0-9]/', '', $real_ph);
+				if (strlen($real_ph) >= 8) {
+					$pushname = $c_data['pushname'] ?? ($c_data['name'] ?? '');
+					$this->save_wa_lid_map($lid_clean, $real_ph, $pushname);
+					return [
+						'phone' => $real_ph,
+						'is_group' => false,
+						'name' => $pushname
+					];
+				}
+			}
+		}
+
+		// 4. Query WAHA Chats API as fallback
+		$ch = curl_init($api_url . '/api/' . urlencode($sess_name) . '/chats');
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_TIMEOUT, 4);
+		if (!empty($api_key)) {
+			curl_setopt($ch, CURLOPT_HTTPHEADER, ['x-api-key: ' . $api_key]);
+		}
+		$res_chats = curl_exec($ch);
+		$http_code_chats = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		curl_close($ch);
+
+		if ($http_code_chats == 200 && !empty($res_chats)) {
+			$chats = json_decode($res_chats, true);
+			if (is_array($chats)) {
+				foreach ($chats as $chat_item) {
+					$chat_serialized = $chat_item['id']['_serialized'] ?? ($chat_item['id'] ?? '');
+					if (strpos($chat_serialized, $lid_clean) !== false) {
+						$chat_name = $chat_item['name'] ?? '';
+						// If name looks like a phone number: +62 897-3994-407
+						$clean_name_ph = preg_replace('/[^0-9]/', '', $chat_name);
+						if (strlen($clean_name_ph) >= 8) {
+							$this->save_wa_lid_map($lid_clean, $clean_name_ph);
+							return ['phone' => $clean_name_ph, 'is_group' => false, 'name' => ''];
+						}
+					}
+				}
+			}
+		}
+
+		// 5. Fallback: return raw cleaned LID
+		return ['phone' => $lid_clean, 'is_group' => false, 'name' => ''];
+	}
+
+	/**
+	 * Download and save inbound media from WAHA webhook to local storage (uploads/crm_attachments/)
+	 * Returns array with label ([Foto], [Video], [Dokumen], etc), public url, and file info
+	 */
+	public function save_inbound_waha_media($payload, $session = 'default')
+	{
+		if (empty($payload['hasMedia'])) {
+			return null;
+		}
+
+		$config = $this->get_wa_gateway_config();
+		$api_url = rtrim($config->api_url ?: 'http://localhost:3000', '/');
+		$api_key = trim($config->api_key ?: '');
+
+		$m_type = strtolower($payload['type'] ?? ($payload['_data']['type'] ?? ''));
+		$mimetype = strtolower($payload['media']['mimetype'] ?? ($payload['_data']['mimetype'] ?? ''));
+		$waha_url = trim($payload['media']['url'] ?? '');
+		$filename = trim($payload['media']['filename'] ?? '');
+
+		// Map type if not explicitly set
+		if (empty($m_type)) {
+			if (strpos($mimetype, 'image') !== false) {
+				$m_type = 'image';
+			} elseif (strpos($mimetype, 'video') !== false) {
+				$m_type = 'video';
+			} elseif (strpos($mimetype, 'audio') !== false || strpos($mimetype, 'ogg') !== false) {
+				$m_type = 'audio';
+			} elseif (strpos($mimetype, 'pdf') !== false) {
+				$m_type = 'pdf';
+			} else {
+				$m_type = 'document';
+			}
+		}
+
+		// Choose display label
+		if (in_array($m_type, ['image', 'sticker'])) {
+			$label = '[Foto]';
+		} elseif ($m_type === 'video') {
+			$label = '[Video]';
+		} elseif (in_array($m_type, ['audio', 'ptt', 'voice'])) {
+			$label = '[Pesan Suara]';
+		} elseif ($m_type === 'pdf' || strpos($mimetype, 'pdf') !== false) {
+			$label = '[Dokumen PDF]';
+		} elseif (in_array($m_type, ['zip', 'rar', 'tar', 'gz'])) {
+			$label = '[Dokumen Arsip]';
+		} else {
+			$label = '[Dokumen]';
+		}
+
+		// Determine file extension
+		$ext = '';
+		if (!empty($filename)) {
+			$ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+		}
+		if (empty($ext) && !empty($waha_url)) {
+			$path = parse_url($waha_url, PHP_URL_PATH);
+			$ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+		}
+		if (empty($ext) && !empty($mimetype)) {
+			$clean_mime = trim(explode(';', $mimetype)[0]);
+			$mime_map = [
+				'image/jpeg' => 'jpg',
+				'image/jpg'  => 'jpg',
+				'image/png'  => 'png',
+				'image/webp' => 'webp',
+				'image/gif'  => 'gif',
+				'video/mp4'  => 'mp4',
+				'video/3gpp' => '3gp',
+				'video/quicktime' => 'mov',
+				'video/webm' => 'webm',
+				'audio/ogg'  => 'ogg',
+				'audio/mpeg' => 'mp3',
+				'audio/mp3'  => 'mp3',
+				'audio/mp4'  => 'm4a',
+				'audio/m4a'  => 'm4a',
+				'audio/wav'  => 'wav',
+				'application/pdf' => 'pdf',
+				'application/msword' => 'doc',
+				'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+				'application/vnd.ms-excel' => 'xls',
+				'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'xlsx',
+				'application/zip' => 'zip',
+				'application/x-rar-compressed' => 'rar',
+			];
+			$ext = $mime_map[$clean_mime] ?? '';
+		}
+
+		if (empty($ext)) {
+			if ($m_type === 'image' || $m_type === 'sticker') $ext = 'jpg';
+			elseif ($m_type === 'video') $ext = 'mp4';
+			elseif ($m_type === 'audio' || $m_type === 'ptt') $ext = 'ogg';
+			elseif ($m_type === 'pdf') $ext = 'pdf';
+			else $ext = 'bin';
+		}
+
+		$upload_dir = FCPATH . 'uploads/crm_attachments/';
+		if (!is_dir($upload_dir)) {
+			@mkdir($upload_dir, 0777, true);
+		}
+
+		$new_filename = 'wa_in_' . date('Ymd_His') . '_' . substr(md5(uniqid(mt_rand(), true)), 0, 6) . '.' . $ext;
+		$dest_path = $upload_dir . $new_filename;
+
+		// 1. Download file directly from WAHA API
+		$saved = false;
+		if (!empty($waha_url)) {
+			$fetch_url = $waha_url;
+			if (strpos($fetch_url, 'http') !== 0) {
+				$fetch_url = $api_url . '/' . ltrim($fetch_url, '/');
+			} else {
+				$parsed_waha = parse_url($waha_url);
+				$parsed_cfg = parse_url($api_url);
+				if (!empty($parsed_waha['path']) && !empty($parsed_cfg['host'])) {
+					$cfg_port = !empty($parsed_cfg['port']) ? ':' . $parsed_cfg['port'] : '';
+					$cfg_scheme = !empty($parsed_cfg['scheme']) ? $parsed_cfg['scheme'] : 'http';
+					$fetch_url = $cfg_scheme . '://' . $parsed_cfg['host'] . $cfg_port . $parsed_waha['path'];
+				}
+			}
+
+			$ch = curl_init($fetch_url);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+			curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+			curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+			if (!empty($api_key)) {
+				curl_setopt($ch, CURLOPT_HTTPHEADER, ['x-api-key: ' . $api_key]);
+			}
+			$content = curl_exec($ch);
+			$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+			curl_close($ch);
+
+			if ($http_code >= 200 && $http_code < 300 && !empty($content)) {
+				if (@file_put_contents($dest_path, $content)) {
+					$saved = true;
+				}
+			}
+		}
+
+		// 2. Fallback: Base64 decode from _data.body
+		if (!$saved && !empty($payload['_data']['body']) && is_string($payload['_data']['body'])) {
+			$decoded = base64_decode($payload['_data']['body']);
+			if (!empty($decoded) && strlen($decoded) > 50) {
+				if (@file_put_contents($dest_path, $decoded)) {
+					$saved = true;
+				}
+			}
+		}
+
+		if ($saved) {
+			$public_url = base_url('uploads/crm_attachments/' . $new_filename);
+			return [
+				'label' => $label,
+				'url' => $public_url,
+				'local_path' => $dest_path,
+				'filename' => $new_filename,
+				'm_type' => $m_type,
+			];
+		}
+
+		// Fallback if local saving failed: return remote URL
+		if (!empty($waha_url)) {
+			return [
+				'label' => $label,
+				'url' => $waha_url,
+				'local_path' => null,
+				'filename' => $filename,
+				'm_type' => $m_type,
+			];
+		}
+
+		return [
+			'label' => $label,
+			'url' => '',
+			'local_path' => null,
+			'filename' => '',
+			'm_type' => $m_type,
+		];
+	}
+
+	/**
 	 * Send WhatsApp message directly via Gateway API (cURL)
 	 */
 	public function send_wa_via_api($phone, $message, $file_url = '')
 	{
 		$config = $this->get_wa_gateway_config();
 
-		// Normalize phone: 08xx -> 628xx
-		$phone = preg_replace('/^0/', '62', $phone);
-		$phone = preg_replace('/[^0-9]/', '', $phone);
-		if (substr($phone, 0, 2) !== '62') $phone = '62' . $phone;
+		// Normalize phone: 08xx -> 628xx (if not already a JID like group @g.us or @lid)
+		$is_jid = (strpos($phone, '@') !== false);
+		if (!$is_jid) {
+			$phone = preg_replace('/^0/', '62', $phone);
+			$phone = preg_replace('/[^0-9]/', '', $phone);
+			if (substr($phone, 0, 2) !== '62') $phone = '62' . $phone;
+		}
 
-		$provider = strtolower($config->provider ?: 'fonnte');
+		$provider = strtolower($config->provider ?: 'waha');
 		$api_key = trim($config->api_key ?: '');
-		$api_url = trim($config->api_url ?: 'https://api.fonnte.com/send');
+		$api_url = trim($config->api_url ?: 'http://localhost:3000');
 
 		if (empty($api_key) && in_array($provider, ['fonnte', 'wablas', 'starsender'])) {
 			return [
@@ -2726,11 +3650,36 @@ class Model_crm extends CI_Model
 			if (!empty($api_key)) {
 				$headers[] = 'x-api-key: ' . $api_key;
 			}
-			$payload = [
-				'chatId' => $phone . '@c.us',
-				'text' => $message
-			];
-			$url = rtrim($api_url ?: 'http://localhost:3000', '/') . '/api/sendText';
+			$base_url = rtrim($api_url ?: 'http://localhost:3000', '/');
+			$dest_chat_id = $is_jid ? $phone : ($phone . '@c.us');
+			if (!empty($file_url)) {
+				$filename = pathinfo(parse_url($file_url, PHP_URL_PATH), PATHINFO_BASENAME) ?: 'document.pdf';
+
+				// Transform localhost / 127.0.0.1 / local virtualhost so Docker WAHA container can reach Apache
+				$waha_file_url = $file_url;
+				$parsed_url = parse_url($file_url);
+				if (!empty($parsed_url['host']) && in_array(strtolower($parsed_url['host']), ['localhost', '127.0.0.1', 'ci3_metafora.test'])) {
+					$waha_file_url = str_replace($parsed_url['host'], 'host.docker.internal', $file_url);
+				}
+
+				$payload = [
+					'session' => 'default',
+					'chatId' => $dest_chat_id,
+					'file' => [
+						'url' => $waha_file_url,
+						'filename' => $filename
+					],
+					'caption' => !empty($message) ? $message : ''
+				];
+				$url = $base_url . '/api/sendFile';
+			} else {
+				$payload = [
+					'session' => 'default',
+					'chatId' => $dest_chat_id,
+					'text' => $message
+				];
+				$url = $base_url . '/api/sendText';
+			}
 			curl_setopt($ch, CURLOPT_URL, $url);
 			curl_setopt($ch, CURLOPT_POST, true);
 			curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
@@ -2769,8 +3718,8 @@ class Model_crm extends CI_Model
 		curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-		curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+		curl_setopt($ch, CURLOPT_TIMEOUT, 35);
 
 		$response = curl_exec($ch);
 		$err = curl_error($ch);
@@ -2796,6 +3745,19 @@ class Model_crm extends CI_Model
 					$reason = !empty($res_json['reason']) ? $res_json['reason'] : (!empty($res_json['detail']) ? $res_json['detail'] : (!empty($res_json['message']) ? $res_json['message'] : 'Gagal terkirim dari Fonnte Gateway'));
 					$err_msg = 'Fonnte Gateway Error: ' . $reason;
 				}
+			} elseif (isset($res_json['error']) || isset($res_json['statusCode'])) {
+				if ($http_code >= 400 || !empty($res_json['error'])) {
+					$is_ok = false;
+					$err_msg = 'WAHA Error: ' . (is_string($res_json['error']) ? $res_json['error'] : ($res_json['message'] ?? 'Request failed'));
+				}
+			}
+		}
+
+		// Cache WAHA recipient LID mapping if present in API response
+		if ($is_ok && $provider === 'waha' && is_array($res_json)) {
+			$lid_cand = $res_json['id']['remote'] ?? ($res_json['to'] ?? ($res_json['_data']['id']['remote'] ?? ''));
+			if (!empty($lid_cand) && strpos($lid_cand, '@lid') !== false) {
+				$this->save_wa_lid_map($lid_cand, $phone);
 			}
 		}
 
@@ -2890,6 +3852,98 @@ class Model_crm extends CI_Model
 			SET tfl.tanggal_label_muncul = DATE_ADD(tfl.tanggal_pengiriman, INTERVAL fc.jumlah_hari DAY)
 			WHERE tfl.tanggal_label_muncul != DATE_ADD(tfl.tanggal_pengiriman, INTERVAL fc.jumlah_hari DAY)
 		");
+	}
+
+	/**
+	 * Generate follow-up labels for a single order instantly
+	 */
+	public function generate_labels_for_order($order_table, $order_id)
+	{
+		$categories = $this->get_categories(true);
+		$generated = 0;
+
+		if ($order_table === 'sales_order') {
+			$so = $this->db->query("SELECT so.*, p.nama_pelanggan, p.telepon, p.no_telp 
+				FROM sales_order so LEFT JOIN pelanggan p ON so.pelanggan_id = p.id 
+				WHERE so.id = ?", [$order_id])->row();
+			if (!$so || in_array($so->status, ['cancelled', 'dibatalkan'])) return 0;
+
+			$ship_date = $so->tanggal_kirim ?: ($so->tanggal_so ?: substr($so->created_at, 0, 10));
+			$phone = $so->no_telepon ?: ($so->telepon ?: ($so->no_telp ?: ''));
+			$nama = $so->nama_penerima ?: ($so->nama_pelanggan ?: 'Customer');
+			$so_src = strtolower($so->source ?: '');
+			$source = 'Toko';
+			if (strpos($so_src, 'shopee') !== false) $source = 'Shopee';
+			elseif (strpos($so_src, 'tokopedia') !== false) $source = 'Tokopedia';
+			elseif (strpos($so_src, 'tiktok') !== false) $source = 'TikTok Shop';
+
+			foreach ($categories as $cat) {
+				$exists = $this->db->get_where('crm_transaction_followup_labels', [
+					'order_table' => 'sales_order',
+					'order_id' => $so->id,
+					'followup_category_id' => $cat->id
+				])->num_rows();
+
+				if ($exists == 0) {
+					$target = date('Y-m-d', strtotime($ship_date . ' + ' . $cat->jumlah_hari . ' days'));
+					$this->db->insert('crm_transaction_followup_labels', [
+						'order_source' => $source,
+						'order_id' => $so->id,
+						'order_table' => 'sales_order',
+						'customer_nama' => $nama,
+						'customer_phone' => $phone,
+						'customer_pelanggan_id' => $so->pelanggan_id,
+						'no_pesanan' => $so->no_pesanan ?: $so->nomor_so,
+						'nomor_resi' => $so->nomor_resi ?: '',
+						'tanggal_pengiriman' => $ship_date,
+						'followup_category_id' => $cat->id,
+						'tanggal_label_muncul' => $target,
+					]);
+					$generated++;
+				}
+			}
+		} elseif ($order_table === 'penjualan_marketplace') {
+			$mp = $this->db->get_where('penjualan_marketplace', ['id' => $order_id])->row();
+			if (!$mp || in_array($mp->status, ['cancelled', 'dibatalkan', 'returned', 'pengembalian'])) return 0;
+
+			$ship_date = $mp->tanggal_so ?: substr($mp->created_at, 0, 10);
+			$phone = $mp->no_telepon ?: '';
+			$nama = $mp->nama_penerima ?: 'Customer';
+			$src = strtolower($mp->source ?: '');
+			$no_p = strtolower($mp->no_pesanan ?: '');
+			$source = 'Shopee';
+			if (strpos($src, 'tokopedia') !== false || strpos($no_p, 'tkp') !== false) $source = 'Tokopedia';
+			elseif (strpos($src, 'tiktok') !== false || strpos($no_p, 'ttk') !== false) $source = 'TikTok Shop';
+			elseif (strpos($src, 'shopee') !== false || strpos($no_p, 'shp') !== false) $source = 'Shopee';
+
+			foreach ($categories as $cat) {
+				$exists = $this->db->get_where('crm_transaction_followup_labels', [
+					'order_table' => 'penjualan_marketplace',
+					'order_id' => $mp->id,
+					'followup_category_id' => $cat->id
+				])->num_rows();
+
+				if ($exists == 0) {
+					$target = date('Y-m-d', strtotime($ship_date . ' + ' . $cat->jumlah_hari . ' days'));
+					$this->db->insert('crm_transaction_followup_labels', [
+						'order_source' => $source,
+						'order_id' => $mp->id,
+						'order_table' => 'penjualan_marketplace',
+						'customer_nama' => $nama,
+						'customer_phone' => $phone,
+						'customer_pelanggan_id' => $mp->pelanggan_id,
+						'no_pesanan' => $mp->no_pesanan ?: $mp->nomor_so,
+						'nomor_resi' => $mp->nomor_resi ?: '',
+						'tanggal_pengiriman' => $ship_date,
+						'followup_category_id' => $cat->id,
+						'tanggal_label_muncul' => $target,
+					]);
+					$generated++;
+				}
+			}
+		}
+
+		return $generated;
 	}
 
 	/**
@@ -3360,7 +4414,7 @@ class Model_crm extends CI_Model
 			$new_so = $this->db->query("SELECT id, total, tanggal_so FROM sales_order 
 				WHERE (pelanggan_id IN (SELECT id FROM pelanggan WHERE no_telepon = ?) OR catatan LIKE ?)
 				AND tanggal_so >= ? AND tanggal_so <= ?
-				AND id != ? LIMIT 1", [$phone, "%{$phone}%", $start_date, $end_date, $lbl->order_id])->row();
+				AND id != ? LIMIT 1", [$phone, "%" . $phone . "%", $start_date, $end_date, $lbl->order_id])->row();
 
 			// Check Marketplace new purchase within 14 days
 			$new_mp = $this->db->query("SELECT id, total, tanggal_so FROM penjualan_marketplace 
@@ -3421,14 +4475,16 @@ class Model_crm extends CI_Model
 		$where_note = "WHERE (fn.username IS NOT NULL AND fn.username != '' AND fn.username != 'system')";
 
 		if (!empty($filters['date_from'])) {
-			$where_label .= " AND tfl.updated_at >= '{$filters['date_from']} 00:00:00'";
-			$where_bc .= " AND bl.waktu_kirim >= '{$filters['date_from']} 00:00:00'";
-			$where_note .= " AND fn.created_at >= '{$filters['date_from']} 00:00:00'";
+			$df_esc = $this->db->escape_str($filters['date_from']);
+			$where_label .= " AND tfl.updated_at >= '" . $df_esc . " 00:00:00'";
+			$where_bc .= " AND bl.waktu_kirim >= '" . $df_esc . " 00:00:00'";
+			$where_note .= " AND fn.created_at >= '" . $df_esc . " 00:00:00'";
 		}
 		if (!empty($filters['date_to'])) {
-			$where_label .= " AND tfl.updated_at <= '{$filters['date_to']} 23:59:59'";
-			$where_bc .= " AND bl.waktu_kirim <= '{$filters['date_to']} 23:59:59'";
-			$where_note .= " AND fn.created_at <= '{$filters['date_to']} 23:59:59'";
+			$dt_esc = $this->db->escape_str($filters['date_to']);
+			$where_label .= " AND tfl.updated_at <= '" . $dt_esc . " 23:59:59'";
+			$where_bc .= " AND bl.waktu_kirim <= '" . $dt_esc . " 23:59:59'";
+			$where_note .= " AND fn.created_at <= '" . $dt_esc . " 23:59:59'";
 		}
 
 		$sql = "SELECT 

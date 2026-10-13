@@ -43,15 +43,460 @@ class Sales_order extends Admin
 		$this->render('backend/standart/administrator/sales_order/sales_order_list', $this->data);
 	}
 
+	public function cepat()
+	{
+		$this->is_allowed('sales_order_add');
+		$this->data['nomor_baru']      = $this->model_sales_order->generate_nomor();
+		$this->data['nomor_ref_baru']  = $this->model_sales_order->generate_nomor_referensi();
+		$this->data['pelanggans']      = $this->db->where('status', 'aktif')->order_by('nama_pelanggan', 'ASC')->get('pelanggan')->result();
+		$this->data['gudangs']     = $this->db->where('status', 'aktif')->get('gudang')->result();
+		$default_gudang_id         = isset($this->data['gudangs'][0]) ? (int)$this->data['gudangs'][0]->id : 1;
+		$this->data['produks']     = $this->db->select('produk.*, satuan.singkatan as nama_satuan, COALESCE(stok.qty, 0) as stok_qty')
+			->join('satuan', 'satuan.id = produk.satuan_id', 'LEFT')
+			->join('stok', 'stok.produk_id = produk.id AND stok.gudang_id = ' . $default_gudang_id, 'LEFT')
+			->where('produk.status', 'aktif')
+			->order_by('produk.id', 'ASC')
+			->get('produk')->result();
+
+		// Rekap 5 transaksi terakhir (SO Cepat / POS)
+		$this->data['last_transactions'] = $this->db
+			->select('so.id, so.nomor_so, so.tanggal_so, so.total as grand_total, p.nama_pelanggan, so.created_at')
+			->from('sales_order so')
+			->join('pelanggan p', 'p.id = so.pelanggan_id', 'LEFT')
+			->where_in('so.status', ['delivered', 'selesai', 'paid', 'completed'])
+			->where('so.status !=', 'cancelled')
+			->order_by('so.id', 'DESC')
+			->limit(5)
+			->get()->result();
+
+		$this->template->title('Sales Order Cepat (POS Kasir)');
+		$this->render('backend/standart/administrator/sales_order/sales_order_cepat', $this->data);
+	}
+
+	public function ajax_add_pelanggan()
+	{
+		$nama = trim((string)$this->input->post('nama_pelanggan'));
+		if (empty($nama)) {
+			$this->response(['success' => false, 'message' => 'Nama Pelanggan wajib diisi!']);
+			return;
+		}
+
+		$telp   = trim((string)$this->input->post('telepon'));
+		$tipe   = trim((string)$this->input->post('tipe_pelanggan')) ?: 'retail';
+		$alamat = trim((string)$this->input->post('alamat'));
+		$kota   = trim((string)$this->input->post('kota'));
+		$email  = trim((string)$this->input->post('email'));
+
+		$this->load->model('pelanggan/model_pelanggan');
+		$kode = $this->model_pelanggan->generate_kode();
+
+		$data = [
+			'kode_pelanggan'  => $kode,
+			'nama_pelanggan'  => $nama,
+			'tipe_pelanggan'  => $tipe,
+			'tier_pelanggan'  => strtoupper($tipe),
+			'telepon'         => $telp,
+			'no_telp'         => $telp,
+			'email'           => $email,
+			'alamat'          => $alamat,
+			'kota'            => $kota,
+			'status'          => 'aktif',
+			'created_by'      => get_user_data('username') ?: 'admin',
+			'created_at'      => date('Y-m-d H:i:s'),
+		];
+
+		$id = $this->model_pelanggan->store($data);
+
+		if ($id) {
+			$this->response([
+				'success' => true,
+				'message' => 'Data Pelanggan baru berhasil didaftarkan!',
+				'data'    => [
+					'id'     => $id,
+					'kode'   => $kode,
+					'nama'   => $nama,
+					'tipe'   => $tipe,
+					'telp'   => $telp,
+					'alamat' => $alamat,
+					'kota'   => $kota,
+				]
+			]);
+		} else {
+			$this->response(['success' => false, 'message' => 'Gagal menyimpan data pelanggan ke database.']);
+		}
+	}
+
+	public function cepat_save()
+	{
+		if (!$this->is_allowed('sales_order_add', false)) {
+			$this->response(['success' => false, 'message' => 'Tidak punya akses']); return;
+		}
+
+		$this->form_validation->set_rules('pelanggan_id', 'Pelanggan', 'trim|required');
+		$this->form_validation->set_rules('gudang_id', 'Gudang', 'trim|required');
+		$this->form_validation->set_rules('tanggal_so', 'Tanggal SO', 'trim|required');
+
+		if ($this->form_validation->run()) {
+			$pelanggan_raw    = trim($this->input->post('pelanggan_id'));
+			$cust_telp_post   = trim($this->input->post('customer_telepon') ?: '');
+			$cust_alamat_post = trim($this->input->post('customer_alamat') ?: '');
+			$cust_kota_post   = trim($this->input->post('customer_kota') ?: '');
+			$cust_tipe_post   = trim($this->input->post('customer_tipe') ?: '');
+
+			if (is_numeric($pelanggan_raw)) {
+				$pelanggan = $this->db->get_where('pelanggan', ['id' => $pelanggan_raw])->row();
+				$pelanggan_id = $pelanggan ? $pelanggan->id : 1;
+				$nama_penerima = $pelanggan ? $pelanggan->nama_pelanggan : 'Pelanggan Umum';
+				$no_telepon    = $cust_telp_post ?: ($pelanggan ? ($pelanggan->no_telp ?: $pelanggan->telepon) : '');
+				$alamat_pengiriman = $cust_alamat_post ?: ($pelanggan ? $pelanggan->alamat : '');
+				$kota_kabupaten    = $cust_kota_post ?: ($pelanggan ? $pelanggan->kota : '');
+
+				// Update data pelanggan jika sebelumnya kosong namun diisi di transaksi
+				if ($pelanggan) {
+					$up_cust = [];
+					if (!empty($cust_telp_post) && empty($pelanggan->no_telp)) {
+						$up_cust['no_telp'] = $cust_telp_post;
+						$up_cust['telepon'] = $cust_telp_post;
+					}
+					if (!empty($cust_alamat_post) && empty($pelanggan->alamat)) {
+						$up_cust['alamat'] = $cust_alamat_post;
+					}
+					if (!empty($cust_kota_post) && empty($pelanggan->kota)) {
+						$up_cust['kota'] = $cust_kota_post;
+					}
+					if (!empty($cust_tipe_post) && $pelanggan->tipe_pelanggan != $cust_tipe_post) {
+						$up_cust['tipe_pelanggan'] = $cust_tipe_post;
+						$up_cust['tier_pelanggan'] = strtoupper($cust_tipe_post);
+					}
+					if (!empty($up_cust)) {
+						$this->db->update('pelanggan', $up_cust, ['id' => $pelanggan->id]);
+					}
+				}
+			} else {
+				$nama_penerima = $pelanggan_raw;
+				$pelanggan = $this->db->get_where('pelanggan', ['nama_pelanggan' => $nama_penerima])->row();
+				if ($pelanggan) {
+					$pelanggan_id = $pelanggan->id;
+					$no_telepon   = $cust_telp_post ?: ($pelanggan->no_telp ?: $pelanggan->telepon);
+					$alamat_pengiriman = $cust_alamat_post ?: $pelanggan->alamat;
+					$kota_kabupaten    = $cust_kota_post ?: $pelanggan->kota;
+					$up_cust = [];
+					if (!empty($cust_telp_post) && empty($pelanggan->no_telp)) {
+						$up_cust['no_telp'] = $cust_telp_post;
+						$up_cust['telepon'] = $cust_telp_post;
+					}
+					if (!empty($cust_alamat_post) && empty($pelanggan->alamat)) {
+						$up_cust['alamat'] = $cust_alamat_post;
+					}
+					if (!empty($cust_kota_post) && empty($pelanggan->kota)) {
+						$up_cust['kota'] = $cust_kota_post;
+					}
+					if (!empty($cust_tipe_post) && $pelanggan->tipe_pelanggan != $cust_tipe_post) {
+						$up_cust['tipe_pelanggan'] = $cust_tipe_post;
+						$up_cust['tier_pelanggan'] = strtoupper($cust_tipe_post);
+					}
+					if (!empty($up_cust)) {
+						$this->db->update('pelanggan', $up_cust, ['id' => $pelanggan->id]);
+					}
+				} else {
+					$prefix_c = 'CUST-' . date('Ym') . '-';
+					$last_c = $this->db->like('kode_pelanggan', $prefix_c, 'after')->order_by('id', 'DESC')->limit(1)->get('pelanggan')->row();
+					$num_c = $last_c ? ((int) substr($last_c->kode_pelanggan, -4)) + 1 : 1;
+					$kode_cus = $prefix_c . str_pad($num_c, 4, '0', STR_PAD_LEFT);
+					$tipe_new = $cust_tipe_post ?: 'retail';
+					$this->db->insert('pelanggan', [
+						'kode_pelanggan' => $kode_cus,
+						'nama_pelanggan' => $nama_penerima,
+						'tipe_pelanggan' => $tipe_new,
+						'tier_pelanggan' => strtoupper($tipe_new),
+						'telepon'        => $cust_telp_post,
+						'no_telp'        => $cust_telp_post,
+						'alamat'         => $cust_alamat_post,
+						'kota'           => $cust_kota_post,
+						'status'         => 'aktif',
+						'created_by'     => get_user_data('username') ?: 'admin',
+						'created_at'     => date('Y-m-d H:i:s'),
+					]);
+					$pelanggan_id = $this->db->insert_id();
+					$pelanggan = $this->db->get_where('pelanggan', ['id' => $pelanggan_id])->row();
+					$no_telepon   = $cust_telp_post;
+					$alamat_pengiriman = $cust_alamat_post;
+					$kota_kabupaten    = $cust_kota_post;
+				}
+			}
+			$gudang_id = $this->input->post('gudang_id');
+			$nomor_so = $this->model_sales_order->generate_nomor();
+
+			$metode_bayar = $this->input->post('metode_pembayaran') ?: 'tunai';
+			$akun_kas     = $this->input->post('akun_kas_bank') ?: ($metode_bayar == 'tunai' ? 'Kas Tunai Kasir' : 'Bank BCA');
+			$no_ref       = trim($this->input->post('nomor_referensi')) ?: $this->model_sales_order->generate_nomor_referensi();
+			$catatan_raw  = trim($this->input->post('catatan') ?: '');
+			$catatan_bayar= $this->input->post('catatan_bayar') ?: ('Pembayaran Lunas Kasir SO ' . $nomor_so);
+
+			$data = [
+				'nomor_so'              => $nomor_so,
+				'no_pesanan'            => $nomor_so,
+				'pelanggan_id'          => $pelanggan_id,
+				'nama_penerima'         => $nama_penerima,
+				'no_telepon'            => $no_telepon,
+				'alamat_pengiriman'     => $alamat_pengiriman,
+				'kota_kabupaten'        => $kota_kabupaten,
+				'source'                => 'pos',
+				'gudang_id'             => $gudang_id,
+				'tanggal_so'            => $this->input->post('tanggal_so') ?: date('Y-m-d'),
+				'tanggal_estimasi_kirim'=> date('Y-m-d'),
+				'diskon'                => (float) $this->input->post('diskon_persen_total'),
+				'diskon_total'          => str_replace(['.', ','], '', (string)$this->input->post('diskon_total')) ?: 0,
+				'pajak_persen'          => $this->input->post('pajak_persen') ?: 0,
+				'status'                => 'delivered',
+				'status_pesanan'        => 'selesai',
+				'status_kirim'          => 'terkirim',
+				'waktu_pembayaran'      => date('Y-m-d H:i:s'),
+				'catatan'               => trim($catatan_raw . ' [POS CEPAT LUNAS - ' . strtoupper($metode_bayar) . ']' . ($no_ref ? ' Ref: ' . $no_ref : '')),
+				'created_by'            => get_user_data('username'),
+				'created_at'            => date('Y-m-d H:i:s'),
+			];
+
+			$items = $this->input->post('items');
+			if (empty($items)) {
+				$this->response(['success' => false, 'message' => 'Pilih minimal 1 item produk pesanan!']);
+				return;
+			}
+
+			// Validasi stok gudang secara agregat per produk
+			$qty_per_produk = [];
+			foreach ($items as $item) {
+				if (empty($item['produk_id'])) continue;
+				$pid = (int) $item['produk_id'];
+				$q = max(0.001, (float) ($item['qty'] ?? 1));
+				$qty_per_produk[$pid] = ($qty_per_produk[$pid] ?? 0) + $q;
+			}
+
+			if (empty($qty_per_produk)) {
+				$this->response(['success' => false, 'message' => 'Pilih minimal 1 item produk pesanan!']);
+				return;
+			}
+
+			foreach ($qty_per_produk as $pid => $total_qty_item) {
+				$stok_row = $this->db->get_where('stok', ['produk_id' => $pid, 'gudang_id' => $gudang_id])->row();
+				$stok_avail = $stok_row ? (float)$stok_row->qty : 0;
+
+				if ($total_qty_item > $stok_avail) {
+					$prod = $this->db->get_where('produk', ['id' => $pid])->row();
+					$prod_name = $prod ? $prod->nama_produk : 'Produk';
+					$this->response([
+						'success' => false,
+						'message' => "Gagal Simpan: Jumlah pesanan untuk ({$prod_name}) sejumlah {$total_qty_item} unit melebihi stok gudang yang tersedia ({$stok_avail} unit)!"
+					]);
+					return;
+				}
+			}
+
+			// Mulai Database Transaction agar seluruh pencatatan & pemotongan stok konsisten tanpa eror
+			$this->db->trans_start();
+
+			$so_id = $this->model_sales_order->store($data);
+
+			if ($so_id) {
+				foreach ($items as $item) {
+					if (empty($item['produk_id'])) continue;
+					$qty     = max(0.001, (float) ($item['qty'] ?? 1));
+					$harga   = (float) str_replace(['.', ','], '', $item['harga_satuan']);
+					$diskon  = (float) ($item['diskon_persen'] ?? 0);
+					$d_nom   = $harga * $qty * ($diskon / 100);
+					$subtotal = ($harga * $qty) - $d_nom;
+					$this->db->insert('sales_order_item', [
+						'so_id'         => $so_id,
+						'produk_id'     => $item['produk_id'],
+						'qty'           => $qty,
+						'satuan'        => $item['satuan'] ?? 'pcs',
+						'harga_satuan'  => $harga,
+						'diskon_persen' => $diskon,
+						'diskon_nominal'=> $d_nom,
+						'subtotal'      => $subtotal,
+						'catatan'       => $item['catatan'] ?? '',
+					]);
+				}
+				$this->model_sales_order->update_total($so_id);
+			}
+
+			// Generate CRM Labels
+			$this->load->model('crm/model_crm');
+			$this->model_crm->generate_labels_for_order('sales_order', $so_id);
+
+			$so = $this->model_sales_order->find($so_id);
+			$this->db->update('sales_order', ['total_pembayaran' => $so->total], ['id' => $so_id]);
+
+			// 1. Buat Faktur Invoice Paid
+			$this->load->model('invoice/model_invoice');
+			$nomor_inv = $this->model_invoice->generate_nomor();
+			$data_inv = [
+				'nomor_invoice'       => $nomor_inv,
+				'so_id'               => $so_id,
+				'pelanggan_id'        => $pelanggan_id,
+				'gudang_id'           => $gudang_id,
+				'tanggal_invoice'     => date('Y-m-d'),
+				'tanggal_jatuh_tempo' => date('Y-m-d'),
+				'subtotal'            => $so->subtotal,
+				'diskon_total'        => $so->diskon_total,
+				'pajak_persen'        => $so->pajak_persen,
+				'pajak_nominal'       => $so->pajak_nominal,
+				'total'               => $so->total,
+				'status'              => 'paid',
+				'status_kirim'        => 'delivered',
+				'catatan'             => 'Faktur Penjualan Langsung Lunas (POS Cepat) SO ' . $nomor_so,
+				'created_by'          => get_user_data('username'),
+				'created_at'          => date('Y-m-d H:i:s'),
+			];
+			$invoice_id = $this->model_invoice->store($data_inv);
+
+			// Insert invoice items
+			$so_items = $this->model_sales_order->get_items($so_id);
+			foreach ($so_items as $si) {
+				$this->db->insert('invoice_item', [
+					'invoice_id'    => $invoice_id,
+					'produk_id'     => $si->produk_id,
+					'so_item_id'    => $si->id,
+					'qty'           => $si->qty,
+					'satuan'        => $si->satuan,
+					'harga_satuan'  => $si->harga_satuan,
+					'diskon_persen' => $si->diskon_persen,
+					'diskon_nominal'=> $si->diskon_nominal,
+					'subtotal'      => $si->subtotal,
+				]);
+			}
+
+			// 2. Potong Stok Gudang (FIFO/FEFO Log)
+			$this->model_invoice->kurangi_stok($invoice_id, get_user_data('username'));
+
+			// 3. Catat Piutang Usaha (Status: Lunas, Sisa: 0)
+			$this->load->model('piutang_usaha/model_piutang_usaha');
+			$prefix_piu = 'PIU-' . date('Ym') . '-';
+			$last_p = $this->db->like('nomor_piutang', $prefix_piu, 'after')->order_by('id', 'DESC')->limit(1)->get('piutang_usaha')->row();
+			$num_p = $last_p ? ((int) substr($last_p->nomor_piutang, -4)) + 1 : 1;
+			$nomor_piu = $prefix_piu . str_pad($num_p, 4, '0', STR_PAD_LEFT);
+			while ($this->db->where('nomor_piutang', $nomor_piu)->get('piutang_usaha')->num_rows() > 0) {
+				$num_p++;
+				$nomor_piu = $prefix_piu . str_pad($num_p, 4, '0', STR_PAD_LEFT);
+			}
+
+			$this->db->insert('piutang_usaha', [
+				'nomor_piutang'       => $nomor_piu,
+				'pelanggan_id'        => $pelanggan_id,
+				'tanggal_piutang'     => date('Y-m-d'),
+				'invoice_id'          => $invoice_id,
+				'so_id'               => $so_id,
+				'subtotal'            => $so->subtotal,
+				'diskon'              => $so->diskon_total,
+				'pajak'               => $so->pajak_nominal,
+				'total'               => $so->total,
+				'terbayar'            => $so->total,
+				'sisa'                => 0,
+				'tanggal_jatuh_tempo' => date('Y-m-d'),
+				'status'              => 'lunas',
+				'catatan'             => 'Pelunasan Langsung (POS Cepat) SO ' . $nomor_so,
+				'created_at'          => date('Y-m-d H:i:s'),
+			]);
+			$piutang_id = $this->db->insert_id();
+
+			// 4. Terbitkan Bukti Kas Masuk (BKM)
+			$nomor_bkm = $this->model_piutang_usaha->generate_bkm();
+			$this->db->insert('pembayaran_piutang', [
+				'nomor_bkm'         => $nomor_bkm,
+				'piutang_id'        => $piutang_id,
+				'pelanggan_id'      => $pelanggan_id,
+				'tanggal_bayar'     => date('Y-m-d'),
+				'akun_kas_bank'     => $akun_kas,
+				'metode_pembayaran' => $metode_bayar,
+				'nomor_referensi'   => $no_ref,
+				'nominal'           => $so->total,
+				'catatan'           => $catatan_bayar,
+				'created_by'        => get_user_data('username'),
+			]);
+
+			$this->db->trans_complete();
+
+			if ($this->db->trans_status() === FALSE) {
+				$this->response([
+					'success' => false,
+					'message' => 'Terjadi kesalahan sistem database saat memproses transaksi kasir. Data transaksi dibatalkan demi keamanan.'
+				]);
+				return;
+			}
+
+			// Prepare receipt items for modal & printing
+			$receipt_items = [];
+			foreach ($so_items as $si) {
+				$receipt_items[] = [
+					'nama'          => $si->nama_produk,
+					'nama_produk'   => $si->nama_produk,
+					'qty'           => (float) $si->qty,
+					'satuan'        => $si->satuan ?: 'pcs',
+					'harga'         => (float) $si->harga_satuan,
+					'harga_satuan'  => (float) $si->harga_satuan,
+					'diskon'        => (float) $si->diskon_persen,
+					'diskon_persen' => (float) $si->diskon_persen,
+					'subtotal'      => (float) $si->subtotal,
+				];
+			}
+
+			$uang_diterima_post = (float) str_replace(['.', ','], '', (string)$this->input->post('uang_diterima'));
+			if ($uang_diterima_post <= 0) {
+				$uang_diterima_post = (float) $so->total;
+			}
+			$kembalian_post = max(0, $uang_diterima_post - (float)$so->total);
+
+			set_message("⚡ Transaksi Sales Order Cepat Berhasil Disimpan & LUNAS! SO: {$nomor_so}, Faktur: {$nomor_inv}, Kas (BKM): {$nomor_bkm}. Stok gudang otomatis terpotong.", 'success');
+			$this->data['success']       = true;
+			$this->data['message']       = "Transaksi {$nomor_so} Berhasil Disimpan & LUNAS!";
+			$this->data['so_id']         = $so_id;
+			$this->data['invoice_id']    = $invoice_id;
+			$this->data['receipt']       = [
+				'so_id'            => $so_id,
+				'nomor_so'         => $nomor_so,
+				'nomor_inv'        => $nomor_inv,
+				'nomor_bkm'        => $nomor_bkm,
+				'nomor_ref'        => $no_ref,
+				'tanggal'          => date('d/m/Y H:i'),
+				'kasir'            => get_user_data('username') ?: 'Kasir POS',
+				'pelanggan'        => $nama_penerima,
+				'telepon'          => $no_telepon,
+				'alamat'           => $alamat_pengiriman,
+				'metode_pembayaran'=> strtoupper($metode_bayar),
+				'subtotal'         => (float) $so->subtotal,
+				'diskon_total'     => (float) $so->diskon_total,
+				'pajak_nominal'    => (float) $so->pajak_nominal,
+				'total'            => (float) $so->total,
+				'uang_diterima'    => (float) $uang_diterima_post,
+				'kembalian'        => (float) $kembalian_post,
+				'items'                 => $receipt_items,
+				'print_struk_url'       => site_url('administrator/sales_order/cetak_struk/' . $so_id . '?template=thermal'),
+				'print_nota_lebar_url'  => site_url('administrator/sales_order/cetak_struk/' . $so_id . '?template=lebar'),
+				'print_pdf_url'         => site_url('administrator/sales_order/cetak/' . $so_id),
+			];
+			$this->data['next_nomor_so'] = $this->model_sales_order->generate_nomor();
+			$this->data['next_nomor_ref']= $this->model_sales_order->generate_nomor_referensi();
+			$this->data['redirect']      = base_url('administrator/sales_order/view/' . $so_id);
+		} else {
+			$this->data['success'] = false;
+			$this->data['message'] = validation_errors();
+		}
+		$this->response($this->data);
+	}
+
 	public function add()
 	{
 		$this->is_allowed('sales_order_add');
 		$this->data['nomor_baru']  = $this->model_sales_order->generate_nomor();
 		$this->data['pelanggans']  = $this->db->where('status', 'aktif')->order_by('nama_pelanggan', 'ASC')->get('pelanggan')->result();
 		$this->data['gudangs']     = $this->db->where('status', 'aktif')->get('gudang')->result();
-		$this->data['produks']     = $this->db->select('produk.*, satuan.singkatan as nama_satuan')
+		$default_gudang_id         = isset($this->data['gudangs'][0]) ? (int)$this->data['gudangs'][0]->id : 1;
+		$this->data['produks']     = $this->db->select('produk.*, satuan.singkatan as nama_satuan, COALESCE(stok.qty, 0) as stok_qty')
 			->join('satuan', 'satuan.id = produk.satuan_id', 'LEFT')
-			->where('produk.status', 'aktif')->get('produk')->result();
+			->join('stok', 'stok.produk_id = produk.id AND stok.gudang_id = ' . $default_gudang_id, 'LEFT')
+			->where('produk.status', 'aktif')
+			->order_by('produk.id', 'ASC')
+			->get('produk')->result();
 		$this->template->title('Buat Sales Order');
 		$this->render('backend/standart/administrator/sales_order/sales_order_add', $this->data);
 	}
@@ -67,17 +512,38 @@ class Sales_order extends Admin
 		$this->form_validation->set_rules('tanggal_so', 'Tanggal SO', 'trim|required');
 
 		if ($this->form_validation->run()) {
+			$pelanggan_id = $this->input->post('pelanggan_id');
+			$pelanggan = $this->db->get_where('pelanggan', ['id' => $pelanggan_id])->row();
+			$nomor_so = $this->model_sales_order->generate_nomor();
+
+			$save_action = $this->input->post('save_action');
+			$status_so = 'draft';
+			if ($save_action == 'pay_lunas') {
+				$status_so = 'delivered';
+			} elseif ($save_action == 'confirm') {
+				$status_so = 'confirmed';
+			}
+
 			$data = [
-				'nomor_so'              => $this->model_sales_order->generate_nomor(),
-				'pelanggan_id'          => $this->input->post('pelanggan_id'),
+				'nomor_so'              => $nomor_so,
+				'no_pesanan'            => $nomor_so,
+				'pelanggan_id'          => $pelanggan_id,
+				'nama_penerima'         => $pelanggan ? $pelanggan->nama_pelanggan : '',
+				'no_telepon'            => $pelanggan ? ($pelanggan->no_telp ?: $pelanggan->telepon) : '',
+				'alamat_pengiriman'     => $pelanggan ? $pelanggan->alamat : '',
+				'kota_kabupaten'        => $pelanggan ? $pelanggan->kota : '',
+				'source'                => 'manual',
 				'gudang_id'             => $this->input->post('gudang_id'),
 				'tanggal_so'            => $this->input->post('tanggal_so'),
-				'tanggal_estimasi_kirim'=> $this->input->post('tanggal_estimasi_kirim') ?: null,
+				'tanggal_estimasi_kirim'=> date('Y-m-d'),
 				'diskon'                => (float) $this->input->post('diskon_persen_total'),
-				'diskon_total'          => str_replace(['.', ','], '', $this->input->post('diskon_total')) ?: 0,
+				'diskon_total'          => str_replace(['.', ','], '', (string)$this->input->post('diskon_total')) ?: 0,
 				'pajak_persen'          => $this->input->post('pajak_persen') ?: 0,
-				'status'                => 'draft',
-				'catatan'               => $this->input->post('catatan'),
+				'status'                => $status_so,
+				'status_pesanan'        => ($save_action == 'pay_lunas') ? 'selesai' : 'proses',
+				'status_kirim'          => ($save_action == 'pay_lunas') ? 'terkirim' : 'pending',
+				'waktu_pembayaran'      => ($save_action == 'pay_lunas') ? date('Y-m-d H:i:s') : null,
+				'catatan'               => trim(($this->input->post('catatan') ?: '') . ($save_action == 'pay_lunas' ? ' [LUNAS ' . strtoupper($this->input->post('metode_pembayaran') ?: 'TUNAI') . ']' : '')),
 				'created_by'            => get_user_data('username'),
 				'created_at'            => date('Y-m-d H:i:s'),
 			];
@@ -128,9 +594,120 @@ class Sales_order extends Admin
 				$this->model_sales_order->update_total($so_id);
 			}
 
-			set_message('Sales Order berhasil dibuat.', 'success');
-			$this->data['success']  = true;
-			$this->data['redirect'] = base_url('administrator/sales_order');
+			// Generate CRM Follow-up Labels instantly
+			$this->load->model('crm/model_crm');
+			$this->model_crm->generate_labels_for_order('sales_order', $so_id);
+
+			if ($save_action == 'pay_lunas') {
+				$so = $this->model_sales_order->find($so_id);
+				$metode_bayar = $this->input->post('metode_pembayaran') ?: 'tunai';
+				$akun_kas     = $this->input->post('akun_kas_bank') ?: ($metode_bayar == 'tunai' ? 'Kas Tunai Kasir' : 'Bank BCA');
+				$no_ref       = $this->input->post('nomor_referensi') ?: '';
+				$catatan_bayar= $this->input->post('catatan_bayar') ?: ('Pembayaran Lunas Kasir SO ' . $nomor_so);
+
+				// Update total_pembayaran di SO
+				$this->db->update('sales_order', ['total_pembayaran' => $so->total], ['id' => $so_id]);
+
+				// 1. Buat Invoice Otomatis (Status: Paid, Status Kirim: Delivered)
+				$this->load->model('invoice/model_invoice');
+				$nomor_inv = $this->model_invoice->generate_nomor();
+				$data_inv = [
+					'nomor_invoice'       => $nomor_inv,
+					'so_id'               => $so_id,
+					'pelanggan_id'        => $pelanggan_id,
+					'gudang_id'           => $gudang_id,
+					'tanggal_invoice'     => date('Y-m-d'),
+					'tanggal_jatuh_tempo' => date('Y-m-d'),
+					'subtotal'            => $so->subtotal,
+					'diskon_total'        => $so->diskon_total,
+					'pajak_persen'        => $so->pajak_persen,
+					'pajak_nominal'       => $so->pajak_nominal,
+					'total'               => $so->total,
+					'status'              => 'paid',
+					'status_kirim'        => 'delivered',
+					'catatan'             => 'Faktur Penjualan Langsung Lunas SO ' . $nomor_so,
+					'created_by'          => get_user_data('username'),
+					'created_at'          => date('Y-m-d H:i:s'),
+				];
+				$invoice_id = $this->model_invoice->store($data_inv);
+
+				// Insert invoice items
+				$so_items = $this->model_sales_order->get_items($so_id);
+				foreach ($so_items as $si) {
+					$this->db->insert('invoice_item', [
+						'invoice_id'    => $invoice_id,
+						'produk_id'     => $si->produk_id,
+						'so_item_id'    => $si->id,
+						'qty'           => $si->qty,
+						'satuan'        => $si->satuan,
+						'harga_satuan'  => $si->harga_satuan,
+						'diskon_persen' => $si->diskon_persen,
+						'diskon_nominal'=> $si->diskon_nominal,
+						'subtotal'      => $si->subtotal,
+					]);
+				}
+
+				// 2. Potong Stok Gudang dengan FIFO / FEFO Log
+				$this->model_invoice->kurangi_stok($invoice_id, get_user_data('username'));
+
+				// 3. Catat Piutang Usaha (Status: Lunas, Sisa: 0)
+				$this->load->model('piutang_usaha/model_piutang_usaha');
+				$prefix_piu = 'PIU-' . date('Ym') . '-';
+				$last_p = $this->db->like('nomor_piutang', $prefix_piu, 'after')->order_by('id', 'DESC')->limit(1)->get('piutang_usaha')->row();
+				$num_p = $last_p ? ((int) substr($last_p->nomor_piutang, -4)) + 1 : 1;
+				$nomor_piu = $prefix_piu . str_pad($num_p, 4, '0', STR_PAD_LEFT);
+				while ($this->db->where('nomor_piutang', $nomor_piu)->get('piutang_usaha')->num_rows() > 0) {
+					$num_p++;
+					$nomor_piu = $prefix_piu . str_pad($num_p, 4, '0', STR_PAD_LEFT);
+				}
+
+				$this->db->insert('piutang_usaha', [
+					'nomor_piutang'       => $nomor_piu,
+					'pelanggan_id'        => $pelanggan_id,
+					'tanggal_piutang'     => date('Y-m-d'),
+					'invoice_id'          => $invoice_id,
+					'so_id'               => $so_id,
+					'subtotal'            => $so->subtotal,
+					'diskon'              => $so->diskon_total,
+					'pajak'               => $so->pajak_nominal,
+					'total'               => $so->total,
+					'terbayar'            => $so->total,
+					'sisa'                => 0,
+					'tanggal_jatuh_tempo' => date('Y-m-d'),
+					'status'              => 'lunas',
+					'catatan'             => 'Pelunasan Langsung (POS) SO ' . $nomor_so,
+					'created_at'          => date('Y-m-d H:i:s'),
+				]);
+				$piutang_id = $this->db->insert_id();
+
+				// 4. Terbitkan Bukti Kas Masuk (BKM)
+				$nomor_bkm = $this->model_piutang_usaha->generate_bkm();
+				$this->db->insert('pembayaran_piutang', [
+					'nomor_bkm'         => $nomor_bkm,
+					'piutang_id'        => $piutang_id,
+					'pelanggan_id'      => $pelanggan_id,
+					'tanggal_bayar'     => date('Y-m-d'),
+					'akun_kas_bank'     => $akun_kas,
+					'metode_pembayaran' => $metode_bayar,
+					'nomor_referensi'   => $no_ref,
+					'nominal'           => $so->total,
+					'catatan'           => $catatan_bayar,
+					'created_by'        => get_user_data('username'),
+					'created_at'        => date('Y-m-d H:i:s'),
+				]);
+
+				set_message("Transaksi LUNAS Berhasil! SO: {$nomor_so}, Faktur: {$nomor_inv}, Kas (BKM): {$nomor_bkm}. Stok otomatis terpotong.", 'success');
+				$this->data['success']  = true;
+				$this->data['redirect'] = base_url('administrator/sales_order/view/' . $so_id);
+			} elseif ($this->input->post('save_action') == 'confirm') {
+				set_message('Sales Order berhasil dibuat &amp; langsung dikonfirmasi!', 'success');
+				$this->data['success']  = true;
+				$this->data['redirect'] = base_url('administrator/sales_order');
+			} else {
+				set_message('Sales Order berhasil dibuat.', 'success');
+				$this->data['success']  = true;
+				$this->data['redirect'] = base_url('administrator/sales_order');
+			}
 		} else {
 			$this->data['success'] = false;
 			$this->data['message'] = validation_errors();
@@ -159,6 +736,8 @@ class Sales_order extends Admin
 				set_message('Gagal: ' . implode(', ', $stok_errors), 'error');
 			} else {
 				$this->db->update('sales_order', ['status' => 'confirmed', 'updated_at' => date('Y-m-d H:i:s')], ['id' => $id]);
+				$this->load->model('crm/model_crm');
+				$this->model_crm->generate_labels_for_order('sales_order', $id);
 				set_message('Sales Order berhasil dikonfirmasi.', 'success');
 			}
 		} else {
@@ -201,17 +780,25 @@ class Sales_order extends Admin
 			$this->response(['success' => false, 'message' => 'Hanya data berstatus Draft yang bisa diedit.']); return;
 		}
 
+		$pelanggan_id = $this->input->post('pelanggan_id');
+		$pelanggan = $this->db->get_where('pelanggan', ['id' => $pelanggan_id])->row();
+
 		$data = [
 			'catatan'               => $this->input->post('catatan'),
 			'updated_at'            => date('Y-m-d H:i:s'),
 			'updated_by'            => get_user_data('username'),
-			'pelanggan_id'          => $this->input->post('pelanggan_id'),
+			'pelanggan_id'          => $pelanggan_id,
+			'nama_penerima'         => $pelanggan ? $pelanggan->nama_pelanggan : '',
+			'no_telepon'            => $pelanggan ? ($pelanggan->no_telp ?: $pelanggan->telepon) : '',
+			'alamat_pengiriman'     => $pelanggan ? $pelanggan->alamat : '',
+			'kota_kabupaten'        => $pelanggan ? $pelanggan->kota : '',
+			'source'                => 'manual',
 			'gudang_id'             => $this->input->post('gudang_id'),
 			'tanggal_so'            => $this->input->post('tanggal_so'),
 			'tanggal_estimasi_kirim'=> $this->input->post('tanggal_estimasi_kirim') ?: null,
 			'diskon'                => (float) $this->input->post('diskon_persen_total'),
-			'diskon_total'          => (float) str_replace(['.', ','], '', $this->input->post('diskon_total')),
-			'pajak_persen'          => (float) str_replace(['.', ','], '', $this->input->post('pajak_persen')),
+			'diskon_total'          => (float) str_replace(['.', ','], '', (string)$this->input->post('diskon_total')),
+			'pajak_persen'          => (float) str_replace(['.', ','], '', (string)$this->input->post('pajak_persen')),
 		];
 
 		$this->model_sales_order->change($id, $data);
@@ -241,9 +828,127 @@ class Sales_order extends Admin
 			$this->model_sales_order->update_total($id);
 		}
 
-		set_message('Sales Order berhasil diupdate.', 'success');
-		$this->data['success']  = true;
-		$this->data['redirect'] = base_url('administrator/sales_order');
+		// Sync CRM labels
+		$this->load->model('crm/model_crm');
+		$this->model_crm->generate_labels_for_order('sales_order', $id);
+
+		if ($this->input->post('save_action') == 'pay_lunas') {
+			$so = $this->model_sales_order->find($id);
+			$metode_bayar = $this->input->post('metode_pembayaran') ?: 'tunai';
+			$akun_kas     = $this->input->post('akun_kas_bank') ?: ($metode_bayar == 'tunai' ? 'Kas Tunai Kasir' : 'Bank BCA');
+			$no_ref       = $this->input->post('nomor_referensi') ?: '';
+			$catatan_bayar= $this->input->post('catatan_bayar') ?: ('Pembayaran Lunas Kasir SO ' . $so->nomor_so);
+
+			$this->db->update('sales_order', [
+				'status'           => 'delivered',
+				'status_pesanan'   => 'selesai',
+				'status_kirim'     => 'terkirim',
+				'waktu_pembayaran' => date('Y-m-d H:i:s'),
+				'total_pembayaran' => $so->total,
+				'updated_at'       => date('Y-m-d H:i:s')
+			], ['id' => $id]);
+
+			// 1. Buat Invoice Otomatis (Status: Paid, Status Kirim: Delivered)
+			$this->load->model('invoice/model_invoice');
+			$nomor_inv = $this->model_invoice->generate_nomor();
+			$data_inv = [
+				'nomor_invoice'       => $nomor_inv,
+				'so_id'               => $id,
+				'pelanggan_id'        => $pelanggan_id,
+				'gudang_id'           => $this->input->post('gudang_id'),
+				'tanggal_invoice'     => date('Y-m-d'),
+				'tanggal_jatuh_tempo' => date('Y-m-d'),
+				'subtotal'            => $so->subtotal,
+				'diskon_total'        => $so->diskon_total,
+				'pajak_persen'        => $so->pajak_persen,
+				'pajak_nominal'       => $so->pajak_nominal,
+				'total'               => $so->total,
+				'status'              => 'paid',
+				'status_kirim'        => 'delivered',
+				'catatan'             => 'Faktur Penjualan Langsung Lunas SO ' . $so->nomor_so,
+				'created_by'          => get_user_data('username'),
+				'created_at'          => date('Y-m-d H:i:s'),
+			];
+			$invoice_id = $this->model_invoice->store($data_inv);
+
+			// Insert invoice items
+			$so_items = $this->model_sales_order->get_items($id);
+			foreach ($so_items as $si) {
+				$this->db->insert('invoice_item', [
+					'invoice_id'    => $invoice_id,
+					'produk_id'     => $si->produk_id,
+					'so_item_id'    => $si->id,
+					'qty'           => $si->qty,
+					'satuan'        => $si->satuan,
+					'harga_satuan'  => $si->harga_satuan,
+					'diskon_persen' => $si->diskon_persen,
+					'diskon_nominal'=> $si->diskon_nominal,
+					'subtotal'      => $si->subtotal,
+				]);
+			}
+
+			// 2. Potong Stok Gudang dengan FIFO / FEFO Log
+			$this->model_invoice->kurangi_stok($invoice_id, get_user_data('username'));
+
+			// 3. Catat Piutang Usaha (Status: Lunas, Sisa: 0)
+			$this->load->model('piutang_usaha/model_piutang_usaha');
+			$prefix_piu = 'PIU-' . date('Ym') . '-';
+			$last_p = $this->db->like('nomor_piutang', $prefix_piu, 'after')->order_by('id', 'DESC')->limit(1)->get('piutang_usaha')->row();
+			$num_p = $last_p ? ((int) substr($last_p->nomor_piutang, -4)) + 1 : 1;
+			$nomor_piu = $prefix_piu . str_pad($num_p, 4, '0', STR_PAD_LEFT);
+			while ($this->db->where('nomor_piutang', $nomor_piu)->get('piutang_usaha')->num_rows() > 0) {
+				$num_p++;
+				$nomor_piu = $prefix_piu . str_pad($num_p, 4, '0', STR_PAD_LEFT);
+			}
+
+			$this->db->insert('piutang_usaha', [
+				'nomor_piutang'       => $nomor_piu,
+				'pelanggan_id'        => $pelanggan_id,
+				'tanggal_piutang'     => date('Y-m-d'),
+				'invoice_id'          => $invoice_id,
+				'so_id'               => $id,
+				'subtotal'            => $so->subtotal,
+				'diskon'              => $so->diskon_total,
+				'pajak'               => $so->pajak_nominal,
+				'total'               => $so->total,
+				'terbayar'            => $so->total,
+				'sisa'                => 0,
+				'tanggal_jatuh_tempo' => date('Y-m-d'),
+				'status'              => 'lunas',
+				'catatan'             => 'Pelunasan Langsung (POS) SO ' . $so->nomor_so,
+				'created_at'          => date('Y-m-d H:i:s'),
+			]);
+			$piutang_id = $this->db->insert_id();
+
+			// 4. Terbitkan Bukti Kas Masuk (BKM)
+			$nomor_bkm = $this->model_piutang_usaha->generate_bkm();
+			$this->db->insert('pembayaran_piutang', [
+				'nomor_bkm'         => $nomor_bkm,
+				'piutang_id'        => $piutang_id,
+				'pelanggan_id'      => $pelanggan_id,
+				'tanggal_bayar'     => date('Y-m-d'),
+				'akun_kas_bank'     => $akun_kas,
+				'metode_pembayaran' => $metode_bayar,
+				'nomor_referensi'   => $no_ref,
+				'nominal'           => $so->total,
+				'catatan'           => $catatan_bayar,
+				'created_by'        => get_user_data('username'),
+				'created_at'        => date('Y-m-d H:i:s'),
+			]);
+
+			set_message("Transaksi LUNAS Berhasil! SO: {$so->nomor_so}, Faktur: {$nomor_inv}, Kas (BKM): {$nomor_bkm}. Stok otomatis terpotong.", 'success');
+			$this->data['success']  = true;
+			$this->data['redirect'] = base_url('administrator/sales_order/view/' . $id);
+		} elseif ($this->input->post('save_action') == 'confirm') {
+			$this->db->update('sales_order', ['status' => 'confirmed', 'updated_at' => date('Y-m-d H:i:s')], ['id' => $id]);
+			set_message('Sales Order berhasil diupdate &amp; langsung dikonfirmasi!', 'success');
+			$this->data['success']  = true;
+			$this->data['redirect'] = base_url('administrator/sales_order');
+		} else {
+			set_message('Sales Order berhasil diupdate.', 'success');
+			$this->data['success']  = true;
+			$this->data['redirect'] = base_url('administrator/sales_order');
+		}
 		$this->response($this->data);
 	}
 
@@ -273,6 +978,10 @@ class Sales_order extends Admin
 			if (in_array($status, ['shipped', 'delivered'])) {
 				$this->db->update('invoice', ['status_kirim' => $status], ['so_id' => $id]);
 			}
+
+			// Sync CRM follow-up labels for this order
+			$this->load->model('crm/model_crm');
+			$this->model_crm->generate_labels_for_order('sales_order', $id);
 
 			$status_labels = [
 				'draft'        => 'Draft (Pesanan Baru)',
@@ -332,20 +1041,55 @@ class Sales_order extends Admin
 		$this->htmlpdf->Output($filename, 'D');
 	}
 
+	public function cetak_struk($id)
+	{
+		$this->is_allowed('sales_order_view');
+		$so = $this->model_sales_order->join_available()->find($id);
+		if (!$so) {
+			show_404();
+			return;
+		}
+
+		$items = $this->model_sales_order->get_items($id);
+		$inv = $this->db->get_where('invoice', ['so_id' => $id])->row();
+		$bkm = null;
+		if ($inv) {
+			$piutang = $this->db->get_where('piutang_usaha', ['invoice_id' => $inv->id])->row();
+			if ($piutang) {
+				$bkm = $this->db->where('piutang_id', $piutang->id)->order_by('id', 'DESC')->limit(1)->get('pembayaran_piutang')->row();
+			}
+		}
+
+		$this->data['so']       = $so;
+		$this->data['items']    = $items;
+		$this->data['inv']      = $inv;
+		$this->data['bkm']      = $bkm;
+		$this->data['template'] = $this->input->get('template') ?: 'thermal';
+
+		$this->load->view('backend/standart/administrator/sales_order/sales_order_struk', $this->data);
+	}
+
+	public function cetak_nota_lebar($id)
+	{
+		$this->is_allowed('sales_order_view');
+		$_GET['template'] = 'lebar';
+		$this->cetak_struk($id);
+	}
+
 	public function get_produk_by_gudang()
 	{
-		$gudang_id = $this->input->get('gudang_id');
+		$gudang_id = (int) $this->input->get('gudang_id');
 		if (!$gudang_id) {
 			$this->response(['success' => false, 'data' => []]);
 			return;
 		}
 		
-		$produks = $this->db->select('produk.id, produk.kode_produk, produk.nama_produk, produk.harga_jual, produk.harga_jual_grosir, produk.harga_jual_distributor, produk.harga_jual_vip, produk.barcode, stok.qty, satuan.singkatan as nama_satuan')
-			->from('stok')
-			->join('produk', 'produk.id = stok.produk_id')
+		$produks = $this->db->select('produk.id, produk.kode_produk, produk.nama_produk, produk.harga_jual, produk.harga_jual_grosir, produk.harga_jual_distributor, produk.harga_jual_vip, produk.barcode, COALESCE(stok.qty, 0) as qty, satuan.singkatan as nama_satuan')
+			->from('produk')
+			->join('stok', 'stok.produk_id = produk.id AND stok.gudang_id = ' . $gudang_id, 'LEFT')
 			->join('satuan', 'satuan.id = produk.satuan_id', 'LEFT')
-			->where('stok.gudang_id', $gudang_id)
-			->where('stok.qty >', 0)
+			->where('produk.status', 'aktif')
+			->order_by('produk.id', 'ASC')
 			->get()->result();
 			
 		$this->response(['success' => true, 'data' => $produks]);
@@ -435,11 +1179,46 @@ class Sales_order extends Admin
 		exit;
 	}
 
+	private function _read_import_rows($file_path, $file_name)
+	{
+		$ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+		$rows = [];
+		if ($ext === 'csv') {
+			$handle = fopen($file_path, 'r');
+			if ($handle !== false) {
+				$bom = fread($handle, 3);
+				if ($bom !== "\xEF\xBB\xBF") rewind($handle);
+				$first_line = fgets($handle);
+				if ($bom !== "\xEF\xBB\xBF") rewind($handle); else fseek($handle, 3);
+				$delimiter = (strpos($first_line, ';') !== false) ? ';' : ((strpos($first_line, "\t") !== false) ? "\t" : ',');
+				$r_idx = 1;
+				while (($data = fgetcsv($handle, 0, $delimiter)) !== false) {
+					if (empty($data) || (count($data) === 1 && trim((string)$data[0]) === '')) continue;
+					$row_dict = [];
+					$col_letter = 'A';
+					foreach ($data as $cell) {
+						$row_dict[$col_letter] = trim((string)$cell);
+						$col_letter++;
+					}
+					$rows[$r_idx] = $row_dict;
+					$r_idx++;
+				}
+				fclose($handle);
+			}
+		} else {
+			require_once FCPATH . 'application/libraries/Excel/PHPExcel/IOFactory.php';
+			$objPHPExcel = PHPExcel_IOFactory::load($file_path);
+			$sheet = $objPHPExcel->getActiveSheet();
+			$rows = $sheet->toArray(null, true, true, true);
+		}
+		return $rows;
+	}
+
 	public function import_shopee()
 	{
 		$this->is_allowed('sales_order_add');
-		ini_set('memory_limit', '512M');
-		set_time_limit(300);
+		@ini_set('memory_limit', '1024M');
+		@set_time_limit(0);
 
 		if (empty($_FILES['file_csv']['name'])) {
 			set_message('Silakan pilih file CSV/Excel Shopee yang akan diimport.', 'error');
@@ -448,12 +1227,10 @@ class Sales_order extends Admin
 		}
 
 		$file_path = $_FILES['file_csv']['tmp_name'];
-		require_once FCPATH . 'application/libraries/Excel/PHPExcel/IOFactory.php';
+		$file_name = $_FILES['file_csv']['name'];
 
 		try {
-			$objPHPExcel = PHPExcel_IOFactory::load($file_path);
-			$sheet = $objPHPExcel->getActiveSheet();
-			$rows = $sheet->toArray(null, true, true, true);
+			$rows = $this->_read_import_rows($file_path, $file_name);
 		} catch (Exception $e) {
 			set_message('Gagal membaca file CSV/Excel Shopee: ' . $e->getMessage(), 'error');
 			redirect('administrator/sales_order');
@@ -495,8 +1272,54 @@ class Sales_order extends Admin
 		$pelanggan_id = $default_pelanggan ? $default_pelanggan->id : 1;
 		$gudang_id = $default_gudang ? $default_gudang->id : 1;
 
+		// Pre-fetch all customers into array for O(1) matching by phone or name
+		$all_pelanggan = $this->db->select('id, kode_pelanggan, nama_pelanggan, telepon, no_telp')->get('pelanggan')->result();
+		$cust_by_phone = [];
+		$cust_by_name = [];
+		foreach ($all_pelanggan as $cp) {
+			$p1 = preg_replace('/[^0-9]/', '', (string)$cp->telepon);
+			$p2 = preg_replace('/[^0-9]/', '', (string)$cp->no_telp);
+			if (!empty($p1)) $cust_by_phone[$p1] = (int)$cp->id;
+			if (!empty($p2)) $cust_by_phone[$p2] = (int)$cp->id;
+			if (!empty($cp->nama_pelanggan)) {
+				$cust_by_name[strtolower(trim($cp->nama_pelanggan))] = (int)$cp->id;
+			}
+		}
+		$max_cust_row = $this->db->select_max('id')->get('pelanggan')->row();
+		$next_cust_num = ($max_cust_row && $max_cust_row->id) ? ((int)$max_cust_row->id + 1) : 1;
+
+		// Pre-fetch all existing order IDs for O(1) duplicate lookup
+		$existing_orders = [];
+		$res_existing = $this->db->select('no_pesanan')->get('sales_order')->result();
+		foreach ($res_existing as $e_row) {
+			if (!empty($e_row->no_pesanan)) {
+				$existing_orders[$e_row->no_pesanan] = true;
+			}
+		}
+
+		// Pre-fetch all products into memory
+		$all_products = $this->db->get('produk')->result();
+		$default_prod = !empty($all_products) ? $all_products[0] : null;
+		$prod_by_code = [];
+		$prod_by_name = [];
+		foreach ($all_products as $pr) {
+			if (!empty($pr->kode_produk)) {
+				$prod_by_code[strtolower(trim($pr->kode_produk))] = $pr;
+			}
+			if (!empty($pr->nama_produk)) {
+				$prod_by_name[strtolower(trim($pr->nama_produk))] = $pr;
+			}
+		}
+
+		// Pre-fetch CRM categories
+		$crm_categories = $this->db->get_where('crm_followup_categories', ['is_active' => 1])->result();
+		$bulk_crm_labels = [];
+
 		$success_count = 0;
 		$skipped_count = 0;
+		$now_dt = date('Y-m-d H:i:s');
+
+		$this->db->trans_start();
 
 		for ($r = 2; $r <= count($rows); $r++) {
 			$data_row = $rows[$r];
@@ -505,11 +1328,11 @@ class Sales_order extends Admin
 			$no_pesanan = $get_val($data_row, ['No. Pesanan', 'No Pesanan', 'Nomor Pesanan']);
 			if (empty($no_pesanan)) continue;
 
-			$existing = $this->db->get_where('sales_order', ['no_pesanan' => $no_pesanan])->row();
-			if ($existing) {
+			if (isset($existing_orders[$no_pesanan])) {
 				$skipped_count++;
 				continue;
 			}
+			$existing_orders[$no_pesanan] = true;
 
 			$status_pesanan = $get_val($data_row, ['Status Pesanan']);
 			$raw_status = strtolower($status_pesanan);
@@ -533,6 +1356,7 @@ class Sales_order extends Admin
 			$username_buyer = $get_val($data_row, ['Username (Pembeli)', 'Username Pembeli', 'Username']);
 			$nama_penerima  = $get_val($data_row, ['Nama Penerima']);
 			$no_telp       = $get_val($data_row, ['No. Telepon', 'No Telepon', 'Notelp']);
+			$phone_clean   = preg_replace('/[^0-9]/', '', (string)$no_telp);
 			$alamat        = $get_val($data_row, ['Alamat Pengiriman']);
 			$kota          = $get_val($data_row, ['Kota/Kabupaten', 'Kota']);
 			$provinsi      = $get_val($data_row, ['Provinsi']);
@@ -545,11 +1369,47 @@ class Sales_order extends Admin
 			$alasan_batal  = $get_val($data_row, ['Alasan Pembatalan (tambahan kolom)', 'Alasan Pembatalan']);
 			$st_batal      = $get_val($data_row, ['Status Pembatalan/ Pengembalian', 'Status Pembatalan/Pengembalian']);
 
+			// Dynamic customer synchronization into 'pelanggan'
+			$row_pelanggan_id = null;
+			if (!empty($phone_clean) && isset($cust_by_phone[$phone_clean])) {
+				$row_pelanggan_id = $cust_by_phone[$phone_clean];
+			} elseif (!empty($nama_penerima) && isset($cust_by_name[strtolower(trim($nama_penerima))])) {
+				$row_pelanggan_id = $cust_by_name[strtolower(trim($nama_penerima))];
+			} elseif (!empty($username_buyer) && isset($cust_by_name[strtolower(trim($username_buyer))])) {
+				$row_pelanggan_id = $cust_by_name[strtolower(trim($username_buyer))];
+			} else {
+				$c_kode = 'CUST-' . str_pad($next_cust_num++, 4, '0', STR_PAD_LEFT);
+				while ($this->db->where('kode_pelanggan', $c_kode)->get('pelanggan')->num_rows() > 0) {
+					$c_kode = 'CUST-' . str_pad($next_cust_num++, 4, '0', STR_PAD_LEFT);
+				}
+				$cust_name = !empty($nama_penerima) ? $nama_penerima : (!empty($username_buyer) ? $username_buyer : 'Customer Shopee');
+				$new_cust = [
+					'kode_pelanggan' => $c_kode,
+					'nama_pelanggan' => $cust_name,
+					'telepon'        => $phone_clean,
+					'no_telp'        => $phone_clean,
+					'alamat'         => !empty($alamat) ? $alamat : 'Imported via Shopee',
+					'kota'           => !empty($kota) ? $kota : '',
+					'tipe_pelanggan' => 'Marketplace',
+					'tier_pelanggan' => 'RETAIL',
+					'status'         => 'aktif',
+					'created_by'     => get_user_data('username') ?: 'admin',
+					'created_at'     => $now_dt,
+				];
+				$this->db->insert('pelanggan', $new_cust);
+				$row_pelanggan_id = $this->db->insert_id();
+				if (!empty($phone_clean)) $cust_by_phone[$phone_clean] = $row_pelanggan_id;
+				$cust_by_name[strtolower(trim($cust_name))] = $row_pelanggan_id;
+			}
+			if (empty($row_pelanggan_id)) {
+				$row_pelanggan_id = $pelanggan_id;
+			}
+
 			$so_data = [
 				'nomor_so'                    => $nomor_so,
 				'no_pesanan'                  => $no_pesanan,
 				'source'                      => 'shopee',
-				'pelanggan_id'                => $pelanggan_id,
+				'pelanggan_id'                => $row_pelanggan_id,
 				'gudang_id'                   => $gudang_id,
 				'tanggal_so'                  => $tanggal_so,
 				'status'                      => $status,
@@ -573,8 +1433,8 @@ class Sales_order extends Admin
 				'subtotal'                    => $total_bayar,
 				'total'                       => $total_bayar,
 				'catatan'                     => 'Import Shopee Excel - Buyer: ' . $username_buyer,
-				'created_by'                  => get_user_data('username'),
-				'created_at'                  => date('Y-m-d H:i:s'),
+				'created_by'                  => get_user_data('username') ?: 'admin',
+				'created_at'                  => $now_dt,
 			];
 
 			$so_id = $this->model_sales_order->store($so_data);
@@ -582,15 +1442,23 @@ class Sales_order extends Admin
 			if ($so_id) {
 				$sku = trim($sku_ref ?: $sku_induk);
 				$prod = null;
-
-				if ($sku) {
-					$prod = $this->db->get_where('produk', ['kode_produk' => $sku])->row();
+				if ($sku && isset($prod_by_code[strtolower($sku)])) {
+					$prod = $prod_by_code[strtolower($sku)];
+				}
+				if (!$prod && $nama_produk && isset($prod_by_name[strtolower($nama_produk)])) {
+					$prod = $prod_by_name[strtolower($nama_produk)];
 				}
 				if (!$prod && $nama_produk) {
-					$prod = $this->db->like('nama_produk', $nama_produk)->get('produk')->row();
+					$np_lower = strtolower($nama_produk);
+					foreach ($prod_by_name as $pn => $pobj) {
+						if (strpos($np_lower, $pn) !== false || strpos($pn, $np_lower) !== false) {
+							$prod = $pobj;
+							break;
+						}
+					}
 				}
 				if (!$prod) {
-					$prod = $this->db->get('produk')->row();
+					$prod = $default_prod;
 				}
 
 				$qty_raw = $get_val($data_row, ['Jumlah', 'Jumlah Produk di Pesan']);
@@ -614,9 +1482,42 @@ class Sales_order extends Admin
 					'catatan'       => $nama_produk,
 				]);
 
+				// Generate CRM follow-up labels in batch
+				if (!empty($crm_categories)) {
+					$ship_date = !empty($tanggal_so) ? $tanggal_so : date('Y-m-d');
+					foreach ($crm_categories as $cat) {
+						$target_lbl = date('Y-m-d', strtotime($ship_date . ' + ' . $cat->jumlah_hari . ' days'));
+						$bulk_crm_labels[] = [
+							'order_source'          => 'Shopee',
+							'order_id'              => $so_id,
+							'order_table'           => 'sales_order',
+							'customer_nama'         => !empty($nama_penerima) ? $nama_penerima : (!empty($username_buyer) ? $username_buyer : 'Customer Shopee'),
+							'customer_phone'        => $phone_clean,
+							'customer_pelanggan_id' => $row_pelanggan_id,
+							'no_pesanan'            => $no_pesanan,
+							'nomor_resi'            => !empty($no_resi) ? $no_resi : '',
+							'tanggal_pengiriman'    => $ship_date,
+							'followup_category_id'  => $cat->id,
+							'tanggal_label_muncul'  => $target_lbl,
+							'created_at'            => $now_dt,
+						];
+					}
+
+					if (count($bulk_crm_labels) >= 500) {
+						$this->db->insert_batch('crm_transaction_followup_labels', $bulk_crm_labels);
+						$bulk_crm_labels = [];
+					}
+				}
+
 				$success_count++;
 			}
 		}
+
+		if (!empty($bulk_crm_labels)) {
+			$this->db->insert_batch('crm_transaction_followup_labels', $bulk_crm_labels);
+		}
+
+		$this->db->trans_complete();
 
 		if ($success_count == 0 && $skipped_count > 0) {
 			set_message("Gagal Import! Data pesanan sudah ada di sistem dan tidak bisa dimasukkan lagi ({$skipped_count} pesanan duplikat ditolak).", 'error');
@@ -633,8 +1534,8 @@ class Sales_order extends Admin
 	public function import_tokopedia()
 	{
 		$this->is_allowed('sales_order_add');
-		ini_set('memory_limit', '512M');
-		set_time_limit(300);
+		@ini_set('memory_limit', '1024M');
+		@set_time_limit(0);
 
 		if (empty($_FILES['file_csv']['name'])) {
 			set_message('Silakan pilih file CSV/Excel Tokopedia yang akan diimport.', 'error');
@@ -643,12 +1544,10 @@ class Sales_order extends Admin
 		}
 
 		$file_path = $_FILES['file_csv']['tmp_name'];
-		require_once FCPATH . 'application/libraries/Excel/PHPExcel/IOFactory.php';
+		$file_name = $_FILES['file_csv']['name'];
 
 		try {
-			$objPHPExcel = PHPExcel_IOFactory::load($file_path);
-			$sheet = $objPHPExcel->getActiveSheet();
-			$rows = $sheet->toArray(null, true, true, true);
+			$rows = $this->_read_import_rows($file_path, $file_name);
 		} catch (Exception $e) {
 			set_message('Gagal membaca file CSV/Excel Tokopedia: ' . $e->getMessage(), 'error');
 			redirect('administrator/sales_order');
@@ -689,8 +1588,54 @@ class Sales_order extends Admin
 		$pelanggan_id = $default_pelanggan ? $default_pelanggan->id : 1;
 		$gudang_id = $default_gudang ? $default_gudang->id : 1;
 
+		// Pre-fetch all customers into array for O(1) matching by phone or name
+		$all_pelanggan = $this->db->select('id, kode_pelanggan, nama_pelanggan, telepon, no_telp')->get('pelanggan')->result();
+		$cust_by_phone = [];
+		$cust_by_name = [];
+		foreach ($all_pelanggan as $cp) {
+			$p1 = preg_replace('/[^0-9]/', '', (string)$cp->telepon);
+			$p2 = preg_replace('/[^0-9]/', '', (string)$cp->no_telp);
+			if (!empty($p1)) $cust_by_phone[$p1] = (int)$cp->id;
+			if (!empty($p2)) $cust_by_phone[$p2] = (int)$cp->id;
+			if (!empty($cp->nama_pelanggan)) {
+				$cust_by_name[strtolower(trim($cp->nama_pelanggan))] = (int)$cp->id;
+			}
+		}
+		$max_cust_row = $this->db->select_max('id')->get('pelanggan')->row();
+		$next_cust_num = ($max_cust_row && $max_cust_row->id) ? ((int)$max_cust_row->id + 1) : 1;
+
+		// Pre-fetch all existing order IDs for O(1) duplicate lookup
+		$existing_orders = [];
+		$res_existing = $this->db->select('no_pesanan')->get('sales_order')->result();
+		foreach ($res_existing as $e_row) {
+			if (!empty($e_row->no_pesanan)) {
+				$existing_orders[$e_row->no_pesanan] = true;
+			}
+		}
+
+		// Pre-fetch all products into memory
+		$all_products = $this->db->get('produk')->result();
+		$default_prod = !empty($all_products) ? $all_products[0] : null;
+		$prod_by_code = [];
+		$prod_by_name = [];
+		foreach ($all_products as $pr) {
+			if (!empty($pr->kode_produk)) {
+				$prod_by_code[strtolower(trim($pr->kode_produk))] = $pr;
+			}
+			if (!empty($pr->nama_produk)) {
+				$prod_by_name[strtolower(trim($pr->nama_produk))] = $pr;
+			}
+		}
+
+		// Pre-fetch CRM categories
+		$crm_categories = $this->db->get_where('crm_followup_categories', ['is_active' => 1])->result();
+		$bulk_crm_labels = [];
+
 		$success_count = 0;
 		$skipped_count = 0;
+		$now_dt = date('Y-m-d H:i:s');
+
+		$this->db->trans_start();
 
 		for ($r = 2; $r <= count($rows); $r++) {
 			$data_row = $rows[$r];
@@ -699,11 +1644,11 @@ class Sales_order extends Admin
 			$no_pesanan = $get_val($data_row, ['No. Pesanan', 'No Pesanan', 'Nomor Pesanan']);
 			if (empty($no_pesanan)) continue;
 
-			$existing = $this->db->get_where('sales_order', ['no_pesanan' => $no_pesanan])->row();
-			if ($existing) {
+			if (isset($existing_orders[$no_pesanan])) {
 				$skipped_count++;
 				continue;
 			}
+			$existing_orders[$no_pesanan] = true;
 
 			$status_pesanan = $get_val($data_row, ['Status Pesanan']);
 			$raw_status = strtolower($status_pesanan);
@@ -724,11 +1669,55 @@ class Sales_order extends Admin
 			$waktu_bayar = !empty($waktu_bayar_raw) ? date('Y-m-d H:i:s', strtotime($waktu_bayar_raw)) : date('Y-m-d H:i:s');
 			$tanggal_so = !empty($waktu_bayar_raw) ? date('Y-m-d', strtotime($waktu_bayar_raw)) : date('Y-m-d');
 
+			$username_buyer = $get_val($data_row, ['Username Pembeli', 'Username']);
+			$nama_penerima  = $get_val($data_row, ['Nama Penerima']);
+			$no_telp       = $get_val($data_row, ['No. Telepon', 'No Telepon']);
+			$phone_clean   = preg_replace('/[^0-9]/', '', (string)$no_telp);
+			$alamat        = $get_val($data_row, ['Alamat Pengiriman']);
+			$kota          = $get_val($data_row, ['Kota/Kabupaten', 'Kota']);
+			$provinsi      = $get_val($data_row, ['Provinsi']);
+
+			// Dynamic customer synchronization into 'pelanggan'
+			$row_pelanggan_id = null;
+			if (!empty($phone_clean) && isset($cust_by_phone[$phone_clean])) {
+				$row_pelanggan_id = $cust_by_phone[$phone_clean];
+			} elseif (!empty($nama_penerima) && isset($cust_by_name[strtolower(trim($nama_penerima))])) {
+				$row_pelanggan_id = $cust_by_name[strtolower(trim($nama_penerima))];
+			} elseif (!empty($username_buyer) && isset($cust_by_name[strtolower(trim($username_buyer))])) {
+				$row_pelanggan_id = $cust_by_name[strtolower(trim($username_buyer))];
+			} else {
+				$c_kode = 'CUST-' . str_pad($next_cust_num++, 4, '0', STR_PAD_LEFT);
+				while ($this->db->where('kode_pelanggan', $c_kode)->get('pelanggan')->num_rows() > 0) {
+					$c_kode = 'CUST-' . str_pad($next_cust_num++, 4, '0', STR_PAD_LEFT);
+				}
+				$cust_name = !empty($nama_penerima) ? $nama_penerima : (!empty($username_buyer) ? $username_buyer : 'Customer Tokopedia');
+				$new_cust = [
+					'kode_pelanggan' => $c_kode,
+					'nama_pelanggan' => $cust_name,
+					'telepon'        => $phone_clean,
+					'no_telp'        => $phone_clean,
+					'alamat'         => !empty($alamat) ? $alamat : 'Imported via Tokopedia',
+					'kota'           => !empty($kota) ? $kota : '',
+					'tipe_pelanggan' => 'Marketplace',
+					'tier_pelanggan' => 'RETAIL',
+					'status'         => 'aktif',
+					'created_by'     => get_user_data('username') ?: 'admin',
+					'created_at'     => $now_dt,
+				];
+				$this->db->insert('pelanggan', $new_cust);
+				$row_pelanggan_id = $this->db->insert_id();
+				if (!empty($phone_clean)) $cust_by_phone[$phone_clean] = $row_pelanggan_id;
+				$cust_by_name[strtolower(trim($cust_name))] = $row_pelanggan_id;
+			}
+			if (empty($row_pelanggan_id)) {
+				$row_pelanggan_id = $pelanggan_id;
+			}
+
 			$so_data = [
 				'nomor_so'            => $nomor_so,
 				'no_pesanan'          => $no_pesanan,
 				'source'              => 'tokopedia',
-				'pelanggan_id'        => $pelanggan_id,
+				'pelanggan_id'        => $row_pelanggan_id,
 				'gudang_id'           => $gudang_id,
 				'tanggal_so'          => $tanggal_so,
 				'status'              => $status,
@@ -736,20 +1725,20 @@ class Sales_order extends Admin
 				'nomor_resi'          => $get_val($data_row, ['No. Resi', 'No Resi']),
 				'kurir_ekspedisi'     => $get_val($data_row, ['Kurir']),
 				'waktu_pembayaran'    => $waktu_bayar,
-				'username_pembeli'    => $get_val($data_row, ['Username Pembeli', 'Username']),
-				'nama_penerima'       => $get_val($data_row, ['Nama Penerima']),
-				'no_telepon'          => $get_val($data_row, ['No. Telepon', 'No Telepon']),
-				'alamat_pengiriman'   => $get_val($data_row, ['Alamat Pengiriman']),
-				'kota_kabupaten'      => $get_val($data_row, ['Kota/Kabupaten', 'Kota']),
-				'provinsi'            => $get_val($data_row, ['Provinsi']),
+				'username_pembeli'    => $username_buyer,
+				'nama_penerima'       => $nama_penerima,
+				'no_telepon'          => $no_telp,
+				'alamat_pengiriman'   => $alamat,
+				'kota_kabupaten'      => $kota,
+				'provinsi'            => $provinsi,
 				'sku_induk'           => $get_val($data_row, ['SKU Induk']),
 				'nama_produk_marketplace' => $get_val($data_row, ['Nama Produk']),
 				'nama_variasi'        => $get_val($data_row, ['Nama Variasi']),
 				'subtotal'            => $total_bayar,
 				'total'               => $total_bayar,
-				'catatan'             => 'Import Tokopedia Excel - Buyer: ' . $get_val($data_row, ['Username Pembeli', 'Username']),
-				'created_by'          => get_user_data('username'),
-				'created_at'          => date('Y-m-d H:i:s'),
+				'catatan'             => 'Import Tokopedia Excel - Buyer: ' . $username_buyer,
+				'created_by'          => get_user_data('username') ?: 'admin',
+				'created_at'          => $now_dt,
 			];
 
 			$so_id = $this->model_sales_order->store($so_data);
@@ -758,15 +1747,23 @@ class Sales_order extends Admin
 				$sku = trim($get_val($data_row, ['SKU Induk']));
 				$nama_prod = trim($get_val($data_row, ['Nama Produk']));
 				$prod = null;
-
-				if ($sku) {
-					$prod = $this->db->get_where('produk', ['kode_produk' => $sku])->row();
+				if ($sku && isset($prod_by_code[strtolower($sku)])) {
+					$prod = $prod_by_code[strtolower($sku)];
+				}
+				if (!$prod && $nama_prod && isset($prod_by_name[strtolower($nama_prod)])) {
+					$prod = $prod_by_name[strtolower($nama_prod)];
 				}
 				if (!$prod && $nama_prod) {
-					$prod = $this->db->like('nama_produk', $nama_prod)->get('produk')->row();
+					$np_lower = strtolower($nama_prod);
+					foreach ($prod_by_name as $pn => $pobj) {
+						if (strpos($np_lower, $pn) !== false || strpos($pn, $np_lower) !== false) {
+							$prod = $pobj;
+							break;
+						}
+					}
 				}
 				if (!$prod) {
-					$prod = $this->db->get('produk')->row();
+					$prod = $default_prod;
 				}
 
 				$qty = (float) str_replace(['.', ','], '', $get_val($data_row, ['Jumlah']) ?: 1);
@@ -787,9 +1784,42 @@ class Sales_order extends Admin
 					'catatan'       => $nama_prod,
 				]);
 
+				// Generate CRM follow-up labels in batch
+				if (!empty($crm_categories)) {
+					$ship_date = !empty($tanggal_so) ? $tanggal_so : date('Y-m-d');
+					foreach ($crm_categories as $cat) {
+						$target_lbl = date('Y-m-d', strtotime($ship_date . ' + ' . $cat->jumlah_hari . ' days'));
+						$bulk_crm_labels[] = [
+							'order_source'          => 'Tokopedia',
+							'order_id'              => $so_id,
+							'order_table'           => 'sales_order',
+							'customer_nama'         => !empty($nama_penerima) ? $nama_penerima : (!empty($username_buyer) ? $username_buyer : 'Customer Tokopedia'),
+							'customer_phone'        => $phone_clean,
+							'customer_pelanggan_id' => $row_pelanggan_id,
+							'no_pesanan'            => $no_pesanan,
+							'nomor_resi'            => $get_val($data_row, ['No. Resi', 'No Resi']),
+							'tanggal_pengiriman'    => $ship_date,
+							'followup_category_id'  => $cat->id,
+							'tanggal_label_muncul'  => $target_lbl,
+							'created_at'            => $now_dt,
+						];
+					}
+
+					if (count($bulk_crm_labels) >= 500) {
+						$this->db->insert_batch('crm_transaction_followup_labels', $bulk_crm_labels);
+						$bulk_crm_labels = [];
+					}
+				}
+
 				$success_count++;
 			}
 		}
+
+		if (!empty($bulk_crm_labels)) {
+			$this->db->insert_batch('crm_transaction_followup_labels', $bulk_crm_labels);
+		}
+
+		$this->db->trans_complete();
 
 		if ($success_count == 0 && $skipped_count > 0) {
 			set_message("Gagal Import! Data pesanan sudah ada di sistem dan tidak bisa dimasukkan lagi ({$skipped_count} pesanan duplikat ditolak).", 'error');

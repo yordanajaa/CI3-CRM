@@ -30,7 +30,7 @@ $page_title = $is_edit ? 'Edit Supplier' : 'Tambah Supplier';
 </section>
 
 <section class="content">
-   <form id="form_supplier">
+   <form id="form_supplier" onsubmit="return false;">
    <div class="row">
       <div class="col-md-12">
          <div class="box form-card" style="border-top: 3px solid #3b82f6;">
@@ -253,6 +253,13 @@ $(document).ready(function(){
       }
    });
 
+   $('#form_supplier').on('keydown', 'input', function(e){
+      if(e.keyCode == 13) {
+         e.preventDefault();
+         $('#btn_save').click();
+      }
+   });
+
    $('#btn_save').click(function(e){
       e.preventDefault();
       var btn = $(this);
@@ -277,7 +284,17 @@ $(document).ready(function(){
             }
          },
          error: function(xhr, status, err){
-            show_alert('Terjadi kesalahan server saat menyimpan data.', 'error');
+            var errMsg = 'Terjadi kesalahan server saat menyimpan data.';
+            if (xhr.responseText) {
+               try {
+                  var parsed = JSON.parse(xhr.responseText);
+                  if (parsed.message) errMsg = parsed.message;
+               } catch(e) {
+                  var m = xhr.responseText.match(/<p>(.*?)<\/p>/i);
+                  if (m && m[1]) errMsg = m[1];
+               }
+            }
+            show_alert(errMsg, 'error');
             btn.prop('disabled', false).html('<i class="fa fa-save"></i> <?= $is_edit ? 'Update Data Supplier' : 'Simpan Supplier'; ?>');
          }
       });

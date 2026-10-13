@@ -26,6 +26,9 @@
                   <span class="label label-default"><?= isset($produk->kode_produk) ? _ent($produk->kode_produk) : ''; ?></span>
                </h3>
                <div class="box-tools pull-right">
+                  <button type="button" onclick="window.print();" class="btn btn-default btn-sm" style="margin-right: 5px;">
+                     <i class="fa fa-print"></i> Cetak Kartu Stok
+                  </button>
                   <a href="<?= site_url('administrator/stok'); ?>" class="btn btn-default btn-sm">
                      <i class="fa fa-arrow-left"></i> Kembali
                   </a>
@@ -35,6 +38,19 @@
             <div class="box-body">
                <!-- Filter Mutasi -->
                <form class="form-inline margin-bottom" action="<?= site_url('administrator/stok/kartu/' . (isset($produk->id) ? $produk->id : '')); ?>" method="GET" style="margin-bottom: 20px;">
+                  <?php if (!empty($all_produks)): ?>
+                  <div class="form-group" style="margin-right: 15px;">
+                     <label style="margin-right: 5px;"><i class="fa fa-cube text-primary"></i> Pilih Produk:</label>
+                     <select class="form-control input-sm chosen" onchange="if(this.value) window.location.href='<?= site_url('administrator/stok/kartu/'); ?>/' + this.value;">
+                        <?php foreach ($all_produks as $p): ?>
+                           <option value="<?= $p->id; ?>" <?= (isset($produk->id) && $produk->id == $p->id) ? 'selected' : ''; ?>>
+                              <?= _ent($p->kode_produk . ' - ' . $p->nama_produk); ?>
+                           </option>
+                        <?php endforeach; ?>
+                     </select>
+                  </div>
+                  <?php endif; ?>
+
                   <div class="form-group">
                      <label style="margin-right: 5px;">Gudang:</label>
                      <select class="form-control input-sm" name="gudang_id">
@@ -145,3 +161,30 @@
       </div>
    </div>
 </section>
+
+<style>
+@media print {
+  .main-header, .main-sidebar, .content-header, .box-header .box-tools, form, .breadcrumb {
+    display: none !important;
+  }
+  .content-wrapper, .content, .box {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  .box-title {
+    font-size: 18px !important;
+    display: block !important;
+    margin-bottom: 15px !important;
+  }
+  .table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+  .table th, .table td {
+    padding: 6px 8px !important;
+    font-size: 11px !important;
+  }
+}
+</style>

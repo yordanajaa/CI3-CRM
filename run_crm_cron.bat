@@ -7,7 +7,11 @@ echo.
 
 cd /d "C:\laragon\www\ci3_metafora"
 
-C:\laragon\bin\php\php-7.4.33-Win32-vc15-x64\php.exe index.php administrator crm cli_automations
+if exist "C:\laragon\bin\php\php-7.2.34-nts-Win32-VC15-x64\php.exe" (
+    "C:\laragon\bin\php\php-7.2.34-nts-Win32-VC15-x64\php.exe" index.php administrator crm cli_automations
+) else (
+    php index.php administrator crm cli_automations
+)
 
 echo.
 echo ========================================================

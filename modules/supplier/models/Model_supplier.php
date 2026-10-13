@@ -6,7 +6,7 @@ class Model_supplier extends MY_Model {
 
 	private $primary_key 	= 'id';
 	private $table_name 	= 'supplier';
-	private $field_search 	= ['kode_supplier', 'nama_supplier', 'kontak_person', 'telepon', 'email', 'kota'];
+	private $field_search 	= ['kode_supplier', 'nama_supplier', 'kontak_person', 'telepon', 'no_telp', 'email', 'kota'];
 
 	public function __construct()
 	{
@@ -81,9 +81,15 @@ class Model_supplier extends MY_Model {
 
 	public function generate_kode()
 	{
-		$last = $this->db->order_by('id', 'DESC')->limit(1)->get($this->table_name)->row();
-		$num = $last ? ((int) substr($last->kode_supplier, -4)) + 1 : 1;
-		return 'SUP-' . str_pad($num, 4, '0', STR_PAD_LEFT);
+		$max_id_row = $this->db->select_max('id')->get($this->table_name)->row();
+		$next_num = ($max_id_row && $max_id_row->id) ? ((int)$max_id_row->id + 1) : 1;
+		$kode = 'SUP-' . str_pad($next_num, 4, '0', STR_PAD_LEFT);
+
+		while ($this->db->where('kode_supplier', $kode)->get($this->table_name)->num_rows() > 0) {
+			$next_num++;
+			$kode = 'SUP-' . str_pad($next_num, 4, '0', STR_PAD_LEFT);
+		}
+		return $kode;
 	}
 
 	/**

@@ -55,19 +55,27 @@ class Produk extends Admin
 
 		if ($this->form_validation->run()) {
 			$barcode_input = $this->input->post('barcode');
+			$kode_input = trim((string)$this->input->post('kode_produk'));
+			if (empty($kode_input) || $this->db->get_where('produk', ['kode_produk' => $kode_input])->num_rows() > 0) {
+				$kode_input = $this->model_produk->generate_kode();
+			}
+			$h_jual = str_replace(['.', ','], '', (string)$this->input->post('harga_jual')) ?: 0;
+			$h_retail = str_replace(['.', ','], '', (string)$this->input->post('harga_jual_retail')) ?: $h_jual;
+
 			$data = [
-				'kode_produk'       => $this->input->post('kode_produk'),
+				'kode_produk'       => $kode_input,
 				'barcode'           => !empty($barcode_input) ? $barcode_input : $this->model_produk->generate_barcode(),
 				'nama_produk'       => $this->input->post('nama_produk'),
 				'kategori_id'       => $this->input->post('kategori_id') ?: null,
 				'satuan_id'         => $this->input->post('satuan_id') ?: null,
 				'default_rak_id'    => $this->input->post('default_rak_id') ?: null,
-				'harga_beli'        => str_replace(['.', ','], '', $this->input->post('harga_beli')) ?: 0,
-				'harga_jual'        => str_replace(['.', ','], '', $this->input->post('harga_jual')) ?: 0,
-				'harga_jual_grosir' => str_replace(['.', ','], '', $this->input->post('harga_jual_grosir')) ?: 0,
-				'harga_jual_distributor' => str_replace(['.', ','], '', $this->input->post('harga_jual_distributor')) ?: 0,
-				'harga_jual_vip'    => str_replace(['.', ','], '', $this->input->post('harga_jual_vip')) ?: 0,
-				'stok_minimum'      => str_replace(['.', ','], '', $this->input->post('stok_minimum')) ?: 0,
+				'harga_beli'        => str_replace(['.', ','], '', (string)$this->input->post('harga_beli')) ?: 0,
+				'harga_jual'        => $h_jual,
+				'harga_jual_retail' => $h_retail,
+				'harga_jual_grosir' => str_replace(['.', ','], '', (string)$this->input->post('harga_jual_grosir')) ?: 0,
+				'harga_jual_distributor' => str_replace(['.', ','], '', (string)$this->input->post('harga_jual_distributor')) ?: 0,
+				'harga_jual_vip'    => str_replace(['.', ','], '', (string)$this->input->post('harga_jual_vip')) ?: 0,
+				'stok_minimum'      => str_replace(['.', ','], '', (string)$this->input->post('stok_minimum')) ?: 0,
 				'berat'             => $this->input->post('berat') ?: null,
 				'deskripsi'         => $this->input->post('deskripsi'),
 				'metode_stok'       => $this->input->post('metode_stok') ?: 'FIFO',
@@ -137,12 +145,13 @@ class Produk extends Admin
 				'kategori_id'       => $this->input->post('kategori_id') ?: null,
 				'satuan_id'         => $this->input->post('satuan_id') ?: null,
 				'default_rak_id'    => $this->input->post('default_rak_id') ?: null,
-				'harga_beli'        => str_replace(['.', ','], '', $this->input->post('harga_beli')) ?: 0,
-				'harga_jual'        => str_replace(['.', ','], '', $this->input->post('harga_jual')) ?: 0,
-				'harga_jual_grosir' => str_replace(['.', ','], '', $this->input->post('harga_jual_grosir')) ?: 0,
-				'harga_jual_distributor' => str_replace(['.', ','], '', $this->input->post('harga_jual_distributor')) ?: 0,
-				'harga_jual_vip'    => str_replace(['.', ','], '', $this->input->post('harga_jual_vip')) ?: 0,
-				'stok_minimum'      => str_replace(['.', ','], '', $this->input->post('stok_minimum')) ?: 0,
+				'harga_beli'        => str_replace(['.', ','], '', (string)$this->input->post('harga_beli')) ?: 0,
+				'harga_jual'        => $h_jual = (str_replace(['.', ','], '', (string)$this->input->post('harga_jual')) ?: 0),
+				'harga_jual_retail' => str_replace(['.', ','], '', (string)$this->input->post('harga_jual_retail')) ?: $h_jual,
+				'harga_jual_grosir' => str_replace(['.', ','], '', (string)$this->input->post('harga_jual_grosir')) ?: 0,
+				'harga_jual_distributor' => str_replace(['.', ','], '', (string)$this->input->post('harga_jual_distributor')) ?: 0,
+				'harga_jual_vip'    => str_replace(['.', ','], '', (string)$this->input->post('harga_jual_vip')) ?: 0,
+				'stok_minimum'      => str_replace(['.', ','], '', (string)$this->input->post('stok_minimum')) ?: 0,
 				'berat'             => $this->input->post('berat') ?: null,
 				'deskripsi'         => $this->input->post('deskripsi'),
 				'metode_stok'       => $this->input->post('metode_stok') ?: 'FIFO',

@@ -37,20 +37,58 @@ $status_display = [
    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
    border-left: 4px solid #00c0ef;
    margin-bottom: 20px;
-   transition: transform 0.2s ease, box-shadow 0.2s ease;
+   transition: all 0.2s ease;
+   cursor: pointer;
+   position: relative;
+   user-select: none;
 }
 .kpi-card:hover {
-   transform: translateY(-2px);
-   box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+   transform: translateY(-3px);
+   box-shadow: 0 8px 22px rgba(0,0,0,0.12);
+}
+.kpi-card:active {
+   transform: translateY(-1px);
 }
 .kpi-card.orange { border-left-color: #f39c12; }
 .kpi-card.green  { border-left-color: #00a65a; }
 .kpi-card.purple { border-left-color: #605ca8; }
 
-.kpi-title { font-size: 11px; text-transform: uppercase; font-weight: 700; color: #888; letter-spacing: 0.5px; }
+/* Active Card Highlights */
+.kpi-card.active-kpi {
+   background: #eff6ff;
+   box-shadow: 0 0 0 2px #00c0ef, 0 8px 24px rgba(0, 192, 239, 0.25);
+}
+.kpi-card.orange.active-kpi {
+   background: #fffbeb;
+   box-shadow: 0 0 0 2px #f39c12, 0 8px 24px rgba(243, 156, 18, 0.25);
+}
+.kpi-card.green.active-kpi {
+   background: #f0fdf4;
+   box-shadow: 0 0 0 2px #00a65a, 0 8px 24px rgba(0, 166, 90, 0.25);
+}
+.kpi-card.purple.active-kpi {
+   background: #faf5ff;
+   box-shadow: 0 0 0 2px #605ca8, 0 8px 24px rgba(96, 92, 168, 0.25);
+}
+
+.kpi-title { font-size: 11px; text-transform: uppercase; font-weight: 700; color: #888; letter-spacing: 0.5px; display:flex; justify-content:space-between; align-items:center; }
 .kpi-value { font-size: 22px; font-weight: 700; color: #222; margin: 4px 0; }
 .kpi-sub { font-size: 11px; color: #999; }
 .kpi-icon { font-size: 28px; opacity: 0.2; float: right; margin-top: -35px; }
+
+.kpi-pill-badge {
+   display: inline-block;
+   padding: 2px 7px;
+   border-radius: 4px;
+   font-size: 10px;
+   font-weight: 700;
+   cursor: pointer;
+   transition: all 0.15s ease;
+}
+.kpi-pill-badge:hover {
+   transform: scale(1.05);
+   box-shadow: 0 2px 5px rgba(0,0,0,0.12);
+}
 
 .clean-filter-box {
    background: #fdfdfd;
@@ -59,12 +97,48 @@ $status_display = [
    padding: 15px;
    margin-bottom: 20px;
 }
+.table-responsive {
+   -webkit-overflow-scrolling: touch;
+}
+@media (max-width: 767px) {
+   .content { padding: 8px 6px !important; }
+   .kpi-card { padding: 12px 10px; margin-bottom: 10px; }
+   .kpi-title { font-size: 10px; }
+   .kpi-value { font-size: 16px; }
+   .kpi-sub { font-size: 9.5px; }
+   .kpi-icon { font-size: 22px; margin-top: -26px; }
+   .clean-filter-box { padding: 10px; margin-bottom: 12px; }
+   .box-header { padding: 12px 14px !important; }
+   .box-header .box-title { font-size: 14px !important; display: block !important; margin-bottom: 8px; }
+   .box-header .box-tools.pull-right {
+      position: static !important;
+      float: none !important;
+      width: 100% !important;
+      display: flex !important;
+      flex-wrap: wrap !important;
+      gap: 6px !important;
+   }
+   .box-header .box-tools .btn {
+      flex: 1 1 calc(50% - 4px) !important;
+      margin-right: 0 !important;
+      font-size: 11px !important;
+      padding: 6px 8px !important;
+      text-align: center !important;
+   }
+   .table-responsive { border: none !important; }
+   .table-responsive table { min-width: 820px; }
+}
+@media (max-width: 480px) {
+   .box-header .box-tools .btn {
+      flex: 1 1 100% !important;
+   }
+}
 </style>
 
 <section class="content-header">
    <h1>
       Pesanan Penjualan (Sales Order)
-      <small>Daftar Pesanan Masuk Regular & Status Pengiriman</small>
+      <small>Daftar Pesanan Masuk Regular &amp; Status Pengiriman</small>
    </h1>
    <ol class="breadcrumb">
       <li><a href="<?= site_url('administrator/dashboard'); ?>"><i class="fa fa-dashboard"></i> Home</a></li>
@@ -73,44 +147,128 @@ $status_display = [
 </section>
 
 <section class="content">
-   <!-- 4 KPI Cards -->
+   <?php 
+      $current_status = $this->input->get('status');
+   ?>
+
+   <!-- 4 Interactive Clickable KPI Cards -->
    <div class="row">
-      <div class="col-md-3 col-sm-6">
-         <div class="kpi-card">
-            <div class="kpi-title">Total Omset Penjualan</div>
-            <div class="kpi-value">Rp <?= number_format($stats['penjualan_bulan_ini'] ?? 0, 0, ',', '.'); ?></div>
-            <div class="kpi-sub" style="font-size:10px; margin-top:3px;">
-               <span class="text-success" title="Kas Masuk (Lunas)"><i class="fa fa-check-circle"></i> Lunas: Rp <?= number_format($stats['terbayar_lunas'] ?? 0, 0, ',', '.'); ?></span> | 
-               <span class="text-danger" title="Piutang Tempo (Unpaid)"><i class="fa fa-clock-o"></i> Tempo: Rp <?= number_format($stats['piutang_unpaid'] ?? 0, 0, ',', '.'); ?></span>
+      <div class="col-md-3 col-sm-6 col-xs-6">
+         <div class="kpi-card <?= ($current_status == 'lunas' || $current_status == 'tempo') ? 'active-kpi' : (empty($current_status) ? '' : ''); ?>"
+              onclick="window.location.href='<?= site_url('administrator/sales_order'); ?>';"
+              role="button" tabindex="0" title="Klik untuk menampilkan SEMUA pesanan sales order">
+            <div class="kpi-title">
+               <span>Total Omset Penjualan</span>
+               <?php if (empty($current_status)): ?>
+                  <span class="badge" style="background:#e0f2fe; color:#0369a1; font-size:9px;">SEMUA</span>
+               <?php elseif ($current_status == 'lunas'): ?>
+                  <span class="badge" style="background:#10b981; color:#fff; font-size:9px;">LUNAS</span>
+               <?php elseif ($current_status == 'tempo'): ?>
+                  <span class="badge" style="background:#ef4444; color:#fff; font-size:9px;">TEMPO</span>
+               <?php endif; ?>
+            </div>
+            <div class="kpi-value">Rp <?= number_format($stats['total_omset_all'] ?? $stats['penjualan_bulan_ini'] ?? 0, 0, ',', '.'); ?></div>
+            <div class="kpi-sub" style="font-size:11px; margin-top:4px;">
+               <span class="kpi-pill-badge" 
+                     onclick="event.stopPropagation(); window.location.href='<?= $current_status == 'lunas' ? site_url('administrator/sales_order') : site_url('administrator/sales_order?status=lunas'); ?>';"
+                     style="background:<?= $current_status == 'lunas' ? '#10b981' : '#f0fdf4'; ?>; color:<?= $current_status == 'lunas' ? '#fff' : '#15803d'; ?>; border:1px solid #bbf7d0;"
+                     title="Klik untuk filter data khusus pesanan LUNAS">
+                  <i class="fa fa-check-circle"></i> Lunas: Rp <?= number_format($stats['terbayar_lunas'] ?? 0, 0, ',', '.'); ?>
+               </span> | 
+               <span class="kpi-pill-badge" 
+                     onclick="event.stopPropagation(); window.location.href='<?= $current_status == 'tempo' ? site_url('administrator/sales_order') : site_url('administrator/sales_order?status=tempo'); ?>';"
+                     style="background:<?= $current_status == 'tempo' ? '#ef4444' : '#fef2f2'; ?>; color:<?= $current_status == 'tempo' ? '#fff' : '#b91c1c'; ?>; border:1px solid #fecaca;"
+                     title="Klik untuk filter data khusus pesanan TEMPO (Unpaid)">
+                  <i class="fa fa-clock-o"></i> Tempo: Rp <?= number_format($stats['piutang_unpaid'] ?? 0, 0, ',', '.'); ?>
+               </span>
             </div>
             <i class="fa fa-line-chart kpi-icon text-info"></i>
          </div>
       </div>
-      <div class="col-md-3 col-sm-6">
-         <div class="kpi-card orange">
-            <div class="kpi-title">Pesanan Aktif</div>
+      <div class="col-md-3 col-sm-6 col-xs-6">
+         <div class="kpi-card orange <?= $current_status == 'aktif' ? 'active-kpi' : ''; ?>"
+              onclick="window.location.href='<?= $current_status == 'aktif' ? site_url('administrator/sales_order') : site_url('administrator/sales_order?status=aktif'); ?>';"
+              role="button" tabindex="0" title="Klik untuk masuk ke filter Pesanan Aktif (Draft, Baru Masuk)">
+            <div class="kpi-title">
+               <span>Pesanan Aktif</span>
+               <?php if ($current_status == 'aktif'): ?>
+                  <span class="badge" style="background:#f59e0b; color:#fff; font-size:9px;">AKTIF</span>
+               <?php endif; ?>
+            </div>
             <div class="kpi-value"><?= $stats['pesanan_aktif'] ?? 0; ?> <small style="font-size:14px;">Order</small></div>
             <div class="kpi-sub"><i class="fa fa-clock-o"></i> Draft / Baru Masuk</div>
             <i class="fa fa-shopping-cart kpi-icon text-warning"></i>
          </div>
       </div>
-      <div class="col-md-3 col-sm-6">
-         <div class="kpi-card green">
-            <div class="kpi-title">Proses Gudang & Kirim</div>
+      <div class="col-md-3 col-sm-6 col-xs-6">
+         <div class="kpi-card green <?= $current_status == 'proses' ? 'active-kpi' : ''; ?>"
+              onclick="window.location.href='<?= $current_status == 'proses' ? site_url('administrator/sales_order') : site_url('administrator/sales_order?status=proses'); ?>';"
+              role="button" tabindex="0" title="Klik untuk masuk ke filter Proses Gudang & Pengiriman (Packing, Shipped)">
+            <div class="kpi-title">
+               <span>Proses Gudang &amp; Kirim</span>
+               <?php if ($current_status == 'proses'): ?>
+                  <span class="badge" style="background:#00a65a; color:#fff; font-size:9px;">AKTIF</span>
+               <?php endif; ?>
+            </div>
             <div class="kpi-value"><?= ($stats['proses_gudang'] ?? 0) + ($stats['siap_kirim'] ?? 0); ?> <small style="font-size:14px;">Order</small></div>
-            <div class="kpi-sub"><i class="fa fa-truck"></i> Packing & Pengiriman</div>
+            <div class="kpi-sub"><i class="fa fa-truck"></i> Packing &amp; Pengiriman</div>
             <i class="fa fa-truck kpi-icon text-success"></i>
          </div>
       </div>
-      <div class="col-md-3 col-sm-6">
-         <div class="kpi-card purple">
-            <div class="kpi-title">Pesanan Selesai</div>
+      <div class="col-md-3 col-sm-6 col-xs-6">
+         <div class="kpi-card purple <?= $current_status == 'selesai' ? 'active-kpi' : ''; ?>"
+              onclick="window.location.href='<?= $current_status == 'selesai' ? site_url('administrator/sales_order') : site_url('administrator/sales_order?status=selesai'); ?>';"
+              role="button" tabindex="0" title="Klik untuk masuk ke filter Pesanan Selesai (Delivered, Selesai)">
+            <div class="kpi-title">
+               <span>Pesanan Selesai</span>
+               <?php if ($current_status == 'selesai'): ?>
+                  <span class="badge" style="background:#605ca8; color:#fff; font-size:9px;">AKTIF</span>
+               <?php endif; ?>
+            </div>
             <div class="kpi-value"><?= $stats['pesanan_terkirim'] ?? 0; ?> <small style="font-size:14px;">Order</small></div>
             <div class="kpi-sub"><i class="fa fa-check-circle"></i> Delivered / Selesai</div>
             <i class="fa fa-check-square-o kpi-icon text-purple"></i>
          </div>
       </div>
    </div>
+
+   <!-- Active Filter Indicator Banner -->
+   <?php if (!empty($current_status)): 
+      $filter_titles = [
+         'aktif'     => ['title' => 'Pesanan Aktif (Draft / Baru Masuk)', 'color' => '#f59e0b', 'icon' => 'fa-shopping-cart'],
+         'proses'    => ['title' => 'Proses Gudang & Kirim (Packing / Dalam Pengiriman)', 'color' => '#00a65a', 'icon' => 'fa-truck'],
+         'selesai'   => ['title' => 'Pesanan Selesai (Delivered / Selesai)', 'color' => '#605ca8', 'icon' => 'fa-check-circle'],
+         'lunas'     => ['title' => 'Pesanan Terbayar (Lunas)', 'color' => '#00a65a', 'icon' => 'fa-money'],
+         'tempo'     => ['title' => 'Pesanan Belum Lunas (Piutang Tempo)', 'color' => '#dd4b39', 'icon' => 'fa-clock-o'],
+         'draft'     => ['title' => 'Status: Draft', 'color' => '#f39c12', 'icon' => 'fa-file-text-o'],
+         'confirmed' => ['title' => 'Status: Terkonfirmasi', 'color' => '#00c0ef', 'icon' => 'fa-check'],
+         'packing'   => ['title' => 'Status: Sedang Dikemas (Packing)', 'color' => '#3c8dbc', 'icon' => 'fa-archive'],
+         'shipped'   => ['title' => 'Status: Dalam Pengiriman (Shipped)', 'color' => '#00a65a', 'icon' => 'fa-truck'],
+         'delivered' => ['title' => 'Status: Delivered (Selesai)', 'color' => '#605ca8', 'icon' => 'fa-check-square-o'],
+         'cancelled' => ['title' => 'Status: Dibatalkan', 'color' => '#dd4b39', 'icon' => 'fa-times-circle'],
+      ];
+      $f_info = $filter_titles[$current_status] ?? ['title' => 'Status: ' . strtoupper($current_status), 'color' => '#3c8dbc', 'icon' => 'fa-filter'];
+   ?>
+   <div style="background:#ffffff; border:1px solid #e2e8f0; border-left:4px solid <?= $f_info['color']; ?>; border-radius:8px; padding:12px 18px; margin-bottom:18px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+      <div style="display:flex; align-items:center; gap:12px;">
+         <span style="display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:50%; background:<?= $f_info['color']; ?>18; color:<?= $f_info['color']; ?>; font-size:15px;">
+            <i class="fa <?= $f_info['icon']; ?>"></i>
+         </span>
+         <div>
+            <div style="font-size:11px; text-transform:uppercase; color:#64748b; font-weight:700;">Menampilkan Filter Kartu:</div>
+            <div style="font-size:14px; font-weight:700; color:#1e293b;">
+               <?= $f_info['title']; ?> 
+               <span class="badge" style="background:<?= $f_info['color']; ?>; font-size:11px; margin-left:6px;"><?= number_format($so_counts); ?> Order Ditemukan</span>
+            </div>
+         </div>
+      </div>
+      <div>
+         <a href="<?= site_url('administrator/sales_order'); ?>" class="btn btn-default btn-sm btn-flat" style="border-radius:5px; font-weight:600; color:#475569;">
+            <i class="fa fa-times text-danger"></i> Reset / Tampilkan Semua Pesanan
+         </a>
+      </div>
+   </div>
+   <?php endif; ?>
 
    <div class="row">
       <div class="col-md-12">
@@ -127,9 +285,12 @@ $status_display = [
                      </a>
                   <?php endif; ?>
                   <?php if (is_allowed('sales_order_add', false)): ?>
-                     <a href="<?= site_url('administrator/sales_order/add'); ?>" class="btn btn-success btn-sm btn-flat" style="border-radius:4px; font-weight:600;">
-                        <i class="fa fa-plus"></i> Buat Sales Order Baru
-                     </a>
+                      <a href="<?= site_url('administrator/sales_order/cepat'); ?>" class="btn btn-success btn-sm btn-flat" style="margin-right:5px; border-radius:4px; font-weight:700; background:#059669; border-color:#047857; box-shadow:0 2px 6px rgba(5,150,105,0.3);">
+                         <i class="fa fa-bolt"></i> ⚡ Sales Order Cepat (POS)
+                      </a>
+                      <a href="<?= site_url('administrator/sales_order/add'); ?>" class="btn btn-primary btn-sm btn-flat" style="border-radius:4px; font-weight:600; background:#2563eb; border-color:#1d4ed8;">
+                         <i class="fa fa-file-text-o"></i> Buat SO Manual
+                      </a>
                   <?php endif; ?>
                </div>
             </div>
@@ -148,7 +309,7 @@ $status_display = [
                               <?php endforeach; ?>
                            </select>
                         </div>
-                        <div class="col-md-3 col-sm-6">
+                        <div class="col-md-2 col-sm-6">
                            <label class="text-muted" style="font-size:12px;">Gudang Asal:</label>
                            <select class="form-control chosen" name="gudang_id">
                               <option value="">-- Semua Gudang --</option>
@@ -157,12 +318,38 @@ $status_display = [
                               <?php endforeach; ?>
                            </select>
                         </div>
-                        <div class="col-md-4 col-sm-8">
-                           <label class="text-muted" style="font-size:12px;">Cari No SO / Nama:</label>
-                           <input type="text" class="form-control" name="q" placeholder="Ketik No. SO atau Pelanggan..." value="<?= _ent($this->input->get('q')); ?>">
+                        <div class="col-md-2 col-sm-6">
+                           <label class="text-muted" style="font-size:12px;">Filter Status:</label>
+                           <select class="form-control" name="status" style="border-radius:4px;">
+                              <option value="">-- Semua Status --</option>
+                              <option value="aktif" <?= $current_status == 'aktif' ? 'selected' : ''; ?>>🟡 Pesanan Aktif (Draft / Baru Masuk)</option>
+                              <option value="proses" <?= $current_status == 'proses' ? 'selected' : ''; ?>>📦 Proses Gudang &amp; Kirim (Packing / Shipped)</option>
+                              <option value="selesai" <?= $current_status == 'selesai' ? 'selected' : ''; ?>>🟢 Pesanan Selesai (Delivered)</option>
+                              <option value="lunas" <?= $current_status == 'lunas' ? 'selected' : ''; ?>>💵 Pembayaran Lunas (Paid)</option>
+                              <option value="tempo" <?= $current_status == 'tempo' ? 'selected' : ''; ?>>⏰ Pembayaran Tempo (Unpaid)</option>
+                              <option value="draft" <?= $current_status == 'draft' ? 'selected' : ''; ?>>Draft</option>
+                              <option value="confirmed" <?= $current_status == 'confirmed' ? 'selected' : ''; ?>>Terkonfirmasi</option>
+                              <option value="packing" <?= $current_status == 'packing' ? 'selected' : ''; ?>>Sedang Dikemas (Packing)</option>
+                              <option value="shipped" <?= $current_status == 'shipped' ? 'selected' : ''; ?>>Dalam Pengiriman (Shipped)</option>
+                              <option value="delivered" <?= $current_status == 'delivered' ? 'selected' : ''; ?>>Selesai (Delivered)</option>
+                              <option value="cancelled" <?= $current_status == 'cancelled' ? 'selected' : ''; ?>>Dibatalkan</option>
+                           </select>
                         </div>
-                        <div class="col-md-2 col-sm-4" style="padding-top: 23px;">
-                           <button type="submit" class="btn btn-primary btn-flat btn-block" style="border-radius:4px;"><i class="fa fa-filter"></i> Filter Data</button>
+                        <div class="col-md-2 col-sm-6">
+                           <label class="text-muted" style="font-size:12px;">Saluran / Channel:</label>
+                           <select class="form-control" name="source" style="border-radius:4px;">
+                              <option value="">-- Semua Saluran --</option>
+                              <option value="pos" <?= $this->input->get('source') == 'pos' ? 'selected' : ''; ?>>⚡ POS Kasir (Cepat)</option>
+                              <option value="manual" <?= $this->input->get('source') == 'manual' ? 'selected' : ''; ?>>🏢 Regular (B2B Offline)</option>
+                              <option value="excel_import" <?= $this->input->get('source') == 'excel_import' ? 'selected' : ''; ?>>🛍️ Marketplace (Shopee/Online)</option>
+                           </select>
+                        </div>
+                        <div class="col-md-2 col-sm-6">
+                           <label class="text-muted" style="font-size:12px;">Cari No SO / Nama:</label>
+                           <input type="text" class="form-control" name="q" placeholder="Ketik No. SO / Nama..." value="<?= _ent($this->input->get('q')); ?>">
+                        </div>
+                        <div class="col-md-1 col-sm-6" style="padding-top: 23px;">
+                           <button type="submit" class="btn btn-primary btn-flat btn-block" style="border-radius:4px;" title="Cari Data"><i class="fa fa-search"></i></button>
                         </div>
                      </div>
                   </form>
@@ -173,7 +360,7 @@ $status_display = [
                      <thead>
                         <tr style="background:#f8fafc; font-size:12px; color:#555;">
                            <th width="40" class="text-center">No</th>
-                           <th width="150">No. Sales Order</th>
+                           <th width="170">No. Sales Order</th>
                            <th>Tanggal SO</th>
                            <th>Pelanggan & Tier</th>
                            <th>Gudang Asal</th>
@@ -188,7 +375,23 @@ $status_display = [
                            <?php $no = $this->uri->segment(4) + 1; foreach ($sos as $so): ?>
                            <tr>
                               <td class="text-center"><?= $no++; ?></td>
-                              <td><strong class="text-primary"><a href="<?= site_url('administrator/sales_order/view/' . $so->id); ?>"><?= _ent($so->nomor_so); ?></a></strong></td>
+                              <td>
+                                 <strong class="text-primary"><a href="<?= site_url('administrator/sales_order/view/' . $so->id); ?>"><?= _ent($so->nomor_so); ?></a></strong>
+                                 <br>
+                                 <?php if ($so->source == 'pos' || strpos((string)$so->catatan, '[POS CEPAT') !== false): ?>
+                                     <span class="label" style="background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; font-size:9.5px; padding:2px 5px; border-radius:3px;">
+                                        <i class="fa fa-bolt"></i> POS Kasir (Cepat)
+                                     </span>
+                                  <?php elseif ($so->source == 'excel_import' || (!empty($so->no_pesanan) && $so->source != 'manual')): ?>
+                                     <span class="label" style="background:#fff2ee; color:#ee4d2d; border:1px solid #ffccbe; font-size:9.5px; padding:2px 5px; border-radius:3px;">
+                                        <i class="fa fa-shopping-bag"></i> Marketplace (Shopee)
+                                     </span>
+                                  <?php else: ?>
+                                     <span class="label" style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; font-size:9.5px; padding:2px 5px; border-radius:3px;">
+                                        <i class="fa fa-building-o"></i> Penjualan Regular (B2B)
+                                     </span>
+                                  <?php endif; ?>
+                              </td>
                               <td><i class="fa fa-calendar text-muted"></i> <?= date('d/m/Y', strtotime($so->tanggal_so)); ?></td>
                                <td>
                                   <?php
@@ -242,15 +445,16 @@ $status_display = [
                                </td>
                               <td class="text-center">
                                  <?php
-                                    $inv = $this->db->get_where('invoice', ['so_id' => $so->id])->row();
-                                    if ($inv) {
-                                       if ($inv->status == 'paid') {
-                                          echo '<span class="label label-success" style="font-size:11px; padding:4px 8px;">PAID</span>';
-                                       } else {
-                                          echo '<span class="label label-danger" style="font-size:11px; padding:4px 8px;">UNPAID</span>';
-                                       }
+                                    if (!empty($so->waktu_pembayaran)) {
+                                       $channel_tag = ($so->source == 'manual') ? 'Kasir (POS)' : 'Marketplace';
+                                       echo '<span class="label label-success" style="font-size:10.5px; padding:3px 7px; display:inline-block; line-height:1.3;" title="Pembayaran Telah Diterima (' . date('d/m/Y H:i', strtotime($so->waktu_pembayaran)) . ')"><i class="fa fa-check-circle"></i> PAID<br><span style="font-size:8.5px; opacity:0.9; font-weight:normal;">' . $channel_tag . '</span></span>';
                                     } else {
-                                       echo '<span class="label label-default" style="font-size:11px; padding:4px 8px;">UNPAID</span>';
+                                       $inv = $this->db->get_where('invoice', ['so_id' => $so->id])->row();
+                                       if ($inv && $inv->status == 'paid') {
+                                          echo '<span class="label label-success" style="font-size:10.5px; padding:3px 7px; display:inline-block; line-height:1.3;" title="Pembayaran Telah Lunas via Faktur Invoice B2B"><i class="fa fa-check-circle"></i> PAID<br><span style="font-size:8.5px; opacity:0.9; font-weight:normal;">Invoice B2B</span></span>';
+                                       } else {
+                                          echo '<span class="label label-danger" style="font-size:10.5px; padding:3px 7px; display:inline-block; line-height:1.3;" title="Menunggu Pelunasan / Piutang Tempo"><i class="fa fa-clock-o"></i> TEMPO<br><span style="font-size:8.5px; opacity:0.9; font-weight:normal;">Unpaid</span></span>';
+                                       }
                                     }
                                  ?>
                               </td>

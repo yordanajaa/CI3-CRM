@@ -39,9 +39,17 @@ class Crm extends Admin
 		return $this->index($offset);
 	}
 
-	public function customer_detail()
+	public function pelanggan($offset = 0)
+	{
+		return $this->index($offset);
+	}
+
+	public function customer_detail($phone_segment = null)
 	{
 		$phone = $this->input->get('phone');
+		if (empty($phone) && !empty($phone_segment)) {
+			$phone = urldecode($phone_segment);
+		}
 		if (empty($phone)) {
 			set_message('Nomor telepon customer tidak valid.', 'error');
 			redirect('administrator/crm');
@@ -93,6 +101,11 @@ class Crm extends Admin
 	}
 
 	// ===== MODUL B: Journal Follow-Up =====
+
+	public function journal($offset = 0)
+	{
+		return $this->journal_followup($offset);
+	}
 
 	public function journal_followup($offset = 0)
 	{
@@ -284,7 +297,7 @@ class Crm extends Admin
 
 		$orig_name = $_FILES['file']['name'];
 		$file_ext  = strtolower(pathinfo($orig_name, PATHINFO_EXTENSION));
-		$allowed   = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'zip', 'rar', 'mp3', 'ogg', 'wav', 'm4a', 'aac', 'opus', 'webm', '3gp', 'amr'];
+		$allowed   = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'zip', 'rar', 'mp3', 'ogg', 'wav', 'm4a', 'aac', 'opus', 'webm', '3gp', 'amr', 'txt', 'csv'];
 
 		if (!in_array($file_ext, $allowed)) {
 			echo json_encode(['success' => false, 'message' => 'Format file (.' . $file_ext . ') tidak didukung. Harap pilih gambar, PDF, dokumen Office, ZIP, atau audio.']);
@@ -748,6 +761,11 @@ class Crm extends Admin
 
 	// ===== MODUL OTOMASI CRM (CLI & WEB) =====
 
+	public function automation($offset = 0)
+	{
+		return $this->automations($offset);
+	}
+
 	public function automations($offset = 0)
 	{
 		$this->data['logs'] = $this->model_crm->get_automation_logs(50, $offset);
@@ -1076,31 +1094,80 @@ class Crm extends Admin
 		}
 
 		// Only process incoming messages (not status updates)
-		if ($json['event'] !== 'message') {
+		if ($json['event'] !== 'message' && $json['event'] !== 'message.any') {
 			echo json_encode(['success' => true, 'message' => 'Event skipped: ' . $json['event']]);
 			return;
 		}
 
 		$payload = $json['payload'] ?? [];
-		$from    = trim($payload['from'] ?? '');
-		$body    = trim($payload['body'] ?? '');
-		$name    = trim($payload['notifyName'] ?? ($payload['_data']['notifyName'] ?? ''));
 
-		// Skip group messages
-		if (strpos($from, '@g.us') !== false) {
-			echo json_encode(['success' => true, 'message' => 'group message skipped']);
+		// Skip outgoing message echo
+		$from_me = $payload['fromMe'] ?? false;
+		if ($from_me === true || $from_me === 'true' || $from_me === 1) {
+			echo json_encode(['success' => true, 'message' => 'Outgoing message echo skipped', 'skipped' => true]);
 			return;
 		}
 
-		// Remove @c.us suffix
-		$from = str_replace('@c.us', '', $from);
+		$from    = trim($payload['from'] ?? '');
+		$body    = trim($payload['body'] ?? '');
+		$name    = trim($payload['pushName'] ?? ($payload['notifyName'] ?? ($payload['_data']['notifyName'] ?? '')));
+		$session = trim($json['session'] ?? 'default');
+
+		// Ignore channels, broadcasts, newsletter, and excluded bot groups
+		if (empty($from) 
+			|| strpos($from, '@newsletter') !== false 
+			|| strpos($from, '@broadcast') !== false 
+			|| $from === '0@c.us'
+			|| strpos($from, '120363413453996264') !== false
+			|| strpos($from, '120363423301242522') !== false
+			|| stripos($name, 'asikn') !== false) {
+			echo json_encode(['success' => true, 'message' => 'Broadcast/Newsletter/Status skipped', 'skipped' => true]);
+			return;
+		}
+
+		// Handle media in incoming message (photos, documents, videos, audio, etc)
+		if (!empty($payload['hasMedia'])) {
+			$media_info = $this->model_crm->save_inbound_waha_media($payload, $session);
+			if ($media_info) {
+				$m_label = $media_info['label'];
+				$m_url   = $media_info['url'];
+				$caption = !empty($body) ? trim($body) : '';
+
+				if (!empty($m_url)) {
+					if (empty($caption)) {
+						$body = $m_label . ': ' . $m_url;
+					} else {
+						$body = $caption . "\n\n" . $m_label . ': ' . $m_url;
+					}
+				} else {
+					$body = $m_label . (!empty($caption) ? ' ' . $caption : '');
+				}
+			}
+		}
+
+		$is_group = (strpos($from, '@g.us') !== false);
+		if ($is_group) {
+			// Prepend sender name for group chat
+			if (!empty($name) && strpos($body, "*{$name}*:") === false) {
+				$body = "*{$name}*: " . $body;
+			}
+		} else {
+			// Resolve WhatsApp LID (Linked Identity) to canonical phone number
+			$resolved = $this->model_crm->resolve_waha_sender_phone($from, $payload, $session);
+			$from = $resolved['phone'];
+			if (empty($name) && !empty($resolved['name'])) {
+				$name = $resolved['name'];
+			}
+			// Remove any remaining suffixes
+			$from = preg_replace('/@(c\.us|lid|s\.whatsapp\.net)$/', '', $from);
+		}
 
 		if (empty($from) || empty($body)) {
 			echo json_encode(['success' => false, 'message' => 'from or body is empty']);
 			return;
 		}
 
-		$count = $this->model_crm->log_incoming_reply($from, $body, $name);
+		$count = $this->model_crm->log_incoming_reply($from, $body, $name, $raw);
 
 		echo json_encode([
 			'success' => true,
@@ -1109,7 +1176,352 @@ class Crm extends Admin
 		]);
 	}
 
+	/**
+	 * Get live WAHA status and session state
+	 */
+	public function waha_status_ajax()
+	{
+		header('Content-Type: application/json');
+		$config = $this->model_crm->get_wa_gateway_config();
+		$base_url = rtrim($config->api_url ?: 'http://localhost:3000', '/');
+		$api_key = $config->api_key ?: '';
+
+		$ch = curl_init($base_url . '/api/sessions');
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_TIMEOUT, 3);
+		if (!empty($api_key)) {
+			curl_setopt($ch, CURLOPT_HTTPHEADER, ['x-api-key: ' . $api_key]);
+		}
+		$res = curl_exec($ch);
+		$err = curl_error($ch);
+		curl_close($ch);
+
+		if ($err || empty($res)) {
+			echo json_encode(['success' => false, 'status' => 'OFFLINE', 'message' => 'WhatsApp belum aktif di ' . $base_url]);
+			return;
+		}
+
+		$sessions = json_decode($res, true);
+		$default_session = null;
+		if (is_array($sessions)) {
+			foreach ($sessions as $s) {
+				if (($s['name'] ?? '') === 'default') {
+					$default_session = $s;
+					break;
+				}
+			}
+		}
+
+		$status = $default_session['status'] ?? 'STOPPED';
+
+		echo json_encode([
+			'success' => true,
+			'status' => $status,
+			'session' => $default_session,
+			'qr_url' => base_url('administrator/crm/waha_qr_image?t=' . time())
+		]);
+	}
+
+	/**
+	 * Proxy WAHA live QR code image directly to the browser
+	 */
+	public function waha_qr_image()
+	{
+		$config = $this->model_crm->get_wa_gateway_config();
+		$base_url = rtrim($config->api_url ?: 'http://localhost:3000', '/');
+		$api_key = $config->api_key ?: '';
+
+		$ch = curl_init($base_url . '/api/default/auth/qr');
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+		if (!empty($api_key)) {
+			curl_setopt($ch, CURLOPT_HTTPHEADER, ['x-api-key: ' . $api_key]);
+		}
+		$img = curl_exec($ch);
+		$content_type = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+		$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		curl_close($ch);
+
+		if ($http_code === 200 && strpos($content_type, 'image') !== false) {
+			header('Content-Type: image/png');
+			echo $img;
+		} else {
+			header('Content-Type: image/png');
+			$fallback = FCPATH . 'uploads/waha_qr.png';
+			if (file_exists($fallback)) {
+				readfile($fallback);
+			}
+		}
+	}
+
+	/**
+	 * Restart WAHA session (generate fresh QR code)
+	 */
+	public function waha_restart_session_ajax()
+	{
+		header('Content-Type: application/json');
+		$config = $this->model_crm->get_wa_gateway_config();
+		$base_url = rtrim($config->api_url ?: 'http://localhost:3000', '/');
+		$api_key = $config->api_key ?: '';
+
+		$ch = curl_init($base_url . '/api/sessions/default/restart');
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_POST, true);
+		curl_setopt($ch, CURLOPT_TIMEOUT, 6);
+		if (!empty($api_key)) {
+			curl_setopt($ch, CURLOPT_HTTPHEADER, ['x-api-key: ' . $api_key, 'Content-Type: application/json']);
+		}
+		$res = curl_exec($ch);
+		$err = curl_error($ch);
+		curl_close($ch);
+
+		if ($err) {
+			echo json_encode(['success' => false, 'message' => 'cURL Error: ' . $err]);
+			return;
+		}
+
+		echo json_encode(['success' => true, 'message' => 'Session default berhasil di-restart, memuat QR code baru...', 'data' => json_decode($res, true)]);
+	}
+
+	/**
+	 * Sync chats and message history from WAHA /api/default/chats into CRM
+	 */
+	public function sync_waha_chats_ajax()
+	{
+		header('Content-Type: application/json');
+		$config = $this->model_crm->get_wa_gateway_config();
+		$base_url = rtrim($config->api_url ?: 'http://localhost:3000', '/');
+		$api_key = $config->api_key ?: '';
+
+		// 1. Fetch chats from WAHA
+		$ch = curl_init($base_url . '/api/default/chats');
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+		if (!empty($api_key)) {
+			curl_setopt($ch, CURLOPT_HTTPHEADER, ['x-api-key: ' . $api_key]);
+		}
+		$res = curl_exec($ch);
+		$err = curl_error($ch);
+		$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		curl_close($ch);
+
+		if ($err || $http_code >= 400 || empty($res)) {
+			$json_err = json_decode($res, true);
+			$msg = $json_err['error'] ?? ($json_err['message'] ?? 'Device WAHA belum terhubung (silakan scan QR terlebih dahulu)');
+			echo json_encode(['success' => false, 'message' => $msg]);
+			return;
+		}
+
+		$chats = json_decode($res, true);
+		if (!is_array($chats)) {
+			echo json_encode(['success' => false, 'message' => 'Format balasan chats tidak valid']);
+			return;
+		}
+
+		// 2. Fetch contacts map for rich names
+		$contacts_map = [];
+		$ch_c = curl_init($base_url . '/api/contacts/all?session=default');
+		curl_setopt($ch_c, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch_c, CURLOPT_TIMEOUT, 8);
+		if (!empty($api_key)) {
+			curl_setopt($ch_c, CURLOPT_HTTPHEADER, ['x-api-key: ' . $api_key]);
+		}
+		$res_c = curl_exec($ch_c);
+		curl_close($ch_c);
+		$contacts_arr = json_decode($res_c, true);
+		if (is_array($contacts_arr)) {
+			foreach ($contacts_arr as $ct) {
+				$c_num = $ct['number'] ?? '';
+				$c_push = trim($ct['pushname'] ?? ($ct['name'] ?? ''));
+				if (!empty($c_num) && !empty($c_push)) {
+					$contacts_map[$c_num] = $c_push;
+				}
+			}
+		}
+
+		$synced_labels = 0;
+		$synced_messages = 0;
+		$now = date('Y-m-d H:i:s');
+
+		$cat = $this->db->query("SELECT id FROM crm_followup_categories WHERE is_active = 1 ORDER BY urutan ASC LIMIT 1")->row();
+		$default_cat_id = $cat ? $cat->id : 1;
+
+		foreach ($chats as $c) {
+			$raw_id = $c['id'] ?? '';
+			$chat_serialized = is_array($raw_id) ? ($raw_id['_serialized'] ?? '') : (string)$raw_id;
+
+			$name = trim($c['name'] ?? '');
+
+			// Skip broadcast channels, newsletters, system contacts, and excluded bot groups
+			if (empty($chat_serialized) 
+				|| strpos($chat_serialized, '@newsletter') !== false 
+				|| strpos($chat_serialized, '@broadcast') !== false 
+				|| $chat_serialized === '0@c.us'
+				|| strpos($chat_serialized, '120363413453996264') !== false
+				|| strpos($chat_serialized, '120363423301242522') !== false
+				|| stripos($name, 'asikn') !== false) {
+				continue;
+			}
+
+			$is_group = !empty($c['isGroup']) || strpos($chat_serialized, '@g.us') !== false;
+			$phone = '';
+
+			// If name is phone number
+			if (preg_match('/\+?[0-9\s\-]{8,}/', $name, $matches)) {
+				$extracted = preg_replace('/[^0-9]/', '', $matches[0]);
+				if (strlen($extracted) >= 9) {
+					$phone = $extracted;
+					if (substr($phone, 0, 1) === '0') $phone = '62' . substr($phone, 1);
+				}
+			}
+
+			// If still no phone, check user part of id
+			if (empty($phone) && is_array($raw_id) && !empty($raw_id['user']) && is_numeric($raw_id['user']) && strlen($raw_id['user']) >= 9 && strlen($raw_id['user']) <= 15) {
+				$phone = $raw_id['user'];
+				if (substr($phone, 0, 1) === '0') $phone = '62' . substr($phone, 1);
+			}
+
+			// If still no phone, check lastMessage
+			if (empty($phone)) {
+				if ($is_group) {
+					$phone = $chat_serialized;
+				} else {
+					$lm_from = is_array($c['lastMessage']['from'] ?? null) ? ($c['lastMessage']['from']['_serialized'] ?? '') : ($c['lastMessage']['from'] ?? '');
+					$lm_to = is_array($c['lastMessage']['to'] ?? null) ? ($c['lastMessage']['to']['_serialized'] ?? '') : ($c['lastMessage']['to'] ?? '');
+					$candidate = (!empty($c['lastMessage']['fromMe'])) ? $lm_to : $lm_from;
+					$clean_c = preg_replace('/[^0-9]/', '', explode('@', $candidate)[0]);
+					if (strlen($clean_c) >= 9 && strlen($clean_c) <= 15) {
+						$phone = $clean_c;
+					} else {
+						$phone = $chat_serialized;
+					}
+				}
+			}
+
+			// Enrich name from contacts_map if available
+			if (!empty($phone) && isset($contacts_map[$phone]) && (empty($name) || preg_match('/^[0-9\+\-\s]+$/', $name))) {
+				$name = $contacts_map[$phone];
+			}
+
+			if (empty($name)) {
+				$name = $is_group ? 'WA Group' : ('Customer ' . substr($phone, -4));
+			}
+
+			$last_time = !empty($c['timestamp']) ? date('Y-m-d H:i:s', $c['timestamp']) : $now;
+
+			// Find existing label (prefer most recent)
+			if ($is_group) {
+				$label = $this->db->query("SELECT id FROM crm_transaction_followup_labels WHERE customer_phone = ? ORDER BY id DESC LIMIT 1", [$phone])->row();
+			} else {
+				$tail = strlen($phone) >= 9 ? substr($phone, -9) : $phone;
+				$label = $this->db->query("SELECT id FROM crm_transaction_followup_labels WHERE customer_phone = ? OR (LENGTH(customer_phone) >= 9 AND RIGHT(customer_phone, 9) = ?) ORDER BY id DESC LIMIT 1", [$phone, $tail])->row();
+			}
+
+			$label_id = null;
+			if ($label) {
+				$label_id = $label->id;
+				$update_data = ['updated_at' => $last_time];
+				if (!empty($name) && $name !== 'Customer') {
+					$update_data['customer_nama'] = $name;
+				}
+				$this->db->where('id', $label_id)->update('crm_transaction_followup_labels', $update_data);
+			} else {
+				$this->db->insert('crm_transaction_followup_labels', [
+					'order_source' => $is_group ? 'WA Group' : 'WhatsApp Live',
+					'order_id' => 0,
+					'order_table' => 'waha_direct',
+					'customer_nama' => $name,
+					'customer_phone' => $phone,
+					'no_pesanan' => $is_group ? 'GROUP' : 'WAHA-LIVE',
+					'tanggal_pengiriman' => date('Y-m-d'),
+					'followup_category_id' => $default_cat_id,
+					'tanggal_label_muncul' => date('Y-m-d'),
+					'status_label' => 'Direspon',
+					'handled_by' => 'system',
+					'created_at' => $last_time,
+					'updated_at' => $last_time,
+				]);
+				$label_id = $this->db->insert_id();
+				$synced_labels++;
+			}
+
+			// 3. Fetch conversation messages
+			if (!empty($chat_serialized)) {
+				$enc_chat_id = urlencode($chat_serialized);
+				$ch_m = curl_init($base_url . "/api/default/chats/{$enc_chat_id}/messages?limit=25");
+				curl_setopt($ch_m, CURLOPT_RETURNTRANSFER, true);
+				curl_setopt($ch_m, CURLOPT_TIMEOUT, 5);
+				if (!empty($api_key)) {
+					curl_setopt($ch_m, CURLOPT_HTTPHEADER, ['x-api-key: ' . $api_key]);
+				}
+				$m_res = curl_exec($ch_m);
+				curl_close($ch_m);
+
+				$messages = json_decode($m_res, true);
+				if (is_array($messages)) {
+					usort($messages, function($a, $b) {
+						return ($a['timestamp'] ?? 0) - ($b['timestamp'] ?? 0);
+					});
+
+					foreach ($messages as $m) {
+						$m_body = trim($m['body'] ?? '');
+						if (empty($m_body) && !empty($m['hasMedia'])) {
+							$m_body = '[Media / Gambar / Lampiran]';
+						} elseif (empty($m_body)) {
+							continue;
+						}
+
+						$m_time = !empty($m['timestamp']) ? date('Y-m-d H:i:s', $m['timestamp']) : $now;
+						$m_dir = !empty($m['fromMe']) ? 'out' : 'in';
+						$sender = $m_dir === 'out' ? 'administrator' : $name;
+
+						$exist_msg = $this->db->query("SELECT id FROM crm_chat_history WHERE label_id = ? AND message = ? AND created_at = ? LIMIT 1", [
+							$label_id, $m_body, $m_time
+						])->row();
+
+						if (!$exist_msg) {
+							$this->db->insert('crm_chat_history', [
+								'label_id' => $label_id,
+								'customer_phone' => $phone,
+								'direction' => $m_dir,
+								'message' => $m_body,
+								'sender_name' => $m_dir === 'in' ? $sender : null,
+								'sender_cs_name' => $m_dir === 'out' ? 'administrator' : null,
+								'is_internal_note' => 0,
+								'status' => 'read',
+								'created_at' => $m_time,
+							]);
+							$synced_messages++;
+						}
+					}
+				}
+			}
+		}
+
+		echo json_encode([
+			'success' => true,
+			'message' => "Berhasil menyinkronkan data WhatsApp! ({$synced_labels} kontak baru, {$synced_messages} pesan tersinkron)",
+			'count' => $synced_labels,
+			'messages_count' => $synced_messages
+		]);
+	}
+
 	// ===== CHAT TIMELINE AJAX =====
+
+	/**
+	 * Get conversation list for sidebar (Supports instant search & full list reload)
+	 */
+	public function get_conversations_ajax()
+	{
+		header('Content-Type: application/json');
+		$search = trim((string)$this->input->get('q'));
+		$conversations = $this->model_crm->get_all_chat_conversations($search);
+		echo json_encode([
+			'success' => true,
+			'conversations' => $conversations,
+			'count' => count($conversations)
+		], JSON_UNESCAPED_UNICODE);
+	}
 
 	/**
 	 * Get unified 2-way chat timeline for a label
@@ -1131,12 +1543,40 @@ class Crm extends Admin
 
 		$timeline = $this->model_crm->get_chat_timeline($label_id);
 
-		// Mark incoming messages for this label as read
+		// Calculate max chat_history ID for accurate client cursor tracking
+		$max_id = 0;
+		if (!empty($timeline)) {
+			foreach ($timeline as $t) {
+				if ((int)$t['id'] > $max_id) $max_id = (int)$t['id'];
+			}
+		}
+
+		// Mark incoming messages for this customer (and related labels) as read
 		if ($this->db->table_exists('crm_chat_history')) {
-			$this->db->where('label_id', (int)$label_id)
+			$rel_ids = $this->model_crm->get_related_label_ids($label);
+			$this->db->where_in('label_id', $rel_ids)
 				->where('direction', 'in')
 				->where('status !=', 'read')
 				->update('crm_chat_history', ['status' => 'read']);
+
+			// Double check absolute max ID in crm_chat_history for related labels
+			$clean_phone = $this->model_crm->normalize_phone_number($label->customer_phone);
+			$phone_tail = strlen($clean_phone) >= 9 ? substr($clean_phone, -9) : $clean_phone;
+			$this->db->select_max('id', 'max_id')->from('crm_chat_history');
+			$this->db->group_start();
+			if (!empty($rel_ids)) {
+				$this->db->where_in('label_id', $rel_ids);
+			}
+			if (strpos($label->customer_phone, '@') !== false) {
+				$this->db->or_where('customer_phone', $label->customer_phone);
+			} elseif (!empty($phone_tail)) {
+				$this->db->or_like('customer_phone', $phone_tail);
+			}
+			$this->db->group_end();
+			$row_max = $this->db->get()->row();
+			if ($row_max && (int)$row_max->max_id > $max_id) {
+				$max_id = (int)$row_max->max_id;
+			}
 		}
 
 		echo json_encode([
@@ -1150,7 +1590,8 @@ class Crm extends Admin
 				'status_label' => $label->status_label,
 			],
 			'timeline' => $timeline,
-			'count' => count($timeline)
+			'count' => count($timeline),
+			'max_id' => $max_id
 		], JSON_UNESCAPED_UNICODE);
 	}
 
@@ -1385,11 +1826,29 @@ class Crm extends Admin
 			return;
 		}
 
+		// Polling endpoint requires a valid last_id cursor. If last_id <= 0, return empty to prevent returning historical chats
+		if ($last_id <= 0) {
+			echo json_encode([
+				'success' => true,
+				'messages' => [],
+				'count' => 0,
+				'label' => [
+					'id' => $label->id,
+					'customer_nama' => $label->customer_nama,
+					'customer_phone' => $label->customer_phone,
+					'no_pesanan' => $label->no_pesanan,
+					'status_label' => $label->status_label,
+				],
+			], JSON_UNESCAPED_UNICODE);
+			return;
+		}
+
 		$messages = $this->model_crm->get_new_messages($label_id, $last_id);
 
-		// Mark incoming messages for this label as read
+		// Mark incoming messages for this customer (and related labels) as read
 		if (!empty($messages) && $this->db->table_exists('crm_chat_history')) {
-			$this->db->where('label_id', (int)$label_id)
+			$rel_ids = $this->model_crm->get_related_label_ids($label);
+			$this->db->where_in('label_id', $rel_ids)
 				->where('direction', 'in')
 				->where('status !=', 'read')
 				->update('crm_chat_history', ['status' => 'read']);

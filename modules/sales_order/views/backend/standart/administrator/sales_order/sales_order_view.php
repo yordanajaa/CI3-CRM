@@ -43,6 +43,42 @@ $display_kurir = !empty($so->opsi_pengiriman) ? $so->opsi_pengiriman : (!empty($
   animation: soFadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .table-responsive { -webkit-overflow-scrolling: touch; }
+
+@media (max-width: 767px) {
+  .content { padding: 8px 6px !important; }
+  .box-header { padding: 12px 14px !important; }
+  .box-header .box-title { font-size: 14px !important; display: block !important; line-height: 1.4 !important; }
+  .box-header .box-tools.pull-right {
+    position: static !important;
+    float: none !important;
+    width: 100% !important;
+    margin-top: 10px !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+  .box-header .box-tools .btn,
+  .box-header .box-tools .btn-group {
+    flex: 1 1 calc(50% - 4px) !important;
+    min-width: 0 !important;
+  }
+  .box-header .box-tools .btn-group .btn {
+    width: 100% !important;
+  }
+  .box-body { padding: 12px 10px !important; }
+  .panel-body { padding: 10px !important; }
+  .table-responsive { border: none !important; margin-bottom: 12px !important; }
+  .table-responsive table { min-width: 600px; }
+  .alert { padding: 10px 12px !important; font-size: 11.5px !important; }
+  .alert h4 { font-size: 13.5px !important; }
+}
+
+@media (max-width: 480px) {
+  .box-header .box-tools .btn,
+  .box-header .box-tools .btn-group {
+    flex: 1 1 100% !important;
+  }
+}
 </style>
 
 <section class="content-header">
@@ -56,30 +92,80 @@ $display_kurir = !empty($so->opsi_pengiriman) ? $so->opsi_pengiriman : (!empty($
 <section class="content">
 <div class="row">
    <div class="col-md-12">
+      <?php 
+      $linked_inv = $this->db->get_where('invoice', ['so_id' => $so->id])->row();
+      ?>
       <div class="box box-primary" style="border-radius:6px; border-top: 3px solid #3c8dbc;">
          <div class="box-header with-border" style="padding: 15px 20px;">
             <h3 class="box-title" style="font-weight:600;"><i class="fa fa-shopping-cart text-primary"></i> Sales Order <?= _ent($so->nomor_so); ?> &nbsp;
-               <?php if(!empty($so->no_pesanan)): ?>
+               <?php if(!empty($so->no_pesanan) && $so->no_pesanan != $so->nomor_so): ?>
                   <span class="label label-primary" style="font-size:11px;"><?= _ent($so->no_pesanan); ?></span>
                <?php endif; ?>
                <span class="label label-<?= $status_color[$so->status]??'default'; ?>" style="font-size:11px; margin-left:4px;"><?= strtoupper($so->status); ?></span>
-               <?php if(!empty($so->source) && $so->source != 'manual'): ?>
+               <?php if(!empty($so->waktu_pembayaran) || ($linked_inv && $linked_inv->status == 'paid')): ?>
+                  <span class="label label-success" style="font-size:11px; margin-left:4px;"><i class="fa fa-check-circle"></i> LUNAS (PAID)</span>
+               <?php endif; ?>
+               <?php if ($so->source == 'pos' || strpos((string)$so->catatan, '[POS CEPAT') !== false): ?>
+                  <span class="label" style="background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; font-size:11px; margin-left:4px;"><i class="fa fa-bolt"></i> POS KASIR</span>
+               <?php elseif(!empty($so->source) && $so->source != 'manual'): ?>
                   <span class="label label-success" style="font-size:11px; margin-left:4px; text-transform:uppercase;"><i class="fa fa-shopping-bag"></i> <?= _ent($so->source); ?></span>
                <?php endif; ?>
             </h3>
-            <div class="box-tools pull-right">
-               <a href="<?= site_url('administrator/sales_order/cetak/' . $so->id); ?>" target="_blank" class="btn btn-info btn-sm btn-flat" style="border-radius:4px;"><i class="fa fa-print"></i> Cetak PDF</a> 
-               <?php if($so->status=='draft'): ?>
-                  <?php is_allowed('sales_order_update', function() use ($so){ ?>
-                     <a href="<?= site_url('administrator/sales_order/konfirmasi/'.$so->id); ?>" class="btn btn-primary btn-sm btn-flat" style="border-radius:4px;"><i class="fa fa-check"></i> Konfirmasi</a>
-                  <?php }); ?>
+            <div class="box-tools pull-right" style="display:flex; gap:6px; align-items:center;">
+               <?php if ($linked_inv): ?>
+                  <a href="<?= site_url('administrator/invoice/view/' . $linked_inv->id); ?>" class="btn btn-info btn-sm btn-flat" style="border-radius:4px; font-weight:600;"><i class="fa fa-file-text-o"></i> Lihat Invoice <?= _ent($linked_inv->nomor_invoice); ?></a>
+               <?php elseif (in_array($so->status, ['confirmed', 'processing', 'packing', 'shipped', 'delivered']) && is_allowed('invoice_add', false)): ?>
+                  <a href="<?= site_url('administrator/invoice/from_so/' . $so->id); ?>" class="btn btn-success btn-sm btn-flat" style="border-radius:4px; font-weight:600;"><i class="fa fa-file-text-o"></i> Buat Invoice</a>
                <?php endif; ?>
-               <?php if(in_array($so->status,['confirmed','processing'])): ?>
-                  <?php is_allowed('invoice_add', function() use ($so){ ?>
-                     <a href="<?= site_url('administrator/invoice/from_so/'.$so->id); ?>" class="btn btn-success btn-sm btn-flat" style="border-radius:4px;"><i class="fa fa-file-text-o"></i> Buat Invoice</a>
-                  <?php }); ?>
+
+               <?php if ($so->status == 'draft' && is_allowed('sales_order_update', false)): ?>
+               <a href="<?= site_url('administrator/sales_order/konfirmasi/' . $so->id); ?>" class="btn btn-success btn-sm btn-flat" style="border-radius:4px; font-weight:700;" onclick="return confirm('Konfirmasi Sales Order ini sekarang? Stok barang akan diverifikasi.');">
+                  <i class="fa fa-check-circle"></i> Konfirmasi Pesanan Sekarang
+               </a>
                <?php endif; ?>
-               <a href="javascript:history.back()" class="btn btn-default btn-sm btn-flat" style="border-radius:4px;"><i class="fa fa-arrow-left"></i> Kembali</a>
+
+               <?php if (is_allowed('sales_order_update', false)): ?>
+               <div class="btn-group">
+                  <button type="button" class="btn btn-sm btn-default dropdown-toggle btn-flat" data-toggle="dropdown" style="border-radius:4px; font-weight:600;">
+                     <i class="fa fa-refresh text-primary"></i> Ubah Status <span class="caret"></span>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-right" style="font-size:12px; text-align:left; min-width:220px; box-shadow:0 4px 15px rgba(0,0,0,0.15);">
+                     <li class="dropdown-header" style="font-weight:700; color:#475569;">Alur Status Pesanan:</li>
+                     <li><a href="<?= site_url('administrator/sales_order/update_status/'.$so->id.'?status=draft'); ?>">🟡 1. DRAFT (Pesanan Baru)</a></li>
+                     <li><a href="<?= site_url('administrator/sales_order/update_status/'.$so->id.'?status=confirmed'); ?>">🔵 2. TERKONFIRMASI (Stok Ready)</a></li>
+                     <li><a href="<?= site_url('administrator/sales_order/update_status/'.$so->id.'?status=packing'); ?>">📦 3. SEDANG DIKEMAS (Packing)</a></li>
+                     <li><a href="<?= site_url('administrator/sales_order/update_status/'.$so->id.'?status=shipped'); ?>">🚚 4. DALAM PENGIRIMAN (Shipped)</a></li>
+                     <li><a href="<?= site_url('administrator/sales_order/update_status/'.$so->id.'?status=delivered'); ?>">🟢 5. PESANAN SELESAI (Delivered)</a></li>
+                     <li class="divider"></li>
+                     <li><a href="<?= site_url('administrator/sales_order/update_status/'.$so->id.'?status=cancelled'); ?>" class="text-danger"><i class="fa fa-times-circle"></i> Dibatalkan</a></li>
+                  </ul>
+               </div>
+               <?php endif; ?>
+
+               <div class="btn-group">
+                   <button type="button" class="btn btn-default btn-sm btn-flat dropdown-toggle" data-toggle="dropdown" style="border-radius:4px; font-weight:600;">
+                      <i class="fa fa-print text-primary"></i> Cetak Dokumen <span class="caret"></span>
+                   </button>
+                   <ul class="dropdown-menu dropdown-menu-right" style="font-size:12px; min-width:260px; box-shadow:0 4px 15px rgba(0,0,0,0.15);">
+                      <li>
+                         <a href="<?= site_url('administrator/sales_order/cetak_struk/' . $so->id . '?template=thermal'); ?>" target="_blank">
+                            <i class="fa fa-ticket text-success"></i> <b>1. Struk Kasir Thermal (58/80mm)</b>
+                         </a>
+                      </li>
+                      <li>
+                         <a href="<?= site_url('administrator/sales_order/cetak_struk/' . $so->id . '?template=lebar'); ?>" target="_blank">
+                            <i class="fa fa-building-o text-primary"></i> <b>2. Faktur Lebar (Format Perusahaan)</b>
+                         </a>
+                      </li>
+                      <li class="divider"></li>
+                      <li>
+                         <a href="<?= site_url('administrator/sales_order/cetak/' . $so->id); ?>" target="_blank">
+                            <i class="fa fa-file-pdf-o text-danger"></i> 3. Unduh Dokumen PDF (A4)
+                         </a>
+                      </li>
+                   </ul>
+                </div> 
+               <a href="<?= site_url('administrator/sales_order'); ?>" class="btn btn-default btn-sm btn-flat" style="border-radius:4px;"><i class="fa fa-arrow-left"></i> Kembali</a>
             </div>
          </div>
 
@@ -88,19 +174,43 @@ $display_kurir = !empty($so->opsi_pengiriman) ? $so->opsi_pengiriman : (!empty($
             <div class="row" style="margin-bottom: 20px;">
                <div class="col-md-6">
                   <div class="panel panel-default" style="border-radius: 6px; box-shadow: none; border:1px solid #e9ecef;">
-                     <div class="panel-heading" style="background:#f8fafc; font-weight:700; color:#334155;"><i class="fa fa-user text-primary"></i> Informasi Pelanggan &amp; Order</div>
+                     <div class="panel-heading" style="background:#f8fafc; font-weight:700; color:#334155; display:flex; justify-content:space-between; align-items:center;">
+                        <span><i class="fa fa-user text-primary"></i> Informasi Pelanggan &amp; Order</span>
+                        <?php if (!empty($display_phone)): ?>
+                           <a href="<?= site_url('administrator/crm/customer_summary?phone=' . urlencode(preg_replace('/[^0-9]/', '', $display_phone))); ?>" class="btn btn-xs btn-default" style="border-radius:4px; font-weight:600;"><i class="fa fa-line-chart text-purple"></i> Analisis RFM / CRM</a>
+                        <?php endif; ?>
+                     </div>
                      <div class="panel-body" style="padding: 15px;">
                         <table class="table table-condensed table-borderless" style="margin-bottom:0; font-size:13px;">
                            <tr>
                               <th style="width:35%; color:#64748b;">Pelanggan / Penerima:</th>
                               <td>
-                                 <strong style="font-size:14px; color:#1e293b;"><?= _ent($display_pelanggan); ?></strong>
+                                 <?php if (!empty($so->pelanggan_id)): ?>
+                                    <a href="<?= site_url('administrator/pelanggan/view/' . $so->pelanggan_id); ?>" title="Buka Detail Pelanggan" style="font-weight:700; font-size:14px; color:#1d4ed8;">
+                                       <?= _ent($display_pelanggan); ?> <i class="fa fa-external-link" style="font-size:11px;"></i>
+                                    </a>
+                                 <?php else: ?>
+                                    <strong style="font-size:14px; color:#1e293b;"><?= _ent($display_pelanggan); ?></strong>
+                                 <?php endif; ?>
                                  <small class="text-muted"><?= _ent($display_buyer); ?></small>
                                  <span class="label label-info" style="font-size:9px; margin-left:4px;"><?= strtoupper(_ent($so->tipe_pelanggan ?? 'ONLINE')); ?></span>
                               </td>
                            </tr>
                            <tr><th style="color:#64748b;">Alamat Pengiriman:</th><td><strong style="color:#334155;"><?= _ent($display_alamat); ?></strong></td></tr>
-                           <tr><th style="color:#64748b;">No. Telepon:</th><td><strong style="color:#0284c7;"><?= _ent($display_phone); ?></strong></td></tr>
+                           <tr>
+                              <th style="color:#64748b;">No. Telepon:</th>
+                              <td>
+                                 <?php $phone_digits = preg_replace('/[^0-9]/', '', (string)$display_phone); ?>
+                                 <?php if (!empty($phone_digits)): ?>
+                                    <strong style="color:#0284c7;"><?= _ent($display_phone); ?></strong>
+                                    <a href="https://wa.me/<?= (substr($phone_digits, 0, 1) === '0') ? ('62' . substr($phone_digits, 1)) : $phone_digits; ?>" target="_blank" class="btn btn-xs btn-success" style="margin-left:6px; border-radius:3px; padding:1px 6px;" title="Hubungi via WhatsApp">
+                                       <i class="fa fa-whatsapp"></i> Chat WA
+                                    </a>
+                                 <?php else: ?>
+                                    <span class="text-muted">-</span>
+                                 <?php endif; ?>
+                              </td>
+                           </tr>
                            <tr><th style="color:#64748b;">Gudang Sumber:</th><td><i class="fa fa-bank text-muted"></i> <?= _ent($so->nama_gudang ?? 'Gudang Utama Jakarta'); ?></td></tr>
                            <tr><th style="color:#64748b;">Dibuat Oleh:</th><td><i class="fa fa-user-circle text-muted"></i> <?= _ent($so->created_by ?: 'admin'); ?></td></tr>
                         </table>
@@ -123,6 +233,43 @@ $display_kurir = !empty($so->opsi_pengiriman) ? $so->opsi_pengiriman : (!empty($
                   </div>
                </div>
             </div>
+
+            <!-- Payment Status & BKM Info -->
+            <?php
+            $bkm_payment = $this->db->select('pp.*, pu.nomor_piutang')
+               ->from('pembayaran_piutang pp')
+               ->join('piutang_usaha pu', 'pu.id = pp.piutang_id', 'LEFT')
+               ->where('pu.so_id', $so->id)
+               ->order_by('pp.id', 'DESC')
+               ->limit(1)
+               ->get()->row();
+            ?>
+            <?php if ($bkm_payment || !empty($so->waktu_pembayaran)): ?>
+            <div class="alert alert-success" style="background:#ecfdf5 !important; border:1px solid #a7f3d0 !important; color:#065f46 !important; border-radius:8px; margin-bottom:20px; padding:12px 18px;">
+               <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                  <div>
+                     <h4 style="margin:0 0 4px 0; font-size:15px; font-weight:700;"><i class="fa fa-check-circle text-success"></i> Transaksi Penjualan Telah Selesai &amp; LUNAS</h4>
+                     <div style="font-size:12px; color:#047857;">
+                        <?php if ($bkm_payment): ?>
+                           No. Kas Masuk (BKM): <strong><?= _ent($bkm_payment->nomor_bkm); ?></strong> &bull; 
+                           Metode: <strong><?= strtoupper(_ent($bkm_payment->metode_pembayaran)); ?></strong> (<?= _ent($bkm_payment->akun_kas_bank); ?>) &bull; 
+                           Nominal: <strong>Rp <?= number_format($bkm_payment->nominal, 0, ',', '.'); ?></strong>
+                           <?php if (!empty($bkm_payment->nomor_referensi)): ?> &bull; Ref: <strong><?= _ent($bkm_payment->nomor_referensi); ?></strong><?php endif; ?>
+                           <?php if (!empty($bkm_payment->catatan)): ?><br><small style="color:#059669; font-style:italic;"><i class="fa fa-info-circle"></i> <?= _ent($bkm_payment->catatan); ?></small><?php endif; ?>
+                        <?php else: ?>
+                           Waktu Pembayaran: <strong><?= date('d/m/Y H:i', strtotime($so->waktu_pembayaran)); ?></strong> &bull; Total: <strong>Rp <?= number_format($so->total, 0, ',', '.'); ?></strong>
+                        <?php endif; ?>
+                     </div>
+                  </div>
+                  <div>
+                     <?php if ($linked_inv): ?>
+                        <a href="<?= site_url('administrator/invoice/view/' . $linked_inv->id); ?>" class="btn btn-xs btn-info" style="border-radius:4px; font-weight:600;"><i class="fa fa-file-text-o"></i> Lihat Faktur Lunas</a>
+                     <?php endif; ?>
+                     <a href="<?= site_url('administrator/piutang_usaha'); ?>" class="btn btn-xs btn-success" style="border-radius:4px; font-weight:600;"><i class="fa fa-book"></i> Rekap Piutang &amp; Kas</a>
+                  </div>
+               </div>
+            </div>
+            <?php endif; ?>
 
             <!-- Item Table -->
             <h4 style="border-bottom:2px solid #3c8dbc; padding-bottom:8px; margin-bottom:15px; font-weight:700; color:#1e293b;"><i class="fa fa-cubes text-primary"></i> Item Pesanan Barang</h4>
@@ -161,7 +308,7 @@ $display_kurir = !empty($so->opsi_pengiriman) ? $so->opsi_pengiriman : (!empty($
                      <tr>
                         <td class="text-center"><?= $i+1; ?></td>
                         <td>
-                           <strong style="color:#0f172a; font-size:13px;"><?= _ent($item->nama_produk); ?></strong><br>
+                           <a href="<?= site_url('administrator/stok/kartu/' . $item->produk_id); ?>" title="Buka Kartu Stok Produk"><strong style="color:#0284c7; font-size:13px;"><?= _ent($item->nama_produk); ?> <i class="fa fa-external-link" style="font-size:10px;"></i></strong></a><br>
                            <small class="text-muted">Kode / SKU: <?= _ent($item->kode_produk); ?></small>
                            <?php if(!empty($item->kode_rak)): ?>
                               <br><span class="label bg-purple" style="font-size:10px;"><i class="fa fa-map-marker"></i> Rak: <?= _ent($item->kode_rak); ?> - Baris <?= _ent($item->baris); ?></span>

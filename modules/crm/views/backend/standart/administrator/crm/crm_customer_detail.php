@@ -192,6 +192,8 @@
   .box-header { padding: 10px 12px !important; }
   .box-header .box-title { font-size: 13px; }
 
+  .table-responsive { border: none !important; margin-bottom: 0; }
+  .table-crm { min-width: 700px; }
   .table-crm th { font-size: 10px; padding: 8px 4px !important; white-space: nowrap; }
   .table-crm td { font-size: 11px; padding: 8px 4px !important; }
   .badge-source { font-size: 9.5px; padding: 2px 7px; }

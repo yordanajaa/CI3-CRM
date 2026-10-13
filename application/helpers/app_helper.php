@@ -318,7 +318,8 @@ if(!function_exists('display_menu_admin')) {
 					}
 				}
 
-		   		$link = filter_var($row->link, FILTER_VALIDATE_URL) ? $row->link : base_url($row->link);
+		   		$parsed_link = !empty($row->link) ? parse_nav_url($row->link) : '#';
+		   		$link = filter_var($parsed_link, FILTER_VALIDATE_URL) ? $parsed_link : base_url($parsed_link);
 		   		if ($row->type == 'label') {
 		   			if ($ci->aauth->is_allowed($perms)) {
 		        		$ret .= '<li class="header treeview">'._ent($row->label).'</li>';

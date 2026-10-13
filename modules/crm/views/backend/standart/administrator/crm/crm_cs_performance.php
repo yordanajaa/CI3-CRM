@@ -169,34 +169,46 @@
 .trophy-silver { color: #94a3b8; font-size: 16px; }
 .trophy-bronze { color: #d97706; font-size: 16px; }
 
+@media (max-width: 991px) {
+  .crm-header-nav { padding: 16px 16px 12px 16px; margin-bottom: 12px; }
+  .crm-header-nav .header-top-flex { flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 12px; }
+  .crm-header-nav .action-tools { width: 100%; justify-content: flex-start; gap: 6px; }
+  .crm-header-nav .action-tools .btn { font-size: 11px; padding: 6px 10px; flex: 1 1 auto; text-align: center; justify-content: center; }
+}
+
 @media (max-width: 767px) {
-  .content { padding: 10px 8px !important; }
-  .crm-header { padding: 16px 14px; text-align: center; border-radius: 10px; margin-bottom: 14px; }
-  .crm-header h2 { font-size: 17px; }
-  .crm-header p { font-size: 11px; }
-  .crm-header .text-right { text-align: center !important; margin-top: 10px; }
-  .crm-header .text-right .btn { font-size: 10.5px; padding: 5px 10px; margin-bottom: 4px; }
+  .content { padding: 8px 6px !important; }
+  .crm-header-nav { padding: 14px 12px 10px 12px; border-radius: 12px; margin-bottom: 12px; }
+  .crm-header-nav .header-top-flex { flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 10px; }
+  .crm-header-nav .header-title h2 { font-size: 18px; }
+  .crm-header-nav .header-title p { font-size: 11px; }
+  .crm-header-nav .action-tools { width: 100%; justify-content: flex-start; gap: 6px; }
+  .crm-header-nav .action-tools .btn { font-size: 10.5px; padding: 6px 10px; flex: 1 1 auto; text-align: center; justify-content: center; }
+  .crm-header-nav .nav-tabs-bar { gap: 6px; padding-top: 10px; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+  .crm-header-nav .nav-tab-btn { font-size: 11.5px; padding: 6px 12px; }
 
   .stat-card { padding: 12px 10px; margin-bottom: 8px; border-radius: 8px; }
-  .stat-card .num { font-size: 18px; }
+  .stat-card .num { font-size: 17px; }
   .stat-card .lbl { font-size: 9px; }
 
   .box-body { padding: 10px !important; }
   .box-header .box-title { font-size: 12px; }
   .form-control { font-size: 12px; }
 
-  .table-cs th { font-size: 9.5px; padding: 6px 3px !important; white-space: nowrap; }
-  .table-cs td { font-size: 10.5px; padding: 6px 3px !important; }
+  .table-responsive { border: none !important; margin-bottom: 0; -webkit-overflow-scrolling: touch; }
+  .table-cs { min-width: 820px; }
+  .table-cs th { font-size: 9.5px; padding: 6px 4px !important; white-space: nowrap; }
+  .table-cs td { font-size: 10.5px; padding: 6px 4px !important; }
   .table-cs .badge, .table-cs .label { font-size: 9.5px !important; padding: 2px 6px !important; }
   .table-cs td[style*="font-size:14px"] { font-size: 11px !important; }
 }
 
 @media (max-width: 480px) {
-  .crm-header h2 { font-size: 15px; }
-  .crm-header .text-right { display: flex; flex-direction: column; gap: 4px; }
-  .crm-header .text-right .btn, .crm-header .text-right a { width: 100%; }
-  .stat-card .num { font-size: 16px; }
-  .table-cs th, .table-cs td { font-size: 9px; padding: 5px 2px !important; }
+  .crm-header-nav .header-title h2 { font-size: 15px; }
+  .crm-header-nav .action-tools { flex-direction: column; width: 100%; }
+  .crm-header-nav .action-tools .btn, .crm-header-nav .action-tools a { width: 100%; }
+  .stat-card .num { font-size: 15px; }
+  .table-cs th, .table-cs td { font-size: 9px; padding: 5px 3px !important; }
 }
 </style>
 
@@ -262,25 +274,25 @@
 
   <!-- KPI Overview Cards -->
   <div class="row">
-    <div class="col-md-3 col-sm-6">
+    <div class="col-md-3 col-sm-6 col-xs-6">
       <div class="stat-card sc-blue">
         <div class="num"><?= $kpis['total_cs_active']; ?> CS</div>
         <div class="lbl">Tim CS Aktif</div>
       </div>
     </div>
-    <div class="col-md-3 col-sm-6">
+    <div class="col-md-3 col-sm-6 col-xs-6">
       <div class="stat-card sc-purple">
         <div class="num"><?= number_format($kpis['total_handled']); ?></div>
         <div class="lbl">Total Follow-Up Handled</div>
       </div>
     </div>
-    <div class="col-md-3 col-sm-6">
+    <div class="col-md-3 col-sm-6 col-xs-6">
       <div class="stat-card sc-emerald">
         <div class="num">Rp <?= number_format($kpis['total_revenue'], 0, ',', '.'); ?></div>
         <div class="lbl">Total Omset Repeat Order</div>
       </div>
     </div>
-    <div class="col-md-3 col-sm-6">
+    <div class="col-md-3 col-sm-6 col-xs-6">
       <div class="stat-card sc-amber">
         <div class="num"><?= $kpis['avg_conversion_rate']; ?>%</div>
         <div class="lbl">Rata-Rata Conversion Rate</div>

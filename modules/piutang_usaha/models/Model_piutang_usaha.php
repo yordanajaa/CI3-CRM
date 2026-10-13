@@ -5,7 +5,7 @@ class Model_piutang_usaha extends MY_Model {
 
 	private $primary_key 	= 'id';
 	private $table_name 	= 'piutang_usaha';
-	private $field_search 	= ['piutang_usaha.nomor_piutang', 'pelanggan.nama_pelanggan', 'piutang_usaha.status'];
+	private $field_search 	= ['piutang_usaha.nomor_piutang', 'pelanggan.nama_pelanggan', 'piutang_usaha.status', 'invoice.nomor_invoice', 'sales_order.nomor_so'];
 
 	public function __construct()
 	{
@@ -19,7 +19,7 @@ class Model_piutang_usaha extends MY_Model {
 
 	public function join_available()
 	{
-		$this->db->select('piutang_usaha.*, pelanggan.nama_pelanggan, pelanggan.kode_pelanggan, sales_order.nomor_so, invoice.nomor_invoice, invoice.tanggal_invoice');
+		$this->db->select('piutang_usaha.*, pelanggan.nama_pelanggan, pelanggan.kode_pelanggan, pelanggan.no_telp, pelanggan.telepon, sales_order.no_telepon as so_telepon, sales_order.nomor_so, invoice.nomor_invoice, invoice.tanggal_invoice');
 		$this->db->join('pelanggan', 'pelanggan.id = piutang_usaha.pelanggan_id', 'LEFT');
 		$this->db->join('sales_order', 'sales_order.id = piutang_usaha.so_id', 'LEFT');
 		$this->db->join('invoice', 'invoice.id = piutang_usaha.invoice_id', 'LEFT');
@@ -71,7 +71,14 @@ class Model_piutang_usaha extends MY_Model {
 			$where .= ($where ? ' AND ' : '') . "piutang_usaha.pelanggan_id = " . intval($this->input->get('pelanggan_id'));
 		}
 		if ($this->input->get('status')) {
-			$where .= ($where ? ' AND ' : '') . "piutang_usaha.status = " . $this->db->escape($this->input->get('status'));
+			$st = $this->input->get('status');
+			if ($st === 'overdue') {
+				$where .= ($where ? ' AND ' : '') . "piutang_usaha.status != 'lunas' AND piutang_usaha.tanggal_jatuh_tempo < '" . date('Y-m-d') . "' AND piutang_usaha.tanggal_jatuh_tempo IS NOT NULL AND piutang_usaha.tanggal_jatuh_tempo > '1970-01-01'";
+			} elseif ($st === 'belum_lunas') {
+				$where .= ($where ? ' AND ' : '') . "piutang_usaha.status != 'lunas'";
+			} else {
+				$where .= ($where ? ' AND ' : '') . "piutang_usaha.status = " . $this->db->escape($st);
+			}
 		}
 
 		return $where;

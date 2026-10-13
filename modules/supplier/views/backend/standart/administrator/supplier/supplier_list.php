@@ -92,7 +92,10 @@
                                  </span>
                               </td>
                               <td class="text-center">
-                                 <?php is_allowed('supplier_view', function() use ($s){ ?>
+                                 <?php is_allowed('purchase_order_add', function() use ($s){ ?>
+                                  <a href="<?= site_url('administrator/purchase_order/add?supplier_id='.$s->id); ?>" class="btn btn-xs btn-primary" title="Buat Purchase Order Baru"><i class="fa fa-cart-plus"></i> Buat PO</a>
+                                  <?php }); ?>
+                                  <?php is_allowed('supplier_view', function() use ($s){ ?>
                                  <a href="<?= site_url('administrator/supplier/view/'.$s->id); ?>" class="btn btn-xs btn-default" title="Detail"><i class="fa fa-eye"></i></a>
                                  <?php }); ?>
                                  <?php is_allowed('supplier_update', function() use ($s){ ?>

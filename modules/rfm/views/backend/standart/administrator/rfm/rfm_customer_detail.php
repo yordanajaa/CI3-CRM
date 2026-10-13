@@ -11,10 +11,10 @@
 .rfm-header-nav {
   background: var(--rfm-gradient);
   color: #fff;
-  padding: 24px 28px 20px 28px;
+  padding: 22px 26px 18px 26px;
   border-radius: 16px;
-  margin-bottom: 24px;
-  box-shadow: 0 12px 30px rgba(30, 27, 75, 0.25);
+  margin-bottom: 20px;
+  box-shadow: 0 10px 28px rgba(30, 27, 75, 0.22);
   position: relative;
   overflow: hidden;
 }
@@ -32,8 +32,8 @@
   justify-content: space-between;
   align-items: flex-start;
   flex-wrap: wrap;
-  gap: 16px;
-  margin-bottom: 18px;
+  gap: 14px;
+  margin-bottom: 16px;
   position: relative;
   z-index: 2;
 }
@@ -52,12 +52,12 @@
 }
 .rfm-header-nav .header-title {
   flex: 1;
-  min-width: 280px;
+  min-width: 250px;
 }
 .rfm-header-nav .header-title h2 {
   margin: 0 0 4px 0;
   font-weight: 800;
-  font-size: 24px;
+  font-size: 22px;
   letter-spacing: -0.5px;
   color: #fff;
 }
@@ -79,7 +79,7 @@
   border-radius: 9px;
   font-weight: 700;
   font-size: 12px;
-  padding: 7px 14px;
+  padding: 7px 13px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -90,21 +90,27 @@
 }
 .rfm-header-nav .action-tools .btn:hover { transform: translateY(-2px); }
 
-/* Navigation Tab Bar */
+/* Navigation Tab Bar - Touch Scrollable */
 .rfm-header-nav .nav-tabs-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 8px;
   padding-top: 14px;
   border-top: 1px solid rgba(255,255,255,0.18);
   position: relative;
   z-index: 2;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.rfm-header-nav .nav-tabs-bar::-webkit-scrollbar {
+  display: none;
 }
 .rfm-header-nav .nav-tab-btn {
-  padding: 8px 18px;
+  padding: 8px 16px;
   border-radius: 10px;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
   color: rgba(255,255,255,0.92);
   background: rgba(255,255,255,0.12);
@@ -114,6 +120,7 @@
   align-items: center;
   gap: 8px;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 .rfm-header-nav .nav-tab-btn:hover {
   background: rgba(255,255,255,0.25);
@@ -138,16 +145,25 @@
 .summary-card {
   background: #ffffff;
   border-radius: var(--card-radius);
-  padding: 18px 16px;
+  padding: 16px 14px;
   box-shadow: var(--card-shadow);
   border: 1px solid #f1f5f9;
   text-align: center;
   margin-bottom: 20px;
-  transition: all 0.25s ease;
+  cursor: pointer;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease, border-color 0.22s ease;
+  user-select: none;
 }
-.summary-card:hover { transform: translateY(-3px); box-shadow: 0 8px 22px rgba(0,0,0,0.08); border-color: #cbd5e1; }
-.summary-card .num { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.2; }
-.summary-card .lbl { font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+.summary-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+  border-color: #cbd5e1;
+}
+.summary-card:active {
+  transform: translateY(-1px) scale(0.99);
+}
+.summary-card .num { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.2; }
+.summary-card .lbl { font-size: 10.5px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
 .sc-blue .num { color: #2563eb; }
 .sc-green .num { color: #059669; }
 .sc-orange .num { color: #ea580c; }
@@ -157,16 +173,16 @@
 .rfm-detail-card {
   background: #fff;
   border-radius: var(--card-radius);
-  padding: 22px 24px;
+  padding: 20px 22px;
   box-shadow: var(--card-shadow);
   border: 1px solid #f1f5f9;
-  margin-bottom: 22px;
+  margin-bottom: 20px;
 }
 .rfm-detail-card .card-title {
   font-weight: 800;
-  font-size: 16px;
+  font-size: 15.5px;
   color: #0f172a;
-  margin: 0 0 18px 0;
+  margin: 0 0 16px 0;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -346,25 +362,25 @@
 }
 
 @media (max-width: 767px) {
-  .rfm-header-nav { padding: 18px 16px; text-align: center; }
-  .rfm-header-nav .header-top-flex { flex-direction: column; align-items: center; }
-  .rfm-header-nav .header-title h2 { font-size: 20px; }
-  .rfm-header-nav .header-title p { font-size: 12px; }
-  .rfm-header-nav .action-tools { width: 100%; justify-content: center; }
-  .rfm-header-nav .action-tools .btn { font-size: 11.5px; padding: 6px 10px; }
-  .rfm-header-nav .nav-tabs-bar { justify-content: center; width: 100%; }
-  .rfm-header-nav .nav-tab-btn { width: 100%; justify-content: center; padding: 10px; font-size: 12.5px; }
+  .rfm-header-nav { padding: 16px 14px; border-radius: 12px; }
+  .rfm-header-nav .header-top-flex { flex-direction: column; align-items: stretch; gap: 10px; }
+  .rfm-header-nav .header-title h2 { font-size: 18px; }
+  .rfm-header-nav .header-title p { font-size: 11.5px; }
+  .rfm-header-nav .action-tools { width: 100%; justify-content: flex-start; gap: 6px; }
+  .rfm-header-nav .action-tools .btn { font-size: 11px; padding: 6px 10px; flex: 1 1 auto; min-width: 110px; }
+  .rfm-header-nav .nav-tabs-bar { padding-top: 10px; gap: 6px; }
+  .rfm-header-nav .nav-tab-btn { padding: 7px 12px; font-size: 11.5px; }
 
-  .summary-card .num { font-size: 20px; }
-  .rfm-detail-card { padding: 16px; margin-bottom: 16px; }
-  .rfm-detail-card .card-title { font-size: 15px; }
+  .summary-card .num { font-size: 18px; }
+  .rfm-detail-card { padding: 14px; margin-bottom: 14px; }
+  .rfm-detail-card .card-title { font-size: 14.5px; }
 }
 
 @media (max-width: 575px) {
-  .summary-row .col-xs-6 { width: 50%; float: left; padding-left: 5px; padding-right: 5px; }
-  .summary-row { margin-left: -5px; margin-right: -5px; }
+  .summary-row .col-xs-6 { width: 50%; float: left; padding-left: 4px; padding-right: 4px; }
+  .summary-row { margin-left: -4px; margin-right: -4px; }
   .summary-card { padding: 12px 6px; margin-bottom: 10px; }
-  .summary-card .num { font-size: 16px; }
+  .summary-card .num { font-size: 15px; }
   .summary-card .lbl { font-size: 9px; letter-spacing: 0; }
   .rfm-meter { gap: 8px; }
   .rfm-meter .meter-label { width: 70px; font-size: 10.5px; }
@@ -430,8 +446,17 @@ $crm_chat_url = site_url('administrator/crm/chat?phone=' . urlencode($phone) . '
     <a href="<?= site_url('administrator/rfm/tracking' . $nav_qs); ?>" class="nav-tab-btn">
       <i class="fa fa-line-chart"></i> 3. Tracking RFM Bulanan
     </a>
+    <a href="<?= site_url('administrator/rfm/cohort'); ?>" class="nav-tab-btn">
+      <i class="fa fa-th"></i> 4. Analisis Kohort
+    </a>
+    <a href="<?= site_url('administrator/crm_segments/product_rfm'); ?>" class="nav-tab-btn">
+      <i class="fa fa-th-large"></i> 5. Tren Segmen Produk
+    </a>
+    <a href="<?= site_url('administrator/rfm/matrix_rules'); ?>" class="nav-tab-btn">
+      <i class="fa fa-table"></i> 6. Matriks Aturan RFM
+    </a>
     <span class="nav-tab-btn active">
-      <span class="active-dot"></span> <i class="fa fa-user-circle"></i> 4. Detail Customer
+      <span class="active-dot"></span> <i class="fa fa-user-circle"></i> Profil Customer
     </span>
   </div>
 </div>
@@ -444,10 +469,10 @@ $crm_chat_url = site_url('administrator/crm/chat?phone=' . urlencode($phone) . '
 </div>
 <?php endif; ?>
 <div class="row summary-row">
-  <div class="col-md-3 col-sm-6 col-xs-6"><div class="summary-card sc-blue"><div class="num"><?= number_format($s['total_orders']); ?></div><div class="lbl"><?= !empty($product_filter) ? 'Total Order (Produk Ini)' : 'Total Order Customer'; ?></div></div></div>
-  <div class="col-md-3 col-sm-6 col-xs-6"><div class="summary-card sc-green"><div class="num">Rp <?= number_format($s['total_spend'], 0, ',', '.'); ?></div><div class="lbl"><?= !empty($product_filter) ? 'Total Belanja (Produk Ini)' : 'Total Belanja Customer'; ?></div></div></div>
-  <div class="col-md-3 col-sm-6 col-xs-6"><div class="summary-card sc-orange"><div class="num"><?= $s['first_order'] ? date('d M Y', strtotime($s['first_order'])) : '-'; ?></div><div class="lbl">Order Pertama</div></div></div>
-  <div class="col-md-3 col-sm-6 col-xs-6"><div class="summary-card sc-purple"><div class="num"><?= $s['last_order'] ? date('d M Y', strtotime($s['last_order'])) : '-'; ?></div><div class="lbl">Order Terakhir</div></div></div>
+  <div class="col-md-3 col-sm-6 col-xs-6"><div class="summary-card sc-blue" role="button" tabindex="0" onclick="var el=document.getElementById('section-product-purchased'); if(el){ el.scrollIntoView({behavior:'smooth'}); }" title="Klik untuk melihat tabel rincian transaksi produk customer ini"><div class="num"><?= number_format($s['total_orders']); ?></div><div class="lbl"><?= !empty($product_filter) ? 'Total Order (Produk Ini)' : 'Total Order Customer'; ?> &darr;</div></div></div>
+  <div class="col-md-3 col-sm-6 col-xs-6"><div class="summary-card sc-green" role="button" tabindex="0" onclick="var el=document.getElementById('section-product-purchased'); if(el){ el.scrollIntoView({behavior:'smooth'}); }" title="Klik untuk melihat rincian kontribusi spend produk"><div class="num">Rp <?= number_format($s['total_spend'], 0, ',', '.'); ?></div><div class="lbl"><?= !empty($product_filter) ? 'Total Belanja (Produk Ini)' : 'Total Belanja Customer'; ?> &darr;</div></div></div>
+  <div class="col-md-3 col-sm-6 col-xs-6"><div class="summary-card sc-orange" role="button" tabindex="0" onclick="var el=document.getElementById('section-product-purchased'); if(el){ el.scrollIntoView({behavior:'smooth'}); }" title="Klik untuk melihat riwayat pembelian pertama"><div class="num"><?= $s['first_order'] ? date('d M Y', strtotime($s['first_order'])) : '-'; ?></div><div class="lbl">Order Pertama &darr;</div></div></div>
+  <div class="col-md-3 col-sm-6 col-xs-6"><div class="summary-card sc-purple" role="button" tabindex="0" onclick="var el=document.getElementById('section-product-purchased'); if(el){ el.scrollIntoView({behavior:'smooth'}); }" title="Klik untuk melihat riwayat pembelian terakhir"><div class="num"><?= $s['last_order'] ? date('d M Y', strtotime($s['last_order'])) : '-'; ?></div><div class="lbl">Order Terakhir &darr;</div></div></div>
 </div>
 
 <!-- ===== RFM SCORE DETAIL ===== -->
@@ -523,7 +548,7 @@ $crm_chat_url = site_url('administrator/crm/chat?phone=' . urlencode($phone) . '
 </div>
 
 <!-- ===== PRODUCT RFM TABLE ===== -->
-<div class="rfm-detail-card">
+<div class="rfm-detail-card" id="section-product-purchased">
   <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
     <span><i class="fa fa-cubes" style="color:#6366f1;"></i> Semua Produk yang Dibeli Customer Ini</span>
     <?php if (!empty($product_filter)): ?>

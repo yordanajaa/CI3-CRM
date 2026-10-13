@@ -38,6 +38,20 @@ class Utang_usaha extends Admin
 		$this->render('backend/standart/administrator/utang_usaha/utang_usaha_list', $this->data);
 	}
 
+	public function view($id = null)
+	{
+		$this->is_allowed('utang_usaha_view');
+		$this->data['utang'] = $this->model_utang_usaha->find($id);
+		if (!$this->data['utang']) {
+			redirect('administrator/utang_usaha');
+			return;
+		}
+		$this->data['supplier'] = $this->db->get_where('supplier', ['id' => $this->data['utang']->supplier_id])->row();
+		$this->data['pembayaran'] = $this->db->get_where('pembayaran_utang', ['utang_id' => $id])->result();
+		$this->template->title('Detail Utang Usaha - ' . $this->data['utang']->nomor_utang);
+		$this->render('backend/standart/administrator/utang_usaha/utang_usaha_view', $this->data);
+	}
+
 	public function bayar_save()
 	{
 		if (!$this->is_allowed('utang_usaha_update', false)) {

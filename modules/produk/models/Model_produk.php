@@ -105,16 +105,28 @@ class Model_produk extends MY_Model {
 
 	public function generate_kode()
 	{
-		$last = $this->db->order_by('id', 'DESC')->limit(1)->get($this->table_name)->row();
-		$num = $last ? ((int) substr($last->kode_produk, -4)) + 1 : 1;
-		return 'PRD-' . str_pad($num, 4, '0', STR_PAD_LEFT);
+		$max_id_row = $this->db->select_max('id')->get($this->table_name)->row();
+		$next_num = ($max_id_row && $max_id_row->id) ? ((int)$max_id_row->id + 1) : 1;
+		$kode = 'PRD-' . str_pad($next_num, 4, '0', STR_PAD_LEFT);
+
+		while ($this->db->where('kode_produk', $kode)->get($this->table_name)->num_rows() > 0) {
+			$next_num++;
+			$kode = 'PRD-' . str_pad($next_num, 4, '0', STR_PAD_LEFT);
+		}
+		return $kode;
 	}
 
 	public function generate_barcode()
 	{
-		$last = $this->db->order_by('id', 'DESC')->limit(1)->get($this->table_name)->row();
-		$num = $last ? $last->id + 1 : 1;
-		return '899300' . str_pad($num, 7, '0', STR_PAD_LEFT);
+		$max_id_row = $this->db->select_max('id')->get($this->table_name)->row();
+		$next_num = ($max_id_row && $max_id_row->id) ? ((int)$max_id_row->id + 1) : 1;
+		$barcode = '899300' . str_pad($next_num, 7, '0', STR_PAD_LEFT);
+
+		while ($this->db->where('barcode', $barcode)->get($this->table_name)->num_rows() > 0) {
+			$next_num++;
+			$barcode = '899300' . str_pad($next_num, 7, '0', STR_PAD_LEFT);
+		}
+		return $barcode;
 	}
 
 	public function get_for_select()

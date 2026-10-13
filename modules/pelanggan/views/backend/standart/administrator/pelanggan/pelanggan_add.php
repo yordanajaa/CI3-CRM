@@ -3,13 +3,32 @@ $is_edit = isset($pelanggan);
 $action_url = $is_edit ? site_url('administrator/pelanggan/edit_save/'.$pelanggan->id) : site_url('administrator/pelanggan/add_save');
 ?>
 <style>
-.form-card { border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 2px 6px rgba(0,0,0,0.04); background: #fff; margin-bottom: 20px; }
-.form-card .box-header { padding: 15px 20px; border-bottom: 1px solid #f1f5f9; background: #fafafa; border-radius: 8px 8px 0 0; }
+.form-card { border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 3px 12px rgba(0,0,0,0.04); background: #fff; margin-bottom: 20px; overflow: hidden; }
+.form-card .box-header { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; background: #fafcff; }
 .form-card .box-title { font-weight: 700; font-size: 15px; color: #1e293b; }
 .form-card .box-body { padding: 20px; }
-.form-group label { font-weight: 600; font-size: 13px; color: #475569; margin-bottom: 6px; }
-.form-control { border-radius: 6px; border: 1px solid #cbd5e1; padding: 8px 12px; font-size: 13px; transition: border-color .2s; }
-.form-control:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+.form-group label { font-weight: 600; font-size: 13px; color: #334155; margin-bottom: 6px; display: block; }
+.form-control { border-radius: 8px; border: 1px solid #cbd5e1; padding: 8px 12px; height: 40px; font-size: 13px; transition: border-color .2s; }
+.form-control:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); outline: none; }
+textarea.form-control { height: auto; }
+
+@media (max-width: 768px) {
+  .form-card .box-body { padding: 14px 12px; }
+  .box-footer .pull-left,
+  .box-footer .pull-right {
+    float: none !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    margin-bottom: 8px;
+  }
+  .box-footer .btn {
+    width: 100% !important;
+    margin-right: 0 !important;
+    padding: 10px !important;
+  }
+}
 </style>
 
 <section class="content-header">
@@ -22,7 +41,7 @@ $action_url = $is_edit ? site_url('administrator/pelanggan/edit_save/'.$pelangga
 </section>
 
 <section class="content">
-<form id="form_pelanggan">
+<form id="form_pelanggan" onsubmit="return false;">
    <div class="row">
       <div class="col-md-12">
          <div class="box form-card" style="border-top: 3px solid #3b82f6;">
@@ -138,10 +157,15 @@ $action_url = $is_edit ? site_url('administrator/pelanggan/edit_save/'.$pelangga
                   </a>
                </div>
                <div class="pull-right">
-                  <button type="button" id="btn_save" class="btn btn-primary btn-flat" style="border-radius:6px; font-weight:700; padding:8px 24px; font-size:14px;">
-                     <i class="fa fa-save"></i> <?= $is_edit ? 'Update Data Pelanggan' : 'Simpan Pelanggan'; ?>
-                  </button>
-               </div>
+                   <?php if (!$is_edit): ?>
+                   <button type="button" id="btn_save_and_so" class="btn btn-success btn-flat" style="border-radius:6px; font-weight:700; padding:8px 20px; font-size:14px; margin-right:8px;">
+                      <i class="fa fa-shopping-cart"></i> Simpan &amp; Buat Sales Order
+                   </button>
+                   <?php endif; ?>
+                   <button type="button" id="btn_save" class="btn btn-primary btn-flat" style="border-radius:6px; font-weight:700; padding:8px 24px; font-size:14px;">
+                      <i class="fa fa-save"></i> <?= $is_edit ? 'Update Data Pelanggan' : 'Simpan Pelanggan'; ?>
+                   </button>
+                </div>
             </div>
          </div>
       </div>
@@ -161,17 +185,66 @@ $(document).ready(function(){
          dataType: 'json',
          success: function(res){
             if(res.success){ 
-               if(res.redirect){ window.location.href = res.redirect; } 
-               else { show_alert(res.message, 'success'); } 
+               if(res.redirect){ 
+                  window.location.href = res.redirect; 
+               } else { 
+                  show_alert(res.message || 'Pelanggan berhasil disimpan.', 'success'); 
+                  btn.prop('disabled', false).html('<i class="fa fa-save"></i> <?= $is_edit ? 'Update Data Pelanggan' : 'Simpan Pelanggan'; ?>');
+               } 
             } else { 
-               show_alert(res.message, 'error'); 
+               show_alert(res.message || 'Gagal menyimpan data.', 'error'); 
                btn.prop('disabled', false).html('<i class="fa fa-save"></i> <?= $is_edit ? 'Update Data Pelanggan' : 'Simpan Pelanggan'; ?>'); 
             }
          }, 
-         error: function(){ 
+         error: function(xhr){ 
+            var errMsg = 'Terjadi kesalahan server saat menyimpan data.';
+            try {
+               var r = JSON.parse(xhr.responseText);
+               if (r && r.message) errMsg = r.message;
+            } catch(e){}
+            show_alert(errMsg, 'error');
             btn.prop('disabled', false).html('<i class="fa fa-save"></i> <?= $is_edit ? 'Update Data Pelanggan' : 'Simpan Pelanggan'; ?>'); 
          }
       });
+   });
+
+   $('#btn_save_and_so').click(function(){
+       var btn = $(this);
+       btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Menyimpan &amp; Membuka SO...');
+       $.ajax({ 
+          url: '<?= $action_url; ?>', 
+          method: 'POST', 
+          data: $('#form_pelanggan').serialize() + '&save_type=sales_order', 
+          dataType: 'json',
+          success: function(res){
+             if(res.success){ 
+                if(res.redirect){ 
+                   window.location.href = res.redirect; 
+                } else { 
+                   window.location.href = '<?= site_url("administrator/sales_order/add"); ?>';
+                } 
+             } else { 
+                show_alert(res.message || 'Gagal menyimpan data.', 'error'); 
+                btn.prop('disabled', false).html('<i class="fa fa-shopping-cart"></i> Simpan &amp; Buat Sales Order'); 
+             }
+          }, 
+          error: function(xhr){ 
+             var errMsg = 'Terjadi kesalahan server saat menyimpan data.';
+             try {
+                var r = JSON.parse(xhr.responseText);
+                if (r && r.message) errMsg = r.message;
+             } catch(e){}
+             show_alert(errMsg, 'error');
+             btn.prop('disabled', false).html('<i class="fa fa-shopping-cart"></i> Simpan &amp; Buat Sales Order'); 
+          }
+       });
+    });
+
+   $('#form_pelanggan input').keypress(function(e){
+      if (e.which == 13) {
+         e.preventDefault();
+         $('#btn_save').click();
+      }
    });
 });
 </script>

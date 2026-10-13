@@ -23,7 +23,7 @@ $action_url = $is_edit ? site_url('administrator/produk/edit_save/'.$produk->id)
 </section>
 
 <section class="content">
-<form id="form_produk">
+<form id="form_produk" onsubmit="return false;">
    <div class="row">
       <div class="col-md-12">
          <div class="box form-card" style="border-top: 3px solid #3b82f6;">
@@ -207,6 +207,13 @@ $action_url = $is_edit ? site_url('administrator/produk/edit_save/'.$produk->id)
 
 <script>
 $(document).ready(function(){
+   $('#form_produk').on('keydown', 'input', function(e){
+      if(e.keyCode == 13) {
+         e.preventDefault();
+         $('#btn_save').click();
+      }
+   });
+
    $('#btn_save').click(function(){
       var btn = $(this); 
       btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Menyimpan...');
@@ -220,11 +227,22 @@ $(document).ready(function(){
                if(res.redirect){ window.location.href = res.redirect; } 
                else { show_alert(res.message, 'success'); } 
             } else { 
-               show_alert(res.message, 'error'); 
+               show_alert(res.message || 'Gagal menyimpan produk.', 'error'); 
                btn.prop('disabled', false).html('<i class="fa fa-save"></i> <?= $is_edit ? 'Update Data Produk' : 'Simpan Produk Baru'; ?>'); 
             }
          }, 
-         error: function(){ 
+         error: function(xhr){ 
+            var errMsg = 'Terjadi kesalahan sistem saat menyimpan produk.';
+            if (xhr.responseText) {
+               try {
+                  var parsed = JSON.parse(xhr.responseText);
+                  if (parsed.message) errMsg = parsed.message;
+               } catch(e) {
+                  var m = xhr.responseText.match(/<p>(.*?)<\/p>/i);
+                  if (m && m[1]) errMsg = m[1];
+               }
+            }
+            show_alert(errMsg, 'error');
             btn.prop('disabled', false).html('<i class="fa fa-save"></i> <?= $is_edit ? 'Update Data Produk' : 'Simpan Produk Baru'; ?>'); 
          }
       });

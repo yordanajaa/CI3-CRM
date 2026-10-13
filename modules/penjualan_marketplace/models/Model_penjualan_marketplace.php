@@ -36,12 +36,13 @@ class Model_penjualan_marketplace extends MY_Model {
 
 	public function count_all($q = '', $field = '')
 	{
-		$this->join_available();
 		$where = $this->build_where($q, $field);
 		if (!empty($where)) {
+			$this->db->join('pelanggan', 'pelanggan.id = penjualan_marketplace.pelanggan_id', 'LEFT');
+			$this->db->join('gudang', 'gudang.id = penjualan_marketplace.gudang_id', 'LEFT');
 			$this->db->where($where);
 		}
-		return $this->db->get($this->table_name)->num_rows();
+		return $this->db->count_all_results($this->table_name);
 	}
 
 	public function get($q = '', $field = '', $limit = 0, $offset = 0)
@@ -135,10 +136,15 @@ class Model_penjualan_marketplace extends MY_Model {
 
 	public function get_stats()
 	{
+		$total_omset_all = $this->db->select_sum('total')
+			->where('status_pesanan !=', 'BATAL')
+			->get('penjualan_marketplace')->row()->total ?: 0;
+
 		$start_month = date('Y-m-01');
 		$end_month   = date('Y-m-t');
 
 		$penjualan_bulan_ini = $this->db->select_sum('total')
+			->where('status_pesanan !=', 'BATAL')
 			->where('DATE(tanggal_so) >=', $start_month)
 			->where('DATE(tanggal_so) <=', $end_month)
 			->get('penjualan_marketplace')->row()->total ?: 0;
@@ -146,16 +152,14 @@ class Model_penjualan_marketplace extends MY_Model {
 		$terbayar_lunas = $this->db->select_sum('penjualan_marketplace.total')
 			->join('invoice', 'invoice.so_id = penjualan_marketplace.id')
 			->where('invoice.status', 'paid')
-			->where('DATE(penjualan_marketplace.tanggal_so) >=', $start_month)
-			->where('DATE(penjualan_marketplace.tanggal_so) <=', $end_month)
 			->get('penjualan_marketplace')->row()->total ?: 0;
 
-		$piutang_unpaid = max(0, $penjualan_bulan_ini - $terbayar_lunas);
+		$piutang_unpaid = max(0, $total_omset_all - $terbayar_lunas);
 
-		$pesanan_aktif = $this->db->where_in('status', ['draft', 'submitted'])
+		$pesanan_aktif = $this->db->where_in('status', ['draft', 'submitted', 'confirmed'])
 			->count_all_results('penjualan_marketplace');
 
-		$proses_gudang = $this->db->where_in('status', ['confirmed', 'packing'])
+		$proses_gudang = $this->db->where('status', 'packing')
 			->count_all_results('penjualan_marketplace');
 
 		$siap_kirim = $this->db->where_in('status', ['ready_to_ship', 'shipped'])
@@ -165,6 +169,7 @@ class Model_penjualan_marketplace extends MY_Model {
 			->count_all_results('penjualan_marketplace');
 
 		return [
+			'total_omset_all'     => $total_omset_all,
 			'penjualan_bulan_ini' => $penjualan_bulan_ini,
 			'terbayar_lunas'      => $terbayar_lunas,
 			'piutang_unpaid'      => $piutang_unpaid,

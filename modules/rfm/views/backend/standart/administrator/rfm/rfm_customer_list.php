@@ -10,10 +10,10 @@
 .rfm-header-nav {
   background: var(--rfm-gradient);
   color: #fff;
-  padding: 24px 28px 20px 28px;
+  padding: 22px 26px 18px 26px;
   border-radius: 16px;
-  margin-bottom: 24px;
-  box-shadow: 0 12px 30px rgba(30, 27, 75, 0.25);
+  margin-bottom: 20px;
+  box-shadow: 0 10px 28px rgba(30, 27, 75, 0.22);
   position: relative;
   overflow: hidden;
 }
@@ -31,8 +31,8 @@
   justify-content: space-between;
   align-items: flex-start;
   flex-wrap: wrap;
-  gap: 16px;
-  margin-bottom: 18px;
+  gap: 14px;
+  margin-bottom: 16px;
   position: relative;
   z-index: 2;
 }
@@ -51,12 +51,12 @@
 }
 .rfm-header-nav .header-title {
   flex: 1;
-  min-width: 280px;
+  min-width: 250px;
 }
 .rfm-header-nav .header-title h2 {
   margin: 0 0 4px 0;
   font-weight: 800;
-  font-size: 24px;
+  font-size: 22px;
   letter-spacing: -0.5px;
   color: #fff;
 }
@@ -78,7 +78,7 @@
   border-radius: 9px;
   font-weight: 700;
   font-size: 12px;
-  padding: 7px 14px;
+  padding: 7px 13px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -89,21 +89,27 @@
 }
 .rfm-header-nav .action-tools .btn:hover { transform: translateY(-2px); }
 
-/* Navigation Tab Bar */
+/* Navigation Tab Bar - Touch Scrollable */
 .rfm-header-nav .nav-tabs-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 8px;
   padding-top: 14px;
   border-top: 1px solid rgba(255,255,255,0.18);
   position: relative;
   z-index: 2;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.rfm-header-nav .nav-tabs-bar::-webkit-scrollbar {
+  display: none;
 }
 .rfm-header-nav .nav-tab-btn {
-  padding: 8px 18px;
+  padding: 8px 16px;
   border-radius: 10px;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
   color: rgba(255,255,255,0.92);
   background: rgba(255,255,255,0.12);
@@ -113,6 +119,7 @@
   align-items: center;
   gap: 8px;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 .rfm-header-nav .nav-tab-btn:hover {
   background: rgba(255,255,255,0.25);
@@ -136,7 +143,7 @@
 .stat-card {
   background: #ffffff;
   border-radius: var(--card-radius);
-  padding: 18px 20px;
+  padding: 16px 18px;
   box-shadow: var(--card-shadow);
   border: 1px solid #f1f5f9;
   border-left: 4px solid #6366f1;
@@ -145,9 +152,20 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  cursor: pointer;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease, border-color 0.22s ease;
+  user-select: none;
 }
-.stat-card .stat-num { font-size: 24px; font-weight: 800; color: #0f172a; line-height: 1.1; }
-.stat-card .stat-label { font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+  border-color: #cbd5e1;
+}
+.stat-card:active {
+  transform: translateY(-1px) scale(0.99);
+}
+.stat-card .stat-num { font-size: 22px; font-weight: 800; color: #0f172a; line-height: 1.1; }
+.stat-card .stat-label { font-size: 10.5px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
 
 .badge-source {
   padding: 3px 10px;
@@ -261,13 +279,17 @@
 }
 
 @media (max-width: 767px) {
-  .rfm-header { padding: 20px 16px; text-align: center; flex-direction: column; }
-  .rfm-header .header-title h2 { font-size: 21px; }
-  .rfm-header .header-title p { font-size: 12.5px; }
-  .rfm-header .header-actions { width: 100%; justify-content: center; gap: 8px; }
-  .rfm-header .header-actions .btn { width: 100%; max-width: 100%; padding: 10px; font-size: 12.5px; justify-content: center; }
-  .stat-card { padding: 14px; height: auto; margin-bottom: 12px; text-align: center; }
-  .stat-card .stat-num { font-size: 20px; }
+  .rfm-header-nav { padding: 16px 14px; border-radius: 12px; }
+  .rfm-header-nav .header-top-flex { flex-direction: column; align-items: stretch; gap: 10px; }
+  .rfm-header-nav .header-title h2 { font-size: 18px; }
+  .rfm-header-nav .header-title p { font-size: 11.5px; }
+  .rfm-header-nav .action-tools { width: 100%; justify-content: flex-start; gap: 6px; }
+  .rfm-header-nav .action-tools .btn { font-size: 11px; padding: 6px 10px; flex: 1 1 auto; min-width: 110px; }
+  .rfm-header-nav .nav-tabs-bar { padding-top: 10px; gap: 6px; }
+  .rfm-header-nav .nav-tab-btn { padding: 7px 12px; font-size: 11.5px; }
+  .stat-card { padding: 12px 14px; height: auto; margin-bottom: 10px; text-align: center; }
+  .stat-card .stat-num { font-size: 18px; }
+  .stat-card .stat-label { font-size: 9.5px; }
   .filter-bar { padding: 14px; }
   .table-rfm th { font-size: 10px; padding: 8px 6px !important; }
   .table-rfm td { font-size: 11.5px; padding: 8px 6px !important; }
@@ -290,13 +312,13 @@
         <i class="fa fa-map-marker"></i> Analisis RFM <i class="fa fa-angle-right"></i> <span>Daftar Customer & Segmentasi</span>
       </div>
       <h2><i class="fa fa-users" style="color:#818cf8;"></i> Segmentasi Pelanggan RFM</h2>
-      <p>Daftar pelanggan dengan skor Recency, Frequency, Monetary dan segmentasi otomatis</p>
+      <p>Daftar rincian seluruh pelanggan beserta riwayat transaksi, nilai belanja, dan kategori loyalitasnya</p>
     </div>
 
     <?php
-      $nav_params = array_filter(['product' => $product_filter ?? '', 'period' => $period_filter ?? '']);
+      $nav_params = array_filter(['product' => $product_filter ?? '', 'period' => $period_filter ?? '', 'kategori' => $category_filter ?? '']);
       $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
-      $export_params = array_filter(['q' => $filter ?? '', 'rfm_segment' => $rfm_segment ?? '', 'product' => $product_filter ?? '', 'period' => $period_filter ?? '']);
+      $export_params = array_filter(['q' => $filter ?? '', 'rfm_segment' => $rfm_segment ?? '', 'product' => $product_filter ?? '', 'period' => $period_filter ?? '', 'kategori' => $category_filter ?? '']);
       $export_qs = !empty($export_params) ? '?' . http_build_query($export_params) : '';
     ?>
     <div class="action-tools">
@@ -318,8 +340,14 @@
     <a href="<?= site_url('administrator/rfm/tracking' . $nav_qs); ?>" class="nav-tab-btn">
       <i class="fa fa-line-chart"></i> 3. Tracking RFM Bulanan
     </a>
-    <a href="<?= site_url('administrator/rfm/cohort'); ?>" class="nav-tab-btn">
+    <a href="<?= site_url('administrator/rfm/cohort' . $nav_qs); ?>" class="nav-tab-btn">
       <i class="fa fa-th"></i> 4. Analisis Kohort
+    </a>
+    <a href="<?= site_url('administrator/crm_segments/product_rfm' . $nav_qs); ?>" class="nav-tab-btn">
+      <i class="fa fa-th-large"></i> 5. Tren Segmen Produk
+    </a>
+    <a href="<?= site_url('administrator/rfm/matrix_rules' . $nav_qs); ?>" class="nav-tab-btn">
+      <i class="fa fa-table"></i> 6. Matriks Aturan RFM
     </a>
   </div>
 </div>
@@ -337,29 +365,29 @@
       $display_spend += $c->total_spend;
     }
   }
-  $active_filters_count = (!empty($filter) ? 1 : 0) + (!empty($rfm_segment) ? 1 : 0) + (!empty($product_filter) ? 1 : 0) + (!empty($period_filter) ? 1 : 0);
+  $active_filters_count = (!empty($filter) ? 1 : 0) + (!empty($rfm_segment) ? 1 : 0) + (!empty($product_filter) ? 1 : 0) + (!empty($period_filter) ? 1 : 0) + (!empty($category_filter) ? 1 : 0);
 ?>
 <div class="row">
   <div class="col-md-3 col-sm-6 col-xs-6">
-    <div class="stat-card" style="border-left-color:#6366f1;">
+    <div class="stat-card" role="button" tabindex="0" onclick="window.location.href='<?= site_url('administrator/rfm'); ?>';" title="Klik untuk menampilkan seluruh pelanggan tanpa filter" style="border-left-color:#6366f1;">
       <div class="stat-num"><?= number_format($customer_counts); ?></div>
-      <div class="stat-label">Total Customer Ditemukan</div>
+      <div class="stat-label">Total Pelanggan Terdaftar &rarr;</div>
     </div>
   </div>
   <div class="col-md-3 col-sm-6 col-xs-6">
-    <div class="stat-card" style="border-left-color:#16a34a;">
+    <div class="stat-card" role="button" tabindex="0" onclick="window.location.href='<?= site_url('administrator/rfm/tracking' . $nav_qs); ?>';" title="Klik untuk melihat riwayat frekuensi transaksi di Tracking Bulanan" style="border-left-color:#16a34a;">
       <div class="stat-num"><?= number_format($display_orders); ?>x</div>
-      <div class="stat-label">Total Transaksi (F)</div>
+      <div class="stat-label">Total Frekuensi Transaksi &rarr;</div>
     </div>
   </div>
   <div class="col-md-3 col-sm-6 col-xs-6">
-    <div class="stat-card" style="border-left-color:#059669;">
+    <div class="stat-card" role="button" tabindex="0" onclick="window.location.href='<?= site_url('administrator/rfm/tracking' . $nav_qs); ?>';" title="Klik untuk melihat riwayat total omset di Tracking Bulanan" style="border-left-color:#059669;">
       <div class="stat-num" style="font-size:18px;">Rp <?= number_format($display_spend, 0, ',', '.'); ?></div>
-      <div class="stat-label">Total Omset / Belanja (M)</div>
+      <div class="stat-label">Total Omset Penjualan &rarr;</div>
     </div>
   </div>
   <div class="col-md-3 col-sm-6 col-xs-6">
-    <div class="stat-card" style="border-left-color:<?= $active_filters_count > 0 ? '#f59e0b' : '#64748b'; ?>;">
+    <div class="stat-card" role="button" tabindex="0" onclick="window.location.href='<?= site_url('administrator/rfm'); ?>';" title="Klik untuk mereset semua filter yang aktif" style="border-left-color:<?= $active_filters_count > 0 ? '#f59e0b' : '#64748b'; ?>;">
       <div class="stat-num" style="font-size:16px;">
         <?php if ($active_filters_count > 0): ?>
           <span style="color:#d97706; font-size:18px; font-weight:800;"><?= $active_filters_count; ?> Filter Aktif</span>
@@ -369,7 +397,7 @@
       </div>
       <div class="stat-label">
         <?php if ($active_filters_count > 0): ?>
-          <a href="<?= site_url('administrator/rfm'); ?>" style="color:#d97706; text-decoration:underline; font-weight:700;"><i class="fa fa-times"></i> Reset Semua Filter</a>
+          <span style="color:#d97706; text-decoration:underline; font-weight:700;"><i class="fa fa-times"></i> Reset Semua Filter</span>
         <?php else: ?>
           Tanpa Filter Terpasang
         <?php endif; ?>
@@ -384,16 +412,16 @@
 <div class="filter-bar">
   <form method="get" action="<?= site_url('administrator/rfm'); ?>">
     <div class="row" style="margin-left:-5px; margin-right:-5px;">
-      <div class="col-md-3 col-sm-6 col-xs-12" style="padding-left:5px; padding-right:5px; margin-bottom:8px;">
+      <div class="col-md-2 col-sm-6 col-xs-12" style="padding-left:5px; padding-right:5px; margin-bottom:8px;">
         <label style="font-size:11px; font-weight:700; color:#475569; margin-bottom:3px; display:block;">Pencarian:</label>
         <div class="input-group">
           <span class="input-group-addon" style="border-radius:8px 0 0 8px; background:#f8fafc;"><i class="fa fa-search"></i></span>
-          <input type="text" name="q" class="form-control" placeholder="Cari nama / no. HP customer..." value="<?= htmlspecialchars($filter ?? ''); ?>" style="border-radius:0 8px 8px 0; height:38px; font-size:12.5px;">
+          <input type="text" name="q" class="form-control" placeholder="Cari nama / no. HP..." value="<?= htmlspecialchars($filter ?? ''); ?>" style="border-radius:0 8px 8px 0; height:38px; font-size:12px;">
         </div>
       </div>
       <div class="col-md-2 col-sm-6 col-xs-12" style="padding-left:5px; padding-right:5px; margin-bottom:8px;">
         <label style="font-size:11px; font-weight:700; color:#475569; margin-bottom:3px; display:block;">Segmen Market:</label>
-        <select name="rfm_segment" class="form-control" style="border-radius:8px; height:38px; font-size:12.5px; font-weight:600;">
+        <select name="rfm_segment" class="form-control" style="border-radius:8px; height:38px; font-size:12px; font-weight:600;">
           <option value="">— Semua Segmen —</option>
           <?php
           $all_segments = ['Champions','Loyal Customers','Potential Loyalist','New Customers','Big Spenders','Frequent Low Value','Need Attention','At Risk Customers',"Can't Lose Them",'Hibernating'];
@@ -403,31 +431,52 @@
           <?php endforeach; ?>
         </select>
       </div>
+      <div class="col-md-2 col-sm-6 col-xs-12" style="padding-left:5px; padding-right:5px; margin-bottom:8px;">
+        <label style="font-size:11px; font-weight:700; color:#475569; margin-bottom:3px; display:block;">Kategori Produk:</label>
+        <select name="kategori" class="form-control" style="border-radius:8px; height:38px; font-size:12px; font-weight:600;">
+          <option value="">— Semua Kategori —</option>
+          <?php if (!empty($categories_list)): foreach ($categories_list as $kat): ?>
+          <option value="<?= htmlspecialchars($kat->nama_kategori); ?>" <?= ($category_filter ?? '') === $kat->nama_kategori ? 'selected' : ''; ?>><?= htmlspecialchars($kat->nama_kategori); ?></option>
+          <?php endforeach; endif; ?>
+        </select>
+      </div>
       <div class="col-md-3 col-sm-6 col-xs-12" style="padding-left:5px; padding-right:5px; margin-bottom:8px;">
         <label style="font-size:11px; font-weight:700; color:#475569; margin-bottom:3px; display:block;">Produk Transaksi:</label>
-        <select name="product" class="form-control" style="border-radius:8px; height:38px; font-size:12.5px; font-weight:600;">
+        <select name="product" class="form-control" style="border-radius:8px; height:38px; font-size:12px; font-weight:600;">
           <option value="">— Semua Produk —</option>
-          <?php if (!empty($products_list)): foreach ($products_list as $p): 
-            $p_name = !empty($p->item_name) ? $p->item_name : (!empty($p->nama_produk) ? $p->nama_produk : '');
-            if (empty($p_name)) continue;
+          <?php 
+          $grouped_cust_prods = [];
+          if (!empty($products_list)) {
+            foreach ($products_list as $p) {
+              $p_name = !empty($p->item_name) ? $p->item_name : (!empty($p->nama_produk) ? $p->nama_produk : '');
+              if (empty($p_name)) continue;
+              $kat_name = !empty($p->nama_kategori) ? $p->nama_kategori : 'Lainnya';
+              $grouped_cust_prods[$kat_name][] = $p_name;
+            }
+          }
           ?>
-          <option value="<?= htmlspecialchars($p_name); ?>" <?= ($product_filter ?? '') === $p_name ? 'selected' : ''; ?>><?= htmlspecialchars($p_name); ?></option>
+          <?php if (!empty($grouped_cust_prods)): foreach ($grouped_cust_prods as $kat_title => $items): ?>
+            <optgroup label="📂 <?= htmlspecialchars($kat_title); ?>">
+              <?php foreach ($items as $p_item): ?>
+                <option value="<?= htmlspecialchars($p_item); ?>" <?= ($product_filter ?? '') === $p_item ? 'selected' : ''; ?>><?= htmlspecialchars($p_item); ?></option>
+              <?php endforeach; ?>
+            </optgroup>
           <?php endforeach; endif; ?>
         </select>
       </div>
       <div class="col-md-2 col-sm-6 col-xs-12" style="padding-left:5px; padding-right:5px; margin-bottom:8px;">
         <label style="font-size:11px; font-weight:700; color:#475569; margin-bottom:3px; display:block;">Periode / Bulan:</label>
-        <select name="period" class="form-control" style="border-radius:8px; height:38px; font-size:12.5px; font-weight:600;">
+        <select name="period" class="form-control" style="border-radius:8px; height:38px; font-size:12px; font-weight:600;">
           <option value="">— Semua Periode —</option>
           <?php if (!empty($months_list)): foreach ($months_list as $m): ?>
           <option value="<?= htmlspecialchars($m->ym_val); ?>" <?= ($period_filter ?? '') === $m->ym_val ? 'selected' : ''; ?>>📅 <?= htmlspecialchars($m->ym_label); ?></option>
           <?php endforeach; endif; ?>
         </select>
       </div>
-      <div class="col-md-2 col-sm-6 col-xs-12" style="padding-left:5px; padding-right:5px; display:flex; flex-direction:column; justify-content:flex-end; margin-bottom:8px;">
-        <div style="display:flex; gap:6px;">
-          <button type="submit" class="btn" style="background:#6366f1; color:#fff; border:none; border-radius:8px; font-weight:700; height:38px; flex:1; display:inline-flex; align-items:center; justify-content:center; gap:6px;"><i class="fa fa-filter"></i> Filter</button>
-          <a href="<?= site_url('administrator/rfm'); ?>" class="btn btn-default" style="border-radius:8px; height:38px; width:38px; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;" title="Reset Filter"><i class="fa fa-refresh"></i></a>
+      <div class="col-md-1 col-sm-6 col-xs-12" style="padding-left:5px; padding-right:5px; display:flex; flex-direction:column; justify-content:flex-end; margin-bottom:8px;">
+        <div style="display:flex; gap:4px;">
+          <button type="submit" class="btn" style="background:#6366f1; color:#fff; border:none; border-radius:8px; font-weight:700; height:38px; flex:1; display:inline-flex; align-items:center; justify-content:center; padding:0;" title="Filter"><i class="fa fa-filter"></i></button>
+          <a href="<?= site_url('administrator/rfm'); ?>" class="btn btn-default" style="border-radius:8px; height:38px; width:34px; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; padding:0;" title="Reset Filter"><i class="fa fa-refresh"></i></a>
         </div>
       </div>
     </div>

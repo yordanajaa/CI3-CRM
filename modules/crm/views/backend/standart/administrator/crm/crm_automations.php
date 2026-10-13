@@ -162,30 +162,44 @@
 .table-log th { background: #f8fafc; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; }
 .table-log td { font-size: 13px; vertical-align: middle !important; }
 
-@media (max-width: 767px) {
-  .content { padding: 10px 8px !important; }
-  .crm-header { padding: 16px 14px; text-align: center; border-radius: 10px; margin-bottom: 14px; }
-  .crm-header h2 { font-size: 17px; }
-  .crm-header p { font-size: 11px; }
-  .crm-header .text-right { text-align: center !important; margin-top: 10px; }
-  .crm-header .text-right .btn { font-size: 12px; padding: 8px 16px; width: 100%; }
+@media (max-width: 991px) {
+  .crm-header-nav { padding: 16px 16px 12px 16px; margin-bottom: 12px; }
+  .crm-header-nav .header-top-flex { flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 12px; }
+  .crm-header-nav .action-tools { width: 100%; justify-content: flex-start; gap: 6px; }
+  .crm-header-nav .action-tools .btn { font-size: 11px; padding: 6px 10px; flex: 1 1 auto; text-align: center; justify-content: center; }
+}
 
-  .proc-card { padding: 14px 12px; margin-bottom: 10px; border-radius: 8px; }
-  .proc-card .proc-title { font-size: 13px; }
-  .proc-card .proc-desc { font-size: 11px; }
+@media (max-width: 767px) {
+  .content { padding: 8px 6px !important; }
+  .crm-header-nav { padding: 14px 12px 10px 12px; border-radius: 12px; margin-bottom: 12px; }
+  .crm-header-nav .header-top-flex { flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 10px; }
+  .crm-header-nav .header-title h2 { font-size: 18px; }
+  .crm-header-nav .header-title p { font-size: 11px; }
+  .crm-header-nav .action-tools { width: 100%; justify-content: flex-start; gap: 6px; }
+  .crm-header-nav .action-tools .btn { font-size: 10.5px; padding: 6px 10px; flex: 1 1 auto; text-align: center; justify-content: center; }
+  .crm-header-nav .nav-tabs-bar { gap: 6px; padding-top: 10px; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+  .crm-header-nav .nav-tab-btn { font-size: 11.5px; padding: 6px 12px; }
+
+  .proc-card { padding: 12px 10px; margin-bottom: 8px; border-radius: 8px; }
+  .proc-card .proc-title { font-size: 12px; }
+  .proc-card .proc-desc { font-size: 10.5px; }
 
   .box-header .box-title { font-size: 12px; }
   .box-tools .btn { font-size: 10px; }
 
-  .table-log th { font-size: 10px; padding: 6px 4px !important; white-space: nowrap; }
-  .table-log td { font-size: 11px; padding: 6px 4px !important; }
+  .table-responsive { border: none !important; margin-bottom: 0; -webkit-overflow-scrolling: touch; }
+  .table-log { min-width: 680px; }
+  .table-log th { font-size: 9.5px; padding: 6px 4px !important; white-space: nowrap; }
+  .table-log td { font-size: 10.5px; padding: 6px 4px !important; }
   .badge-mode { font-size: 9px; padding: 2px 7px; }
 }
 
 @media (max-width: 480px) {
-  .crm-header h2 { font-size: 15px; }
-  .proc-card .proc-title { font-size: 12px; }
-  .table-log th, .table-log td { font-size: 9.5px; padding: 5px 3px !important; }
+  .crm-header-nav .header-title h2 { font-size: 15px; }
+  .crm-header-nav .action-tools { flex-direction: column; width: 100%; }
+  .crm-header-nav .action-tools .btn { width: 100%; }
+  .proc-card .proc-title { font-size: 11.5px; }
+  .table-log th, .table-log td { font-size: 9px; padding: 5px 3px !important; }
 }
 </style>
 
@@ -228,28 +242,28 @@
 
   <!-- 4 Process Cards Row -->
   <div class="row">
-    <div class="col-md-3 col-sm-6">
+    <div class="col-md-3 col-sm-6 col-xs-6">
       <div class="proc-card" style="border-left-color: #f59e0b;">
         <div class="proc-num">Proses #1</div>
         <div class="proc-title"><i class="fa fa-clock-o text-warning"></i> Follow-Up Overdue</div>
         <div class="proc-desc">Memindai & memperbarui label follow-up pending yang telah melewati tanggal target jadwal.</div>
       </div>
     </div>
-    <div class="col-md-3 col-sm-6">
+    <div class="col-md-3 col-sm-6 col-xs-6">
       <div class="proc-card" style="border-left-color: #ef4444;">
         <div class="proc-num">Proses #2</div>
         <div class="proc-title"><i class="fa fa-times-circle text-danger"></i> Pembatalan Retur</div>
         <div class="proc-desc">Otomatis membatalkan jadwal follow-up untuk pesanan yang diretur atau dibatalkan.</div>
       </div>
     </div>
-    <div class="col-md-3 col-sm-6">
+    <div class="col-md-3 col-sm-6 col-xs-6">
       <div class="proc-card" style="border-left-color: #3b82f6;">
         <div class="proc-num">Proses #3</div>
         <div class="proc-title"><i class="fa fa-cubes text-info"></i> Konsolidasi Repeat</div>
         <div class="proc-desc">Menggabungkan penawaran repeat order multi-produk untuk customer yang beli >1 barang.</div>
       </div>
     </div>
-    <div class="col-md-3 col-sm-6">
+    <div class="col-md-3 col-sm-6 col-xs-6">
       <div class="proc-card" style="border-left-color: #10b981;">
         <div class="proc-num">Proses #4</div>
         <div class="proc-title"><i class="fa fa-line-chart text-success"></i> Konversi 14 Hari</div>

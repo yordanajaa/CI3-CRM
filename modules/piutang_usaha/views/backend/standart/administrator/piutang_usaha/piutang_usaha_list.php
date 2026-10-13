@@ -1,7 +1,41 @@
 <?php /* piutang_usaha_list.php - Ledger Piutang Usaha (AR) */ ?>
 <style>
-.kpi-card { background:#fff; border-radius:8px; padding:15px; margin-bottom:15px; border:1px solid #e2e8f0; box-shadow:0 1px 3px rgba(0,0,0,0.05); position:relative; }
-.kpi-title { font-size:11px; text-transform:uppercase; color:#64748b; font-weight:600; }
+.kpi-card { 
+   background:#fff; 
+   border-radius:8px; 
+   padding:15px; 
+   margin-bottom:15px; 
+   border:1px solid #e2e8f0; 
+   box-shadow:0 1px 3px rgba(0,0,0,0.05); 
+   position:relative; 
+   cursor: pointer;
+   transition: all 0.2s ease;
+   user-select: none;
+}
+.kpi-card:hover {
+   transform: translateY(-3px);
+   box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+}
+.kpi-card:active {
+   transform: translateY(-1px);
+}
+.kpi-card.active-kpi {
+   background: #eff6ff;
+   box-shadow: 0 0 0 2px #3b82f6, 0 6px 18px rgba(59, 130, 246, 0.2);
+}
+.kpi-card.green.active-kpi {
+   background: #f0fdf4;
+   box-shadow: 0 0 0 2px #10b981, 0 6px 18px rgba(16, 185, 129, 0.2);
+}
+.kpi-card.yellow.active-kpi {
+   background: #fffbeb;
+   box-shadow: 0 0 0 2px #f59e0b, 0 6px 18px rgba(245, 158, 11, 0.2);
+}
+.kpi-card.red.active-kpi {
+   background: #fef2f2;
+   box-shadow: 0 0 0 2px #ef4444, 0 6px 18px rgba(239, 68, 68, 0.2);
+}
+.kpi-title { font-size:11px; text-transform:uppercase; color:#64748b; font-weight:600; display:flex; justify-content:space-between; align-items:center; }
 .kpi-value { font-size:20px; font-weight:700; color:#1e293b; margin:4px 0; }
 .kpi-sub { font-size:11px; color:#94a3b8; }
 .kpi-icon { position:absolute; right:15px; top:18px; font-size:28px; opacity:0.15; }
@@ -17,41 +51,92 @@
 </section>
 
 <section class="content">
+   <?php $current_status = $this->input->get('status'); ?>
+
    <!-- KPI Metric Summary -->
    <div class="row">
       <div class="col-md-3 col-sm-6">
-         <div class="kpi-card" style="border-left: 4px solid #3b82f6;">
-            <div class="kpi-title">TOTAL HAK PIUTANG</div>
+         <div class="kpi-card <?= empty($current_status) ? '' : ''; ?>" 
+              style="border-left: 4px solid #3b82f6;"
+              onclick="window.location.href='<?= site_url('administrator/piutang_usaha'); ?>';"
+              role="button" tabindex="0" title="Klik untuk menampilkan SEMUA faktur piutang usaha">
+            <div class="kpi-title">
+               <span>TOTAL HAK PIUTANG</span>
+               <?php if (empty($current_status)): ?>
+                  <span class="badge" style="background:#e0f2fe; color:#0369a1; font-size:9px;">SEMUA</span>
+               <?php endif; ?>
+            </div>
             <div class="kpi-value">Rp <?= number_format($stats['total_hak'] ?? 0, 0, ',', '.'); ?></div>
             <div class="kpi-sub"><i class="fa fa-file-text-o"></i> <?= number_format($stats['total_faktur'] ?? 0); ?> Total Faktur Penjualan</div>
             <i class="fa fa-calculator kpi-icon text-primary"></i>
          </div>
       </div>
       <div class="col-md-3 col-sm-6">
-         <div class="kpi-card" style="border-left: 4px solid #10b981;">
-            <div class="kpi-title">TOTAL TELAH DITERIMA</div>
+         <div class="kpi-card green <?= $current_status == 'lunas' ? 'active-kpi' : ''; ?>" 
+              style="border-left: 4px solid #10b981;"
+              onclick="window.location.href='<?= $current_status == 'lunas' ? site_url('administrator/piutang_usaha') : site_url('administrator/piutang_usaha?status=lunas'); ?>';"
+              role="button" tabindex="0" title="Klik untuk filter tagihan yang TELAH LUNAS">
+            <div class="kpi-title">
+               <span>TOTAL TELAH DITERIMA</span>
+               <?php if ($current_status == 'lunas'): ?>
+                  <span class="badge" style="background:#10b981; color:#fff; font-size:9px;">AKTIF</span>
+               <?php endif; ?>
+            </div>
             <div class="kpi-value">Rp <?= number_format($stats['total_terima'] ?? 0, 0, ',', '.'); ?></div>
             <div class="kpi-sub"><i class="fa fa-check-circle"></i> Kas Masuk Terealisasi</div>
             <i class="fa fa-money kpi-icon text-success"></i>
          </div>
       </div>
       <div class="col-md-3 col-sm-6">
-         <div class="kpi-card" style="border-left: 4px solid #f59e0b;">
-            <div class="kpi-title">SISA TAGIHAN BELUM LUNAS</div>
+         <div class="kpi-card yellow <?= $current_status == 'belum_lunas' ? 'active-kpi' : ''; ?>" 
+              style="border-left: 4px solid #f59e0b;"
+              onclick="window.location.href='<?= $current_status == 'belum_lunas' ? site_url('administrator/piutang_usaha') : site_url('administrator/piutang_usaha?status=belum_lunas'); ?>';"
+              role="button" tabindex="0" title="Klik untuk filter tagihan yang BELUM LUNAS">
+            <div class="kpi-title">
+               <span>SISA TAGIHAN BELUM LUNAS</span>
+               <?php if ($current_status == 'belum_lunas'): ?>
+                  <span class="badge" style="background:#f59e0b; color:#fff; font-size:9px;">AKTIF</span>
+               <?php endif; ?>
+            </div>
             <div class="kpi-value">Rp <?= number_format($stats['sisa_piutang'] ?? 0, 0, ',', '.'); ?></div>
             <div class="kpi-sub"><i class="fa fa-clock-o"></i> Saldo Piutang Aktif</div>
             <i class="fa fa-hourglass-half kpi-icon text-warning"></i>
          </div>
       </div>
       <div class="col-md-3 col-sm-6">
-         <div class="kpi-card" style="border-left: 4px solid #ef4444;">
-            <div class="kpi-title">LEWAT JATUH TEMPO (OVERDUE)</div>
+         <div class="kpi-card red <?= $current_status == 'overdue' ? 'active-kpi' : ''; ?>" 
+              style="border-left: 4px solid #ef4444;"
+              onclick="window.location.href='<?= $current_status == 'overdue' ? site_url('administrator/piutang_usaha') : site_url('administrator/piutang_usaha?status=overdue'); ?>';"
+              role="button" tabindex="0" title="Klik untuk filter tagihan yang LEWAT JATUH TEMPO (Overdue)">
+            <div class="kpi-title">
+               <span>LEWAT JATUH TEMPO (OVERDUE)</span>
+               <?php if ($current_status == 'overdue'): ?>
+                  <span class="badge" style="background:#ef4444; color:#fff; font-size:9px;">AKTIF</span>
+               <?php endif; ?>
+            </div>
             <div class="kpi-value">Rp <?= number_format($stats['overdue_nominal'] ?? 0, 0, ',', '.'); ?></div>
             <div class="kpi-sub" style="color:#ef4444;"><i class="fa fa-warning"></i> <?= number_format($stats['overdue_count'] ?? 0); ?> Tagihan Mendesak Ditagih</div>
             <i class="fa fa-bell kpi-icon text-danger"></i>
          </div>
       </div>
    </div>
+
+   <?php if (!empty($current_status)): 
+      $p_titles = [
+         'lunas'       => ['title' => 'Piutang Telah Diterima (Lunas)', 'color' => '#10b981'],
+         'belum_lunas' => ['title' => 'Sisa Tagihan Belum Lunas (Saldo Piutang Aktif)', 'color' => '#f59e0b'],
+         'overdue'     => ['title' => 'Tagihan Lewat Jatuh Tempo (Overdue)', 'color' => '#ef4444'],
+      ];
+      $p_info = $p_titles[$current_status] ?? ['title' => 'Status: ' . strtoupper($current_status), 'color' => '#3b82f6'];
+   ?>
+   <div style="background:#ffffff; border:1px solid #e2e8f0; border-left:4px solid <?= $p_info['color']; ?>; border-radius:8px; padding:10px 16px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+      <div>
+         <span style="font-weight:700; color:#1e293b;"><i class="fa fa-filter"></i> Filter Aktif: <?= $p_info['title']; ?></span>
+         <span class="badge" style="background:<?= $p_info['color']; ?>; margin-left:6px;"><?= number_format($piutang_counts); ?> Faktur</span>
+      </div>
+      <a href="<?= site_url('administrator/piutang_usaha'); ?>" class="btn btn-default btn-xs" style="font-weight:600;"><i class="fa fa-times text-danger"></i> Tampilkan Semua Piutang</a>
+   </div>
+   <?php endif; ?>
 
    <div class="box box-primary" style="border-radius:6px;">
       <div class="box-header with-border">
@@ -75,6 +160,7 @@
                <div class="col-md-3">
                   <select name="status" class="form-control">
                      <option value="">-- Semua Status --</option>
+                     <option value="overdue" <?= $this->input->get('status')=='overdue'?'selected':''; ?> style="color:#ef4444; font-weight:bold;">⚠️ Lewat Jatuh Tempo (Overdue)</option>
                      <option value="belum_bayar" <?= $this->input->get('status')=='belum_bayar'?'selected':''; ?>>Belum Bayar (Unpaid)</option>
                      <option value="sebagian" <?= $this->input->get('status')=='sebagian'?'selected':''; ?>>Bayar Sebagian (Partial)</option>
                      <option value="lunas" <?= $this->input->get('status')=='lunas'?'selected':''; ?>>Lunas (Paid)</option>
@@ -102,7 +188,7 @@
                      <th class="text-right" style="white-space: nowrap; min-width: 110px;">Telah Diterima</th>
                      <th class="text-right" style="white-space: nowrap; min-width: 120px;">Sisa Tagihan</th>
                      <th class="text-center">Status</th>
-                     <th width="100" class="text-center">Aksi</th>
+                     <th class="text-center" style="min-width: 150px;">Aksi</th>
                   </tr>
                </thead>
                <tbody>
@@ -125,9 +211,29 @@
                         <i class="fa fa-calendar text-muted"></i> <?= date('d/m/Y', strtotime($tgl_faktur)); ?>
                         <br>
                         <?php if(empty($row->tanggal_jatuh_tempo) || $row->tanggal_jatuh_tempo == '0000-00-00'): ?>
-                           <small class="text-danger"><strong>JT: -</strong></small>
-                        <?php else: ?>
-                           <small class="text-danger"><strong>JT: <?= date('d/m/Y', strtotime($row->tanggal_jatuh_tempo)); ?></strong></small>
+                           <small class="text-muted"><strong>JT: -</strong></small>
+                        <?php else: 
+                           $jt_time = strtotime($row->tanggal_jatuh_tempo);
+                           $today_time = strtotime(date('Y-m-d'));
+                           $diff_days = floor(($today_time - $jt_time) / 86400);
+                        ?>
+                           <small class="text-danger"><strong>JT: <?= date('d/m/Y', $jt_time); ?></strong></small>
+                           <?php if($row->status != 'lunas'): ?>
+                              <br>
+                              <?php if($diff_days > 90): ?>
+                                 <span class="label label-danger" style="font-size:10px; padding:2px 5px; background:#991b1b;" title="Piutang macet lebih dari 90 hari"><i class="fa fa-exclamation-triangle"></i> Macet (&gt;90 hr)</span>
+                              <?php elseif($diff_days > 60): ?>
+                                 <span class="label label-danger" style="font-size:10px; padding:2px 5px; background:#dc2626;"><i class="fa fa-clock-o"></i> Lewat 61-90 hr</span>
+                              <?php elseif($diff_days > 30): ?>
+                                 <span class="label label-warning" style="font-size:10px; padding:2px 5px; background:#ea580c;"><i class="fa fa-clock-o"></i> Lewat 31-60 hr</span>
+                              <?php elseif($diff_days > 0): ?>
+                                 <span class="label label-warning" style="font-size:10px; padding:2px 5px; background:#f59e0b;"><i class="fa fa-clock-o"></i> Lewat <?= $diff_days; ?> hr</span>
+                              <?php elseif($diff_days == 0): ?>
+                                 <span class="label label-danger" style="font-size:10px; padding:2px 5px; background:#e11d48;"><i class="fa fa-bell"></i> Hari Ini!</span>
+                              <?php else: ?>
+                                 <span class="label label-success" style="font-size:10px; padding:2px 5px; background:#10b981;"><i class="fa fa-check"></i> Lancar</span>
+                              <?php endif; ?>
+                           <?php endif; ?>
                         <?php endif; ?>
                      </td>
                      <td class="text-right" style="white-space: nowrap;">Rp <?= number_format($row->total, 0, ',', '.'); ?></td>
@@ -144,11 +250,25 @@
                            }
                         ?>
                      </td>
-                     <td class="text-center">
+                     <td class="text-center" style="white-space: nowrap;">
                         <?php if($row->sisa > 0): ?>
                            <button type="button" class="btn btn-success btn-xs btn-flat btn-bayar" data-id="<?= $row->id; ?>" data-nomor="<?= _ent($row->nomor_piutang); ?>" data-pelanggan="<?= _ent($row->nama_pelanggan); ?>" data-sisa="<?= $row->sisa; ?>" style="border-radius:3px;">
                               <i class="fa fa-money"></i> Terima Kas
                            </button>
+                           <?php 
+                              $cust_phone = !empty($row->no_telp) ? $row->no_telp : (!empty($row->telepon) ? $row->telepon : ($row->so_telepon ?? ''));
+                              $clean_phone = preg_replace('/[^0-9]/', '', $cust_phone);
+                              if(!empty($clean_phone)):
+                                 if(substr($clean_phone, 0, 1) === '0'){
+                                    $clean_phone = '62' . substr($clean_phone, 1);
+                                 }
+                                 $msg = "Halo Bapak/Ibu " . ($row->nama_pelanggan ?? 'Pelanggan') . ", kami dari Keuangan menginformasikan tagihan Piutang No. " . $row->nomor_piutang . " (Invoice: " . ($row->nomor_invoice ?: '-') . ") dengan sisa tagihan sebesar Rp " . number_format($row->sisa, 0, ',', '.') . " yang jatuh tempo pada " . (!empty($row->tanggal_jatuh_tempo) ? date('d/m/Y', strtotime($row->tanggal_jatuh_tempo)) : '-') . ". Mohon kesediaannya untuk konfirmasi jika pembayaran telah dilakukan. Terima kasih 🙏";
+                                 $wa_url = "https://api.whatsapp.com/send?phone=" . $clean_phone . "&text=" . urlencode($msg);
+                           ?>
+                              <a href="<?= $wa_url; ?>" target="_blank" class="btn btn-info btn-xs btn-flat" style="border-radius:3px; margin-left:3px; background:#25d366; border-color:#25d366;" title="Kirim Pengingat Tagihan via WhatsApp">
+                                 <i class="fa fa-whatsapp"></i> WA Tagih
+                              </a>
+                           <?php endif; ?>
                         <?php else: ?>
                            <span class="text-muted"><i class="fa fa-check-circle text-success"></i> Selesai</span>
                         <?php endif; ?>
@@ -170,41 +290,55 @@
 
 <!-- Modal Penerimaan Kas Masuk (BKM) -->
 <div class="modal fade" id="modal_bayar" tabindex="-1" role="dialog">
-   <div class="modal-dialog" role="document">
-      <div class="modal-content" style="border-radius:6px;">
-         <div class="modal-header bg-success" style="color:#fff; border-top-left-radius:6px; border-top-right-radius:6px;">
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color:#fff;"><span aria-hidden="true">&times;</span></button>
-            <h4 class="modal-title"><i class="fa fa-money"></i> Form Penerimaan Kas / Pelunasan Piutang (BKM)</h4>
+   <div class="modal-dialog" role="document" style="max-width: 580px; margin: 40px auto;">
+      <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 20px 45px rgba(0,0,0,0.22); overflow: hidden;">
+         <div class="modal-header" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4338ca 100%); color: #fff; padding: 20px 24px; border: none; position: relative;">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: #fff; opacity: 0.85; font-size: 24px; position: absolute; right: 20px; top: 18px; text-shadow: none;">&times;</button>
+            <h4 class="modal-title" style="font-weight: 800; font-size: 16px; margin: 0; display: flex; align-items: center; gap: 10px;">
+               <i class="fa fa-money" style="color: #34d399; font-size: 20px;"></i> Form Penerimaan Kas / Pelunasan Piutang (BKM)
+            </h4>
+            <p style="margin: 4px 0 0 30px; font-size: 12px; color: #e0e7ff; opacity: 0.9;">Catat pelunasan pembayaran dari pelanggan ke rekening kas atau bank perusahaan</p>
          </div>
          <form id="form_terima_kas">
             <input type="hidden" name="piutang_id" id="bayar_piutang_id">
-            <div class="modal-body">
-               <div class="form-group">
-                  <label>No. Tagihan Piutang</label>
-                  <input type="text" class="form-control" id="bayar_nomor_piutang" readonly>
-               </div>
-               <div class="form-group">
-                  <label>Pelanggan</label>
-                  <input type="text" class="form-control" id="bayar_pelanggan" readonly>
-               </div>
-               <div class="form-group">
-                  <label>Sisa Piutang Saat Ini</label>
-                  <div class="input-group">
-                     <span class="input-group-addon">Rp</span>
-                     <input type="text" class="form-control" id="bayar_sisa_display" readonly style="font-weight:bold; color:#d9534f;">
-                  </div>
-               </div>
-               <div class="row">
-                  <div class="col-md-6">
-                     <div class="form-group">
-                        <label>Tanggal Diterima <span class="text-danger">*</span></label>
-                        <input type="date" class="form-control" name="tanggal_bayar" value="<?= date('Y-m-d'); ?>" required>
+            <input type="hidden" id="bayar_nomor_piutang">
+            <input type="hidden" id="bayar_pelanggan">
+            <input type="hidden" id="bayar_sisa_display">
+
+            <div class="modal-body" style="padding: 22px 24px;">
+               <!-- Tagihan Summary Banner -->
+               <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                  <div>
+                     <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">No. Tagihan &amp; Pelanggan:</div>
+                     <div style="font-size: 14.5px; font-weight: 800; color: #1e1b4b; margin-top: 3px;">
+                        <span id="bayar_nomor_piutang_text">-</span>
+                        <span style="color: #cbd5e1; margin: 0 4px;">&bull;</span>
+                        <span id="bayar_pelanggan_text">-</span>
                      </div>
                   </div>
-                  <div class="col-md-6">
-                     <div class="form-group">
-                        <label>Akun Kas / Bank Tujuan <span class="text-danger">*</span></label>
-                        <select class="form-control" name="akun_kas_bank" id="akun_kas_bank" required>
+                  <div style="text-align: right;">
+                     <div style="font-size: 11px; font-weight: 700; color: #dc2626; text-transform: uppercase; letter-spacing: 0.5px;">Sisa Tagihan:</div>
+                     <div style="font-size: 18px; font-weight: 800; color: #dc2626; margin-top: 2px;">
+                        Rp <span id="bayar_sisa_text">0</span>
+                     </div>
+                  </div>
+               </div>
+
+               <div class="row">
+                  <div class="col-md-6 col-xs-12">
+                     <div class="form-group" style="margin-bottom: 16px;">
+                        <label style="font-weight: 700; color: #1e1b4b; font-size: 12px; margin-bottom: 5px; display: block;">
+                           <i class="fa fa-calendar" style="color: #6366f1;"></i> Tanggal Diterima <span class="text-danger">*</span>
+                        </label>
+                        <input type="date" class="form-control" name="tanggal_bayar" value="<?= date('Y-m-d'); ?>" required style="border-radius: 8px; height: 38px; border: 1px solid #cbd5e1; font-weight: 600;">
+                     </div>
+                  </div>
+                  <div class="col-md-6 col-xs-12">
+                     <div class="form-group" style="margin-bottom: 16px;">
+                        <label style="font-weight: 700; color: #1e1b4b; font-size: 12px; margin-bottom: 5px; display: block;">
+                           <i class="fa fa-bank" style="color: #6366f1;"></i> Akun Kas / Bank Tujuan <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-control" name="akun_kas_bank" id="akun_kas_bank" required style="border-radius: 8px; height: 38px; border: 1px solid #cbd5e1; font-weight: 600;">
                            <option value="Kas Tunai Kasir">💵 Kas Tunai Kasir / Cash</option>
                            <option value="Kas Utama Gudang">🏢 Kas Utama Gudang</option>
                            <option value="Bank BCA" selected>🏦 Bank BCA - Operasional</option>
@@ -218,11 +352,14 @@
                      </div>
                   </div>
                </div>
+
                <div class="row">
-                  <div class="col-md-6">
-                     <div class="form-group">
-                        <label>Metode Pembayaran <span class="text-danger">*</span></label>
-                        <select class="form-control" name="metode_pembayaran" id="metode_pembayaran">
+                  <div class="col-md-6 col-xs-12">
+                     <div class="form-group" style="margin-bottom: 16px;">
+                        <label style="font-weight: 700; color: #1e1b4b; font-size: 12px; margin-bottom: 5px; display: block;">
+                           <i class="fa fa-credit-card" style="color: #6366f1;"></i> Metode Pembayaran <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-control" name="metode_pembayaran" id="metode_pembayaran" style="border-radius: 8px; height: 38px; border: 1px solid #cbd5e1; font-weight: 600;">
                            <option value="tunai">💵 Tunai / Cash</option>
                            <option value="bank_transfer" selected>🏦 Bank Transfer / M-Banking</option>
                            <option value="qris">📱 QRIS / E-Wallet (GoPay, OVO, Dana)</option>
@@ -232,25 +369,37 @@
                         </select>
                      </div>
                   </div>
-                  <div class="col-md-6">
-                     <div class="form-group">
-                        <label>No. Ref Transfer / Giro</label>
-                        <input type="text" class="form-control" name="nomor_referensi" placeholder="Contoh: TRX-998822 / Struk">
+                  <div class="col-md-6 col-xs-12">
+                     <div class="form-group" style="margin-bottom: 16px;">
+                        <label style="font-weight: 700; color: #1e1b4b; font-size: 12px; margin-bottom: 5px; display: block;">
+                           <i class="fa fa-file-text-o" style="color: #6366f1;"></i> No. Ref Transfer / Giro
+                        </label>
+                        <input type="text" class="form-control" name="nomor_referensi" placeholder="Contoh: TRX-998822 / Struk" style="border-radius: 8px; height: 38px; border: 1px solid #cbd5e1; font-size: 12.5px;">
                      </div>
                   </div>
                </div>
-               <div class="form-group">
-                  <label>Nominal Diterima (Rp) <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control input-lg rupiah" name="nominal" id="bayar_nominal" required style="font-weight:bold; color:#270;">
+
+               <div class="form-group" style="margin-bottom: 16px;">
+                  <label style="font-weight: 700; color: #1e1b4b; font-size: 12.5px; margin-bottom: 6px; display: block;">
+                     <i class="fa fa-calculator" style="color: #059669;"></i> Nominal Diterima (Rp) <span class="text-danger">*</span>
+                  </label>
+                  <div class="input-group">
+                     <span class="input-group-addon" style="background: #f1f5f9; font-weight: 800; color: #334155; border-radius: 8px 0 0 8px; border: 1px solid #cbd5e1; border-right: none; font-size: 14px;">Rp</span>
+                     <input type="text" class="form-control rupiah" name="nominal" id="bayar_nominal" required style="border-radius: 0 8px 8px 0; border: 1px solid #cbd5e1; height: 44px; font-size: 17px; font-weight: 800; color: #059669;">
+                  </div>
                </div>
-               <div class="form-group">
-                  <label>Catatan Pelunasan</label>
-                  <textarea class="form-control" name="catatan" rows="2" placeholder="Keterangan tambahan..."></textarea>
+
+               <div class="form-group" style="margin-bottom: 0;">
+                  <label style="font-weight: 700; color: #1e1b4b; font-size: 12px; margin-bottom: 5px; display: block;">
+                     <i class="fa fa-pencil" style="color: #6366f1;"></i> Catatan Pelunasan
+                  </label>
+                  <textarea class="form-control" name="catatan" rows="2" placeholder="Keterangan tambahan..." style="border-radius: 8px; border: 1px solid #cbd5e1; font-size: 12.5px; resize: vertical;"></textarea>
                </div>
             </div>
-            <div class="modal-footer">
-               <button type="button" class="btn btn-default btn-flat" data-dismiss="modal">Batal</button>
-               <button type="submit" id="btn_save_bayar" class="btn btn-success btn-flat"><i class="fa fa-save"></i> Simpan Kas Masuk (BKM)</button>
+
+            <div class="modal-footer" style="background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 14px 24px; border-radius: 0 0 16px 16px; display: flex; justify-content: flex-end; gap: 10px;">
+               <button type="button" class="btn btn-default" data-dismiss="modal" style="border-radius: 8px; font-weight: 600; padding: 8px 18px; border: 1px solid #cbd5e1;">Batal</button>
+               <button type="submit" id="btn_save_bayar" class="btn" style="background: linear-gradient(135deg, #059669, #10b981); color: #fff; border-radius: 8px; font-weight: 700; padding: 8px 24px; border: none; box-shadow: 0 4px 12px rgba(16,185,129,0.35);"><i class="fa fa-check-circle"></i> Simpan Kas Masuk (BKM)</button>
             </div>
          </form>
       </div>
@@ -290,6 +439,9 @@ $(document).ready(function(){
       $('#bayar_piutang_id').val(id);
       $('#bayar_nomor_piutang').val(nomor);
       $('#bayar_pelanggan').val(pelanggan);
+      $('#bayar_nomor_piutang_text').text(nomor);
+      $('#bayar_pelanggan_text').text(pelanggan);
+      $('#bayar_sisa_text').text(clean_sisa.toLocaleString('id-ID'));
       $('#bayar_sisa_display').val(clean_sisa.toLocaleString('id-ID'));
       $('#bayar_nominal').val(clean_sisa.toLocaleString('id-ID'));
       $('#modal_bayar').modal('show');

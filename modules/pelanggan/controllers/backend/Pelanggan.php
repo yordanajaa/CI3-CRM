@@ -47,20 +47,28 @@ class Pelanggan extends Admin
 		}
 
 		$this->form_validation->set_rules('nama_pelanggan', 'Nama Pelanggan', 'trim|required|max_length[150]');
-		$this->form_validation->set_rules('kode_pelanggan', 'Kode Pelanggan', 'trim|required|max_length[20]');
 
 		if ($this->form_validation->run()) {
+			$kode = trim((string)$this->input->post('kode_pelanggan'));
+			if (empty($kode) || $this->db->get_where('pelanggan', ['kode_pelanggan' => $kode])->num_rows() > 0) {
+				$kode = $this->model_pelanggan->generate_kode();
+			}
+			$tipe = $this->input->post('tipe_pelanggan') ?: 'retail';
+			$telp = $this->input->post('telepon') ?: '';
+
 			$data = [
-				'kode_pelanggan'  => $this->input->post('kode_pelanggan'),
+				'kode_pelanggan'  => $kode,
 				'nama_pelanggan'  => $this->input->post('nama_pelanggan'),
-				'tipe_pelanggan'  => $this->input->post('tipe_pelanggan') ?: 'retail',
+				'tipe_pelanggan'  => $tipe,
+				'tier_pelanggan'  => strtoupper($tipe),
 				'kontak_person'   => $this->input->post('kontak_person'),
-				'telepon'         => $this->input->post('telepon'),
+				'telepon'         => $telp,
+				'no_telp'         => $telp,
 				'email'           => $this->input->post('email'),
 				'alamat'          => $this->input->post('alamat'),
 				'kota'            => $this->input->post('kota'),
 				'npwp'            => $this->input->post('npwp'),
-				'limit_kredit'    => preg_replace('/[^0-9]/', '', $this->input->post('limit_kredit')) ?: 0,
+				'limit_kredit'    => preg_replace('/[^0-9]/', '', (string)$this->input->post('limit_kredit')) ?: 0,
 				'status'          => $this->input->post('status') ?: 'aktif',
 				'catatan'         => $this->input->post('catatan'),
 				'created_by'      => get_user_data('username'),
@@ -72,10 +80,17 @@ class Pelanggan extends Admin
 			if ($id) {
 				if ($this->input->post('save_type') == 'stay') {
 					$this->data['success'] = true;
+					$this->data['id']      = $id;
 					$this->data['message'] = 'Pelanggan berhasil disimpan. ' . anchor('administrator/pelanggan/edit/' . $id, 'Edit');
+				} elseif ($this->input->post('save_type') == 'sales_order') {
+					set_message('Pelanggan berhasil disimpan. Silakan buat Sales Order.', 'success');
+					$this->data['success']  = true;
+					$this->data['id']       = $id;
+					$this->data['redirect'] = base_url('administrator/sales_order/add?pelanggan_id=' . $id);
 				} else {
 					set_message('Pelanggan berhasil disimpan.', 'success');
 					$this->data['success']  = true;
+					$this->data['id']       = $id;
 					$this->data['redirect'] = base_url('administrator/pelanggan');
 				}
 			} else {
@@ -106,16 +121,21 @@ class Pelanggan extends Admin
 		$this->form_validation->set_rules('nama_pelanggan', 'Nama Pelanggan', 'trim|required|max_length[150]');
 
 		if ($this->form_validation->run()) {
+			$tipe = $this->input->post('tipe_pelanggan') ?: 'retail';
+			$telp = $this->input->post('telepon') ?: '';
+
 			$data = [
 				'nama_pelanggan'  => $this->input->post('nama_pelanggan'),
-				'tipe_pelanggan'  => $this->input->post('tipe_pelanggan') ?: 'retail',
+				'tipe_pelanggan'  => $tipe,
+				'tier_pelanggan'  => strtoupper($tipe),
 				'kontak_person'   => $this->input->post('kontak_person'),
-				'telepon'         => $this->input->post('telepon'),
+				'telepon'         => $telp,
+				'no_telp'         => $telp,
 				'email'           => $this->input->post('email'),
 				'alamat'          => $this->input->post('alamat'),
 				'kota'            => $this->input->post('kota'),
 				'npwp'            => $this->input->post('npwp'),
-				'limit_kredit'    => preg_replace('/[^0-9]/', '', $this->input->post('limit_kredit')) ?: 0,
+				'limit_kredit'    => preg_replace('/[^0-9]/', '', (string)$this->input->post('limit_kredit')) ?: 0,
 				'status'          => $this->input->post('status') ?: 'aktif',
 				'catatan'         => $this->input->post('catatan'),
 				'updated_at'      => date('Y-m-d H:i:s'),
@@ -138,15 +158,25 @@ class Pelanggan extends Admin
 		$this->response($this->data);
 	}
 
+	public function get_list_json()
+	{
+		$pelanggans = $this->db->where('status', 'aktif')->order_by('nama_pelanggan', 'ASC')->get('pelanggan')->result();
+		$this->response(['status' => true, 'data' => $pelanggans]);
+	}
+
 	public function view($id)
 	{
 		$this->is_allowed('pelanggan_view');
 		$this->data['pelanggan'] = $this->model_pelanggan->find($id);
 		
 		// Riwayat transaksi per pelanggan untuk analisis pembelian ulang
-		$this->data['riwayat_so'] = $this->db->get_where('sales_order', ['pelanggan_id' => $id])->result();
-		$this->data['riwayat_invoice'] = $this->db->get_where('invoice', ['pelanggan_id' => $id])->result();
-		$this->data['total_volume'] = $this->db->select_sum('total')->get_where('sales_order', ['pelanggan_id' => $id])->row()->total ?: 0;
+		$this->data['riwayat_so'] = $this->db->order_by('id', 'DESC')->get_where('sales_order', ['pelanggan_id' => $id])->result();
+		$this->data['riwayat_mp'] = $this->db->order_by('id', 'DESC')->get_where('penjualan_marketplace', ['pelanggan_id' => $id])->result();
+		$this->data['riwayat_invoice'] = $this->db->order_by('id', 'DESC')->get_where('invoice', ['pelanggan_id' => $id])->result();
+		
+		$so_vol = $this->db->select_sum('total')->get_where('sales_order', ['pelanggan_id' => $id])->row()->total ?: 0;
+		$mp_vol = $this->db->select_sum('total')->get_where('penjualan_marketplace', ['pelanggan_id' => $id])->row()->total ?: 0;
+		$this->data['total_volume'] = $so_vol + $mp_vol;
 
 		$this->template->title('Detail & Analisis Transaksi Pelanggan');
 		$this->render('backend/standart/administrator/pelanggan/pelanggan_view', $this->data);

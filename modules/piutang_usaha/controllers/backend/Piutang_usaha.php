@@ -36,6 +36,20 @@ class Piutang_usaha extends Admin
 		$this->render('backend/standart/administrator/piutang_usaha/piutang_usaha_list', $this->data);
 	}
 
+	public function view($id = null)
+	{
+		$this->is_allowed('piutang_usaha_view');
+		$this->data['piutang'] = $this->model_piutang_usaha->find($id);
+		if (!$this->data['piutang']) {
+			redirect('administrator/piutang_usaha');
+			return;
+		}
+		$this->data['pelanggan'] = $this->db->get_where('pelanggan', ['id' => $this->data['piutang']->pelanggan_id])->row();
+		$this->data['pembayaran'] = $this->db->get_where('pembayaran_piutang', ['piutang_id' => $id])->result();
+		$this->template->title('Detail Piutang Usaha - ' . $this->data['piutang']->nomor_piutang);
+		$this->render('backend/standart/administrator/piutang_usaha/piutang_usaha_view', $this->data);
+	}
+
 	public function kas_masuk($offset = 0)
 	{
 		$this->is_allowed('piutang_usaha_list');
@@ -119,11 +133,28 @@ class Piutang_usaha extends Admin
 			], ['id' => $piutang_id]);
 
 			// Also update Invoice and Sales Order status if associated!
-			if ($piutang->so_id) {
-				$this->db->update('sales_order', ['status' => ($status_new == 'lunas' ? 'completed' : 'confirmed')], ['id' => $piutang->so_id]);
-			}
+			$target_so_id = $piutang->so_id;
 			if ($piutang->invoice_id) {
 				$this->db->update('invoice', ['status' => ($status_new == 'lunas' ? 'paid' : 'partial')], ['id' => $piutang->invoice_id]);
+				if (empty($target_so_id)) {
+					$inv_obj = $this->db->get_where('invoice', ['id' => $piutang->invoice_id])->row();
+					if ($inv_obj && !empty($inv_obj->so_id)) {
+						$target_so_id = $inv_obj->so_id;
+					}
+				}
+			}
+
+			if ($target_so_id) {
+				$so_curr = $this->db->get_where('sales_order', ['id' => $target_so_id])->row();
+				if ($so_curr) {
+					if ($status_new == 'lunas') {
+						if (in_array($so_curr->status, ['draft', 'submitted'])) {
+							$this->db->update('sales_order', ['status' => 'confirmed'], ['id' => $target_so_id]);
+						} elseif (in_array($so_curr->status, ['delivered'])) {
+							$this->db->update('sales_order', ['status' => 'completed'], ['id' => $target_so_id]);
+						}
+					}
+				}
 			}
 
 			set_message('Pembayaran Piutang berhasil disimpan dengan Nomor ' . $nomor_bkm, 'success');
