@@ -37,14 +37,10 @@ defined('EXIT__AUTO_MIN')      OR define('EXIT__AUTO_MIN', 9);
 defined('EXIT__AUTO_MAX')      OR define('EXIT__AUTO_MAX', 125);
 
 // Base URLs & App Paths
-$is_https = (isset($_SERVER['HTTPS']) && (strtolower($_SERVER['HTTPS']) === 'on' || $_SERVER['HTTPS'] == '1'))
-    || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https')
-    || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
-$http = $is_https ? 'https://' : 'http://';
-
-$host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : (isset($_SERVER['SERVER_NAME']) ? $_SERVER['SERVER_NAME'] : 'localhost');
+$http = 'http' . ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') ? 's' : '') . '://';
+$port = (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] != '80' && $_SERVER['SERVER_PORT'] != '443') ? ':' . $_SERVER['SERVER_PORT'] : '';
 $fo = str_replace("index.php", "", isset($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : '');
-$base = rtrim($http . $host . $fo, '/') . '/';
+$base = $http . (isset($_SERVER['SERVER_NAME']) ? $_SERVER['SERVER_NAME'] : 'localhost') . $port . $fo;
 
 defined('BASE_URL')             OR define('BASE_URL', $base);
 defined('BASE_ASSET')           OR define('BASE_ASSET', BASE_URL . 'asset/');
