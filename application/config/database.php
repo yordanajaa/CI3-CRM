@@ -15,11 +15,11 @@ $is_local = in_array($server_name, $local_hosts)
 $is_online = !$is_local;
 
 if ($is_online) {
-    // Pengaturan Database Hostinger (Sesuaikan dengan data MySQL cPanel Hostinger)
-    $hostname = 'localhost';
-    $username = 'u103077770_metafora';  // Ganti dengan Username Database Hostinger
-    $password = 'PasswordHostingerAnda'; // Ganti dengan Password Database Hostinger
-    $database = 'u103077770_metafora';  // Ganti dengan Nama Database Hostinger
+    // Pengaturan Database Hostinger (temandev.my.id)
+    $hostname = 'localhost'; // WAJIB 'localhost' di Hostinger!
+    $username = 'u500891556_yordan';
+    $password = 'Yordan123y';
+    $database = 'u500891556_yordan';
 } else {
     // Pengaturan Database Localhost (Laragon / XAMPP)
     $hostname = 'localhost';
@@ -40,8 +40,8 @@ $db['default'] = array(
 	'db_debug' => (ENVIRONMENT !== 'production'),
 	'cache_on' => FALSE,
 	'cachedir' => '',
-	'char_set' => 'utf8mb4',
-	'dbcollat' => 'utf8mb4_unicode_ci',
+	'char_set' => 'utf8',
+	'dbcollat' => 'utf8_general_ci',
 	'swap_pre' => '',
 	'encrypt'  => FALSE,
 	'compress' => FALSE,
