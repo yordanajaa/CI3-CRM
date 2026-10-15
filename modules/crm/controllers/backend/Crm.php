@@ -439,9 +439,7 @@ class Crm extends Admin
 
 	public function wa_gateway_setting()
 	{
-		$this->data['config'] = $this->model_crm->get_wa_gateway_config();
-		$this->template->title('CRM — Pengaturan WhatsApp Gateway API');
-		$this->render('backend/standart/administrator/crm/crm_wa_gateway_setting', $this->data);
+		redirect('administrator/crm/dashboard', 'refresh');
 	}
 
 	public function save_wa_gateway_config_ajax()

@@ -42027,7 +42027,6 @@ INSERT INTO `menu` (`id`, `label`, `type`, `icon_color`, `link`, `sort`, `parent
 (132, 'Dashboard CRM', 'link', 'text-blue', 'administrator/crm/dashboard', 1, 127, 'fa-tachometer', 1, 1),
 (133, 'Otomasi CRM', 'link', 'text-red', 'administrator/crm/automations', 7, 127, 'fa-bolt', 1, 1),
 (134, 'Kinerja Tim CS', 'link', 'text-yellow', 'administrator/crm/cs_performance', 5, 127, 'fa-trophy', 1, 1),
-(135, 'Pengaturan WA API', 'controller', NULL, 'administrator/crm/wa_gateway_setting', 8, 127, 'fa-plug', 1, 1),
 (136, 'Analisis RFM', 'backend', '', '#', 27, 0, 'fa fa-bar-chart', 1, 1),
 (137, 'Dashboard RFM', 'backend', '', 'administrator/rfm/dashboard', 1, 136, 'fa fa-tachometer', 1, 1),
 (138, 'Customer & Segmentasi', 'backend', '', 'administrator/rfm', 2, 136, 'fa fa-users', 1, 1),
