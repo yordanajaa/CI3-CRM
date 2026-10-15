@@ -348,9 +348,15 @@
                                        <i class="fa fa-list-alt"></i> Kartu Stok
                                     </a>
                                     <?php if (is_allowed('stok_delete', false)): ?>
-                                       <a href="javascript:void(0);" data-href="<?= site_url('administrator/stok/delete/' . $s->id); ?>" class="btn btn-xs btn-danger remove-data" style="margin: 2px 1px;" title="Hapus">
-                                          <i class="fa fa-trash"></i> Hapus
-                                       </a>
+                                       <?php if ((float)$s->qty <= 0): ?>
+                                          <button type="button" class="btn btn-xs btn-default disabled" style="margin: 2px 1px; opacity: 0.55; cursor: not-allowed;" title="Stok sudah kosong (0), tidak dapat dihapus lagi" disabled>
+                                             <i class="fa fa-trash text-muted"></i> Hapus
+                                          </button>
+                                       <?php else: ?>
+                                          <a href="javascript:void(0);" data-href="<?= site_url('administrator/stok/delete/' . $s->id); ?>" data-nama="<?= htmlspecialchars($s->nama_produk, ENT_QUOTES); ?>" data-qty="<?= number_format((float)$s->qty, 0, ',', '.'); ?>" class="btn btn-xs btn-danger remove-data" style="margin: 2px 1px;" title="Hapus / Kosongkan Stok">
+                                             <i class="fa fa-trash"></i> Hapus
+                                          </a>
+                                       <?php endif; ?>
                                     <?php endif; ?>
                                  </td>
                               </tr>
@@ -423,13 +429,15 @@
 $(document).ready(function(){
    $('.remove-data').click(function(){
       var url = $(this).attr('data-href');
+      var nama = $(this).attr('data-nama') || 'produk ini';
+      var qty = $(this).attr('data-qty') || '';
       swal({
-         title: 'Hapus Stok?',
-         text: 'Data stok yang dihapus tidak dapat dikembalikan!',
+         title: 'Hapus / Kosongkan Stok?',
+         text: 'Stok ' + nama + (qty ? ' (saat ini: ' + qty + ')' : '') + ' akan dihapus dan direset menjadi 0 (kosong)!',
          type: 'warning',
          showCancelButton: true,
          confirmButtonColor: '#DD6B55',
-         confirmButtonText: 'Ya, Hapus!',
+         confirmButtonText: 'Ya, Kosongkan Stok!',
          cancelButtonText: 'Batal',
          closeOnConfirm: true
       }, function(ok){

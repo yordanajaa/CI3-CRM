@@ -407,9 +407,59 @@ class Stok extends Admin
 	public function delete($id = null)
 	{
 		$this->is_allowed('stok_delete');
-		$this->model_stok->remove($id);
-		set_message('Data Stok berhasil dihapus.', 'success');
-		redirect('administrator/stok');
+
+		$redirect_url = !empty($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : site_url('administrator/stok');
+
+		$stok = $this->db->get_where('stok', ['id' => $id])->row();
+		if (!$stok) {
+			set_message('Data stok tidak ditemukan.', 'danger');
+			redirect($redirect_url);
+			return;
+		}
+
+		$current_qty = (float) $stok->qty;
+
+		// Jika stok kosong (<= 0), tidak boleh dihapus
+		if ($current_qty <= 0) {
+			set_message('Stok produk ini sudah kosong (0), tidak dapat dihapus lagi.', 'warning');
+			redirect($redirect_url);
+			return;
+		}
+
+		// Jika ada stok (> 0), aksi "hapus" berarti mengosongkan stok menjadi 0
+		$now  = date('Y-m-d H:i:s');
+		$user = get_user_data('username') ?: 'admin';
+
+		$this->db->trans_start();
+
+		$this->db->update('stok', [
+			'qty'        => 0,
+			'qty_rusak'  => 0,
+			'updated_at' => $now,
+		], ['id' => $id]);
+
+		// Catat ke stok_log bahwa stok telah dikosongkan/dihapus
+		$this->db->insert('stok_log', [
+			'produk_id'      => $stok->produk_id,
+			'gudang_id'      => $stok->gudang_id,
+			'jenis'          => 'keluar',
+			'qty'            => $current_qty,
+			'keterangan'     => "Stok dikosongkan/dihapus secara manual dari {$current_qty} menjadi 0",
+			'referensi_type' => 'manual',
+			'referensi_id'   => $id,
+			'created_by'     => $user,
+			'created_at'     => $now,
+		]);
+
+		$this->db->trans_complete();
+
+		if ($this->db->trans_status() === FALSE) {
+			set_message('Terjadi kesalahan database saat mengosongkan stok.', 'danger');
+		} else {
+			set_message('Stok produk berhasil dihapus (dikosongkan menjadi 0).', 'success');
+		}
+
+		redirect($redirect_url);
 	}
 
 	public function edit_massal()
