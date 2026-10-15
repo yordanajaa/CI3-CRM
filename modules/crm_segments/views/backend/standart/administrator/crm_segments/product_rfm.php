@@ -31,7 +31,7 @@ $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
 }
 
 .rfm-product-wrapper {
-  padding: 12px 14px 30px 14px;
+  padding: 0 0 25px 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
@@ -330,7 +330,7 @@ $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
 /* Mobile Responsiveness Enhancements */
 @media (max-width: 768px) {
   .rfm-product-wrapper {
-    padding: 10px 8px 30px 8px !important;
+    padding: 0 0 15px 0 !important;
   }
   .rfm-header-nav {
     padding: 16px 14px 14px 14px !important;

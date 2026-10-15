@@ -26,7 +26,7 @@ $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
 }
 
 .rfm-matrix-rules-wrapper {
-  padding: 16px 20px 40px 20px;
+  padding: 0 0 25px 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   color: #1e293b;
 }
@@ -614,7 +614,7 @@ $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
 
 @media (max-width: 768px) {
   .rfm-matrix-rules-wrapper {
-    padding: 10px 8px 30px 8px !important;
+    padding: 0 0 15px 0 !important;
   }
   .rfm-header-nav {
     padding: 18px 16px 14px 16px !important;
@@ -725,16 +725,16 @@ $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
     <div class="header-top-flex">
       <div class="header-title">
         <div class="location-tag">
-          <i class="fa fa-map-marker"></i> Analisis RFM <i class="fa fa-angle-right"></i> <span>125 Aturan Matriks RFM</span>
+          <i class="fa fa-map-marker"></i> Analisis RFM <i class="fa fa-angle-right"></i> <span>Matriks Aturan RFM</span>
         </div>
-        <h2><i class="fa fa-table" style="color:#818cf8;"></i> 125 Aturan Matriks RFM</h2>
+        <h2><i class="fa fa-table" style="color:#818cf8;"></i> Matriks Aturan RFM (125 Aturan)</h2>
         <p>Kamus lengkap pemetaan kombinasi skor Recency (1-5), Frequency (1-5), dan Monetary (1-5) ke 10 Segmen RFM &amp; strategi rekomendasi</p>
       </div>
 
       <div class="action-tools">
         <a href="<?= site_url('administrator/crm/broadcast'); ?>" class="btn" style="background:#25D366; color:#fff;" title="Broadcast WA"><i class="fa fa-bullhorn"></i> Broadcast WA</a>
         <button type="button" class="btn" data-toggle="modal" data-target="#modal-import-matrix" style="background:#10b981; color:#fff; box-shadow:0 4px 12px rgba(16,185,129,0.35);" title="Import / Update Aturan Matriks dari Excel"><i class="fa fa-file-excel-o"></i> Import Excel Data</button>
-        <a href="<?= site_url('administrator/rfm/download_template_matrix'); ?>" class="btn" style="background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.3);" title="Unduh Matriks 125 Aturan dalam format CSV"><i class="fa fa-download"></i> Export CSV</a>
+        <a href="<?= site_url('administrator/rfm/download_template_matrix'); ?>" class="btn" style="background:rgba(255,255,255,0.18); color:#fff; border:1px solid rgba(255,255,255,0.3);" title="Unduh Matriks 125 Aturan dalam format CSV"><i class="fa fa-download"></i> Export CSV</a>
         <?php if (!empty($is_custom)): ?>
         <a href="<?= site_url('administrator/rfm/reset_matrix_rules'); ?>" class="btn" style="background:#ef4444; color:#fff;" onclick="return confirm('Apakah Anda yakin ingin mereset aturan matriks ke standar bawaan (125 aturan)?');" title="Reset Aturan ke Standar Bawaan"><i class="fa fa-refresh"></i> Reset Standar</a>
         <?php endif; ?>

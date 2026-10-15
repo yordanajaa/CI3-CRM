@@ -9,7 +9,7 @@
 }
 
 .rfm-cohort-wrapper {
-  padding: 12px 14px 30px 14px;
+  padding: 0 0 25px 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
@@ -452,7 +452,7 @@
 
 /* Responsive */
 @media (max-width: 767px) {
-  .rfm-cohort-wrapper { padding: 8px 8px 20px 8px; }
+  .rfm-cohort-wrapper { padding: 0 0 15px 0; }
   .rfm-header-nav { padding: 16px 14px; border-radius: 12px; }
   .rfm-header-nav .header-top-flex { flex-direction: column; align-items: stretch; gap: 10px; }
   .rfm-header-nav .header-title h2 { font-size: 18px; }
@@ -672,7 +672,7 @@
         <div class="location-tag">
           <i class="fa fa-map-marker"></i> Analisis RFM <i class="fa fa-angle-right"></i> <span>Analisis Kohort</span>
         </div>
-        <h2><i class="fa fa-th" style="color:#818cf8;"></i> Analisis Loyalitas & Pembelian Ulang Pelanggan</h2>
+        <h2><i class="fa fa-th" style="color:#818cf8;"></i> Analisis Kohort — Loyalitas & Pembelian Ulang Pelanggan</h2>
         <p>Memantau persentase pelanggan yang kembali berbelanja (repeat order) dan total perolehan omset berdasarkan bulan pertama kali mereka bertransaksi —
           <?php if ($c_mode === 'daily'): ?>
             Mode Harian: <?= $month_names_id[(int)$c_month] . ' ' . $c_year; ?>
@@ -691,7 +691,7 @@
       <div class="action-tools">
         <a href="<?= site_url('administrator/crm/broadcast'); ?>" class="btn" style="background:#25D366; color:#fff;" title="Broadcast WA"><i class="fa fa-bullhorn"></i> Broadcast WA</a>
         <button type="button" class="btn" data-toggle="modal" data-target="#modal-import-excel" style="background:#10b981; color:#fff; box-shadow:0 4px 12px rgba(16,185,129,0.35);"><i class="fa fa-file-excel-o"></i> Import Excel Data</button>
-        <a href="<?= site_url('administrator/rfm/export_customers' . $nav_qs); ?>" class="btn" style="background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.3);"><i class="fa fa-download"></i> Export CSV</a>
+        <a href="<?= site_url('administrator/rfm/export_customers' . $nav_qs); ?>" class="btn" style="background:rgba(255,255,255,0.18); color:#fff; border:1px solid rgba(255,255,255,0.3);"><i class="fa fa-download"></i> Export CSV</a>
       </div>
     </div>
 
