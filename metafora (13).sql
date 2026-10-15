@@ -32120,7 +32120,7 @@ CREATE TABLE `crm_wa_gateway_config` (
 --
 
 INSERT INTO `crm_wa_gateway_config` (`id`, `provider`, `mode`, `api_key`, `api_url`, `sender_phone`, `additional_headers`, `is_active`, `created_at`, `updated_at`) VALUES
-(1, 'waha', 'wa_gateway', '', 'http://localhost:3000', '082230700567', '', 1, '2026-09-05 12:33:13', '2026-10-04 19:28:14');
+(1, 'direct', 'wa_direct', '', '', '082230700567', '', 1, '2026-09-05 12:33:13', '2026-10-04 19:28:14');
 
 -- --------------------------------------------------------
 

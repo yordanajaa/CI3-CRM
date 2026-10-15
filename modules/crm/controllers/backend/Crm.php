@@ -362,6 +362,26 @@ class Crm extends Admin
 		echo json_encode(['success' => true, 'templates' => $list]);
 	}
 
+	public function log_direct_followup_ajax()
+	{
+		header('Content-Type: application/json');
+		$label_id = (int)$this->input->post('label_id');
+		$label = $this->model_crm->get_label($label_id);
+		if (!$label) {
+			echo json_encode(['success' => false, 'message' => 'Label tidak ditemukan']);
+			return;
+		}
+
+		$message = $this->model_crm->render_template($label->template_pesan_default, $label);
+		$this->model_crm->log_broadcast($label_id, $message, 'wa_direct_link');
+
+		if ($label->status_label === 'Pending') {
+			$this->model_crm->update_label_status($label_id, 'Sudah Dikirim', get_user_data('username') ?: 'system');
+		}
+
+		echo json_encode(['success' => true]);
+	}
+
 	public function send_broadcast_ajax()
 	{
 		header('Content-Type: application/json');
@@ -374,7 +394,7 @@ class Crm extends Admin
 		}
 
 		$config = $this->model_crm->get_wa_gateway_config();
-		$use_api = ($config->mode === 'wa_gateway');
+		$use_api = ($config->mode === 'wa_gateway' && !empty($config->is_active));
 
 		$wa_links = [];
 		$api_results = [];

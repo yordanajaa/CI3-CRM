@@ -688,13 +688,19 @@
             </td>
             <td class="text-center" style="white-space:nowrap;">
               <div style="display:inline-flex; align-items:center; justify-content:center; gap:4px;">
-                <?php if (!empty($e->customer_phone)): ?>
-                <button class="btn-wa-sm btn-send-wa <?= $e->is_broadcast_sent ? 'sent-active' : ''; ?>" data-label-id="<?= $e->id; ?>" title="<?= $e->is_broadcast_sent ? 'Kirim ulang WA' : 'Kirim WA'; ?>">
-                  <i class="fa fa-whatsapp"></i> Kirim WA
-                </button>
-                <a href="https://api.whatsapp.com/send?phone=<?= preg_replace('/[^0-9]/', '', $e->customer_phone); ?>" target="_blank" class="btn btn-xs" style="background:#25D366; color:#fff; border-radius:6px; padding:5px 10px; font-weight:600; font-size:11px;" title="Chat via WhatsApp Web">
-                  <i class="fa fa-whatsapp"></i> Chat WA
+                <?php if (!empty($e->customer_phone)): 
+                  $clean_ph = preg_replace('/[^0-9]/', '', $e->customer_phone);
+                  $wa_ph = (substr($clean_ph, 0, 1) === '0') ? ('62' . substr($clean_ph, 1)) : $clean_ph;
+                  if (substr($wa_ph, 0, 2) !== '62') $wa_ph = '62' . $wa_ph;
+                  $rendered_msg = $this->model_crm->render_template($e->template_pesan_default, $e);
+                  $direct_wa_followup = 'https://api.whatsapp.com/send?phone=' . $wa_ph . '&text=' . rawurlencode($rendered_msg);
+                ?>
+                <a href="<?= $direct_wa_followup; ?>" target="_blank" class="btn-wa-sm btn-direct-followup <?= $e->is_broadcast_sent ? 'sent-active' : ''; ?>" data-label-id="<?= $e->id; ?>" data-nama="<?= htmlspecialchars($e->customer_nama); ?>" title="Buka WhatsApp Web / Aplikasi untuk Follow-Up Customer ini">
+                  <i class="fa fa-whatsapp"></i> Follow-Up WA
                 </a>
+                <button type="button" class="btn btn-xs btn-default btn-send-wa" data-label-id="<?= $e->id; ?>" title="Pratinjau & Edit Teks Follow-Up Sebelum Kirim" style="border-radius:6px; padding:5px 8px; font-size:11px;">
+                  <i class="fa fa-pencil-square-o"></i> Edit
+                </button>
                 <?php endif; ?>
                 <button class="btn btn-xs btn-default btn-add-note" data-label-id="<?= $e->id; ?>" data-nama="<?= htmlspecialchars($e->customer_nama); ?>" title="Tambah Catatan" style="border-radius:6px; padding:5px 8px; font-size:11px;">
                   <i class="fa fa-pencil"></i>
@@ -1393,7 +1399,7 @@
       <div class="modal-footer" style="background:#f8fafc;">
         <button type="button" class="btn btn-default" data-dismiss="modal">Batal</button>
         <button type="button" class="btn btn-success" id="btn-confirm-send-wa" style="background:#25D366;border:none;font-weight:700;padding:8px 20px;">
-          <i class="fa fa-paper-plane"></i> Kirim via WhatsApp
+          <i class="fa fa-whatsapp"></i> Buka & Kirim di WhatsApp
         </button>
       </div>
     </div>
@@ -1670,6 +1676,36 @@ $(document).ready(function() {
     }).fail(function() {
       notify('error', 'Gagal menghubungi server');
     });
+  });
+
+  // ===== Direct WhatsApp Follow-Up Click (Redirect to WA Web / WA App) =====
+  $(document).on('click', '.btn-direct-followup', function() {
+    var $btn = $(this);
+    var label_id = $btn.attr('data-label-id');
+    var nama = $btn.attr('data-nama') || 'Customer';
+
+    $btn.addClass('sent-active');
+    
+    var dt = new Date();
+    var nowStr = ('0' + dt.getDate()).slice(-2) + '/' + ('0' + (dt.getMonth() + 1)).slice(-2) + '/' + dt.getFullYear() + ' ' + ('0' + dt.getHours()).slice(-2) + ':' + ('0' + dt.getMinutes()).slice(-2);
+    $('#time-log-' + label_id).show().find('.time-val').text(nowStr);
+
+    var $cntBadge = $('#badge-count-' + label_id);
+    var currCnt = parseInt($cntBadge.attr('data-count') || 0) + 1;
+    $cntBadge.attr('data-count', currCnt).find('.cnt-val').text(currCnt);
+    $cntBadge.css('display', 'inline-block');
+
+    var $statusSel = $('.status-select[data-label-id="' + label_id + '"]');
+    if ($statusSel.length && $statusSel.val() === 'Pending') {
+      $statusSel.val('Sudah Dikirim').trigger('change');
+    }
+
+    notify('success', 'Membuka WhatsApp Web / Aplikasi untuk ' + nama);
+
+    // Kirim pencatatan log ke server di latar belakang
+    $.post(_BASE + 'administrator/crm/log_direct_followup_ajax', buildPayload({
+      label_id: label_id
+    }));
   });
 
   // ===== Single WA Send (With Preview & Edit Modal) =====
