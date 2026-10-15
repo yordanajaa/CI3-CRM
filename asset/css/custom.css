@@ -278,10 +278,11 @@ i.required, span.required {
 .component-wrapper .box .box-header {
     background-color: rgb(24, 31, 35) !important;
 }
+/*
 .block-list li img:hover {
-    /*
-    outline: 2px solid #FFFDFD;*/
+    outline: 2px solid #FFFDFD;
 }
+*/
 .nav-content-wrapper {
     position: absolute;
     float: right;
@@ -451,8 +452,10 @@ i.required, span.required {
     -moz-transform: translate(-50%, 0);
     transform: translate(-50%, 0);
     -webkit-animation: loading 1s infinite;
+    animation: loading 1s infinite;
     /* Safari 4.0 - 8.0 */
     -webkit-animation-timing-function: ease-out;
+    animation-timing-function: ease-out;
     -moz-transition: all 0.5s;
     -webkit-transition: all 0.5s;
     transition: all 0.5s;
