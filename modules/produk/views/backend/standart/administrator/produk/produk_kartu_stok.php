@@ -20,7 +20,7 @@
       <div class="box-body">
          <div class="callout callout-info" style="border-radius:6px;">
             <h4><i class="fa fa-info-circle"></i> Ringkasan Barang: <strong><?= _ent($produk->nama_produk); ?></strong></h4>
-            <p>Kode Produk: <code><?= _ent($produk->kode_produk); ?></code> | Metode Stok: <strong><?= _ent($produk->metode_stok); ?></strong> | Barcode: <code><?= _ent($produk->barcode ?? '-'); ?></code></p>
+            <p>Kode Produk: <code><?= _ent($produk->kode_produk); ?></code> | Metode Stok: <strong><?= _ent($produk->metode_stok); ?></strong></p>
          </div>
 
          <div class="table-responsive">

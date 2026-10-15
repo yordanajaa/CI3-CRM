@@ -14,17 +14,17 @@
 </style>
 
 <section class="content-header">
-   <h1>Detail Produk & Barcode <small><?= _ent($produk->nama_produk); ?></small></h1>
+   <h1>Detail Produk <small><?= _ent($produk->nama_produk); ?></small></h1>
    <ol class="breadcrumb">
       <li><a href="<?= base_url('administrator/dashboard'); ?>"><i class="fa fa-dashboard"></i> Home</a></li>
       <li><a href="<?= base_url('administrator/produk'); ?>"><i class="fa fa-cube"></i> Produk</a></li>
-      <li class="active">Detail & Barcode</li>
+      <li class="active">Detail</li>
    </ol>
 </section>
 <section class="content">
    <div class="row">
       <!-- Info Detail Produk -->
-      <div class="col-md-6">
+      <div class="col-md-7">
          <div class="box box-primary" style="border-radius:6px;">
             <div class="box-header with-border">
                <h3 class="box-title"><i class="fa fa-cube text-primary"></i> <?= _ent($produk->nama_produk); ?></h3>
@@ -38,7 +38,6 @@
             <div class="box-body">
                <table class="table table-striped table-hover">
                   <tr><th width="35%">Kode Produk</th><td><span class="label label-default" style="font-size:12px;"><?= _ent($produk->kode_produk); ?></span></td></tr>
-                  <tr><th>Nomor Barcode</th><td><strong class="text-primary" style="font-size:14px; letter-spacing:1px;"><?= _ent($produk->barcode ?? $produk->kode_produk); ?></strong></td></tr>
                   <tr><th>Nama Produk</th><td><strong><?= _ent($produk->nama_produk); ?></strong></td></tr>
                   <tr><th>Kategori</th><td><?= _ent($produk->nama_kategori ?? '-'); ?></td></tr>
                   <tr><th>Satuan</th><td><span class="badge bg-blue"><?= _ent($produk->singkatan ?? 'PCS'); ?></span> <?= _ent($produk->nama_satuan ?? ''); ?></td></tr>
@@ -55,43 +54,8 @@
          </div>
       </div>
 
-      <!-- Generator Visual Barcode 1D & QR Code 2D & Stok -->
-      <div class="col-md-6">
-         <div class="box box-info" style="border-radius:6px;">
-            <div class="box-header with-border">
-               <h3 class="box-title"><i class="fa fa-qrcode text-info"></i> Label Barcode &amp; QR Code Produk</h3>
-            </div>
-            <div class="box-body text-center" style="padding: 15px;">
-               <?php 
-                  $code_val = !empty($produk->barcode) ? $produk->barcode : $produk->kode_produk;
-                  $qr_url = "https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=" . urlencode($code_val);
-                  $barcode_url = "https://bwipjs-api.metafloor.com/?bcid=code128&text=" . urlencode($code_val) . "&scale=2&rotate=N&includetext";
-               ?>
-               
-               <div id="printable_barcode_card" style="background:#fff; border: 2px dashed #3c8dbc; border-radius:8px; padding: 15px; margin-bottom: 12px;">
-                  <h4 style="margin-top:0; font-weight:700; color:#333; font-size:15px;"><?= _ent($produk->nama_produk); ?></h4>
-                  <p class="text-muted" style="margin-bottom:10px; font-size:12px;">Harga: <strong class="text-success">Rp <?= number_format($produk->harga_jual, 0, ',', '.'); ?></strong></p>
-                  
-                  <div class="row">
-                     <!-- Barcode 1D -->
-                     <div class="col-xs-12" style="margin-bottom: 10px;">
-                        <img src="<?= $barcode_url; ?>" alt="Barcode <?= $code_val; ?>" style="max-width: 100%; height: 50px; object-fit: contain;">
-                     </div>
-                     <!-- QR Code 2D -->
-                     <div class="col-xs-12">
-                        <img src="<?= $qr_url; ?>" alt="QR Code <?= $code_val; ?>" style="width: 110px; height: 110px; border: 1px solid #eee; padding: 4px; border-radius: 4px;">
-                        <br><small class="text-muted" style="display:block; margin-top:4px; font-family:monospace;"><?= _ent($code_val); ?></small>
-                     </div>
-                  </div>
-               </div>
-
-               <button type="button" onclick="cetak_label_barcode()" class="btn btn-info btn-block btn-flat" style="border-radius:4px; font-weight:600;">
-                  <i class="fa fa-print"></i> Cetak Label Stiker Barcode &amp; QR
-               </button>
-            </div>
-         </div>
-
-         <!-- Ringkasan Stok Produk -->
+      <!-- Ringkasan Stok Produk -->
+      <div class="col-md-5">
          <div class="box box-success" style="border-radius:6px;">
             <div class="box-header with-border"><h3 class="box-title"><i class="fa fa-cubes text-success"></i> Ringkasan Stok Produk</h3></div>
             <div class="box-body" style="padding:10px 15px;">
@@ -266,17 +230,4 @@
    </div>
 </section>
 
-<script>
-function cetak_label_barcode() {
-   var printContents = document.getElementById('printable_barcode_card').outerHTML;
-   var win = window.open('', '', 'height=500,width=600');
-   win.document.write('<html><head><title>Cetak Label Barcode</title>');
-   win.document.write('<style>body{font-family:Arial,sans-serif; text-align:center; padding:20px;} img{max-width:100%;}</style>');
-   win.document.write('</head><body>');
-   win.document.write(printContents);
-   win.document.write('</body></html>');
-   win.document.close();
-   win.focus();
-   setTimeout(function(){ win.print(); win.close(); }, 500);
-}
-</script>
+

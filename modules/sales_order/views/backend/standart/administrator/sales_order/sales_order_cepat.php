@@ -1516,7 +1516,7 @@
       <div class="box pos-card" style="border-top: 3px solid #0284c7;">
          <div class="box-header with-border" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; background: #f8fafc; padding: 10px 18px;">
             <h3 class="box-title" style="color: #0369a1; font-weight: 700; font-size: 13px; margin:0; display:flex; align-items:center; gap:6px;">
-               <i class="fa fa-barcode"></i> Barcode Scanner &amp; Quick Klik Produk
+               <i class="fa fa-search"></i> Pencarian Produk &amp; Quick Klik
             </h3>
             <span class="label label-success" style="font-size: 10px; padding: 3px 8px; border-radius: 10px;">
                <i class="fa fa-bolt"></i> Siap Scan
@@ -1525,11 +1525,11 @@
          <div class="box-body" style="padding: 12px 18px;">
             <div class="input-group" style="margin-bottom: 10px;">
                <span class="input-group-addon" style="background: #0284c7; color:#fff; border-color: #0284c7; border-radius: 8px 0 0 8px; padding: 0 12px;">
-                  <i class="fa fa-qrcode" style="font-size:16px;"></i>
+                  <i class="fa fa-search" style="font-size:16px;"></i>
                </span>
-               <input type="text" id="barcode_scan_input" class="form-control" placeholder="Scan barcode / ketik kode barang &amp; Enter..." style="border-radius: 0; height: 40px; font-weight: 700; font-size: 14px;">
+               <input type="text" id="barcode_scan_input" class="form-control" placeholder="Ketik kode produk / nama barang &amp; Enter..." style="border-radius: 0; height: 40px; font-weight: 700; font-size: 14px;">
                <span class="input-group-btn">
-                  <button type="button" id="btn_do_scan" class="btn btn-info btn-flat" style="border-radius: 0 8px 8px 0; height: 40px; font-weight: 700; padding: 0 18px;"><i class="fa fa-search"></i> Scan!</button>
+                  <button type="button" id="btn_do_scan" class="btn btn-info btn-flat" style="border-radius: 0 8px 8px 0; height: 40px; font-weight: 700; padding: 0 18px;"><i class="fa fa-search"></i> Cari / Masukkan</button>
                </span>
             </div>
 
@@ -1550,7 +1550,7 @@
                           data-id="<?= $p->id; ?>"
                           data-nama="<?= _ent($p->nama_produk); ?>"
                           data-stok="<?= $stok_val; ?>"<?php if($is_habis): ?> disabled style="opacity:0.5; cursor:not-allowed; pointer-events:none;"<?php endif; ?>>
-                     <i class="fa fa-barcode text-primary"></i> <strong><?= _ent($p->barcode ?: $p->kode_produk); ?></strong> <span><?= _ent($p->nama_produk); ?></span>
+                     <i class="fa fa-cube text-primary"></i> <strong><?= _ent($p->kode_produk); ?></strong> <span><?= _ent($p->nama_produk); ?></span>
                      <span class="badge <?= $is_habis ? 'bg-red' : 'bg-green'; ?>" style="font-size:9px;"><?= $is_habis ? 'HABIS' : $stok_val; ?></span>
                   </button>
                <?php endforeach; ?>
@@ -2114,7 +2114,7 @@ function update_scanner_product_grid() {
       var badgeClass = isHabis ? 'bg-red' : 'bg-green';
       var badgeText = isHabis ? 'HABIS' : stok;
       html += '<button type="button" class="btn btn-default btn-xs btn-simulasi-barcode" data-barcode="' + bCode + '" data-id="' + p.id + '" data-nama="' + pNama + '" data-stok="' + stok + '"' + (isHabis ? ' disabled' : '') + ' style="' + btnStyle + '">';
-      html += '<i class="fa fa-barcode text-primary"></i> <strong>' + bCode + '</strong> <span>' + pNama + '</span> <span class="badge ' + badgeClass + '" style="font-size:9px;">' + badgeText + '</span>';
+      html += '<i class="fa fa-cube text-primary"></i> <strong>' + bCode + '</strong> <span>' + pNama + '</span> <span class="badge ' + badgeClass + '" style="font-size:9px;">' + badgeText + '</span>';
       html += '</button> ';
    });
    $('.scanner-product-grid').html(html);

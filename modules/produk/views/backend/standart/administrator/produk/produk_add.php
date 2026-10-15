@@ -35,7 +35,7 @@ $action_url = $is_edit ? site_url('administrator/produk/edit_save/'.$produk->id)
                <div class="section-divider"><i class="fa fa-info-circle text-primary"></i> Identitas Utama Produk</div>
                
                <div class="row">
-                  <div class="col-md-3">
+                  <div class="col-md-4">
                      <div class="form-group">
                         <label>Kode Produk <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" name="kode_produk"
@@ -43,13 +43,7 @@ $action_url = $is_edit ? site_url('administrator/produk/edit_save/'.$produk->id)
                            <?= $is_edit ? 'readonly' : ''; ?> required>
                      </div>
                   </div>
-                  <div class="col-md-4">
-                     <div class="form-group">
-                        <label>Barcode Scanner <small class="text-muted">(Otomatis/Manual)</small></label>
-                        <input type="text" class="form-control" name="barcode" value="<?= $is_edit ? _ent($produk->barcode) : _ent($barcode_baru ?? ''); ?>" placeholder="EAN-13 / Code128">
-                     </div>
-                  </div>
-                  <div class="col-md-5">
+                  <div class="col-md-8">
                      <div class="form-group">
                         <label>Nama Produk / Barang <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" name="nama_produk" placeholder="Nama lengkap produk..."

@@ -605,7 +605,7 @@ function update_scanner_product_grid() {
       html += '<button type="button" class="btn btn-default btn-xs btn-simulasi-barcode" '
            + 'data-barcode="' + bc + '" data-id="' + p.id + '" data-nama="' + nama + '" '
            + 'style="border-radius: 12px; background: #f8fafc; border: 1px solid #cbd5e1; padding: 3px 9px; font-size: 11px;">'
-           + '<i class="fa fa-barcode text-primary"></i> <strong>' + bc + '</strong> <span>' + nama + '</span> '
+           + '<i class="fa fa-cube text-primary"></i> <strong>' + bc + '</strong> <span>' + nama + '</span> '
            + '<span class="badge bg-green" style="font-size:9px; padding:2px 6px; border-radius:10px;">' + stok + '</span>'
            + '</button> ';
    });

@@ -75,7 +75,7 @@
                               <td><span class="label label-default"><?= _ent($p->kode_produk); ?></span></td>
                               <td>
                                  <strong><a href="<?= site_url('administrator/produk/view/'.$p->id); ?>"><?= _ent($p->nama_produk); ?></a></strong>
-                                 <?php if($p->barcode): ?><br><small class="text-muted"><i class="fa fa-barcode"></i> <?= _ent($p->barcode); ?></small><?php endif; ?>
+
                               </td>
                               <td><?= _ent($p->nama_kategori ?? 'Umum'); ?></td>
                               <td><span class="badge bg-blue"><?= _ent($p->singkatan ?? $p->nama_satuan ?? 'pcs'); ?></span></td>
