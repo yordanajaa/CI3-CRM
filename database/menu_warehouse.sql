@@ -55,9 +55,7 @@ INSERT INTO `menu` (`label`, `type`, `icon_color`, `link`, `sort`, `parent`, `ic
 SET @wh_id = LAST_INSERT_ID();
 
 INSERT INTO `menu` (`label`, `type`, `icon_color`, `link`, `sort`, `parent`, `icon`, `menu_type_id`, `active`) VALUES
-('Dashboard Stok',  'item', NULL, '{admin_url}/stok',           51, @wh_id, 'fa fa-database',  1, 1),
-('Stock Opname',    'item', NULL, '{admin_url}/stock_opname',   52, @wh_id, 'fa fa-clipboard', 1, 1),
-('Transfer Stok',   'item', NULL, '{admin_url}/transfer_stok',  53, @wh_id, 'fa fa-exchange',  1, 1);
+('Dashboard Stok',  'item', NULL, '{admin_url}/stok',           51, @wh_id, 'fa fa-database',  1, 1);
 
 -- Verifikasi menu yang ditambahkan
 SELECT id, label, link, parent, sort FROM menu ORDER BY sort;

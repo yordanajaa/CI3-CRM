@@ -189,25 +189,51 @@ class Rfm extends Admin
 		$action = trim($this->input->post('action'));
 		$sort_order = (int)$this->input->post('sort_order');
 
-		if (empty($segment)) {
-			set_message('Nama segmen tidak boleh kosong!', 'error');
-			redirect('administrator/rfm/dashboard');
-			return;
-		}
-
-		$data = [
-			'segment' => $segment,
-			'icon' => !empty($icon) ? $icon : 'fa-star',
-			'color' => !empty($color) ? $color : '#6366f1',
-			'goal' => $goal,
-			'action' => $action,
-			'sort_order' => $sort_order,
-		];
-
 		if (!empty($id)) {
+			// Update existing segment: focused on goal and action
+			$existing = $this->db->get_where('rfm_segment_strategy', ['id' => $id])->row();
+			$data = [
+				'goal' => $goal,
+				'action' => $action,
+			];
+			if (!empty($segment)) {
+				$data['segment'] = $segment;
+			} elseif ($existing) {
+				$data['segment'] = $existing->segment;
+			}
+			if (!empty($icon)) {
+				$data['icon'] = $icon;
+			} elseif ($existing) {
+				$data['icon'] = $existing->icon;
+			}
+			if (!empty($color)) {
+				$data['color'] = $color;
+			} elseif ($existing) {
+				$data['color'] = $existing->color;
+			}
+			if ($this->input->post('sort_order') !== null && $this->input->post('sort_order') !== '') {
+				$data['sort_order'] = $sort_order;
+			} elseif ($existing) {
+				$data['sort_order'] = (int)$existing->sort_order;
+			}
+
 			$this->model_rfm->update_segment_strategy($id, $data);
 			set_message('Strategi segmen RFM berhasil diperbarui!', 'success');
 		} else {
+			if (empty($segment)) {
+				set_message('Nama segmen tidak boleh kosong!', 'error');
+				redirect('administrator/rfm/dashboard');
+				return;
+			}
+
+			$data = [
+				'segment' => $segment,
+				'icon' => !empty($icon) ? $icon : 'fa-star',
+				'color' => !empty($color) ? $color : '#6366f1',
+				'goal' => $goal,
+				'action' => $action,
+				'sort_order' => $sort_order,
+			];
 			$this->model_rfm->add_segment_strategy($data);
 			set_message('Strategi segmen RFM baru berhasil ditambahkan!', 'success');
 		}

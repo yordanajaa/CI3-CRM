@@ -1025,13 +1025,26 @@ window.addEventListener('DOMContentLoaded', function() {
 
   // Edit Segment Strategy Event Handler
   $(document).on('click', '.btn-edit-segment', function() {
-    $('#edit_seg_id').val($(this).data('id'));
-    $('#edit_seg_segment').val($(this).data('segment'));
-    $('#edit_seg_icon').val($(this).data('icon'));
-    $('#edit_seg_color').val($(this).data('color'));
-    $('#edit_seg_goal').val($(this).data('goal'));
-    $('#edit_seg_action').val($(this).data('action'));
-    $('#edit_seg_sort').val($(this).data('sort'));
+    var id = $(this).data('id');
+    var segment = $(this).data('segment');
+    var icon = $(this).data('icon') || 'fa-star';
+    var color = $(this).data('color') || '#6366f1';
+    var goal = $(this).data('goal');
+    var action = $(this).data('action');
+    var sort = $(this).data('sort');
+
+    $('#edit_seg_id').val(id);
+    $('#edit_seg_segment').val(segment);
+    $('#edit_seg_icon').val(icon);
+    $('#edit_seg_color').val(color);
+    $('#edit_seg_sort').val(sort);
+    $('#edit_seg_goal').val(goal);
+    $('#edit_seg_action').val(action);
+
+    $('#edit_seg_name_display').text(segment);
+    $('#edit_seg_badge_icon').css('background-color', color);
+    $('#edit_seg_icon_i').attr('class', 'fa ' + icon);
+
     $('#modal-edit-segment').modal('show');
   });
 });
@@ -1098,6 +1111,10 @@ window.addEventListener('DOMContentLoaded', function() {
     <div class="modal-content" style="border-radius:14px; border:none; box-shadow:0 20px 40px rgba(0,0,0,0.15); overflow:hidden;">
       <form method="POST" action="<?= site_url('administrator/rfm/save_segment_strategy'); ?>">
         <input type="hidden" name="id" id="edit_seg_id">
+        <input type="hidden" name="segment" id="edit_seg_segment">
+        <input type="hidden" name="icon" id="edit_seg_icon">
+        <input type="hidden" name="color" id="edit_seg_color">
+        <input type="hidden" name="sort_order" id="edit_seg_sort">
         <div class="modal-header" style="background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; padding:16px 20px;">
           <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color:#fff; opacity:0.8;">&times;</button>
           <h4 class="modal-title" id="modalEditSegmentLabel" style="font-weight:700; font-size:16px; margin:0;">
@@ -1105,40 +1122,29 @@ window.addEventListener('DOMContentLoaded', function() {
           </h4>
         </div>
         <div class="modal-body" style="padding:20px;">
-          <div class="form-group">
-            <label style="font-weight:700; color:#1e1b4b; font-size:12px;">Nama Segmen RFM:</label>
-            <input type="text" name="segment" id="edit_seg_segment" class="form-control" required style="border-radius:6px;">
-          </div>
-          <div class="row">
-            <div class="col-md-6">
-              <div class="form-group">
-                <label style="font-weight:700; color:#1e1b4b; font-size:12px;">Ikon (FontAwesome):</label>
-                <input type="text" name="icon" id="edit_seg_icon" class="form-control" required style="border-radius:6px;">
-              </div>
+          <!-- Informasi Segmen (Read-only Badge Preview) -->
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px 16px; margin-bottom:18px; display:flex; align-items:center; gap:12px;">
+            <div id="edit_seg_badge_icon" style="width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px; flex-shrink:0; background:#6366f1;">
+              <i class="fa fa-star" id="edit_seg_icon_i"></i>
             </div>
-            <div class="col-md-6">
-              <div class="form-group">
-                <label style="font-weight:700; color:#1e1b4b; font-size:12px;">Warna (HEX):</label>
-                <input type="color" name="color" id="edit_seg_color" class="form-control" style="border-radius:6px; height:34px; padding:2px 4px;">
-              </div>
+            <div>
+              <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#64748b; font-weight:700;">Segmen RFM:</div>
+              <div id="edit_seg_name_display" style="font-size:16px; font-weight:800; color:#0f172a;"></div>
             </div>
           </div>
+
           <div class="form-group">
-            <label style="font-weight:700; color:#1e1b4b; font-size:12px;">Goal (Target Perilaku):</label>
-            <textarea name="goal" id="edit_seg_goal" class="form-control" rows="2" style="border-radius:6px;"></textarea>
-          </div>
-          <div class="form-group">
-            <label style="font-weight:700; color:#1e1b4b; font-size:12px;">Action (Strategi Promo):</label>
-            <textarea name="action" id="edit_seg_action" class="form-control" rows="2" style="border-radius:6px;"></textarea>
+            <label style="font-weight:700; color:#1e1b4b; font-size:12px;"><i class="fa fa-bullseye text-primary"></i> Goal (Target Perilaku):</label>
+            <textarea name="goal" id="edit_seg_goal" class="form-control" rows="3" style="border-radius:8px; font-size:13px;" placeholder="Tentukan target perilaku untuk segmen ini..."></textarea>
           </div>
           <div class="form-group" style="margin-bottom:0;">
-            <label style="font-weight:700; color:#1e1b4b; font-size:12px;">Urutan Tampilan:</label>
-            <input type="number" name="sort_order" id="edit_seg_sort" class="form-control" style="border-radius:6px;">
+            <label style="font-weight:700; color:#1e1b4b; font-size:12px;"><i class="fa fa-paper-plane text-success"></i> Action (Strategi Promo):</label>
+            <textarea name="action" id="edit_seg_action" class="form-control" rows="3" style="border-radius:8px; font-size:13px;" placeholder="Tentukan tindakan dan strategi promo yang tepat..."></textarea>
           </div>
         </div>
         <div class="modal-footer" style="background:#f8fafc; border-top:1px solid #e2e8f0; padding:12px 20px;">
           <button type="button" class="btn btn-default" data-dismiss="modal" style="border-radius:6px; font-weight:600;">Batal</button>
-          <button type="submit" class="btn btn-info" style="border-radius:6px; font-weight:700;"><i class="fa fa-check"></i> Update Segmen</button>
+          <button type="submit" class="btn btn-info" style="border-radius:6px; font-weight:700; background:#0284c7; border-color:#0284c7;"><i class="fa fa-check"></i> Update Segmen</button>
         </div>
       </form>
     </div>
