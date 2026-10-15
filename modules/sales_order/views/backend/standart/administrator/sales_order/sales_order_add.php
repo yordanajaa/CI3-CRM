@@ -318,25 +318,25 @@ textarea.form-control {
 </style>
 
 <section class="content-header">
-   <h1><i class="fa fa-shopping-bag text-primary"></i> <?= $is_edit ? 'Edit Sales Order' : 'Buat Sales Order'; ?> <small><?= _ent($is_edit ? ($so->nomor_so ?? '') : ($nomor_baru ?? '')); ?></small></h1>
+   <h1><i class="fa fa-shopping-bag text-primary"></i> <?= $is_edit ? 'Edit Penjualan' : 'Tambah Penjualan'; ?> <small><?= _ent($is_edit ? ($so->nomor_so ?? '') : ($nomor_baru ?? '')); ?></small></h1>
    <ol class="breadcrumb">
       <li><a href="<?= base_url('administrator/dashboard'); ?>"><i class="fa fa-dashboard"></i> Home</a></li>
-      <li><a href="<?= base_url('administrator/sales_order'); ?>">Sales Order</a></li>
-      <li class="active"><?= $is_edit ? 'Edit' : 'Buat Baru'; ?></li>
+      <li><a href="<?= base_url('administrator/sales_order'); ?>">Penjualan</a></li>
+      <li class="active"><?= $is_edit ? 'Edit' : 'Tambah'; ?></li>
    </ol>
 </section>
 
 <section class="content">
 
-<!-- Banner Mode Switcher to Sales Order Cepat -->
+<!-- Banner Mode Switcher to Penjualan Cepat -->
 <div class="alert alert-info" style="background:#eff6ff !important; border:1px solid #bfdbfe !important; color:#1e40af !important; border-radius:8px; margin-bottom:18px; padding:12px 18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
    <div>
       <i class="fa fa-file-text-o text-primary" style="font-size:16px;"></i> 
-      <strong>Mode Sales Order Manual:</strong> Digunakan untuk penawaran pesanan, B2B regular, sistem tempo, dan pengiriman terjadwal.
+      <strong>Mode Penjualan Regular:</strong> Digunakan untuk penawaran pesanan, B2B regular, sistem tempo, dan pengiriman terjadwal.
    </div>
    <div>
       <a href="<?= site_url('administrator/sales_order/cepat'); ?>" class="btn btn-xs btn-success" style="font-weight:700; border-radius:4px; padding:6px 14px; background:#059669; border-color:#047857; color:#fff; box-shadow:0 2px 6px rgba(5,150,105,0.3);">
-         <i class="fa fa-bolt"></i> Pelanggan Mau Langsung Bayar Lunas? Buka Sales Order Cepat (POS) &rarr;
+         <i class="fa fa-bolt"></i> Pelanggan Mau Langsung Bayar Lunas? Buka Penjualan Cepat (POS) &rarr;
       </a>
    </div>
 </div>
@@ -347,7 +347,7 @@ textarea.form-control {
       <!-- Header Box -->
       <div class="box form-card" style="border-top: 3px solid #3b82f6;">
          <div class="box-header with-border">
-            <h3 class="box-title"><i class="fa fa-file-text-o text-primary"></i> Header &amp; Konfigurasi Sales Order</h3>
+            <h3 class="box-title"><i class="fa fa-file-text-o text-primary"></i> Header &amp; Konfigurasi Penjualan</h3>
          </div>
          <div class="box-body">
             <div class="row">
@@ -430,8 +430,8 @@ textarea.form-control {
                   </div>
                </div>
                <div class="col-md-6 col-sm-12 col-xs-12">
-                  <div class="form-group" style="margin-bottom:0;"><label>Catatan Sales Order</label>
-                     <textarea class="form-control" name="catatan" rows="1" placeholder="Catatan khusus transaksi SO..."><?= $is_edit ? _ent($so->catatan) : ''; ?></textarea>
+                  <div class="form-group" style="margin-bottom:0;"><label>Catatan Penjualan</label>
+                     <textarea class="form-control" name="catatan" rows="1" placeholder="Catatan khusus transaksi penjualan..."><?= $is_edit ? _ent($so->catatan) : ''; ?></textarea>
                   </div>
                </div>
             </div>

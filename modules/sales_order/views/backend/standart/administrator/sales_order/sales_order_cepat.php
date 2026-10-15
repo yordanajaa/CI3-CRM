@@ -1260,15 +1260,15 @@
 
 <section class="content-header">
    <h1>
-      <i class="fa fa-bolt text-yellow"></i> Sales Order Cepat <small>POS &amp; Kasir Langsung Lunas</small>
+      <i class="fa fa-bolt text-yellow"></i> Penjualan Cepat <small>POS &amp; Kasir Langsung Lunas</small>
       <span class="label label-success" style="font-size:11px; margin-left:8px; border-radius:10px; vertical-align:middle;">
          <i class="fa fa-check-circle"></i> Otomatis Lunas, Faktur, Stok, &amp; Kas
       </span>
    </h1>
    <ol class="breadcrumb">
       <li><a href="<?= base_url('administrator/dashboard'); ?>"><i class="fa fa-dashboard"></i> Home</a></li>
-      <li><a href="<?= base_url('administrator/sales_order'); ?>">Sales Order</a></li>
-      <li class="active">Sales Order Cepat</li>
+      <li><a href="<?= base_url('administrator/sales_order'); ?>">Penjualan</a></li>
+      <li class="active">Penjualan Cepat (POS)</li>
    </ol>
 </section>
 
@@ -1298,11 +1298,11 @@
          <span class="badge-history-count" id="badge_count_rekap"><?= !empty($last_transactions) ? count($last_transactions) : 0; ?></span>
          <i class="fa fa-chevron-down chevron-history" id="icon_toggle_rekap"></i>
       </button>
-      <a href="<?= site_url('administrator/sales_order/add'); ?>" class="btn-pos-nav-link" title="Beralih ke Formulir Sales Order Manual / Tempo">
-         <i class="fa fa-file-text-o text-primary"></i> <span class="hidden-xs">SO Manual &rarr;</span><span class="visible-xs-inline">Manual</span>
+      <a href="<?= site_url('administrator/sales_order/add'); ?>" class="btn-pos-nav-link" title="Beralih ke Formulir Penjualan Regular / Tempo">
+         <i class="fa fa-file-text-o text-primary"></i> <span class="hidden-xs">Penjualan Regular &rarr;</span><span class="visible-xs-inline">Regular</span>
       </a>
-      <a href="<?= site_url('administrator/sales_order'); ?>" class="btn-pos-nav-link" title="Buka Daftar Semua Sales Order">
-         <i class="fa fa-list text-muted"></i> <span class="hidden-xs">Semua Pesanan</span><span class="visible-xs-inline">Order</span>
+      <a href="<?= site_url('administrator/sales_order'); ?>" class="btn-pos-nav-link" title="Buka Daftar Semua Penjualan">
+         <i class="fa fa-list text-muted"></i> <span class="hidden-xs">Daftar Penjualan</span><span class="visible-xs-inline">Daftar</span>
       </a>
    </div>
 </div>
@@ -1796,7 +1796,7 @@
             </button>
 
             <a href="<?= base_url('administrator/sales_order'); ?>" class="btn btn-default btn-block btn-sm" style="margin-top: 10px; border-radius: 6px; font-weight: 600; color: #64748b;">
-               <i class="fa fa-arrow-left"></i> Kembali ke Daftar Sales Order
+               <i class="fa fa-arrow-left"></i> Kembali ke Daftar Penjualan
             </a>
 
          </div>

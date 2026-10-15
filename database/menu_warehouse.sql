@@ -40,7 +40,7 @@ INSERT INTO `menu` (`label`, `type`, `icon_color`, `link`, `sort`, `parent`, `ic
 SET @jual_id = LAST_INSERT_ID();
 
 INSERT INTO `menu` (`label`, `type`, `icon_color`, `link`, `sort`, `parent`, `icon`, `menu_type_id`, `active`) VALUES
-('Sales Order',    'item', NULL, '{admin_url}/sales_order',     41, @jual_id, 'fa fa-file-text-o', 1, 1),
+('Penjualan',        'item', NULL, '{admin_url}/sales_order',     41, @jual_id, 'fa fa-file-text-o', 1, 1),
 ('Invoice',        'item', NULL, '{admin_url}/invoice',         42, @jual_id, 'fa fa-file-text',   1, 1),
 ('Retur Penjualan','item', NULL, '{admin_url}/retur_penjualan', 43, @jual_id, 'fa fa-reply-all',   1, 1);
 

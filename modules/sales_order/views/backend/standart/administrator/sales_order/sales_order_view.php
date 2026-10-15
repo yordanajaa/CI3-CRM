@@ -82,9 +82,9 @@ $display_kurir = !empty($so->opsi_pengiriman) ? $so->opsi_pengiriman : (!empty($
 </style>
 
 <section class="content-header">
-   <h1>Detail Sales Order <small><?= _ent($so->nomor_so); ?></small></h1>
+   <h1>Detail Penjualan <small><?= _ent($so->nomor_so); ?></small></h1>
    <ol class="breadcrumb">
-      <li><a href="<?= base_url('administrator/sales_order'); ?>"><i class="fa fa-file-text"></i> Sales Order</a></li>
+      <li><a href="<?= base_url('administrator/sales_order'); ?>"><i class="fa fa-file-text"></i> Penjualan</a></li>
       <li class="active">Detail</li>
    </ol>
 </section>

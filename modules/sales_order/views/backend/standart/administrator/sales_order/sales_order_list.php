@@ -137,12 +137,12 @@ $status_display = [
 
 <section class="content-header">
    <h1>
-      Pesanan Penjualan (Sales Order)
-      <small>Daftar Pesanan Masuk Regular &amp; Status Pengiriman</small>
+      Penjualan
+      <small>Daftar Pesanan &amp; Transaksi Penjualan</small>
    </h1>
    <ol class="breadcrumb">
       <li><a href="<?= site_url('administrator/dashboard'); ?>"><i class="fa fa-dashboard"></i> Home</a></li>
-      <li class="active">Sales Order</li>
+      <li class="active">Penjualan</li>
    </ol>
 </section>
 
@@ -274,7 +274,7 @@ $status_display = [
       <div class="col-md-12">
          <div class="box box-primary" style="border-radius:6px; border-top: 3px solid #3c8dbc;">
             <div class="box-header with-border" style="padding: 15px 20px;">
-               <h3 class="box-title" style="font-weight:600;"><i class="fa fa-list-alt text-primary"></i> Daftar Dokumen Sales Order</h3>
+               <h3 class="box-title" style="font-weight:600;"><i class="fa fa-list-alt text-primary"></i> Daftar Dokumen Penjualan</h3>
                <div class="box-tools pull-right">
                   <a href="<?= site_url('administrator/penjualan_marketplace'); ?>" class="btn btn-info btn-sm btn-flat" style="margin-right:5px; border-radius:4px; font-weight:600;">
                      <i class="fa fa-shopping-bag"></i> Penjualan Register All (Marketplace)
@@ -286,10 +286,10 @@ $status_display = [
                   <?php endif; ?>
                   <?php if (is_allowed('sales_order_add', false)): ?>
                       <a href="<?= site_url('administrator/sales_order/cepat'); ?>" class="btn btn-success btn-sm btn-flat" style="margin-right:5px; border-radius:4px; font-weight:700; background:#059669; border-color:#047857; box-shadow:0 2px 6px rgba(5,150,105,0.3);">
-                         <i class="fa fa-bolt"></i> ⚡ Sales Order Cepat (POS)
+                         <i class="fa fa-bolt"></i> ⚡ Penjualan Cepat (POS)
                       </a>
                       <a href="<?= site_url('administrator/sales_order/add'); ?>" class="btn btn-primary btn-sm btn-flat" style="border-radius:4px; font-weight:600; background:#2563eb; border-color:#1d4ed8;">
-                         <i class="fa fa-file-text-o"></i> Buat SO Manual
+                         <i class="fa fa-plus-circle"></i> + Tambah Penjualan
                       </a>
                   <?php endif; ?>
                </div>
