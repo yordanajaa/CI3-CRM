@@ -17,10 +17,6 @@ class Dashboard extends Admin
 			return;
 		}
 
-        $is_karyawan = $this->db->get_where('hr_karyawan', ['user_id' => get_user_data('id')])->row();
-        if ($is_karyawan && !$this->aauth->is_admin()) {
-            redirect('administrator/hr_profile', 'refresh');
-        }
 
 		$data['low_stocks']    = $this->model_dashboard->get_low_stocks(10);
 		$data['recent_returs'] = $this->model_dashboard->get_recent_returs(5);
@@ -45,10 +41,8 @@ class Dashboard extends Admin
 	public function get_notifications()
 	{
 		$user_id = get_user_data('id');
-		$is_karyawan_only = $this->db->get_where('hr_karyawan', ['user_id' => $user_id])->row();
 		$is_manager = $this->aauth->is_admin() 
 			|| $this->aauth->is_allowed('purchase_order_approve', false) 
-			|| $this->aauth->is_allowed('hr_absensi_approve', false) 
 			|| $this->aauth->is_allowed('transfer_stok_approve', false);
 
 		$items = [];
@@ -131,50 +125,6 @@ class Dashboard extends Admin
 			$total_count += $po_count;
 		}
 
-		// 3. Personal Presensi (For Employees)
-		if ($is_karyawan_only && $this->db->table_exists('hr_absensi')) {
-			$karyawan_id = $is_karyawan_only->id;
-			$my_absensi = $this->db->select('id, tanggal, waktu_masuk, status_kehadiran, alasan_terlambat, terlambat_menit, file_surat')
-				->from('hr_absensi')
-				->where('karyawan_id', $karyawan_id)
-				->order_by('id', 'DESC')
-				->limit(3)
-				->get()->result();
-
-			foreach ($my_absensi as $ab) {
-				$st = $ab->status_kehadiran;
-				$icon = 'fa-clock-o';
-				$bg = 'text-blue';
-				if (in_array($st, ['Telat', 'Telat (Lupa Absen)', 'Telat (Lupa Absen Pulang)', 'Hadir (Lupa Absen Pulang)', 'Lupa Absen Pulang'])) {
-					$icon = 'fa-warning';
-					$bg = 'text-yellow';
-				} elseif (in_array($st, ['Izin', 'Sakit', 'Cuti', 'Izin Khusus', 'Sakit (Dengan Surat)', 'Sakit (Tanpa Surat)'])) {
-					$icon = 'fa-file-text-o';
-					$bg = 'text-purple';
-				} elseif ($st == 'Alpha') {
-					$icon = 'fa-times-circle';
-					$bg = 'text-red';
-				}
-
-				$sub = 'Status: ' . $st;
-				if ($ab->terlambat_menit > 0) {
-					$sub .= ' (' . $ab->terlambat_menit . ' menit)';
-				} elseif (!empty($ab->alasan_terlambat)) {
-					$sub .= ' (' . $ab->alasan_terlambat . ')';
-				}
-
-				$items[] = [
-					'id' => (int)$ab->id,
-					'type' => 'personal_absensi',
-					'title' => 'Presensi Anda: ' . date('d/m/Y', strtotime($ab->tanggal)),
-					'subtitle' => $sub,
-					'url' => site_url('administrator/hr_profile'),
-					'icon' => $icon,
-					'icon_bg' => $bg,
-					'date' => date('d/m', strtotime($ab->tanggal))
-				];
-			}
-		}
 
 		$header_title = 'Notifikasi & Pesan WA';
 		$footer_url = site_url('administrator/crm/journal_followup');
