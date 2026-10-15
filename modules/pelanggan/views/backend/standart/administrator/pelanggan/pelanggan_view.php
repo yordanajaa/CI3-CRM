@@ -118,7 +118,7 @@
       <div class="col-md-7">
          <div class="nav-tabs-custom" style="border-radius:6px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
             <ul class="nav nav-tabs">
-               <li class="active"><a href="#tab_so" data-toggle="tab"><i class="fa fa-shopping-cart text-primary"></i> Riwayat Sales Order (<?= count($riwayat_so); ?>)</a></li>
+               <li class="active"><a href="#tab_so" data-toggle="tab"><i class="fa fa-shopping-cart text-primary"></i> Riwayat Penjualan (<?= count($riwayat_so); ?>)</a></li>
                <li><a href="#tab_mp" data-toggle="tab"><i class="fa fa-globe text-info"></i> Riwayat Marketplace (<?= count($riwayat_mp); ?>)</a></li>
                <li><a href="#tab_invoice" data-toggle="tab"><i class="fa fa-file-text-o text-success"></i> Riwayat Invoice (<?= count($riwayat_invoice); ?>)</a></li>
             </ul>
@@ -149,7 +149,7 @@
                            </td>
                         </tr>
                         <?php endforeach; ?>
-                        <?php if(empty($riwayat_so)): ?><tr><td colspan="5" class="text-center text-muted">Belum ada riwayat Sales Order.</td></tr><?php endif; ?>
+                        <?php if(empty($riwayat_so)): ?><tr><td colspan="5" class="text-center text-muted">Belum ada riwayat transaksi penjualan.</td></tr><?php endif; ?>
                      </tbody>
                   </table>
                </div>

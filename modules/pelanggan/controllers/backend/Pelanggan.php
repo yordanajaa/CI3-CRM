@@ -20,6 +20,21 @@ class Pelanggan extends Admin
 		$this->data['pelanggans']      = $this->model_pelanggan->get($filter, $field, $this->limit_page, $offset);
 		$this->data['pelanggan_counts'] = $this->model_pelanggan->count_all($filter, $field);
 
+		// Aggregate tier stats from database
+		$tier_counts = $this->db->select("
+			COUNT(*) as total,
+			SUM(CASE WHEN LOWER(tipe_pelanggan) = 'distributor' THEN 1 ELSE 0 END) as distributor,
+			SUM(CASE WHEN LOWER(tipe_pelanggan) = 'grosir' THEN 1 ELSE 0 END) as grosir,
+			SUM(CASE WHEN LOWER(tipe_pelanggan) = 'retail' THEN 1 ELSE 0 END) as retail
+		")->get('pelanggan')->row_array();
+
+		$this->data['stats_tier'] = [
+			'total'       => (int)($tier_counts['total'] ?? 0),
+			'distributor' => (int)($tier_counts['distributor'] ?? 0),
+			'grosir'      => (int)($tier_counts['grosir'] ?? 0),
+			'retail'      => (int)($tier_counts['retail'] ?? 0),
+		];
+
 		$config = [
 			'base_url'    => 'administrator/pelanggan/index/',
 			'total_rows'  => $this->data['pelanggan_counts'],

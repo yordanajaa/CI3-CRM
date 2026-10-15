@@ -80,7 +80,7 @@
                   <span class="badge" style="background:#e0f2fe; color:#0369a1; font-size:9px;">SEMUA</span>
                <?php endif; ?>
             </div>
-            <div class="kpi-value"><?= number_format($pelanggan_counts); ?></div>
+            <div class="kpi-value"><?= number_format($stats_tier['total'] ?? $pelanggan_counts); ?></div>
             <div class="kpi-sub"><i class="fa fa-users text-primary"></i> Mitra Terdaftar</div>
             <i class="fa fa-users kpi-icon text-primary"></i>
          </div>
@@ -97,7 +97,7 @@
                <?php endif; ?>
             </div>
             <div class="kpi-value" style="color:#8b5cf6;">
-               <?= count(array_filter($pelanggans, function($p){ return strtolower($p->tipe_pelanggan)=='distributor'; })); ?>
+               <?= number_format($stats_tier['distributor'] ?? 0); ?>
             </div>
             <div class="kpi-sub"><i class="fa fa-building"></i> Partner Volume Besar</div>
             <i class="fa fa-building kpi-icon" style="color:#8b5cf6;"></i>
@@ -115,7 +115,7 @@
                <?php endif; ?>
             </div>
             <div class="kpi-value text-warning">
-               <?= count(array_filter($pelanggans, function($p){ return strtolower($p->tipe_pelanggan)=='grosir'; })); ?>
+               <?= number_format($stats_tier['grosir'] ?? 0); ?>
             </div>
             <div class="kpi-sub"><i class="fa fa-shopping-bag"></i> Toko Grosir</div>
             <i class="fa fa-shopping-bag kpi-icon text-warning"></i>
@@ -133,7 +133,7 @@
                <?php endif; ?>
             </div>
             <div class="kpi-value text-success">
-               <?= count(array_filter($pelanggans, function($p){ return strtolower($p->tipe_pelanggan)=='retail'; })); ?>
+               <?= number_format($stats_tier['retail'] ?? 0); ?>
             </div>
             <div class="kpi-sub"><i class="fa fa-user"></i> Penjualan Eceran</div>
             <i class="fa fa-user kpi-icon text-success"></i>
@@ -247,7 +247,7 @@
                                     <li><a href="<?= site_url('administrator/pelanggan/view/'.$p->id); ?>"><i class="fa fa-eye text-info"></i> Detail Pelanggan</a></li>
                                  <?php }); ?>
                                  <?php is_allowed('sales_order_add', function() use ($p){ ?>
-                                    <li><a href="<?= site_url('administrator/sales_order/add?pelanggan_id='.$p->id); ?>"><i class="fa fa-shopping-cart text-success"></i> Buat Sales Order Baru</a></li>
+                                    <li><a href="<?= site_url('administrator/sales_order/add?pelanggan_id='.$p->id); ?>"><i class="fa fa-shopping-cart text-success"></i> Buat Penjualan Baru</a></li>
                                  <?php }); ?>
                                  <?php if (!empty($p->telepon)): ?>
                                     <?php 
