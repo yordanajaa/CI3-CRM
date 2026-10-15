@@ -18,21 +18,15 @@
 <section class="content">
 
    <!-- Card Summary (Interaktif & Dapat Diklik) -->
-   <div class="row">
+   <div class="row stok-summary-row">
       <div class="col-md-3 col-sm-6 col-xs-12">
          <a href="<?= site_url('administrator/stok?status=all' . ($gudang_sel ? '&gudang_id=' . $gudang_sel : '') . '&per_page=' . $per_page); ?>" class="info-box-link" title="Klik untuk menampilkan SEMUA produk">
             <div class="info-box bg-aqua <?= (empty($status_sel) || $status_sel == 'all') ? 'active-card' : ''; ?>">
                <span class="info-box-icon"><i class="fa fa-cubes"></i></span>
                <div class="info-box-content">
                   <span class="info-box-text">Total Produk</span>
-                  <span class="info-box-number"><?= is_object($summary) ? $summary->total_produk : ($summary['total_produk'] ?? 0); ?> <span style="font-size: 13px; font-weight: normal; opacity: 0.9;">Item</span></span>
-                  <span class="info-box-hint">
-                     <?php if (!$gudang_sel): ?>
-                        <i class="fa fa-cubes"></i> <?= is_object($summary) ? $summary->total_produk : 59; ?> Produk di <?= count($gudangs); ?> Gudang (<?= $stok_counts; ?> Record)
-                     <?php else: ?>
-                        <i class="fa fa-mouse-pointer"></i> Klik: Semua Produk &rarr;
-                     <?php endif; ?>
-                  </span>
+                  <span class="info-box-number"><?= is_object($summary) ? $summary->total_produk : ($summary['total_produk'] ?? 0); ?> <span class="info-box-unit">Item</span></span>
+                  <span class="info-box-hint"><i class="fa fa-mouse-pointer"></i> Klik: Semua Produk &rarr;</span>
                </div>
             </div>
          </a>
@@ -43,8 +37,8 @@
             <div class="info-box bg-green <?= ($status_sel == 'ada') ? 'active-card' : ''; ?>">
                <span class="info-box-icon"><i class="fa fa-check-circle"></i></span>
                <div class="info-box-content">
-                  <span class="info-box-text" style="font-size:12px;">Total Keseluruhan Stok</span>
-                  <span class="info-box-number"><?= number_format(is_object($summary) ? $summary->total_stok : ($summary['total_stok'] ?? 0), 0, ',', '.'); ?></span>
+                  <span class="info-box-text">Total Keseluruhan Stok</span>
+                  <span class="info-box-number"><?= number_format(is_object($summary) ? $summary->total_stok : ($summary['total_stok'] ?? 0), 0, ',', '.'); ?> <span class="info-box-unit">Unit</span></span>
                   <span class="info-box-hint"><i class="fa fa-mouse-pointer"></i> Klik: Filter Ada Stok &rarr;</span>
                </div>
             </div>
@@ -57,7 +51,7 @@
                <span class="info-box-icon"><i class="fa fa-exclamation-triangle"></i></span>
                <div class="info-box-content">
                   <span class="info-box-text">Stok Menipis</span>
-                  <span class="info-box-number"><?= is_object($summary) ? $summary->stok_menipis : ($summary['stok_menipis'] ?? 0); ?> produk</span>
+                  <span class="info-box-number"><?= is_object($summary) ? $summary->stok_menipis : ($summary['stok_menipis'] ?? 0); ?> <span class="info-box-unit">Produk</span></span>
                   <span class="info-box-hint"><i class="fa fa-mouse-pointer"></i> Klik: Filter Menipis &rarr;</span>
                </div>
             </div>
@@ -70,7 +64,7 @@
                <span class="info-box-icon"><i class="fa fa-times-circle"></i></span>
                <div class="info-box-content">
                   <span class="info-box-text">Stok Habis</span>
-                  <span class="info-box-number"><?= is_object($summary) ? $summary->stok_habis : ($summary['stok_habis'] ?? 0); ?> produk</span>
+                  <span class="info-box-number"><?= is_object($summary) ? $summary->stok_habis : ($summary['stok_habis'] ?? 0); ?> <span class="info-box-unit">Produk</span></span>
                   <span class="info-box-hint"><i class="fa fa-mouse-pointer"></i> Klik: Filter Habis &rarr;</span>
                </div>
             </div>
@@ -82,33 +76,103 @@
    <div class="row">
       <div class="col-md-12">
          <style>
-.info-box-link {
-   display: block;
+.stok-summary-row {
+   display: flex;
+   flex-wrap: wrap;
+   margin-bottom: 5px;
+}
+.stok-summary-row > div[class*="col-"] {
+   display: flex;
+   flex-direction: column;
+   margin-bottom: 15px;
+}
+.stok-summary-row .info-box-link {
+   display: flex;
+   flex-direction: column;
+   flex: 1;
+   height: 100%;
    color: #fff !important;
    text-decoration: none !important;
 }
-.info-box-link .info-box {
-   cursor: pointer !important;
-   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-   position: relative;
+.stok-summary-row .info-box {
+   display: flex !important;
+   align-items: stretch;
+   flex: 1;
+   width: 100%;
+   height: 100%;
+   min-height: 96px;
+   margin-bottom: 0 !important;
    border-radius: 8px !important;
    overflow: hidden;
+   box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+   position: relative;
+   cursor: pointer !important;
 }
-.info-box-link:hover .info-box {
-   transform: translateY(-4px) !important;
+.stok-summary-row .info-box-link:hover .info-box {
+   transform: translateY(-3px) !important;
    box-shadow: 0 10px 22px rgba(0,0,0,0.22) !important;
 }
-.info-box-hint {
+.stok-summary-row .info-box.active-card {
+   box-shadow: 0 0 0 3px #1e293b, 0 8px 20px rgba(0,0,0,0.25) !important;
+   z-index: 2;
+}
+.stok-summary-row .info-box-icon {
+   float: none !important;
+   height: auto !important;
+   width: 82px !important;
+   min-width: 82px !important;
+   display: flex !important;
+   align-items: center;
+   justify-content: center;
+   font-size: 38px;
+   background: rgba(0, 0, 0, 0.15) !important;
+   border-radius: 8px 0 0 8px;
+   margin: 0 !important;
+}
+.stok-summary-row .info-box-content {
+   float: none !important;
+   margin-left: 0 !important;
+   flex: 1;
+   display: flex;
+   flex-direction: column;
+   justify-content: center;
+   padding: 10px 14px;
+   min-width: 0;
+}
+.stok-summary-row .info-box-text {
+   font-size: 11.5px !important;
+   font-weight: 700 !important;
+   letter-spacing: 0.5px;
+   text-transform: uppercase;
+   white-space: nowrap;
+   overflow: hidden;
+   text-overflow: ellipsis;
+   margin-bottom: 2px;
+}
+.stok-summary-row .info-box-number {
+   font-size: 20px !important;
+   font-weight: 800 !important;
+   line-height: 1.2;
+   margin-bottom: 4px;
+   white-space: nowrap;
+}
+.stok-summary-row .info-box-unit {
+   font-size: 13px;
+   font-weight: normal;
+   opacity: 0.9;
+   margin-left: 2px;
+}
+.stok-summary-row .info-box-hint {
    display: block;
    font-size: 11px;
    font-weight: 600;
    opacity: 0.9;
-   margin-top: 4px;
    letter-spacing: 0.2px;
-}
-.info-box.active-card {
-   box-shadow: 0 0 0 3px #1e293b, 0 8px 20px rgba(0,0,0,0.25) !important;
-   transform: translateY(-2px) !important;
+   white-space: nowrap;
+   overflow: hidden;
+   text-overflow: ellipsis;
+   margin-top: 2px;
 }
 .stok-box { border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
 .stok-box-header { padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
