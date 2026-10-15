@@ -54,7 +54,7 @@ class Model_stok extends MY_Model {
 				$this->db->where('stok.qty > 0', null, false);
 				$this->db->where('stok.qty <= produk.stok_minimum', null, false);
 			} else {
-				$this->db->where("stok.produk_id IN (SELECT s_men.produk_id FROM stok s_men JOIN produk p_men ON p_men.id = s_men.produk_id JOIN gudang g_men ON g_men.id = s_men.gudang_id WHERE g_men.status = 'aktif' GROUP BY s_men.produk_id HAVING SUM(s_men.qty) > 0 AND SUM(s_men.qty) <= p_men.stok_minimum)", null, false);
+				$this->db->where("stok.produk_id IN (SELECT s_men.produk_id FROM stok s_men JOIN produk p_men ON p_men.id = s_men.produk_id JOIN gudang g_men ON g_men.id = s_men.gudang_id WHERE g_men.status = 'aktif' GROUP BY s_men.produk_id, p_men.stok_minimum HAVING SUM(s_men.qty) > 0 AND SUM(s_men.qty) <= p_men.stok_minimum)", null, false);
 			}
 		} elseif ($status === 'ada' || $status === 'tersedia') {
 			$this->db->where('stok.qty > 0', null, false);
