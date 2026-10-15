@@ -2228,6 +2228,44 @@ class Penjualan_marketplace extends Admin
 			'message' => "Data Unmasked Penerima '{$nama_penerima}' & Phone '{$no_telepon}' Berhasil Disimpan ke Database!"
 		]);
 	}
+
+	public function update_keterangan_bc_ajax()
+	{
+		header('Content-Type: application/json');
+		$id            = (int)($this->input->post('id') ?: $this->input->get('id'));
+		$keterangan_bc = trim((string)($this->input->post('keterangan_bc') ?: $this->input->get('keterangan_bc')));
+
+		if (!$id) {
+			echo json_encode(['success' => false, 'message' => 'ID pesanan tidak valid']);
+			return;
+		}
+
+		$existing = $this->db->get_where('penjualan_marketplace', ['id' => $id])->row();
+		if ($existing && $existing->keterangan_bc === $keterangan_bc) {
+			$keterangan_bc = null; // toggle off
+		}
+
+		$this->db->where('id', $id)->update('penjualan_marketplace', [
+			'keterangan_bc' => $keterangan_bc,
+			'updated_at'    => date('Y-m-d H:i:s'),
+			'updated_by'    => get_user_data('username') ?: 'admin'
+		]);
+
+		// Synchronize to crm_transaction_followup_labels
+		$this->db->where('order_table', 'penjualan_marketplace')
+			->where('order_id', $id)
+			->update('crm_transaction_followup_labels', [
+				'keterangan_bc' => $keterangan_bc,
+				'updated_at'    => date('Y-m-d H:i:s')
+			]);
+
+		echo json_encode([
+			'success'       => true,
+			'id'            => $id,
+			'keterangan_bc' => $keterangan_bc,
+			'message'       => $keterangan_bc ? ('Keterangan BC diatur: ' . $keterangan_bc) : 'Keterangan BC direset'
+		]);
+	}
 }
 
 /* End of file Penjualan_marketplace.php */

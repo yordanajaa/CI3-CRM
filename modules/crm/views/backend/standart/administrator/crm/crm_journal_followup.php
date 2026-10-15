@@ -232,6 +232,58 @@
 .table-journal tbody tr { transition: all 0.2s ease; }
 .table-journal tbody tr:hover { background: #f8fafc !important; }
 
+/* Keterangan Orange Badge (Exactly as screenshot) */
+.badge-keterangan-orange {
+  background: #f59e0b;
+  color: #ffffff !important;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  letter-spacing: 0.3px;
+  box-shadow: 0 1px 3px rgba(245, 158, 11, 0.3);
+  white-space: nowrap;
+}
+
+/* Keterangan BC Interactive Buttons Group */
+.btn-group-keterangan-bc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  align-items: center;
+  min-width: 310px;
+}
+.btn-bc-pill {
+  display: inline-block;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  color: #475569;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 7px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  outline: none;
+  user-select: none;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+.btn-bc-pill:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+.btn-bc-pill.active {
+  background: #2563eb !important;
+  border-color: #1d4ed8 !important;
+  color: #ffffff !important;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(37,99,235,0.35);
+}
+
 .cat-pill { display: inline-flex; align-items: center; gap: 4px; padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; margin: 3px; cursor: pointer; border: 1px solid #e2e8f0; background: #fff; color: #475569; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
 .cat-pill:hover { border-color: #6366f1; color: #6366f1; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15); }
 .cat-pill.active { background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); color: #fff; border-color: #4f46e5; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3); }
@@ -536,6 +588,14 @@
             </select>
           </div>
           <div class="col-md-2">
+            <select name="keterangan_bc" class="form-control">
+              <option value="">Semua Keterangan BC</option>
+              <?php foreach (['H+1','H+2','H+3','TNP','Habis','Giveaway','Masuk Grup'] as $b): ?>
+              <option value="<?= $b; ?>" <?= ($filters['keterangan_bc'] ?? '') == $b ? 'selected' : ''; ?>><?= $b; ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <div class="col-md-2">
             <input type="date" name="date_from" class="form-control" placeholder="Dari tanggal" value="<?= $filters['date_from'] ?? ''; ?>">
           </div>
           <div class="col-md-2">
@@ -571,7 +631,9 @@
             <th>No. Pesanan</th>
             <th>Sumber</th>
             <th>Kategori Follow-Up</th>
-            <th>Tgl Kirim</th>
+            <th style="white-space:nowrap;">Tgl Kirim</th>
+            <th style="text-align:center; white-space:nowrap;">Keterangan</th>
+            <th style="min-width:320px;">Keterangan BC</th>
             <th>Jadwal Follow-Up</th>
             <th>Status</th>
             <th class="text-center">Aksi</th>
@@ -579,7 +641,7 @@
         </thead>
         <tbody>
           <?php if (empty($entries)): ?>
-          <tr><td colspan="10" class="text-center" style="padding:40px;color:#95a5a6;"><i class="fa fa-check-circle fa-2x text-success"></i><br>Tidak ada follow-up pending saat ini.</td></tr>
+          <tr><td colspan="12" class="text-center" style="padding:40px;color:#95a5a6;"><i class="fa fa-check-circle fa-2x text-success"></i><br>Tidak ada follow-up pending saat ini.</td></tr>
           <?php else: foreach ($entries as $e): ?>
           <tr>
             <td>
@@ -635,21 +697,46 @@
               ?>
               <span class="cat-badge"><?= $cat_display; ?></span>
             </td>
-            <td style="font-size:12px; white-space:nowrap;"><?= $e->tanggal_pengiriman ? date('d/m/Y', strtotime($e->tanggal_pengiriman)) : '-'; ?></td>
-            <td style="font-size:12px;" class="cell-target-date" data-label-id="<?= $e->id; ?>" data-target="<?= $e->tanggal_label_muncul; ?>">
-              <?php
-              $target = $e->tanggal_label_muncul;
-              $target_time = strtotime($target);
-              $today_time = strtotime(date('Y-m-d'));
-              $diff_days = (int)round(($today_time - $target_time) / 86400);
+            <?php
+            $target = $e->tanggal_label_muncul;
+            $target_time = strtotime($target);
+            $today_time = strtotime(date('Y-m-d'));
+            $diff_days = (int)round(($today_time - $target_time) / 86400);
 
-              if (!empty($e->tanggal_pengiriman)) {
-                $dt_ship = new DateTime($e->tanggal_pengiriman);
-                $dt_target = new DateTime($target);
-                $selisih_hari = (int)$dt_ship->diff($dt_target)->format('%r%a');
-              } else {
-                $selisih_hari = isset($e->jumlah_hari) ? (int)$e->jumlah_hari : 0;
-              }
+            if (!empty($e->tanggal_pengiriman)) {
+              $dt_ship = new DateTime($e->tanggal_pengiriman);
+              $dt_target = new DateTime($target);
+              $selisih_hari = (int)$dt_ship->diff($dt_target)->format('%r%a');
+            } else {
+              $selisih_hari = isset($e->jumlah_hari) ? (int)$e->jumlah_hari : 0;
+            }
+            ?>
+            <!-- 1. Tgl Kirim -->
+            <td style="font-size:12px; white-space:nowrap;"><?= $e->tanggal_pengiriman ? date('d/m/Y', strtotime($e->tanggal_pengiriman)) : '-'; ?></td>
+
+            <!-- 2. Keterangan (Orange Badge H+0, H+1, etc. as screenshot) -->
+            <td style="vertical-align:middle; text-align:center;">
+              <span class="badge-keterangan-orange" id="badge-ket-<?= $e->id; ?>">
+                H+<?= max(0, $selisih_hari); ?>
+              </span>
+            </td>
+
+            <!-- 3. Keterangan BC (Row of interactive pills) -->
+            <td style="vertical-align:middle;">
+              <div class="btn-group-keterangan-bc" data-label-id="<?= $e->id; ?>">
+                <?php 
+                $bc_opts = ['H+1', 'H+2', 'H+3', 'TNP', 'Habis', 'Giveaway', 'Masuk Grup'];
+                $active_bc = $e->keterangan_bc ?? '';
+                foreach ($bc_opts as $bco):
+                  $is_active = ($active_bc === $bco) ? 'active' : '';
+                ?>
+                  <button type="button" class="btn-bc-pill <?= $is_active; ?>" data-val="<?= $bco; ?>" title="Keterangan BC: <?= $bco; ?>"><?= $bco; ?></button>
+                <?php endforeach; ?>
+              </div>
+            </td>
+
+            <!-- 4. Jadwal Follow-Up -->
+            <td style="font-size:12px;" class="cell-target-date" data-label-id="<?= $e->id; ?>" data-target="<?= $e->tanggal_label_muncul; ?>">
 
               $st = $e->status_label;
               $bh_cls = 'bh-today';
@@ -1711,6 +1798,40 @@ $(document).ready(function() {
         $sel.data('current', status);
       } else {
         notify('error', r.message || 'Gagal memperbarui status');
+      }
+    }).fail(function() {
+      notify('error', 'Gagal menghubungi server');
+    });
+  });
+
+  // ===== Keterangan BC Quick Pill Selection (Interactive Real-Time Toggle) =====
+  $(document).on('click', '.btn-bc-pill', function(e) {
+    e.preventDefault();
+    var $btn = $(this);
+    var $group = $btn.closest('.btn-group-keterangan-bc');
+    var label_id = $group.attr('data-label-id');
+    var val = $btn.attr('data-val');
+    var isCurrentlyActive = $btn.hasClass('active');
+
+    if (isCurrentlyActive) {
+      $btn.removeClass('active');
+      val = '';
+    } else {
+      $group.find('.btn-bc-pill').removeClass('active');
+      $btn.addClass('active');
+    }
+
+    $.post(_BASE + 'administrator/crm/update_keterangan_bc_ajax', buildPayload({ label_id: label_id, keterangan_bc: val }), function(res) {
+      var r = parseRes(res);
+      if (r.success) {
+        if (!r.keterangan_bc) {
+          $group.find('.btn-bc-pill').removeClass('active');
+          notify('info', 'Keterangan BC direset');
+        } else {
+          notify('success', 'Keterangan BC: ' + r.keterangan_bc);
+        }
+      } else {
+        notify('error', r.message || 'Gagal memperbarui Keterangan BC');
       }
     }).fail(function() {
       notify('error', 'Gagal menghubungi server');

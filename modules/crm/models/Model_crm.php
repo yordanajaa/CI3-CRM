@@ -2221,7 +2221,10 @@ class Model_crm extends CI_Model
 				$this->db->or_like('fc.nama_kategori', $s);
 				$this->db->group_end();
 			}
-			if (empty($filters['show_future']) && empty($filters['search']) && empty($filters['date_from']) && empty($filters['date_to'])) {
+			if (!empty($filters['keterangan_bc'])) {
+				$this->db->where('tfl.keterangan_bc', $filters['keterangan_bc']);
+			}
+			if (empty($filters['show_future']) && empty($filters['search']) && empty($filters['date_from']) && empty($filters['date_to']) && empty($filters['keterangan_bc'])) {
 				$this->db->where('tfl.tanggal_label_muncul <=', date('Y-m-d'));
 			}
 		};
@@ -2571,6 +2574,27 @@ class Model_crm extends CI_Model
 		];
 		if ($handled_by) $data['handled_by'] = $handled_by;
 		return $this->db->where('id', $label_id)->update('crm_transaction_followup_labels', $data);
+	}
+
+	public function update_keterangan_bc($label_id, $keterangan_bc, $handled_by = null)
+	{
+		$data = [
+			'keterangan_bc' => $keterangan_bc,
+			'updated_at'    => date('Y-m-d H:i:s'),
+		];
+		if ($handled_by) $data['handled_by'] = $handled_by;
+		$this->db->where('id', $label_id)->update('crm_transaction_followup_labels', $data);
+
+		// Synchronize to penjualan_marketplace if this label originated from marketplace order
+		$label = $this->db->get_where('crm_transaction_followup_labels', ['id' => $label_id])->row();
+		if ($label && $label->order_table === 'penjualan_marketplace' && !empty($label->order_id)) {
+			$this->db->where('id', $label->order_id)->update('penjualan_marketplace', [
+				'keterangan_bc' => $keterangan_bc,
+				'updated_at'    => date('Y-m-d H:i:s')
+			]);
+		}
+
+		return true;
 	}
 
 	/**

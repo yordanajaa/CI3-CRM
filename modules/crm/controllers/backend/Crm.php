@@ -109,6 +109,7 @@ class Crm extends Admin
 			'category_id' => $this->input->get('category_id'),
 			'order_source' => $this->input->get('order_source'),
 			'status_label' => $this->input->get('status_label'),
+			'keterangan_bc' => $this->input->get('keterangan_bc'),
 			'date_from' => $this->input->get('date_from'),
 			'date_to' => $this->input->get('date_to'),
 			'search' => $search_query,
@@ -132,6 +133,38 @@ class Crm extends Admin
 
 		$this->template->title('CRM — Journal Follow-Up');
 		$this->render('backend/standart/administrator/crm/crm_journal_followup', $this->data);
+	}
+
+	public function update_keterangan_bc_ajax()
+	{
+		header('Content-Type: application/json');
+		$label_id      = (int)($this->input->post('label_id') ?: $this->input->get('label_id'));
+		$keterangan_bc = trim((string)($this->input->post('keterangan_bc') ?: $this->input->get('keterangan_bc')));
+
+		if (!$label_id) {
+			echo json_encode(['success' => false, 'message' => 'Label ID tidak valid']);
+			return;
+		}
+
+		$existing = $this->db->get_where('crm_transaction_followup_labels', ['id' => $label_id])->row();
+		if ($existing && $existing->keterangan_bc === $keterangan_bc) {
+			$keterangan_bc = null; // toggle off if same pill is clicked
+		}
+
+		$username = 'administrator';
+		if (function_exists('get_user_data')) {
+			$u = get_user_data('username');
+			if (!empty($u)) $username = $u;
+		}
+
+		$this->model_crm->update_keterangan_bc($label_id, $keterangan_bc, $username);
+
+		echo json_encode([
+			'success'       => true,
+			'label_id'      => $label_id,
+			'keterangan_bc' => $keterangan_bc,
+			'message'       => $keterangan_bc ? ('Keterangan BC diatur: ' . $keterangan_bc) : 'Keterangan BC direset'
+		]);
 	}
 
 	public function update_status_ajax()

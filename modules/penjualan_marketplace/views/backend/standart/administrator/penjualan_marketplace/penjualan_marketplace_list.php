@@ -232,6 +232,58 @@ $per_page = isset($per_page) ? $per_page : 25;
    display: inline-block;
 }
 
+/* Keterangan Orange Badge (Consistent across Marketplace & CRM) */
+.badge-keterangan-orange {
+   background: #f59e0b;
+   color: #ffffff !important;
+   font-size: 11px;
+   font-weight: 800;
+   padding: 3px 8px;
+   border-radius: 4px;
+   display: inline-block;
+   letter-spacing: 0.3px;
+   box-shadow: 0 1px 3px rgba(245, 158, 11, 0.3);
+   white-space: nowrap;
+}
+
+/* Keterangan BC Interactive Buttons Group */
+.btn-group-keterangan-bc {
+   display: flex;
+   flex-wrap: wrap;
+   gap: 3px;
+   align-items: center;
+   min-width: 310px;
+}
+.btn-bc-pill {
+   display: inline-block;
+   background: #f1f5f9;
+   border: 1px solid #e2e8f0;
+   border-radius: 4px;
+   color: #475569;
+   font-size: 10.5px;
+   font-weight: 700;
+   padding: 3px 7px;
+   cursor: pointer;
+   transition: all 0.15s ease;
+   outline: none;
+   user-select: none;
+   white-space: nowrap;
+   line-height: 1.2;
+}
+.btn-bc-pill:hover {
+   background: #e2e8f0;
+   color: #0f172a;
+   border-color: #cbd5e1;
+   transform: translateY(-1px);
+}
+.btn-bc-pill.active {
+   background: #2563eb !important;
+   border-color: #1d4ed8 !important;
+   color: #ffffff !important;
+   font-weight: 800;
+   box-shadow: 0 2px 6px rgba(37,99,235,0.35);
+}
+
 /* Action Icon Buttons */
 .act-icon-btn {
    display: inline-flex;
@@ -396,6 +448,8 @@ $per_page = isset($per_page) ? $per_page : 25;
                      <th style="padding:15px 10px;">USERNAME PEMBELI</th>
                      <th style="padding:15px 10px;">NAMA PENERIMA</th>
                      <th style="padding:15px 10px;">NOTELP</th>
+                     <th style="padding:15px 10px; text-align:center; white-space:nowrap;">KETERANGAN</th>
+                     <th style="padding:15px 10px; min-width:320px;">KETERANGAN BC</th>
                      <th style="padding:15px 10px;">STATUS</th>
                      <th style="padding:15px 10px;">KOMPLAIN</th>
                      <th style="padding:15px 10px;" class="text-center" width="110">ACTION</th>
@@ -492,7 +546,35 @@ $per_page = isset($per_page) ? $per_page : 25;
                            <small class="text-muted" style="font-size:11.5px; font-weight:600;" title="Disensor untuk Privasi Halaman Web"><i class="fa fa-phone text-muted"></i> <?= _ent($masked_notelp); ?></small>
                         </td>
 
-                        <!-- 10. STATUS (DINAMIS DARI SCANNER WORKSTATION) -->
+                        <!-- 10. KETERANGAN (ORANGE BADGE) -->
+                        <td style="vertical-align:middle; text-align:center;">
+                           <?php
+                           $waktu_ref = !empty($so->waktu_pengiriman_diatur) ? $so->waktu_pengiriman_diatur : (!empty($so->waktu_pembayaran) ? $so->waktu_pembayaran : $so->tanggal_so);
+                           $diff_h = 0;
+                           if (!empty($waktu_ref)) {
+                              $dt_ref = new DateTime(date('Y-m-d', strtotime($waktu_ref)));
+                              $dt_now = new DateTime(date('Y-m-d'));
+                              $diff_h = max(0, (int)$dt_ref->diff($dt_now)->format('%r%a'));
+                           }
+                           ?>
+                           <span class="badge-keterangan-orange">H+<?= $diff_h; ?></span>
+                        </td>
+
+                        <!-- 11. KETERANGAN BC (PILL BUTTONS) -->
+                        <td style="vertical-align:middle;">
+                           <div class="btn-group-keterangan-bc" data-order-id="<?= $so->id; ?>">
+                              <?php
+                              $bc_opts = ['H+1', 'H+2', 'H+3', 'TNP', 'Habis', 'Giveaway', 'Masuk Grup'];
+                              $cur_bc = $so->keterangan_bc ?? '';
+                              foreach ($bc_opts as $bco):
+                                 $is_act = ($cur_bc === $bco) ? 'active' : '';
+                              ?>
+                                 <button type="button" class="btn-bc-pill <?= $is_act; ?>" data-val="<?= $bco; ?>"><?= $bco; ?></button>
+                              <?php endforeach; ?>
+                           </div>
+                        </td>
+
+                        <!-- 12. STATUS (DINAMIS DARI SCANNER WORKSTATION) -->
                         <td style="vertical-align:middle;">
                            <?php 
                            $st_lower = strtolower($so->status ?? 'packing');
@@ -513,10 +595,10 @@ $per_page = isset($per_page) ? $per_page : 25;
                            <span class="status-packed-badge" style="background:<?= $st_badge_bg; ?>;"><?= $st_label; ?></span>
                         </td>
 
-                        <!-- 11. KOMPLAIN -->
+                        <!-- 13. KOMPLAIN -->
                         <td style="vertical-align:middle; color:#64748b;">-</td>
 
-                        <!-- 12. ACTION (HANYA UNTUK DETAIL DAN CETAK STRUK) -->
+                        <!-- 14. ACTION (HANYA UNTUK DETAIL DAN CETAK STRUK) -->
                         <td class="text-center" style="vertical-align:middle; white-space:nowrap;">
                            <a href="<?= site_url('administrator/penjualan_marketplace/view/' . $so->id); ?>" class="btn btn-default btn-xs" style="border-radius:6px; font-weight:600; padding:5px 9px; margin-right:4px;" title="Lihat Detail Pesanan">
                               <i class="fa fa-eye text-primary"></i> Detail
@@ -529,7 +611,7 @@ $per_page = isset($per_page) ? $per_page : 25;
                      <?php endforeach; ?>
                   <?php else: ?>
                      <tr>
-                        <td colspan="13" class="text-center text-muted" style="padding:50px;">
+                        <td colspan="15" class="text-center text-muted" style="padding:50px;">
                            <i class="fa fa-shopping-cart fa-3x" style="color:#cbd5e1; margin-bottom:12px;"></i><br>
                            <span style="font-size:16px; font-weight:bold; color:#334155;">Belum ada data Penjualan Marketplace.</span><br>
                            <small class="text-muted">Silakan import CSV Shopee/Tokopedia atau buat pesanan baru.</small>
@@ -804,4 +886,41 @@ function previewCSV(fileInput, previewContainerId, submitBtnId, channelName) {
    };
    reader.readAsText(file);
 }
+
+   // Keterangan BC Interactive Click Handler
+   $(document).on('click', '.btn-bc-pill', function(e) {
+      e.preventDefault();
+      var btn = $(this);
+      var group = btn.closest('.btn-group-keterangan-bc');
+      var orderId = group.attr('data-order-id');
+      var val = btn.attr('data-val');
+      var isCurrentlyActive = btn.hasClass('active');
+
+      if (isCurrentlyActive) {
+         btn.removeClass('active');
+         val = '';
+      } else {
+         group.find('.btn-bc-pill').removeClass('active');
+         btn.addClass('active');
+      }
+
+      $.ajax({
+         url: '<?= site_url("administrator/penjualan_marketplace/update_keterangan_bc_ajax"); ?>',
+         type: 'POST',
+         dataType: 'json',
+         data: {
+            id: orderId,
+            keterangan_bc: val,
+            ci_csrf_token: ''
+         },
+         success: function(res) {
+            if (res && res.success) {
+               if (!res.keterangan_bc) {
+                  group.find('.btn-bc-pill').removeClass('active');
+               }
+            }
+         }
+      });
+   });
+});
 </script>

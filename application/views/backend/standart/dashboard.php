@@ -69,6 +69,87 @@
    border-left: 3px solid #1E88E5;
 }
 
+/* Executive Workflow Hub */
+.workflow-hub-box {
+   background: #ffffff;
+   border-radius: 12px;
+   padding: 20px 22px;
+   margin-bottom: 24px;
+   box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+   border: 1px solid #e2e8f0;
+}
+.workflow-step-card {
+   background: #f8fafc;
+   border: 1px solid #e2e8f0;
+   border-radius: 10px;
+   padding: 16px;
+   height: 100%;
+   transition: all 0.2s ease;
+   display: flex;
+   flex-direction: column;
+   justify-content: space-between;
+   margin-bottom: 12px;
+}
+.workflow-step-card:hover {
+   transform: translateY(-3px);
+   border-color: #3b82f6;
+   box-shadow: 0 8px 24px rgba(59, 130, 246, 0.1);
+   background: #ffffff;
+}
+.wf-step-num {
+   width: 24px;
+   height: 24px;
+   border-radius: 50%;
+   background: #0f172a;
+   color: #fff;
+   display: inline-flex;
+   align-items: center;
+   justify-content: center;
+   font-weight: 800;
+   font-size: 11.5px;
+   margin-right: 8px;
+   flex-shrink: 0;
+}
+.wf-title {
+   font-size: 13.5px;
+   font-weight: 700;
+   color: #0f172a;
+   display: flex;
+   align-items: center;
+   margin-bottom: 6px;
+}
+.wf-desc {
+   font-size: 12px;
+   color: #64748b;
+   line-height: 1.5;
+   margin-bottom: 12px;
+   flex-grow: 1;
+}
+.wf-btn-group {
+   display: flex;
+   gap: 6px;
+   flex-wrap: wrap;
+}
+.wf-btn {
+   font-size: 11px;
+   font-weight: 700;
+   padding: 5px 10px;
+   border-radius: 6px;
+   text-decoration: none !important;
+   display: inline-flex;
+   align-items: center;
+   gap: 5px;
+   transition: all 0.15s ease;
+}
+.wf-btn-blue { background: #2563eb; color: #fff !important; }
+.wf-btn-blue:hover { background: #1d4ed8; }
+.wf-btn-default { background: #e2e8f0; color: #334155 !important; }
+.wf-btn-default:hover { background: #cbd5e1; color: #0f172a !important; }
+.wf-btn-green { background: #16a34a; color: #fff !important; }
+.wf-btn-green:hover { background: #15803d; }
+.wf-btn-amber { background: #d97706; color: #fff !important; }
+.wf-btn-amber:hover { background: #b45309; }
+
 @media (max-width: 767px) {
    .dash-stat-card { padding: 14px 14px; margin-bottom: 10px; border-radius: 8px; }
    .dash-stat-card .ds-num { font-size: 26px; }
@@ -79,6 +160,7 @@
    .dash-flow-card .df-label { font-size: 11.5px; }
    .dash-flow-card .df-icon-wrap { width: 44px; height: 44px; font-size: 18px; margin-right: 10px; }
    .low-stock-box .box-header { padding: 10px 12px; }
+   .workflow-hub-box { padding: 14px; }
 }
 </style>
 
@@ -91,6 +173,75 @@
 </section>
 
 <section class="content">
+
+    <!-- Executive Workflow Navigation Hub -->
+    <div class="workflow-hub-box">
+       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid #f1f5f9; padding-bottom:10px;">
+          <div>
+             <h4 style="margin:0; font-weight:800; color:#0f172a; font-size:15px;"><i class="fa fa-compass text-primary"></i> Pusat Alur Kerja &amp; Akses Cepat</h4>
+             <small class="text-muted">Panduan alur operasional terpadu: Penjualan &rarr; Follow-Up CRM &rarr; Warehouse &rarr; Keuangan</small>
+          </div>
+          <span class="label label-primary" style="font-size:11px; padding:5px 10px; border-radius:12px;">Sistem Terintegrasi</span>
+       </div>
+
+       <div class="row">
+          <!-- Step 1: Penjualan & Kasir -->
+          <div class="col-md-3 col-sm-6">
+             <div class="workflow-step-card">
+                <div>
+                   <div class="wf-title"><span class="wf-step-num">1</span> Penjualan &amp; Kasir</div>
+                   <div class="wf-desc">Transaksi kasir cepat (POS) &amp; pesanan online shop (Shopee / Tokopedia).</div>
+                </div>
+                <div class="wf-btn-group">
+                   <a href="<?= site_url('administrator/sales_order/cepat'); ?>" class="wf-btn wf-btn-blue"><i class="fa fa-bolt"></i> Kasir Cepat</a>
+                   <a href="<?= site_url('administrator/penjualan_marketplace'); ?>" class="wf-btn wf-btn-default"><i class="fa fa-shopping-bag"></i> Marketplace</a>
+                </div>
+             </div>
+          </div>
+
+          <!-- Step 2: CRM & Follow-Up -->
+          <div class="col-md-3 col-sm-6">
+             <div class="workflow-step-card">
+                <div>
+                   <div class="wf-title"><span class="wf-step-num">2</span> CRM &amp; Follow-Up</div>
+                   <div class="wf-desc">Follow-up berkala (H+1/H+2/BC), broadcast WhatsApp, &amp; direktori pelanggan.</div>
+                </div>
+                <div class="wf-btn-group">
+                   <a href="<?= site_url('administrator/crm/journal_followup'); ?>" class="wf-btn wf-btn-green"><i class="fa fa-comments"></i> Journal Follow-Up</a>
+                   <a href="<?= site_url('administrator/crm/broadcast'); ?>" class="wf-btn wf-btn-default"><i class="fa fa-whatsapp"></i> Broadcast WA</a>
+                </div>
+             </div>
+          </div>
+
+          <!-- Step 3: Warehouse & Stok -->
+          <div class="col-md-3 col-sm-6">
+             <div class="workflow-step-card">
+                <div>
+                   <div class="wf-title"><span class="wf-step-num">3</span> Warehouse &amp; Stok</div>
+                   <div class="wf-desc">Monitoring stok real-time, penyesuaian massal, &amp; pelaksanaan Stock Opname.</div>
+                </div>
+                <div class="wf-btn-group">
+                   <a href="<?= site_url('administrator/stok'); ?>" class="wf-btn wf-btn-amber"><i class="fa fa-database"></i> Dashboard Stok</a>
+                   <a href="<?= site_url('administrator/stock_opname'); ?>" class="wf-btn wf-btn-default"><i class="fa fa-check-square-o"></i> Stock Opname</a>
+                </div>
+             </div>
+          </div>
+
+          <!-- Step 4: Keuangan & Kas -->
+          <div class="col-md-3 col-sm-6">
+             <div class="workflow-step-card">
+                <div>
+                   <div class="wf-title"><span class="wf-step-num">4</span> Keuangan &amp; Kas</div>
+                   <div class="wf-desc">Penerimaan kas (BKM), pengeluaran kas (BKK), piutang AR, &amp; buku besar.</div>
+                </div>
+                <div class="wf-btn-group">
+                   <a href="<?= site_url('administrator/piutang_usaha'); ?>" class="wf-btn wf-btn-blue"><i class="fa fa-sign-in"></i> Piutang (AR)</a>
+                   <a href="<?= site_url('administrator/utang_usaha'); ?>" class="wf-btn wf-btn-default"><i class="fa fa-sign-out"></i> Utang (AP)</a>
+                </div>
+             </div>
+          </div>
+       </div>
+    </div>
 
     <p class="dash-section-title"><i class="fa fa-bar-chart"></i> Ringkasan Transaksi</p>
 
