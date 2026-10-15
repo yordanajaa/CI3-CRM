@@ -357,10 +357,19 @@
         <i class="fa fa-tasks"></i> 2. Journal Follow-Up
       </a>
       <a href="<?= site_url('administrator/crm/broadcast'); ?>" class="nav-tab-btn">
-        <i class="fa fa-bullhorn"></i> 3. Broadcast WA
+        <i class="fa fa-whatsapp"></i> 3. Broadcast WA
       </a>
       <a href="<?= site_url('administrator/crm'); ?>" class="nav-tab-btn">
-        <i class="fa fa-users"></i> 4. Daftar Customer CRM
+        <i class="fa fa-users"></i> 4. Customer Directory
+      </a>
+      <a href="<?= site_url('administrator/crm/cs_performance'); ?>" class="nav-tab-btn">
+        <i class="fa fa-trophy"></i> 5. Kinerja Tim CS
+      </a>
+      <a href="<?= site_url('administrator/crm/followup_setting'); ?>" class="nav-tab-btn">
+        <i class="fa fa-cogs"></i> 6. Kelompok Follow-Up
+      </a>
+      <a href="<?= site_url('administrator/crm/automations'); ?>" class="nav-tab-btn">
+        <i class="fa fa-bolt"></i> 7. Otomasi CRM
       </a>
     </div>
   </div>
@@ -368,7 +377,7 @@
   <!-- KPI Cards Row -->
   <div class="row">
     <div class="col-md-2 col-sm-4 col-xs-6">
-      <div class="kpi-card kpi-blue" role="button" tabindex="0" onclick="window.location.href='<?= site_url('administrator/crm/customer_list'); ?>';" title="Klik untuk membuka Daftar Customer CRM">
+      <div class="kpi-card kpi-blue" role="button" tabindex="0" onclick="window.location.href='<?= site_url('administrator/crm/customer_list'); ?>';" title="Klik untuk membuka Customer Directory">
         <div class="kpi-icon"><i class="fa fa-users"></i></div>
         <div class="kpi-value"><?= number_format($kpis['total_customers']); ?></div>
         <div class="kpi-label">Total Pelanggan &rarr;</div>
