@@ -105,11 +105,11 @@
           </div>
        </div>
        <div class="col-md-3 col-sm-6 col-xs-12">
-          <div class="dash-stat-card bg-dash-green" onclick="goUrl('administrator/purchase_order')">
-             <div class="ds-label">Purchase Order</div>
-             <div class="ds-num"><?= isset($total_po) ? $total_po : 0; ?></div>
-             <div class="ds-sub">Total dokumen PO</div>
-             <div class="ds-icon"><i class="fa fa-truck"></i></div>
+          <div class="dash-stat-card bg-dash-green" onclick="goUrl('administrator/pelanggan')">
+             <div class="ds-label">Data Pelanggan</div>
+             <div class="ds-num"><?= isset($total_pelanggan) ? $total_pelanggan : 0; ?></div>
+             <div class="ds-sub">Pelanggan aktif terdaftar</div>
+             <div class="ds-icon"><i class="fa fa-users"></i></div>
           </div>
        </div>
        <div class="col-md-3 col-sm-6 col-xs-12">
@@ -224,14 +224,8 @@
                                   <?php endif; ?>
                                </td>
                                <td class="text-center">
-                                  <a href="<?= site_url('administrator/purchase_order/auto_restock/' . $ls->id); ?>"
-                                     class="btn-auto-restock"
-                                     onclick="return confirm('Sistem akan membuat Draft PO otomatis untuk barang ini. Lanjutkan?')">
-                                     <i class="fa fa-bolt"></i> Auto Restock
-                                  </a>
-                                  &nbsp;
-                                  <a href="<?= site_url('administrator/stok/kartu/' . $ls->id); ?>" class="btn btn-xs btn-default" title="Kartu Stok">
-                                     <i class="fa fa-list-alt"></i>
+                                  <a href="<?= site_url('administrator/stok/kartu/' . $ls->id); ?>" class="btn btn-xs btn-default" style="font-weight:600; padding:4px 10px;" title="Lihat Kartu Riwayat Stok">
+                                     <i class="fa fa-list-alt text-primary"></i> Kartu Stok
                                   </a>
                                </td>
                             </tr>

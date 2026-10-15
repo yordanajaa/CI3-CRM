@@ -58,9 +58,9 @@
       <div class="col-md-12">
          <div class="box box-warning" style="border-radius:6px;">
             <div class="box-header with-border">
-               <h3 class="box-title"><i class="fa fa-exclamation-triangle text-warning"></i> Warning Stok Minimum (Trigger Purchase Reorder Auto)</h3>
+               <h3 class="box-title"><i class="fa fa-exclamation-triangle text-warning"></i> Warning Stok Minimum Gudang</h3>
                <div class="box-tools pull-right">
-                  <a href="<?= site_url('administrator/purchase_order/add'); ?>" class="btn btn-warning btn-sm btn-flat" style="border-radius:4px;"><i class="fa fa-plus-circle"></i> Buat Reorder PO</a>
+                  <a href="<?= site_url('administrator/stok'); ?>" class="btn btn-warning btn-sm btn-flat" style="border-radius:4px;"><i class="fa fa-cubes"></i> Kelola Stok</a>
                </div>
             </div>
             <div class="box-body">
@@ -88,7 +88,7 @@
                         <td class="text-center"><strong class="text-danger" style="font-size:14px;"><?= number_format($pm->qty, 0, ',', '.'); ?> Unit</strong></td>
                         <td class="text-center"><strong><?= number_format($pm->stok_minimum, 0, ',', '.'); ?> Unit</strong></td>
                         <td class="text-center">
-                           <a href="<?= site_url('administrator/purchase_order/add?gudang_id=' . $pm->gudang_id); ?>" class="btn btn-xs btn-warning btn-flat"><i class="fa fa-shopping-cart"></i> Reorder Gudang Ini</a>
+                           <a href="<?= site_url('administrator/stok/kartu/' . $pm->produk_id); ?>" class="btn btn-xs btn-default btn-flat" title="Lihat Riwayat Kartu Stok"><i class="fa fa-list-alt text-primary"></i> Kartu Stok</a>
                         </td>
                      </tr>
                      <?php endforeach; ?>

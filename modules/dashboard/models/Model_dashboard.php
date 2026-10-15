@@ -27,10 +27,10 @@ class Model_dashboard extends CI_Model {
 	public function get_summary()
 	{
 		return [
-			'total_so'      => $this->db->count_all_results('sales_order'),
-			'total_po'      => $this->db->count_all_results('purchase_order'),
-			'total_produk'  => $this->db->where('status', 'aktif')->count_all_results('produk'),
-			'total_gudang'  => $this->db->where('status', 'aktif')->count_all_results('gudang'),
+			'total_so'        => $this->db->count_all_results('sales_order'),
+			'total_pelanggan' => $this->db->where('status', 'aktif')->count_all_results('pelanggan'),
+			'total_produk'    => $this->db->where('status', 'aktif')->count_all_results('produk'),
+			'total_gudang'    => $this->db->where('status', 'aktif')->count_all_results('gudang'),
 		];
 	}
 

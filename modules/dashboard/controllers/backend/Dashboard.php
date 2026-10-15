@@ -99,47 +99,11 @@ class Dashboard extends Admin
 			$total_count += $overdue_count;
 		}
 
-		// 2. Purchase Order Pending Approval (For Managers / Admins)
-		$po_count = 0;
-		if ($is_manager && $this->db->table_exists('purchase_order')) {
-			$threshold = (float) get_option('po_approval_threshold', 50000000);
-
-			$pos = $this->db->select('po.id, po.nomor_po, po.created_at, po.total, po.kurs, s.nama_supplier')
-				->from('purchase_order po')
-				->join('supplier s', 's.id = po.supplier_id', 'left')
-				->where('po.status', 'submitted')
-				->order_by('po.id', 'DESC')
-				->limit(10)
-				->get()->result();
-
-			foreach ($pos as $po) {
-				$total_idr = (float)$po->total * (float)($po->kurs ?: 1);
-				$is_high_value = ($total_idr >= $threshold);
-
-				$items[] = [
-					'id' => (int)$po->id,
-					'type' => 'po',
-					'title' => ($is_high_value ? '⚠️ PO High-Value: ' : 'PO Pending Approval: ') . $po->nomor_po,
-					'subtitle' => ($po->nama_supplier ? $po->nama_supplier . ' - ' : '') . 'Rp ' . number_format($total_idr, 0, ',', '.') . ($is_high_value ? ' (Butuh Approval Manajer)' : ''),
-					'url' => site_url('administrator/purchase_order/view/' . $po->id),
-					'icon' => $is_high_value ? 'fa-shield' : 'fa-shopping-cart',
-					'icon_bg' => $is_high_value ? 'text-red' : 'text-aqua',
-					'date' => date('d/m H:i', strtotime($po->created_at))
-				];
-			}
-			$po_count = $this->db->where('status', 'submitted')->count_all_results('purchase_order');
-			$total_count += $po_count;
-		}
-
 		// Header & Footer
 		if ($overdue_count > 0) {
 			$header_title = 'Peringatan Follow-Up';
 			$footer_url = site_url('administrator/crm/journal_followup?status_label=belum_direspon');
 			$footer_label = 'Lihat Follow-Up Terlewat';
-		} elseif ($po_count > 0 && $is_manager) {
-			$header_title = 'Notifikasi Approval';
-			$footer_url = site_url('administrator/purchase_order');
-			$footer_label = 'Lihat Kelola Purchase Order';
 		} else {
 			$header_title = 'Notifikasi Follow-Up';
 			$footer_url = site_url('administrator/crm/journal_followup');

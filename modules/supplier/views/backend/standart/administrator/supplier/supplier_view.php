@@ -19,9 +19,6 @@
             <div class="box-header with-border">
                <h3 class="box-title"><i class="fa fa-info-circle"></i> <?= _ent($supplier->nama_supplier); ?></h3>
                <div class="box-tools pull-right">
-                  <?php is_allowed('purchase_order_add', function() use ($supplier){ ?>
-                   <a href="<?= site_url('administrator/purchase_order/add?supplier_id='.$supplier->id); ?>" class="btn btn-primary btn-sm"><i class="fa fa-cart-plus"></i> Buat PO Baru</a>
-                   <?php }); ?>
                    <?php is_allowed('supplier_update', function() use ($supplier){ ?>
                   <a href="<?= site_url('administrator/supplier/edit/'.$supplier->id); ?>" class="btn btn-warning btn-sm"><i class="fa fa-edit"></i> Edit</a>
                   <?php }); ?>
@@ -90,7 +87,7 @@
                               <tr>
                                  <td class="text-center"><?= $no++; ?></td>
                                  <td><?= date('d/m/Y', strtotime($r->tanggal_order ?? $r->tanggal_po ?? date('Y-m-d'))); ?></td>
-                                 <td><a href="<?= site_url('administrator/purchase_order/view/' . $r->po_id); ?>" target="_blank"><strong><?= _ent($r->nomor_po); ?></strong></a></td>
+                                 <td><strong><?= _ent($r->nomor_po); ?></strong></td>
                                  <td><?= _ent(($r->kode_produk ? $r->kode_produk . ' - ' : '') . $r->nama_produk); ?></td>
                                  <td class="text-right">
                                     <strong>
