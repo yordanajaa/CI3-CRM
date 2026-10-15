@@ -79,20 +79,8 @@ if ($so_disc_pct == 0) {
             </div>
 
             <div class="row">
-               <div class="col-md-6">
-                  <div class="form-group">
-                     <label>Gudang Pengeluaran Stok</label>
-                     <select class="form-control chosen" name="gudang_id">
-                        <option value="">-- Pilih Gudang --</option>
-                        <?php 
-                           $selected_gudang = $so_obj->gudang_id ?? ($inv->gudang_id ?? 0);
-                           foreach($gudangs as $g): 
-                        ?>
-                           <option value="<?= $g->id; ?>" <?= $g->id == $selected_gudang ? 'selected':'' ?>><?= _ent($g->nama_gudang); ?></option>
-                        <?php endforeach; ?>
-                     </select>
-                  </div>
-               </div>
+               <?php $selected_gudang = $so_obj->gudang_id ?? ($inv->gudang_id ?? (isset($gudangs[0]) ? $gudangs[0]->id : 1)); ?>
+               <input type="hidden" name="gudang_id" value="<?= $selected_gudang; ?>">
                <div class="col-md-3">
                   <div class="form-group">
                      <label>Diskon Keseluruhan (%)</label>

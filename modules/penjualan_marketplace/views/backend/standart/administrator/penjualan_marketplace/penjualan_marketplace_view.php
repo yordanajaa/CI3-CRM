@@ -139,10 +139,6 @@ $st_display = !empty($so->status_pesanan) ? strtoupper($so->status_pesanan) : st
                               <th style="color:#64748b;">Deadline Kirim:</th>
                               <td><strong class="text-warning"><i class="fa fa-hourglass-half"></i> <?= !empty($so->pesanan_harus_dikirim_sebelum) ? date('d/m/Y H:i', strtotime($so->pesanan_harus_dikirim_sebelum)) : date('d/m/Y', strtotime("+1 day", strtotime($so->tanggal_so))); ?></strong></td>
                            </tr>
-                           <tr>
-                              <th style="color:#64748b;">Gudang Pengirim:</th>
-                              <td><i class="fa fa-bank text-muted"></i> <?= _ent($so->nama_gudang ?: 'Gudang Utama Jakarta'); ?></td>
-                           </tr>
                         </table>
                      </div>
                   </div>

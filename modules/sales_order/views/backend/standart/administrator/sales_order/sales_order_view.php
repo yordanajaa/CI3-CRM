@@ -309,9 +309,6 @@ $display_kurir = !empty($so->opsi_pengiriman) ? $so->opsi_pengiriman : (!empty($
                         <td>
                            <a href="<?= site_url('administrator/stok/kartu/' . $item->produk_id); ?>" title="Buka Kartu Stok Produk"><strong style="color:#0284c7; font-size:13px;"><?= _ent($item->nama_produk); ?> <i class="fa fa-external-link" style="font-size:10px;"></i></strong></a><br>
                            <small class="text-muted">Kode / SKU: <?= _ent($item->kode_produk); ?></small>
-                           <?php if(!empty($item->kode_rak)): ?>
-                              <br><span class="label bg-purple" style="font-size:10px;"><i class="fa fa-map-marker"></i> Rak: <?= _ent($item->kode_rak); ?> - Baris <?= _ent($item->baris); ?></span>
-                           <?php endif; ?>
                         </td>
                         <td class="text-center"><strong><?= number_format((float)$item->qty, 0, ',', '.'); ?></strong> <?= _ent($item->singkatan??$item->satuan??'unit'); ?></td>
                         <td class="text-right">Rp <?= number_format($item->harga_satuan, 0, ',', '.'); ?></td>

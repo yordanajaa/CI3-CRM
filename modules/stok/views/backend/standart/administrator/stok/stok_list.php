@@ -333,7 +333,6 @@
                      <thead>
                         <tr>
                            <th>Nama Produk</th>
-                           <th>Gudang</th>
                            <th class="text-center">Stok Saat Ini</th>
                            <th class="text-center">Batas Minimal</th>
                         </tr>
@@ -342,7 +341,6 @@
                         <?php foreach ($menipis as $m): ?>
                            <tr class="<?= $m->qty == 0 ? 'danger' : 'warning'; ?>">
                               <td><?= _ent($m->nama_produk); ?></td>
-                              <td><?= _ent($m->nama_gudang); ?></td>
                               <td class="text-center"><strong><?= number_format((float)$m->qty, 0, ',', '.'); ?></strong></td>
                               <td class="text-center"><?= $m->stok_minimum; ?></td>
                            </tr>

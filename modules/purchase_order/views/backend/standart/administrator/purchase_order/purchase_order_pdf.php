@@ -27,7 +27,6 @@
          </td>
          <td style="width: 50%; vertical-align: top;">
             <table style="width: 100%;">
-               <tr><td style="width: 40%;"><strong>Gudang Tujuan:</strong></td><td><?= _ent($po->nama_gudang ?? '-'); ?></td></tr>
                <tr><td style="width: 40%;"><strong>Est. Terima:</strong></td><td><?= _ent($po->tanggal_estimasi ?? '-'); ?></td></tr>
                <tr><td style="width: 40%;"><strong>Mata Uang:</strong></td><td><?= _ent($po->mata_uang ?? 'IDR'); ?> (Kurs: <?= number_format((float)$po->kurs ?? 1, 0, ',', '.'); ?>)</td></tr>
             </table>

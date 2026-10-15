@@ -62,15 +62,7 @@
                            </div>
                         </div>
 
-                        <div class="form-group">
-                           <label class="col-sm-4 control-label text-left">Gudang Pengirim <span class="text-danger">*</span></label>
-                           <div class="col-sm-8">
-                              <select name="gudang_id" class="form-control" required style="border-radius:4px;">
-                                 <?php foreach($gudangs as $g): ?>
-                                    <option value="<?= $g->id; ?>"><?= _ent($g->nama_gudang); ?></option>
-                                 <?php endforeach; ?>
-                              </select>
-                           </div>
+                        <input type="hidden" name="gudang_id" value="1">
                         </div>
                      </div>
 

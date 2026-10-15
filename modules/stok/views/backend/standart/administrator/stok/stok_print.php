@@ -166,7 +166,6 @@
    <div class="doc-info">
       <div class="doc-title">Laporan Posisi Stok Fisik</div>
       <div class="doc-meta">
-         <strong>Lokasi Gudang:</strong> <?= _ent($nama_gudang_aktif); ?><br>
          <strong>Tanggal Cetak:</strong> <?= date('d/m/Y H:i'); ?> WIB<br>
          <strong>Dicetak Oleh:</strong> <?= _ent(get_user_data('full_name') ?: get_user_data('username') ?: 'Administrator'); ?>
       </div>

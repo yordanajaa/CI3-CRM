@@ -62,7 +62,6 @@
       </td>
       <td width="50%">
          <table style="width: 100%;">
-            <tr><td width="40%"><strong>Gudang:</strong></td><td><?= _ent($retur->nama_gudang ?? '-'); ?></td></tr>
             <tr><td width="40%"><strong>Petugas:</strong></td><td><?= _ent($retur->created_by ?? '-'); ?></td></tr>
          </table>
       </td>

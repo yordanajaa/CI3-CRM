@@ -40,7 +40,7 @@ $action_url = $is_edit
          </div>
          <div class="box-body">
             <div class="row">
-               <div class="col-md-4">
+               <div class="col-md-6">
                   <div class="form-group"><label>Supplier <span class="text-danger">*</span></label>
                      <select class="form-control chosen" name="supplier_id" id="supplier_id" required>
                         <option value="">-- Pilih Supplier --</option>
@@ -52,20 +52,14 @@ $action_url = $is_edit
                      </select>
                   </div>
                </div>
-               <div class="col-md-4">
-                  <div class="form-group"><label>Gudang Tujuan</label>
-                     <select class="form-control chosen" name="gudang_id">
-                        <option value="">-- Pilih Gudang --</option>
-                        <?php foreach($gudangs as $g): ?><option value="<?= $g->id; ?>"><?= _ent($g->nama_gudang); ?></option><?php endforeach; ?>
-                     </select>
-                  </div>
-               </div>
-               <div class="col-md-2">
+               <?php $default_gudang_id = isset($gudangs[0]) ? $gudangs[0]->id : 1; ?>
+               <input type="hidden" name="gudang_id" value="<?= $default_gudang_id; ?>">
+               <div class="col-md-3">
                   <div class="form-group"><label>Tanggal PO <span class="text-danger">*</span></label>
                      <input type="date" class="form-control" name="tanggal_po" value="<?= date('Y-m-d'); ?>" required>
                   </div>
                </div>
-               <div class="col-md-2">
+               <div class="col-md-3">
                   <div class="form-group"><label>Est. Tanggal Terima</label>
                      <input type="date" class="form-control" name="tanggal_estimasi">
                   </div>

@@ -73,16 +73,8 @@ $action_url = $is_edit
                      </select>
                   </div>
                </div>
-               <div class="col-md-6">
-                  <div class="form-group" style="margin-bottom:0;"><label>Gudang Asal Barang <span class="text-danger">*</span></label>
-                     <select class="form-control chosen" name="gudang_id" id="gudang_id" required>
-                        <option value="">-- Pilih Gudang --</option>
-                        <?php foreach($gudangs as $g): ?>
-                           <option value="<?= $g->id; ?>" <?= ($is_edit && $retur->gudang_id == $g->id) ? 'selected' : ''; ?>><?= _ent($g->nama_gudang); ?></option>
-                        <?php endforeach; ?>
-                     </select>
-                  </div>
-               </div>
+               <?php $default_gudang_id = ($is_edit && !empty($retur->gudang_id)) ? $retur->gudang_id : (isset($gudangs[0]) ? $gudangs[0]->id : 1); ?>
+               <input type="hidden" name="gudang_id" id="gudang_id" value="<?= $default_gudang_id; ?>">
             </div>
          </div>
       </div>

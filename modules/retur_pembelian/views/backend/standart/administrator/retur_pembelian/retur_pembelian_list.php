@@ -58,7 +58,6 @@ $status_color = [
                               <th>Tanggal Retur</th>
                               <th>No. Referensi (GRN / PO)</th>
                               <th>Supplier</th>
-                              <th>Gudang Asal</th>
                               <th>Alasan Retur</th>
                               <th class="text-right">Total Nilai</th>
                               <th class="text-center">Status</th>
@@ -76,7 +75,6 @@ $status_color = [
                                        <strong><?= _ent($r->nama_supplier); ?></strong><br>
                                        <small class="text-muted"><i class="fa fa-tag"></i> <?= _ent(isset($r->kode_supplier) && $r->kode_supplier ? $r->kode_supplier : 'SUP-'.$r->supplier_id); ?></small>
                                     </td>
-                                    <td><span class="label label-primary"><i class="fa fa-bank"></i> <?= _ent($r->nama_gudang); ?></span></td>
                                     <td><?= _ent($r->alasan ?? '-'); ?></td>
                                     <td class="text-right">
                                        <strong class="text-danger">

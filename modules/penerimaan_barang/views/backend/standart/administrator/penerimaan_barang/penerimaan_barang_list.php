@@ -59,7 +59,6 @@ $status_color = [
                               <th>Tanggal Masuk</th>
                               <th>No. Referensi PO</th>
                               <th>Supplier</th>
-                              <th>Gudang Tujuan</th>
                               <th>Diterima Oleh</th>
                               <th class="text-center">Status</th>
                               <th class="text-center" width="160">Aksi</th>
@@ -78,7 +77,6 @@ $status_color = [
                                        </a>
                                     </td>
                                     <td><strong><?= _ent($p->nama_supplier); ?></strong></td>
-                                    <td><span class="label label-primary"><i class="fa fa-bank"></i> <?= _ent($p->nama_gudang); ?></span></td>
                                     <td><small><i class="fa fa-user text-muted"></i> <?= _ent($p->diterima_oleh ?? 'Admin'); ?></small></td>
                                     <td class="text-center">
                                        <span class="label <?= isset($status_color[$p->status]) ? $status_color[$p->status] : 'label-default'; ?>">

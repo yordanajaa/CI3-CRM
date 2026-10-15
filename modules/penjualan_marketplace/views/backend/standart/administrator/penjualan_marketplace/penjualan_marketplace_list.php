@@ -583,15 +583,7 @@ $per_page = isset($per_page) ? $per_page : 25;
                   <form action="<?= site_url('administrator/penjualan_marketplace/import_shopee'); ?>" method="POST" enctype="multipart/form-data">
                      <div class="row">
                         <div class="col-md-6 col-sm-12">
-                           <div class="form-group">
-                              <label style="font-weight:700; color:#334155;"><i class="fa fa-building text-danger"></i> Pilih Gudang Tujuan Pesanan:</label>
-                              <select name="gudang_id" class="form-control" required style="border-radius:6px; font-weight:600;">
-                                 <option value="">-- Pilih Gudang Tujuan --</option>
-                                 <?php foreach($gudangs as $g): ?>
-                                    <option value="<?= $g->id; ?>" <?= ($g->id == 1 || $g->status == 'aktif') ? 'selected':''; ?>><?= _ent($g->nama_gudang); ?></option>
-                                 <?php endforeach; ?>
-                              </select>
-                           </div>
+                           <input type="hidden" name="gudang_id" value="1">
                         </div>
                         <div class="col-md-6 col-sm-12">
                            <div class="form-group">
@@ -622,15 +614,7 @@ $per_page = isset($per_page) ? $per_page : 25;
                   <form action="<?= site_url('administrator/penjualan_marketplace/import_tokopedia'); ?>" method="POST" enctype="multipart/form-data">
                      <div class="row">
                         <div class="col-md-6 col-sm-12">
-                           <div class="form-group">
-                              <label style="font-weight:700; color:#334155;"><i class="fa fa-building text-success"></i> Pilih Gudang Tujuan Pesanan:</label>
-                              <select name="gudang_id" class="form-control" required style="border-radius:6px; font-weight:600;">
-                                 <option value="">-- Pilih Gudang Tujuan --</option>
-                                 <?php foreach($gudangs as $g): ?>
-                                    <option value="<?= $g->id; ?>" <?= ($g->id == 1 || $g->status == 'aktif') ? 'selected':''; ?>><?= _ent($g->nama_gudang); ?></option>
-                                 <?php endforeach; ?>
-                              </select>
-                           </div>
+                           <input type="hidden" name="gudang_id" value="1">
                         </div>
                         <div class="col-md-6 col-sm-12">
                            <div class="form-group">

@@ -27,7 +27,6 @@
          </td>
          <td style="width: 50%; vertical-align: top;">
             <table style="width: 100%;">
-               <tr><td style="width: 40%;"><strong>Gudang Tujuan:</strong></td><td><?= _ent($penerimaan->nama_gudang ?? '-'); ?></td></tr>
                <tr><td style="width: 40%;"><strong>Petugas:</strong></td><td><?= _ent($penerimaan->created_by ?? '-'); ?></td></tr>
             </table>
          </td>

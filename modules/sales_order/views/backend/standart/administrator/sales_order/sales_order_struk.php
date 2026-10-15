@@ -966,9 +966,6 @@
             <td style="text-align: center; font-family: monospace; font-size: 11px;"><?= _ent($it->kode_produk ?? '-'); ?></td>
             <td>
                <strong style="color: #0f172a;"><?= _ent($it->nama_produk); ?></strong>
-               <?php if (!empty($it->kode_rak)): ?>
-                  <span style="font-size: 10px; color: #64748b;">(Rak: <?= _ent($it->kode_rak); ?>)</span>
-               <?php endif; ?>
             </td>
             <td style="text-align: center; font-weight: 700;"><?= number_format($qty, 0, ',', '.'); ?></td>
             <td style="text-align: center;"><?= _ent($it->singkatan ?? ($it->satuan ?: 'Pcs')); ?></td>

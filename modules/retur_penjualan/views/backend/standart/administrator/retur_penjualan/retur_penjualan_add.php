@@ -43,15 +43,8 @@ $action_url = $is_edit
                      </select>
                   </div>
                </div>
-               <div class="col-md-4">
-                  <div class="form-group">
-                     <label>Gudang Tujuan Pengembalian</label>
-                     <select class="form-control" name="gudang_id">
-                        <option value="">-- Auto dari Invoice --</option>
-                        <?php foreach($gudangs as $g): ?><option value="<?= $g->id; ?>"><?= _ent($g->nama_gudang); ?></option><?php endforeach; ?>
-                     </select>
-                  </div>
-               </div>
+               <?php $default_gudang_id = isset($gudangs[0]) ? $gudangs[0]->id : 1; ?>
+               <input type="hidden" name="gudang_id" value="<?= $default_gudang_id; ?>">
                <div class="col-md-4">
                   <div class="form-group">
                      <label>Tanggal Retur <span class="text-danger">*</span></label>

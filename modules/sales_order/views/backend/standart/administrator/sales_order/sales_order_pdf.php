@@ -55,9 +55,6 @@
                   <td style="border: 1px solid #ccc; padding: 5px; text-align: center;"><?= $no++; ?></td>
                   <td style="border: 1px solid #ccc; padding: 5px;">
                      <?= _ent($it->nama_produk ?? '-'); ?>
-                     <?php if(!empty($it->kode_rak)): ?>
-                        <br><span style="font-size: 9px; color: #666;">[Rak: <?= _ent($it->kode_rak); ?> - Baris <?= _ent($it->baris); ?>]</span>
-                     <?php endif; ?>
                   </td>
                   <td style="border: 1px solid #ccc; padding: 5px; text-align: right;"><?= number_format((float)($it->qty ?? 0), 0, ',', '.'); ?></td>
                   <td style="border: 1px solid #ccc; padding: 5px; text-align: center;"><?= _ent($it->singkatan ?? $it->satuan ?? '-'); ?></td>

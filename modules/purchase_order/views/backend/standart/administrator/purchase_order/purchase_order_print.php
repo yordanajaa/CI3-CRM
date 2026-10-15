@@ -62,7 +62,6 @@
       </td>
       <td width="50%">
          <table style="width: 100%;">
-            <tr><td width="40%"><strong>Gudang Tujuan:</strong></td><td><?= _ent($po->nama_gudang ?? '-'); ?></td></tr>
             <tr><td width="40%"><strong>Tanggal Est. Terima:</strong></td><td><?= _ent($po->tanggal_estimasi ?? '-'); ?></td></tr>
             <tr><td width="40%"><strong>Mata Uang / Kurs:</strong></td><td><?= _ent($po->mata_uang ?? '-'); ?></td></tr>
          </table>

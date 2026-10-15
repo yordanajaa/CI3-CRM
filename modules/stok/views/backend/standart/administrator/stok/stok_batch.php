@@ -13,7 +13,7 @@
       <h4><i class="fa fa-exclamation-circle"></i> Peringatan! <?= count($kadaluarsa_soon); ?> Batch Mendekati / Sudah Kadaluarsa (≤ 30 Hari)</h4>
       <div class="table-responsive">
          <table class="table table-condensed" style="margin-bottom:0;">
-            <thead><tr class="bg-red" style="color:#fff;"><th>Produk</th><th>Batch No</th><th>Gudang</th><th class="text-center">Qty</th><th class="text-center">Tanggal Kadaluarsa</th><th class="text-center">Sisa Hari</th></tr></thead>
+            <thead><tr class="bg-red" style="color:#fff;"><th>Produk</th><th>Batch No</th><th class="text-center">Qty</th><th class="text-center">Tanggal Kadaluarsa</th><th class="text-center">Sisa Hari</th></tr></thead>
             <tbody>
                <?php foreach($kadaluarsa_soon as $k):
                   $sisa_hari = (int) ceil((strtotime($k->expired_date) - time()) / 86400);
@@ -22,7 +22,6 @@
                <tr class="<?= $sisa_hari <= 0 ? 'danger' : 'warning'; ?>">
                   <td><strong><?= _ent($k->nama_produk); ?></strong><br><small class="text-muted"><?= _ent($k->kode_produk); ?></small></td>
                   <td><span class="label label-primary"><?= _ent($k->batch_no); ?></span></td>
-                  <td><?= _ent($k->nama_gudang); ?></td>
                   <td class="text-center"><strong><?= number_format($k->qty, 0, ',', '.'); ?></strong></td>
                   <td class="text-center"><?= date('d/m/Y', strtotime($k->expired_date)); ?></td>
                   <td class="text-center">
@@ -49,15 +48,6 @@
                   <option value="">-- Semua Produk --</option>
                   <?php foreach($produks as $p): ?>
                      <option value="<?= $p->id; ?>" <?= $produk_sel == $p->id ? 'selected' : ''; ?>><?= _ent($p->kode_produk . ' - ' . $p->nama_produk); ?></option>
-                  <?php endforeach; ?>
-               </select>
-            </div>
-            <div class="form-group" style="margin-right:10px;">
-               <label>Gudang: </label>
-               <select name="gudang_id" class="form-control">
-                  <option value="">-- Semua Gudang --</option>
-                  <?php foreach($gudangs as $g): ?>
-                     <option value="<?= $g->id; ?>" <?= $gudang_sel == $g->id ? 'selected' : ''; ?>><?= _ent($g->nama_gudang); ?></option>
                   <?php endforeach; ?>
                </select>
             </div>

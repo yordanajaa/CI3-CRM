@@ -54,16 +54,8 @@ $action_url = $is_edit
                      </select>
                   </div>
                </div>
-               <div class="col-md-3">
-                  <div class="form-group"><label>Gudang Tujuan <span class="text-danger">*</span></label>
-                     <select class="form-control chosen" name="gudang_id" id="gudang_id" required>
-                        <option value="">-- Pilih Gudang --</option>
-                        <?php foreach($gudangs as $g): ?>
-                           <option value="<?= $g->id; ?>" <?= ($is_edit && $penerimaan->gudang_id == $g->id) ? 'selected' : ''; ?>><?= _ent($g->nama_gudang); ?></option>
-                        <?php endforeach; ?>
-                     </select>
-                  </div>
-               </div>
+               <?php $default_gudang_id = ($is_edit && !empty($penerimaan->gudang_id)) ? $penerimaan->gudang_id : (isset($gudangs[0]) ? $gudangs[0]->id : 1); ?>
+               <input type="hidden" name="gudang_id" id="gudang_id" value="<?= $default_gudang_id; ?>">
                <div class="col-md-3">
                   <div class="form-group"><label>Tanggal Terima <span class="text-danger">*</span></label>
                      <input type="date" class="form-control" name="tanggal_terima" value="<?= $is_edit ? $penerimaan->tanggal_terima : date('Y-m-d'); ?>" required>
@@ -160,15 +152,7 @@ $action_url = $is_edit
                                         <span class="label label-danger" style="font-size:10px;"><i class="fa fa-times"></i> <?= (int)$it->qty_rusak; ?> Rusak</span>
                                      <?php endif; ?>
                                   </div>
-                               </td>
-                               <td>
-                                  <select class="form-control rak-select" name="items[<?= $idx; ?>][rak_id]">
-                                     <option value="">-- Tanpa Rak / Rak Default --</option>
-                                     <?php foreach($raks as $r): ?>
-                                        <option class="rak-opt" data-gudang="<?= $r->gudang_id; ?>" value="<?= $r->id; ?>" <?= ($r->id == $it->rak_id) ? 'selected' : ''; ?>><?= _ent($r->kode_rak.' (Baris '.$r->baris.')'); ?></option>
-                                     <?php endforeach; ?>
-                                  </select>
-                               </td>
+                               </td><input type="hidden" name="items[<?= $idx; ?>][rak_id]" value="<?= $it->rak_id ?? ''; ?>">
                                <td><input type="number" step="1" min="1" class="form-control qty-terima-input qty-input" name="items[<?= $idx; ?>][qty_terima]" value="<?= (int)($it->qty_terima ?? 1); ?>" data-total-qty="<?= (int)(($it->qty_terima ?? 1) + ($it->qty_rusak ?? 0)); ?>" min="1" step="1"></td>
                                <td><input type="number" step="1" min="0" class="form-control qty-rusak-input" name="items[<?= $idx; ?>][qty_rusak]" value="<?= (int)($it->qty_rusak ?? 0); ?>" min="0"></td>
                                <td><input type="text" class="form-control" name="items[<?= $idx; ?>][satuan]" value="<?= _ent($it->satuan ?? 'pcs'); ?>" style="width:60px"></td>
@@ -179,8 +163,7 @@ $action_url = $is_edit
                          <?php endforeach; ?>
                       <?php else: ?>
                          <tr id="item_row_0" class="item-row">
-                            <td><select class="form-control produk-select" style="width:100%;" name="items[0][produk_id]"><option value="">-- Pilih Produk --</option><?php foreach($produks as $p): ?><option value="<?= $p->id; ?>" data-harga="<?= $p->harga_beli; ?>"><?= _ent($p->kode_produk.' - '.$p->nama_produk); ?></option><?php endforeach; ?></select><div class="qty-breakdown-badge" style="margin-top:2px;"></div></td>
-                            <td><select class="form-control" name="items[0][rak_id]"><option value="">-- Tanpa Rak / Rak Default --</option><?php foreach($raks as $r): ?><option value="<?= $r->id; ?>"><?= _ent($r->kode_rak.' (Baris '.$r->baris.')'); ?></option><?php endforeach; ?></select></td>
+                            <td><select class="form-control produk-select" style="width:100%;" name="items[0][produk_id]"><option value="">-- Pilih Produk --</option><?php foreach($produks as $p): ?><option value="<?= $p->id; ?>" data-harga="<?= $p->harga_beli; ?>"><?= _ent($p->kode_produk.' - '.$p->nama_produk); ?></option><?php endforeach; ?></select><div class="qty-breakdown-badge" style="margin-top:2px;"></div></td><input type="hidden" name="items[0][rak_id]" value="">
                             <td><input type="number" step="1" min="1" class="form-control qty-terima-input qty-input" name="items[0][qty_terima]" value="1" data-total-qty="1" min="1" step="1"></td>
                             <td><input type="number" step="1" min="0" class="form-control qty-rusak-input" name="items[0][qty_rusak]" value="0" min="0"></td>
                             <td><input type="text" class="form-control" name="items[0][satuan]" style="width:60px"></td>
