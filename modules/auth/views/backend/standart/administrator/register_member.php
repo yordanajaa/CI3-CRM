@@ -32,11 +32,23 @@
     .required {
       color: #D02727
     }
-    .login-box-body {
-      border-top: 5px solid #D7320C;
+    .login-box {
+      width: 100% !important;
+      max-width: 440px !important;
+      padding: 0 15px !important;
+      margin: 40px auto !important;
     }
-  </style>
-
+    .login-box-body {
+      border-top: 4px solid #D7320C;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      padding: 24px 20px;
+    }
+    .login-logo img {
+      max-width: 100%;
+      height: auto;
+      max-height: 48px;
+    }
   </style>
 
   <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->

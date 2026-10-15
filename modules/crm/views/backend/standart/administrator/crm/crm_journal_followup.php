@@ -303,12 +303,22 @@
   .stat-box .lbl { font-size: 9px; }
   .row > .col-md-4 { width: 33.333%; float: left; padding-left: 4px; padding-right: 4px; }
 
-  .cat-pill { padding: 5px 10px; font-size: 10.5px; margin: 2px; }
+  .cat-pill-scroll-container {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    padding-bottom: 6px !important;
+    margin-bottom: 10px !important;
+  }
+  .cat-pill-scroll-container::-webkit-scrollbar { display: none !important; }
+  .cat-pill { padding: 6px 12px; font-size: 11px; margin: 0; flex-shrink: 0 !important; white-space: nowrap !important; }
 
   .filter-section { margin-bottom: 12px; }
   .filter-section .box-body { padding: 10px; }
   .filter-section .col-md-2 { margin-bottom: 6px; }
-  .filter-section .form-control { font-size: 11px; height: 34px; }
+  .filter-section .form-control { font-size: 12px; height: 38px; }
 
   .box-header { padding: 10px 12px !important; }
   .box-header .box-title { font-size: 13px; }
@@ -467,7 +477,7 @@
   </div>
 
   <!-- Category Tabs -->
-  <div style="margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+  <div class="cat-pill-scroll-container" style="margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
 
     <a href="<?= site_url('administrator/crm/journal_followup'); ?>" class="cat-pill <?= (empty($filters['category_id']) && empty($filters['status_label'])) ? 'active' : ''; ?>">
       <i class="fa fa-list"></i> Semua Data

@@ -68,6 +68,18 @@
    margin: 10px 0 12px; padding-left: 4px;
    border-left: 3px solid #1E88E5;
 }
+
+@media (max-width: 767px) {
+   .dash-stat-card { padding: 14px 14px; margin-bottom: 10px; border-radius: 8px; }
+   .dash-stat-card .ds-num { font-size: 26px; }
+   .dash-stat-card .ds-label { font-size: 11.5px; }
+   .dash-stat-card .ds-icon { font-size: 40px; right: 12px; }
+   .dash-flow-card { padding: 14px 14px; margin-bottom: 10px; border-radius: 8px; }
+   .dash-flow-card .df-num { font-size: 22px; }
+   .dash-flow-card .df-label { font-size: 11.5px; }
+   .dash-flow-card .df-icon-wrap { width: 44px; height: 44px; font-size: 18px; margin-right: 10px; }
+   .low-stock-box .box-header { padding: 10px 12px; }
+}
 </style>
 
 <section class="content-header">

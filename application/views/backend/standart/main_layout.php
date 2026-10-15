@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="<?= BASE_ASSET; ?>toastr/build/toastr.css">
   <link rel="stylesheet" href="<?= BASE_ASSET; ?>fancy-box/source/jquery.fancybox.css?v=2.1.5" media="screen" />
   <link rel="stylesheet" href="<?= BASE_ASSET; ?>chosen/chosen.css">
-  <link rel="stylesheet" href="<?= BASE_ASSET; ?>css/custom.css?v=<?= VERSION; ?>">
+  <link rel="stylesheet" href="<?= BASE_ASSET; ?>css/custom.css?v=<?= VERSION; ?>.<?= is_file(FCPATH.'asset/css/custom.css') ? filemtime(FCPATH.'asset/css/custom.css') : '1'; ?>">
   <link rel="stylesheet" href="<?= BASE_ASSET; ?>datetimepicker/jquery.datetimepicker.css"/>
   <link rel="stylesheet" href="<?= BASE_ASSET; ?>js-scroll/style/jquery.jscrollpane.css" rel="stylesheet" media="all" />
   <link rel="stylesheet" href="<?= BASE_ASSET; ?>flag-icon/css/flag-icon.css" rel="stylesheet" media="all" />
@@ -214,7 +214,7 @@
               <i class="fa fa-bell-o" style="font-size: 16px;"></i>
               <span class="label label-warning" id="notif-approval-badge" style="display:none; position: absolute; top: 9px; right: 7px; text-align: center; font-size: 9px; padding: 2px 5px; border-radius: 10px;">0</span>
             </a>
-            <ul class="dropdown-menu" style="width: 320px; border-radius: 6px; box-shadow: 0 5px 25px rgba(0,0,0,0.15); border: none;">
+            <ul class="dropdown-menu" style="width: 320px; max-width: calc(100vw - 16px); border-radius: 6px; box-shadow: 0 5px 25px rgba(0,0,0,0.15); border: none;">
               <li class="header" style="background: #f8f9fa; padding: 12px 15px; font-weight: 700; color: #2c3e50; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
                 <span><i class="fa fa-bell text-yellow" style="margin-right: 5px;"></i> <span id="notif-header-title">Peringatan Follow-Up</span></span>
                 <span class="badge bg-yellow" id="notif-header-count">0</span>
@@ -391,6 +391,13 @@ $(document).ready(function(){
          }
       });
    }
+
+   // Auto-close mobile sidebar when tapping on content-wrapper
+   $(document).on('click', '.content-wrapper', function() {
+      if ($('body').hasClass('sidebar-open') && $(window).width() < 768) {
+         $('body').removeClass('sidebar-open');
+      }
+   });
 });
 </script>
   <footer class="main-footer">
