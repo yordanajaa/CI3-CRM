@@ -63,11 +63,19 @@
       background: rgba(255, 255, 255, 0.08) !important;
       padding-left: 20px !important;
     }
-    .sidebar-menu li a i.fa {
+    .sidebar-menu li a i.fa,
+    .sidebar-menu li a i.glyphicon {
+      color: #ffffff !important;
       transition: transform 0.25s ease !important;
     }
-    .sidebar-menu li a:hover i.fa {
+    .sidebar-menu .treeview-menu > li > a i.fa,
+    .sidebar-menu .treeview-menu > li > a i.glyphicon {
+      color: #ffffff !important;
+    }
+    .sidebar-menu li a:hover i.fa,
+    .sidebar-menu li a:hover i.glyphicon {
       transform: scale(1.2);
+      color: #ffffff !important;
     }
     .sidebar-menu .treeview-menu {
       background: rgba(0, 0, 0, 0.25) !important;
@@ -85,12 +93,6 @@
       font-weight: 700 !important;
       color: #38bdf8 !important;
     }
-    .text-indigo { color: #818cf8 !important; }
-    .text-teal { color: #2dd4bf !important; }
-    .text-yellow { color: #facc15 !important; }
-    .text-purple { color: #c084fc !important; }
-    .text-green { color: #4ade80 !important; }
-    .text-blue { color: #60a5fa !important; }
   </style>
   <?= $this->cc_html->getCssFileTop(); ?>
 
