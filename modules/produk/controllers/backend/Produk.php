@@ -219,9 +219,15 @@ class Produk extends Admin
 
 		if (!empty($id)) {
 			$remove = $this->model_produk->remove($id);
+			if ($remove) {
+				$this->db->delete('stok', ['produk_id' => $id]);
+			}
 		} elseif (count($arr_id) > 0) {
 			foreach ($arr_id as $aid) {
 				$remove = $this->model_produk->remove($aid);
+				if ($remove) {
+					$this->db->delete('stok', ['produk_id' => $aid]);
+				}
 			}
 		}
 

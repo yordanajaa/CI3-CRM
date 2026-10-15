@@ -127,8 +127,32 @@ class Model_stok extends MY_Model {
 		return $this->db->get('stok_log')->result();
 	}
 
+	public function ensure_all_stok_synced()
+	{
+		// 1. Pastikan setiap produk aktif memiliki record stok di seluruh gudang aktif
+		$this->db->query("
+			INSERT INTO stok (produk_id, gudang_id, qty, qty_rusak, updated_at)
+			SELECT p.id, g.id, 0, 0, NOW()
+			FROM produk p
+			CROSS JOIN gudang g
+			WHERE p.status = 'aktif' AND g.status = 'aktif'
+			  AND NOT EXISTS (
+			      SELECT 1 FROM stok s WHERE s.produk_id = p.id AND s.gudang_id = g.id
+			  )
+		");
+
+		// 2. Bersihkan record stok yatim (orphan) jika produk induk sudah tidak ada
+		$this->db->query("
+			DELETE s FROM stok s
+			LEFT JOIN produk p ON p.id = s.produk_id
+			WHERE p.id IS NULL
+		");
+	}
+
 	public function get_summary_dashboard($gudang_id = null)
 	{
+		$this->ensure_all_stok_synced();
+
 		// Total nilai stok, total produk, & total keseluruhan stok
 		$q = $this->db->select('SUM(stok.qty * produk.harga_beli) AS total_nilai, COUNT(DISTINCT stok.produk_id) AS total_produk, SUM(stok.qty) AS total_keseluruhan_stok');
 		$q->join('produk', 'produk.id = stok.produk_id');

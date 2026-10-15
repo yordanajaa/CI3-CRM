@@ -193,9 +193,15 @@ class Gudang extends Admin
 
 		if (!empty($id)) {
 			$remove = $this->model_gudang->remove($id);
+			if ($remove) {
+				$this->db->delete('stok', ['gudang_id' => $id]);
+			}
 		} elseif (count($arr_id) > 0) {
 			foreach ($arr_id as $aid) {
 				$remove = $this->model_gudang->remove($aid);
+				if ($remove) {
+					$this->db->delete('stok', ['gudang_id' => $aid]);
+				}
 			}
 		}
 
