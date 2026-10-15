@@ -326,7 +326,7 @@ textarea.form-control {
                               <i class="fa fa-refresh"></i> Segarkan List
                            </a>
                            <?php if (is_allowed('pelanggan_add', false)): ?>
-                              <a href="<?= site_url('administrator/pelanggan/add'); ?>" target="_blank" class="text-primary" style="font-size:11px; font-weight:600;">
+                              <a href="javascript:void(0);" id="btn_open_modal_cust" class="text-primary" style="font-size:11px; font-weight:600; cursor:pointer;" title="Tambah Pelanggan Baru tanpa berpindah halaman">
                                  <i class="fa fa-plus-circle"></i> + Pelanggan Baru
                               </a>
                            <?php endif; ?>
@@ -498,6 +498,76 @@ textarea.form-control {
 </div>
 
 </form>
+
+<!-- Modal Tambah Pelanggan Baru (Tanpa Pindah Halaman) -->
+<div class="modal fade" id="modal_add_pelanggan" tabindex="-1" role="dialog" aria-labelledby="modalAddPelangganLabel">
+   <div class="modal-dialog" role="document" style="max-width: 520px;">
+      <div class="modal-content" style="border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+         <div class="modal-header" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; padding: 14px 20px;">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: #fff; opacity: 0.85; font-size: 24px;">&times;</button>
+            <h4 class="modal-title" id="modalAddPelangganLabel" style="font-weight: 700; font-size: 15px;">
+               <i class="fa fa-user-plus"></i> Tambah Pelanggan Baru
+            </h4>
+            <small style="color: #e0f2fe; font-size: 11.5px;">Data pelanggan akan otomatis tersimpan dan langsung dipilih di formulir ini tanpa kehilangan data barang.</small>
+         </div>
+         <form id="form_modal_pelanggan" onsubmit="return false;">
+         <div class="modal-body" style="padding: 18px 20px;">
+            <div class="form-group" style="margin-bottom: 12px;">
+               <label style="font-size: 12px; font-weight: 700; color: #334155;">Nama Pelanggan / Usaha <span class="text-danger">*</span></label>
+               <input type="text" class="form-control" name="nama_pelanggan" id="modal_cust_nama" placeholder="Contoh: Budi Santoso / Toko Berkah" required style="border-radius: 6px; font-weight: 600; height: 38px;">
+            </div>
+
+            <div class="row">
+               <div class="col-xs-12 col-sm-6">
+                  <div class="form-group" style="margin-bottom: 12px;">
+                     <label style="font-size: 12px; font-weight: 700; color: #334155;"><i class="fa fa-phone text-success"></i> No. Telp / WhatsApp <span class="text-danger">*</span></label>
+                     <input type="text" class="form-control" name="telepon" id="modal_cust_telp" placeholder="08xxxxxxxxxx" required style="border-radius: 6px; font-weight: 600; height: 38px;">
+                     <small class="text-muted" style="font-size: 10.5px;">Untuk kontak &amp; riwayat CRM.</small>
+                  </div>
+               </div>
+               <div class="col-xs-12 col-sm-6">
+                  <div class="form-group" style="margin-bottom: 12px;">
+                     <label style="font-size: 12px; font-weight: 700; color: #334155;">Tipe Pelanggan</label>
+                     <select class="form-control" name="tipe_pelanggan" id="modal_cust_tipe" style="border-radius: 6px; font-weight: 600; height: 38px;">
+                        <option value="retail" selected>Retail / Eceran (Umum)</option>
+                        <option value="grosir">Grosir</option>
+                        <option value="distributor">Distributor</option>
+                        <option value="vip">VIP / Member</option>
+                     </select>
+                  </div>
+               </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+               <label style="font-size: 12px; font-weight: 700; color: #334155;"><i class="fa fa-map-marker text-danger"></i> Alamat Lengkap (Opsional)</label>
+               <textarea class="form-control" name="alamat" id="modal_cust_alamat" rows="2" placeholder="Jl. Raya No..., RT/RW, Kelurahan..." style="border-radius: 6px; font-size: 12px; resize: vertical;"></textarea>
+            </div>
+
+            <div class="row">
+               <div class="col-xs-12 col-sm-6">
+                  <div class="form-group" style="margin-bottom: 0;">
+                     <label style="font-size: 12px; font-weight: 700; color: #334155;">Kota / Wilayah</label>
+                     <input type="text" class="form-control" name="kota" id="modal_cust_kota" placeholder="Nama Kota/Kabupaten" style="border-radius: 6px; height: 36px;">
+                  </div>
+               </div>
+               <div class="col-xs-12 col-sm-6">
+                  <div class="form-group" style="margin-bottom: 0;">
+                     <label style="font-size: 12px; font-weight: 700; color: #334155;">Email (Opsional)</label>
+                     <input type="email" class="form-control" name="email" id="modal_cust_email" placeholder="email@contoh.com" style="border-radius: 6px; height: 36px;">
+                  </div>
+               </div>
+            </div>
+         </div>
+         <div class="modal-footer" style="background: #f8fafc; padding: 12px 20px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+            <button type="button" class="btn btn-default" data-dismiss="modal" style="border-radius: 6px; font-weight: 600;">Batal</button>
+            <button type="button" id="btn_submit_modal_pelanggan" class="btn btn-primary" style="border-radius: 6px; font-weight: 700; background: #0284c7; border-color: #0284c7; padding: 7px 18px;">
+               <i class="fa fa-save"></i> Simpan &amp; Pilih Pelanggan
+            </button>
+         </div>
+         </form>
+      </div>
+   </div>
+</div>
 
 </section>
 
@@ -933,9 +1003,96 @@ $(document).ready(function(){
             $('#pelanggan_id').trigger('change');
             show_alert('Daftar pelanggan berhasil diperbarui!', 'success');
          }
-         $btn.html('<i class="fa fa-refresh"></i> Segarkan');
+         $btn.html('<i class="fa fa-refresh"></i> Segarkan List');
       }).fail(function(){
-         $btn.html('<i class="fa fa-refresh"></i> Segarkan');
+         $btn.html('<i class="fa fa-refresh"></i> Segarkan List');
+      });
+   });
+
+   // Buka Modal Tambah Pelanggan Baru (Tanpa Pindah Halaman)
+   $('#btn_open_modal_cust').click(function(e){
+      e.preventDefault();
+      $('#modal_cust_nama').val('');
+      $('#modal_cust_telp').val('');
+      $('#modal_cust_tipe').val('retail');
+      $('#modal_cust_alamat').val('');
+      $('#modal_cust_kota').val('');
+      $('#modal_cust_email').val('');
+      $('#modal_add_pelanggan').modal('show');
+      setTimeout(function(){
+         $('#modal_cust_nama').focus();
+      }, 350);
+   });
+
+   // Submit Modal Tambah Pelanggan Baru via AJAX
+   $('#btn_submit_modal_pelanggan').click(function(){
+      var nama   = $.trim($('#modal_cust_nama').val());
+      var telp   = $.trim($('#modal_cust_telp').val());
+      var tipe   = $('#modal_cust_tipe').val() || 'retail';
+      var alamat = $.trim($('#modal_cust_alamat').val());
+      var kota   = $.trim($('#modal_cust_kota').val());
+      var email  = $.trim($('#modal_cust_email').val());
+
+      if (!nama) {
+         show_alert('Nama Pelanggan wajib diisi!', 'warning');
+         $('#modal_cust_nama').focus();
+         return;
+      }
+      if (!telp) {
+         show_alert('No. Telepon / WhatsApp wajib diisi agar terekap di CRM!', 'warning');
+         $('#modal_cust_telp').focus();
+         return;
+      }
+
+      var $btn = $(this);
+      var origHtml = $btn.html();
+      $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Menyimpan...');
+
+      $.ajax({
+         url: '<?= site_url("administrator/sales_order/ajax_add_pelanggan"); ?>',
+         method: 'POST',
+         data: {
+            nama_pelanggan: nama,
+            telepon: telp,
+            tipe_pelanggan: tipe,
+            alamat: alamat,
+            kota: kota,
+            email: email
+         },
+         dataType: 'json',
+         success: function(res){
+            $btn.prop('disabled', false).html(origHtml);
+            if (res && res.success && res.data) {
+               var p = res.data;
+               var t_badge = (p.tipe || 'RETAIL').toUpperCase();
+               var telpFmt = p.telp ? ' (' + p.telp + ')' : '';
+               var optionText = (p.kode ? p.kode + ' - ' : '') + p.nama + ' [' + t_badge + ']' + telpFmt;
+               
+               // Buat option baru di select2 dan pilih langsung
+               var newOption = new Option(optionText, p.id, true, true);
+               $(newOption).attr('data-kode', p.kode || '');
+               $(newOption).attr('data-nama', p.nama || '');
+               $(newOption).attr('data-tipe', p.tipe || 'retail');
+               $(newOption).attr('data-telp', p.telp || '');
+               $(newOption).attr('data-alamat', p.alamat || '');
+               $(newOption).attr('data-kota', p.kota || '');
+
+               $('#pelanggan_id').append(newOption).trigger('change');
+               $('#modal_add_pelanggan').modal('hide');
+               show_alert('Pelanggan (' + p.nama + ') berhasil ditambahkan dan langsung dipilih!', 'success');
+            } else {
+               show_alert((res && res.message) ? res.message : 'Gagal menyimpan data pelanggan.', 'error');
+            }
+         },
+         error: function(xhr){
+            $btn.prop('disabled', false).html(origHtml);
+            var msg = 'Terjadi kesalahan server saat menyimpan pelanggan.';
+            try {
+               var r = JSON.parse(xhr.responseText);
+               if (r && r.message) msg = r.message;
+            } catch(e){}
+            show_alert(msg, 'error');
+         }
       });
    });
 });
