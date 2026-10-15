@@ -255,7 +255,6 @@
                                        $wa_clean = (substr($ph_clean, 0, 1) === '0') ? ('62' . substr($ph_clean, 1)) : $ph_clean;
                                     ?>
                                     <li><a href="https://wa.me/<?= $wa_clean; ?>" target="_blank"><i class="fa fa-whatsapp text-success"></i> Chat Langsung WA (wa.me)</a></li>
-                                    <li><a href="<?= site_url('administrator/crm/chat?phone='.urlencode($ph_clean)); ?>"><i class="fa fa-comments text-primary"></i> Buka Live Chat Center</a></li>
                                     <li><a href="<?= site_url('administrator/crm/customer_summary?phone='.urlencode($ph_clean)); ?>"><i class="fa fa-line-chart text-purple"></i> Analisis RFM &amp; CRM</a></li>
                                  <?php endif; ?>
                                  <?php is_allowed('pelanggan_update', function() use ($p){ ?>

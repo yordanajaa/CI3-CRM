@@ -68,23 +68,12 @@ class Crm extends Admin
 
 	public function chat()
 	{
-		$phone_param = trim((string)$this->input->get('phone'));
-		$label_param = (int)($this->input->get('label_id') ?: 0);
-		$auto_msg = trim((string)$this->input->get('wa_msg'));
-
-		if (!empty($phone_param)) {
-			$label_param = $this->model_crm->ensure_label_for_phone($phone_param);
+		$phone = trim((string)$this->input->get('phone'));
+		if (!empty($phone)) {
+			redirect('administrator/crm/journal_followup?q=' . urlencode($phone), 'refresh');
+		} else {
+			redirect('administrator/crm/journal_followup', 'refresh');
 		}
-
-		$search = trim((string)$this->input->get('q'));
-		$this->data['conversations'] = $this->model_crm->get_all_chat_conversations($search);
-		$this->data['active_phone'] = $phone_param;
-		$this->data['active_label_id'] = $label_param;
-		$this->data['auto_msg'] = $auto_msg;
-		$this->data['search_q'] = $search;
-
-		$this->template->title('CRM — WhatsApp Chat Center');
-		$this->render('backend/standart/administrator/crm/crm_chat', $this->data);
 	}
 
 	public function transaction_detail_ajax()

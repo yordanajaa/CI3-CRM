@@ -403,7 +403,6 @@ if (substr($wa_phone, 0, 2) !== '62') $wa_phone = '62' . $wa_phone;
 $wa_act = !empty($rfm['action']) ? $rfm['action'] : 'Terima kasih telah berbelanja bersama kami.';
 $wa_msg = "Halo Kak " . ($s['nama'] ?? 'Customer') . ",\n\nSalam dari Metafora! " . $wa_act . "\n\nAda yang bisa kami bantu hari ini?";
 $direct_wa_url = 'https://api.whatsapp.com/send?phone=' . $wa_phone . '&text=' . rawurlencode($wa_msg);
-$crm_chat_url = site_url('administrator/crm/chat?phone=' . urlencode($phone) . '&wa_msg=' . rawurlencode($wa_msg));
 ?>
 
 <!-- ===== PROFILE & LOCATION HEADER ===== -->
@@ -430,7 +429,6 @@ $crm_chat_url = site_url('administrator/crm/chat?phone=' . urlencode($phone) . '
     <div class="action-tools">
       <a href="<?= site_url('administrator/rfm' . $nav_qs); ?>" class="btn" style="background:rgba(255,255,255,0.22); color:#fff; border:1px solid rgba(255,255,255,0.38); font-weight:800;" title="Kembali ke Daftar Customer RFM"><i class="fa fa-arrow-left"></i> Kembali ke Daftar</a>
       <a href="<?= site_url('administrator/crm/customer_detail?phone=' . urlencode($phone)); ?>" class="btn" style="background:#fff; color:#312e81; font-weight:800;" title="Lihat Detail CRM"><i class="fa fa-tasks"></i> CRM Detail</a>
-      <a href="<?= $crm_chat_url; ?>" class="btn" style="background:linear-gradient(135deg, #075e54, #128c7e); color:#fff; box-shadow:0 4px 12px rgba(18,140,126,0.35); font-weight:800;" title="Buka WhatsApp Chat Center"><i class="fa fa-comments"></i> Live Chat WA</a>
       <a href="<?= $direct_wa_url; ?>" target="_blank" class="btn" style="background:#25D366; color:#fff; font-weight:800;" title="Buka Chat WhatsApp Langsung"><i class="fa fa-whatsapp"></i> Chat Direct WA</a>
     </div>
   </div>

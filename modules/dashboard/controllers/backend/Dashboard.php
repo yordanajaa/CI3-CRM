@@ -78,7 +78,7 @@ class Dashboard extends Admin
 					'type' => 'incoming_wa',
 					'title' => '💬 WA: ' . $cust_name,
 					'subtitle' => $preview ? $preview : '[Pesan / Media]',
-					'url' => site_url('administrator/crm/chat?label_id=' . $chat->label_id),
+					'url' => site_url('administrator/crm/journal_followup?label_id=' . $chat->label_id),
 					'icon' => 'fa-whatsapp',
 					'icon_bg' => 'text-green',
 					'date' => date('d/m H:i', strtotime($chat->created_at))

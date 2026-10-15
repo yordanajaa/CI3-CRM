@@ -343,12 +343,6 @@
       </div>
 
       <div class="action-tools">
-        <!-- Live WhatsApp Status Pill -->
-        <a href="<?= site_url('administrator/crm/chat'); ?>" style="display:inline-flex; align-items:center; gap:8px; background:rgba(0,0,0,0.32); border:1px solid rgba(255,255,255,0.25); border-radius:24px; padding:6px 14px; text-decoration:none; color:#fff;" title="WhatsApp Terkoneksi (Buka Live Chat)">
-          <span class="waha-pulsing-dot" style="width:10px; height:10px; border-radius:50%; background:#22c55e; display:inline-block; box-shadow:0 0 8px #22c55e;"></span>
-          <span id="waha-dash-text" style="font-size:12px; font-weight:700;">WhatsApp Terkoneksi</span>
-        </a>
-        <a href="<?= site_url('administrator/crm/chat'); ?>" class="btn" style="background:linear-gradient(135deg, #075e54, #128c7e); color:#fff; box-shadow:0 4px 12px rgba(18,140,126,0.35);" title="Live Chat WA"><i class="fa fa-whatsapp"></i> Live Chat WA</a>
         <a href="<?= site_url('administrator/crm/broadcast'); ?>" class="btn" style="background:#25D366; color:#fff;" title="Broadcast WA"><i class="fa fa-bullhorn"></i> Broadcast WA</a>
         <a href="<?= site_url('administrator/rfm/dashboard'); ?>" class="btn" style="background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.3);"><i class="fa fa-bar-chart"></i> Analisis RFM</a>
       </div>
@@ -359,17 +353,14 @@
       <a href="<?= site_url('administrator/crm/dashboard'); ?>" class="nav-tab-btn active">
         <span class="active-dot"></span> <i class="fa fa-tachometer"></i> 1. Dashboard CRM
       </a>
-      <a href="<?= site_url('administrator/crm/chat'); ?>" class="nav-tab-btn">
-        <i class="fa fa-comments"></i> 2. Live Chat WA
-      </a>
       <a href="<?= site_url('administrator/crm/journal_followup'); ?>" class="nav-tab-btn">
-        <i class="fa fa-tasks"></i> 3. Journal Follow-Up
+        <i class="fa fa-tasks"></i> 2. Journal Follow-Up
       </a>
       <a href="<?= site_url('administrator/crm/broadcast'); ?>" class="nav-tab-btn">
-        <i class="fa fa-bullhorn"></i> 4. Broadcast WA
+        <i class="fa fa-bullhorn"></i> 3. Broadcast WA
       </a>
       <a href="<?= site_url('administrator/crm'); ?>" class="nav-tab-btn">
-        <i class="fa fa-users"></i> 5. Daftar Customer CRM
+        <i class="fa fa-users"></i> 4. Daftar Customer CRM
       </a>
     </div>
   </div>

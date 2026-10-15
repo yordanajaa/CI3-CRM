@@ -203,7 +203,6 @@
       </div>
 
       <div class="action-tools">
-        <a href="<?= site_url('administrator/crm/chat'); ?>" class="btn" style="background:#25D366; color:#fff;" title="Buka Live Chat WA"><i class="fa fa-comments"></i> Buka Live Chat WA</a>
         <a href="<?= site_url('administrator/crm/journal_followup'); ?>" class="btn" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);"><i class="fa fa-arrow-left"></i> Kembali ke Journal</a>
       </div>
     </div>
@@ -213,17 +212,14 @@
       <a href="<?= site_url('administrator/crm/dashboard'); ?>" class="nav-tab-btn">
         <i class="fa fa-tachometer"></i> 1. Dashboard CRM
       </a>
-      <a href="<?= site_url('administrator/crm/chat'); ?>" class="nav-tab-btn">
-        <i class="fa fa-comments"></i> 2. Live Chat WA
-      </a>
       <a href="<?= site_url('administrator/crm/journal_followup'); ?>" class="nav-tab-btn">
-        <i class="fa fa-tasks"></i> 3. Journal Follow-Up
+        <i class="fa fa-tasks"></i> 2. Journal Follow-Up
       </a>
       <a href="<?= site_url('administrator/crm/broadcast'); ?>" class="nav-tab-btn">
-        <i class="fa fa-bullhorn"></i> 4. Broadcast WA
+        <i class="fa fa-bullhorn"></i> 3. Broadcast WA
       </a>
       <a href="<?= site_url('administrator/crm'); ?>" class="nav-tab-btn">
-        <i class="fa fa-users"></i> 5. Daftar Customer CRM
+        <i class="fa fa-users"></i> 4. Daftar Customer CRM
       </a>
     </div>
   </div>
@@ -384,7 +380,7 @@
           
           <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 16px;font-size:12px;color:#166534;line-height:1.5;">
             <i class="fa fa-check-circle" style="color:#22c55e;"></i>
-            <strong>Cara Kerja Real-Time:</strong> Saat customer membalas chat WhatsApp di HP-nya, pesan langsung diterima ke sistem CRM secara instan. Pesan otomatis muncul di <strong>Live Chat WA</strong> tanpa perlu reload halaman!
+            <strong>Cara Kerja Real-Time:</strong> Saat customer membalas chat WhatsApp di HP-nya, pesan langsung diterima ke sistem CRM secara instan. Pesan otomatis muncul di <strong>Journal Follow-Up</strong> tanpa perlu reload halaman!
           </div>
         </div>
       </div>

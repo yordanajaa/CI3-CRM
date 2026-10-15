@@ -247,17 +247,14 @@
       <a href="<?= site_url('administrator/crm/dashboard'); ?>" class="nav-tab-btn">
         <i class="fa fa-tachometer"></i> 1. Dashboard CRM
       </a>
-      <a href="<?= site_url('administrator/crm/chat'); ?>" class="nav-tab-btn">
-        <i class="fa fa-comments"></i> 2. Live Chat WA
-      </a>
       <a href="<?= site_url('administrator/crm/journal_followup'); ?>" class="nav-tab-btn">
-        <i class="fa fa-tasks"></i> 3. Journal Follow-Up
+        <i class="fa fa-tasks"></i> 2. Journal Follow-Up
       </a>
       <a href="<?= site_url('administrator/crm/broadcast'); ?>" class="nav-tab-btn active">
-        <span class="active-dot"></span> <i class="fa fa-bullhorn"></i> 4. Broadcast WA
+        <span class="active-dot"></span> <i class="fa fa-bullhorn"></i> 3. Broadcast WA
       </a>
       <a href="<?= site_url('administrator/crm'); ?>" class="nav-tab-btn">
-        <i class="fa fa-users"></i> 5. Daftar Customer CRM
+        <i class="fa fa-users"></i> 4. Daftar Customer CRM
       </a>
     </div>
   </div>
