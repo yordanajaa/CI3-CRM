@@ -97,9 +97,6 @@ $current_rusak = (float)($stok->qty_rusak ?? 0);
             <div class="box-header with-border">
                <h3 class="box-title"><i class="fa fa-pencil-square-o text-warning"></i> Form Penyesuaian Stok Fisik</h3>
                <div class="box-tools pull-right">
-                  <a href="<?= site_url('administrator/stock_opname/add'); ?>" class="btn btn-primary btn-xs" style="font-weight:600; margin-right:6px;" title="Update stok seluruh produk dalam 1 gudang">
-                     <i class="fa fa-cubes"></i> Update Keseluruhan (Opname)
-                  </a>
                   <a href="<?= site_url('administrator/stok'); ?>" class="btn btn-default btn-xs" style="font-weight:600;">
                      <i class="fa fa-arrow-left"></i> Kembali ke Stok
                   </a>
@@ -107,21 +104,17 @@ $current_rusak = (float)($stok->qty_rusak ?? 0);
             </div>
             <div class="box-body">
 
-               <!-- Info Header Produk & Gudang -->
+               <!-- Info Header Produk -->
                <div class="product-hero-card">
                   <div class="row" style="display:flex; align-items:center; flex-wrap:wrap;">
                      <div class="col-sm-8">
                         <span class="label label-primary" style="font-size:11px; padding:3px 8px;"><?= _ent($stok->kode_produk ?? '-'); ?></span>
                         <h3 style="margin: 6px 0 6px 0; font-weight:800; color:#0f172a; font-size:19px;"><?= _ent($stok->nama_produk ?? ''); ?></h3>
-                        <div style="font-size:13px; color:#475569;">
-                           <i class="fa fa-bank text-primary"></i> Gudang: <strong><?= _ent($stok->nama_gudang ?? '-'); ?></strong>
-                           <?php if (!empty($stok->nama_kategori)): ?>
-                              &nbsp;&bull;&nbsp; Kategori: <strong><?= _ent($stok->nama_kategori); ?></strong>
-                           <?php endif; ?>
-                           <?php if (!empty($stok->kode_rak)): ?>
-                              &nbsp;&bull;&nbsp; Rak: <strong><i class="fa fa-tag text-info"></i> <?= _ent($stok->kode_rak); ?></strong>
-                           <?php endif; ?>
-                        </div>
+                        <?php if (!empty($stok->nama_kategori)): ?>
+                           <div style="font-size:13px; color:#475569;">
+                              Kategori: <strong><?= _ent($stok->nama_kategori); ?></strong>
+                           </div>
+                        <?php endif; ?>
                      </div>
                      <div class="col-sm-4 text-right">
                         <span class="label label-default" style="font-size:11px;"><i class="fa fa-clock-o"></i> Update: <?= $stok->updated_at ? date('d/m/Y H:i', strtotime($stok->updated_at)) : '-'; ?></span>
@@ -259,26 +252,14 @@ $current_rusak = (float)($stok->qty_rusak ?? 0);
                   </div>
                </div>
 
-               <!-- STEP 3: LOKASI RAK & ALASAN -->
+               <!-- STEP 3: ALASAN PENYESUAIAN -->
                <div class="row">
-                  <div class="col-md-6">
-                     <div class="form-group">
-                        <label>Lokasi Rak Gudang (Opsional)</label>
-                        <select class="form-control chosen-select" name="rak_id" id="rak_id" style="width: 100%;">
-                           <option value="">-- Pilih Rak (Opsional) --</option>
-                           <?php foreach($raks as $r): ?>
-                              <option value="<?= $r->id; ?>" <?= ($stok->rak_id == $r->id) ? 'selected' : ''; ?>>
-                                 <?= _ent($r->kode_rak . ' - Baris ' . $r->baris . ', Kolom ' . $r->kolom . ($r->keterangan ? ' (' . $r->keterangan . ')' : '')); ?>
-                              </option>
-                           <?php endforeach; ?>
-                        </select>
-                     </div>
-                  </div>
-                  <div class="col-md-6">
+                  <div class="col-md-12">
                      <div class="form-group">
                         <label>Alasan / Keterangan Penyesuaian <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="keterangan" id="keterangan" placeholder="Misal: Stok Opname, Koreksi Selisih, Masuk Tambahan..." required value="Penyesuaian Manual Stok">
+                        <input type="text" class="form-control" name="keterangan" id="keterangan" placeholder="Misal: Koreksi Selisih, Masuk Tambahan, dll..." required value="Penyesuaian Manual Stok">
                      </div>
+                     <input type="hidden" name="rak_id" value="<?= $stok->rak_id ?? ''; ?>">
                   </div>
                </div>
 

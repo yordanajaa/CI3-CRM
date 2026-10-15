@@ -148,22 +148,13 @@ $action_url = $is_edit ? site_url('administrator/produk/edit_save/'.$produk->id)
                   </div>
                </div>
 
-               <!-- Section 3: Pengaturan Batch & Rak Default -->
-               <div class="section-divider" style="margin-top:25px;"><i class="fa fa-sliders text-warning"></i> Pengaturan Batch, Expired &amp; Default Rak Simpan</div>
+               <!-- Section 3: Pengaturan Batch & Expired -->
+               <div class="section-divider" style="margin-top:25px;"><i class="fa fa-sliders text-warning"></i> Pengaturan Batch &amp; Expired Date</div>
+
+               <input type="hidden" name="default_rak_id" value="<?= ($is_edit && isset($produk->default_rak_id)) ? $produk->default_rak_id : ''; ?>">
 
                <div class="row">
-                  <div class="col-md-4">
-                     <div class="form-group">
-                        <label>Default Rak Simpan Utama</label>
-                        <select class="form-control" name="default_rak_id">
-                           <option value="">-- Tanpa Rak Default --</option>
-                           <?php foreach($raks as $r): ?>
-                           <option <?= ($is_edit && isset($produk->default_rak_id) && $produk->default_rak_id == $r->id) ? 'selected' : ''; ?> value="<?= $r->id; ?>"><?= _ent($r->kode_rak.' (Baris '.$r->baris.')'); ?></option>
-                           <?php endforeach; ?>
-                        </select>
-                     </div>
-                  </div>
-                  <div class="col-md-4">
+                  <div class="col-md-6">
                      <div class="form-group">
                         <label>Metode Penilaian Stok</label>
                         <select class="form-control" name="metode_stok">
@@ -173,7 +164,7 @@ $action_url = $is_edit ? site_url('administrator/produk/edit_save/'.$produk->id)
                         </select>
                      </div>
                   </div>
-                  <div class="col-md-4">
+                  <div class="col-md-6">
                      <div class="form-group" style="padding-top:24px;">
                         <label class="checkbox-inline" style="font-weight:600; margin-right:15px;">
                            <input type="checkbox" name="batch_tracking" value="1" <?= ($is_edit && $produk->batch_tracking) ? 'checked' : ''; ?>> Batch Tracking

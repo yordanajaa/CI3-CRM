@@ -91,21 +91,40 @@
             </div>
          </div>
 
-         <!-- Stok per Gudang -->
+         <!-- Ringkasan Stok Produk -->
          <div class="box box-success" style="border-radius:6px;">
-            <div class="box-header with-border"><h3 class="box-title"><i class="fa fa-cubes text-success"></i> Stok per Gudang</h3></div>
+            <div class="box-header with-border"><h3 class="box-title"><i class="fa fa-cubes text-success"></i> Ringkasan Stok Produk</h3></div>
             <div class="box-body" style="padding:10px 15px;">
+               <?php 
+                  $tot_baik = 0; 
+                  $tot_rusak = 0; 
+                  foreach($stok_list as $s) { 
+                     $tot_baik += (float)$s->qty; 
+                     $tot_rusak += (float)$s->qty_rusak; 
+                  } 
+               ?>
                <table class="table table-striped table-hover" style="margin-bottom:10px;">
-                  <thead><tr style="background:#f8fafc;"><th>Gudang</th><th class="text-center">Stok Baik</th><th class="text-center">Stok Rusak</th></tr></thead>
+                  <thead><tr style="background:#f8fafc;"><th>Status Stok</th><th class="text-center">Stok Baik</th><th class="text-center">Stok Rusak</th></tr></thead>
                   <tbody>
-                     <?php foreach($stok_list as $s): ?>
                      <tr>
-                        <td><?= _ent($s->nama_gudang); ?></td>
-                        <td class="text-center"><?php if($s->qty <= $produk->stok_minimum): ?><span class="text-danger"><strong><?= number_format($s->qty, 0); ?></strong> <i class="fa fa-exclamation-triangle" title="Stok menipis!"></i></span><?php else: ?><strong><?= number_format($s->qty, 0); ?></strong><?php endif; ?></td>
-                        <td class="text-center"><?= $s->qty_rusak > 0 ? '<span class="text-danger">'.number_format($s->qty_rusak,0).'</span>' : '-'; ?></td>
+                        <td>
+                           <?php if($tot_baik == 0): ?>
+                              <span class="label label-danger">Habis</span>
+                           <?php elseif($tot_baik <= $produk->stok_minimum): ?>
+                              <span class="label label-warning">Menipis</span>
+                           <?php else: ?>
+                              <span class="label label-success">Normal</span>
+                           <?php endif; ?>
+                        </td>
+                        <td class="text-center">
+                           <?php if($tot_baik <= $produk->stok_minimum): ?>
+                              <span class="text-danger"><strong><?= number_format($tot_baik, 0); ?></strong> <i class="fa fa-exclamation-triangle" title="Stok menipis!"></i></span>
+                           <?php else: ?>
+                              <strong><?= number_format($tot_baik, 0); ?></strong>
+                           <?php endif; ?>
+                        </td>
+                        <td class="text-center"><?= $tot_rusak > 0 ? '<span class="text-danger">'.number_format($tot_rusak,0).'</span>' : '-'; ?></td>
                      </tr>
-                     <?php endforeach; ?>
-                     <?php if(empty($stok_list)): ?><tr><td colspan="3" class="text-center text-muted">Belum ada stok</td></tr><?php endif; ?>
                   </tbody>
                </table>
                <?php is_allowed('stok_list', function() use ($produk){ ?>

@@ -51,19 +51,7 @@
                   </div>
                   <?php endif; ?>
 
-                  <div class="form-group">
-                     <label style="margin-right: 5px;">Gudang:</label>
-                     <select class="form-control input-sm" name="gudang_id">
-                        <option value="">-- Semua Gudang --</option>
-                        <?php foreach ($gudangs as $g): ?>
-                           <option <?= $gudang_sel == $g->id ? 'selected' : ''; ?> value="<?= $g->id; ?>">
-                              <?= _ent($g->nama_gudang); ?>
-                           </option>
-                        <?php endforeach; ?>
-                     </select>
-                  </div>
-                  
-                  &nbsp;
+
                   <div class="form-group">
                      <label style="margin-right: 5px;">Dari Tanggal:</label>
                      <input type="date" class="form-control input-sm" name="date_start" value="<?= $date_start; ?>">
@@ -91,7 +79,6 @@
                         <tr>
                            <th>Tanggal & Waktu</th>
                            <th>Keterangan</th>
-                           <th>Gudang</th>
                            <th>Referensi</th>
                            <th>Batch No</th>
                            <th class="text-center text-success">Masuk</th>
@@ -102,7 +89,7 @@
                      <tbody>
                         <?php if (empty($kartu)): ?>
                            <tr>
-                              <td colspan="8" class="text-center text-muted">
+                              <td colspan="7" class="text-center text-muted">
                                  <i class="fa fa-inbox"></i> Tidak ada mutasi stok untuk produk ini.
                               </td>
                            </tr>
@@ -126,7 +113,6 @@
                                        <br><span class="label label-danger" style="font-size:10px;"><i class="fa fa-warning"></i> Masuk Stok Rusak / Afkir</span>
                                     <?php endif; ?>
                                  </td>
-                                 <td><?= _ent($k->nama_gudang); ?></td>
                                  <td>
                                     <?php if ($is_rusak): ?>
                                        <span class="label label-danger">RETUR_RUSAK</span>

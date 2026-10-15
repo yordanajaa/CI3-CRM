@@ -112,23 +112,8 @@
             </div>
             
             <div class="col-md-7 col-sm-6 text-right">
-               <!-- Filter Gudang -->
-               <form method="GET" action="<?= site_url('administrator/stok/edit_massal'); ?>" class="form-inline" style="display:inline-block; margin-right:8px;">
-                  <div class="form-group">
-                     <label style="font-size:12px; margin-right:4px;">Filter Gudang: </label>
-                     <select name="gudang_id" class="form-control input-sm" onchange="this.form.submit()" style="font-weight:700;">
-                        <option value="all" <?= ($gudang_sel === 'all') ? 'selected' : ''; ?>>-- Semua Gudang --</option>
-                        <?php foreach($gudangs as $g): ?>
-                           <option value="<?= $g->id; ?>" <?= ($gudang_sel == $g->id) ? 'selected' : ''; ?>>
-                              <?= _ent($g->nama_gudang); ?>
-                           </option>
-                        <?php endforeach; ?>
-                     </select>
-                  </div>
-               </form>
-
                <!-- Tombol Kembali -->
-               <a href="<?= site_url('administrator/stok' . (!empty($gudang_sel) && $gudang_sel !== 'all' ? '?gudang_id=' . $gudang_sel : '')); ?>" class="btn btn-default btn-sm" style="font-weight:600;">
+               <a href="<?= site_url('administrator/stok'); ?>" class="btn btn-default btn-sm" style="font-weight:600;">
                   <i class="fa fa-arrow-left"></i> Kembali ke Dashboard
                </a>
             </div>
@@ -162,7 +147,6 @@
                         <th width="40" class="text-center">#</th>
                         <th width="120">Kode Produk</th>
                         <th>Nama Produk &amp; Kategori</th>
-                        <th width="150">Gudang</th>
                         <th width="80" class="text-center">Satuan</th>
                         <th width="120" class="text-center" style="background:#f1f5f9; color:#475569;">Stok Saat Ini</th>
                         <th width="150" class="text-center" style="background:#ecfdf5; color:#065f46;">Stok Baru *</th>
@@ -185,9 +169,6 @@
                               <?php if(!empty($it->nama_kategori)): ?>
                                  <br><small class="text-muted"><i class="fa fa-tag"></i> <?= _ent($it->nama_kategori); ?></small>
                               <?php endif; ?>
-                           </td>
-                           <td>
-                              <span class="text-muted"><i class="fa fa-bank text-primary"></i> <?= _ent($it->nama_gudang); ?></span>
                            </td>
                            <td class="text-center">
                               <span class="badge bg-gray" style="font-size:11px;"><?= _ent($sat); ?></span>
@@ -217,9 +198,9 @@
                         <?php endforeach; ?>
                      <?php else: ?>
                         <tr>
-                           <td colspan="8" class="text-center text-muted" style="padding:40px;">
+                           <td colspan="7" class="text-center text-muted" style="padding:40px;">
                               <i class="fa fa-info-circle fa-2x"></i><br>
-                              Tidak ada data stok produk ditemukan untuk gudang ini.
+                              Tidak ada data stok produk ditemukan.
                            </td>
                         </tr>
                      <?php endif; ?>

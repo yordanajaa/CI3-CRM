@@ -205,8 +205,6 @@
          <th width="85">Kode SKU</th>
          <th>Nama Produk Barang</th>
          <th width="100">Kategori</th>
-         <th width="120">Lokasi Gudang</th>
-         <th width="70" class="text-center">Rak</th>
          <th width="50" class="text-center">Sat</th>
          <th width="65" class="text-right">Min Stok</th>
          <th width="65" class="text-right">Stok Rusak</th>
@@ -248,8 +246,6 @@
                <td><strong><?= _ent($s->kode_produk); ?></strong></td>
                <td><?= _ent($s->nama_produk); ?></td>
                <td><?= _ent($s->nama_kategori ?? '-'); ?></td>
-               <td><?= _ent($s->nama_gudang); ?></td>
-               <td class="text-center"><?= _ent(!empty($s->kode_rak) ? $s->kode_rak : '-'); ?></td>
                <td class="text-center"><?= _ent(!empty($s->singkatan) ? $s->singkatan : 'Pcs'); ?></td>
                <td class="text-right"><?= number_format($min, 0, ',', '.'); ?></td>
                <td class="text-right" style="color: <?= $qty_rusak > 0 ? '#dc2626' : '#64748b'; ?>;">
@@ -264,7 +260,7 @@
             </tr>
          <?php endforeach; ?>
          <tr style="background: #f8fafc; font-weight: 800;">
-            <td colspan="8" class="text-right">TOTAL KESELURUHAN:</td>
+            <td colspan="6" class="text-right">TOTAL KESELURUHAN:</td>
             <td class="text-right" style="color: #dc2626;"><?= number_format($grand_rusak, 0, ',', '.'); ?></td>
             <td class="text-right"><?= number_format($grand_qty, 0, ',', '.'); ?></td>
             <td class="text-right">-</td>
@@ -273,7 +269,7 @@
          </tr>
       <?php else: ?>
          <tr>
-            <td colspan="13" class="text-center" style="padding: 20px; color: #64748b;">
+            <td colspan="11" class="text-center" style="padding: 20px; color: #64748b;">
                Tidak ada data stok barang yang sesuai kriteria filter.
             </td>
          </tr>

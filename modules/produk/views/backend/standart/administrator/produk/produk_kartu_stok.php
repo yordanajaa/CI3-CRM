@@ -29,7 +29,6 @@
                   <tr style="background:#f8fafc;">
                      <th width="40" class="text-center">No</th>
                      <th>Tanggal &amp; Waktu</th>
-                     <th>Lokasi Gudang</th>
                      <th>Jenis Mutasi</th>
                      <th>Ref Dokumen</th>
                      <th class="text-right">Masuk (+)</th>
@@ -55,7 +54,6 @@
                   <tr>
                      <td class="text-center"><?= $no++; ?></td>
                      <td><i class="fa fa-clock-o text-muted"></i> <?= date('d/m/Y H:i', strtotime($log->created_at)); ?></td>
-                     <td><strong><?= _ent($log->nama_gudang ?? 'Gudang Utama'); ?></strong></td>
                      <td>
                         <?php 
                            if($log->jenis == 'masuk') {
@@ -76,7 +74,7 @@
                   </tr>
                   <?php endforeach; ?>
                   <?php if(empty($logs)): ?>
-                     <tr><td colspan="10" class="text-center text-muted" style="padding:25px;"><i class="fa fa-inbox fa-2x"></i><br>Belum ada riwayat mutasi kartu stok untuk produk ini.</td></tr>
+                     <tr><td colspan="9" class="text-center text-muted" style="padding:25px;"><i class="fa fa-inbox fa-2x"></i><br>Belum ada riwayat mutasi kartu stok untuk produk ini.</td></tr>
                   <?php endif; ?>
                </tbody>
             </table>

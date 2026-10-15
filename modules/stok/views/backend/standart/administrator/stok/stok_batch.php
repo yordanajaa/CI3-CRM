@@ -88,13 +88,9 @@
                      <th width="40">#</th>
                      <th>Produk</th>
                      <th>No. Batch / Lot</th>
-                     <th>Gudang</th>
                      <th>Dokumen Terima</th>
                      <th class="text-center">Tgl. Masuk</th>
                      <th class="text-right">Qty Masuk</th>
-                     <th class="text-center">Kode Rak</th>
-                     <th class="text-center">Tingkat / Baris Rak</th>
-                     <th class="text-center">Sekat / Kolom Rak</th>
                   </tr>
                </thead>
                <tbody>
@@ -107,18 +103,14 @@
                            <small class="text-muted"><?= _ent($b->kode_produk); ?></small>
                         </td>
                         <td><span class="label label-primary" style="font-size:13px; padding:5px 8px;"><i class="fa fa-qrcode"></i> <?= _ent($b->batch_no); ?></span></td>
-                        <td><?= _ent($b->nama_gudang); ?></td>
                         <td><a href="<?= site_url('administrator/penerimaan_barang/view'); ?>" class="text-primary"><i class="fa fa-file-text-o"></i> <?= _ent($b->nomor_penerimaan); ?></a></td>
                         <td class="text-center"><?= $b->tanggal_terima ? date('d/m/Y', strtotime($b->tanggal_terima)) : '-'; ?></td>
                         <td class="text-right"><strong><?= number_format($b->total_qty_masuk, 0, ',', '.'); ?></strong></td>
-                        <td class="text-center"><span class="label label-info" style="font-size:12px; padding:4px 9px;"><i class="fa fa-tag"></i> <?= _ent($b->kode_rak ?: 'RAK-01'); ?></span></td>
-                        <td class="text-center"><span class="label label-info" style="border-radius:12px; padding:4px 10px; font-size:11px; font-weight:600; background-color:#3498db !important;"><?= (strpos(strtolower($b->baris ?? ''), 'tingkat') !== false) ? _ent($b->baris) : 'Tingkat ' . _ent($b->baris ?: '1'); ?></span></td>
-                        <td class="text-center"><span class="label label-success" style="border-radius:12px; padding:4px 10px; font-size:11px; font-weight:600; background-color:#2ecc71 !important;"><?= (strpos(strtolower($b->kolom ?? ''), 'kolom') !== false) ? _ent($b->kolom) : 'Kolom ' . _ent($b->kolom ?: '1'); ?></span></td>
                      </tr>
                      <?php endforeach; ?>
                   <?php else: ?>
                      <tr>
-                        <td colspan="9" class="text-center text-muted" style="padding:30px;">
+                        <td colspan="6" class="text-center text-muted" style="padding:30px;">
                            <i class="fa fa-info-circle fa-2x"></i><br>
                            Belum ada data batch yang tercatat.<br>
                            <small>Batch No. diisi saat menerima barang di menu Penerimaan Barang.</small>

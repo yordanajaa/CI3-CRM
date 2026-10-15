@@ -187,23 +187,12 @@
             <div class="box-body" style="padding: 18px;">
                <!-- Toolbar Filter & Alat Tambahan -->
                <div class="stok-toolbar">
-                  <!-- Filter Gudang & Status Aktif -->
+                  <!-- Filter Status & Per Page -->
                   <form class="form-inline" action="<?= base_url('administrator/stok'); ?>" method="GET" style="margin: 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                      <?php if(!empty($status_sel) && $status_sel !== 'all'): ?>
                         <input type="hidden" name="status" value="<?= _ent($status_sel); ?>">
                      <?php endif; ?>
                      <label style="font-size: 13px; font-weight: 600; color: #475569; margin: 0; white-space: nowrap;">
-                        <i class="fa fa-building-o text-muted"></i> Gudang:
-                     </label>
-                     <select class="form-control input-sm" name="gudang_id" onchange="this.form.submit()" style="font-weight: 600; min-width: 170px; border-radius: 4px;">
-                        <option value="">-- Semua Gudang --</option>
-                        <?php foreach ($gudangs as $g): ?>
-                           <option <?= $gudang_sel == $g->id ? 'selected' : ''; ?> value="<?= $g->id; ?>">
-                              <?= _ent($g->nama_gudang); ?>
-                           </option>
-                        <?php endforeach; ?>
-                     </select>
-                     <label style="font-size: 13px; font-weight: 600; color: #475569; margin: 0 0 0 4px; white-space: nowrap;">
                         <i class="fa fa-list text-muted"></i> Tampil:
                      </label>
                      <select class="form-control input-sm" name="per_page" onchange="this.form.submit()" style="font-weight: 600; width: 90px; border-radius: 4px;">
@@ -216,24 +205,21 @@
                      <?php if(!empty($status_sel) && $status_sel !== 'all'): ?>
                         <span class="label <?= $status_sel == 'habis' ? 'label-danger' : ($status_sel == 'menipis' ? 'label-warning' : 'label-success'); ?>" style="font-size: 11.5px; padding: 5px 9px; border-radius: 4px; display: inline-flex; align-items: center; gap: 5px;">
                            <i class="fa fa-filter"></i> Filter: <?= $status_sel == 'habis' ? 'Stok Habis' : ($status_sel == 'menipis' ? 'Stok Menipis' : 'Ada Stok'); ?>
-                           <a href="<?= site_url('administrator/stok' . ($gudang_sel ? '?gudang_id=' . $gudang_sel : '')); ?>" style="color: #fff; margin-left: 4px; font-weight: bold;" title="Hapus Filter"><i class="fa fa-times"></i></a>
+                           <a href="<?= site_url('administrator/stok'); ?>" style="color: #fff; margin-left: 4px; font-weight: bold;" title="Hapus Filter"><i class="fa fa-times"></i></a>
                         </span>
                      <?php endif; ?>
                   </form>
 
                   <!-- Secondary Tools -->
                   <div class="stok-toolbar-tools">
-                     <a href="<?= site_url('administrator/stock_opname'); ?>" class="btn btn-primary btn-sm" style="font-weight: 600; border-radius: 4px;" title="Perbarui / Opname Stok Seluruh Barang Sekaligus">
-                        <i class="fa fa-cubes"></i> Stock Opname
-                     </a>
                      <a href="<?= site_url('administrator/stok/batch_tracking'); ?>" class="btn btn-info btn-sm" style="font-weight: 600; border-radius: 4px;">
                         <i class="fa fa-qrcode"></i> Batch Tracking
                      </a>
                      <?php if (is_allowed('stok_export', false)): ?>
-                        <a href="<?= site_url('administrator/stok/export?gudang_id=' . $gudang_sel); ?>" class="btn btn-default btn-sm" style="font-weight: 600; border-radius: 4px;">
+                        <a href="<?= site_url('administrator/stok/export'); ?>" class="btn btn-default btn-sm" style="font-weight: 600; border-radius: 4px;">
                            <i class="fa fa-file-excel-o text-success"></i> Export Excel
                         </a>
-                        <a href="<?= site_url('administrator/stok/print_stok' . ($gudang_sel ? '?gudang_id=' . $gudang_sel : '') . (!empty($status_sel) && $status_sel !== 'all' ? (empty($gudang_sel) ? '?' : '&') . 'status=' . $status_sel : '')); ?>" target="_blank" class="btn btn-default btn-sm" style="font-weight: 600; border-radius: 4px;" title="Cetak / Print Laporan Stok Resmi">
+                        <a href="<?= site_url('administrator/stok/print_stok' . (!empty($status_sel) && $status_sel !== 'all' ? '?status=' . $status_sel : '')); ?>" target="_blank" class="btn btn-default btn-sm" style="font-weight: 600; border-radius: 4px;" title="Cetak / Print Laporan Stok Resmi">
                            <i class="fa fa-print text-primary"></i> Cetak / Print
                         </a>
                      <?php endif; ?>
@@ -249,7 +235,7 @@
                            (<?= is_object($summary) ? $summary->stok_habis : 55; ?> produk lainnya saat ini stok fisiknya 0 sehingga tidak ditampilkan).
                         <?php endif; ?>
                      </div>
-                     <a href="<?= site_url('administrator/stok' . ($gudang_sel ? '?gudang_id=' . $gudang_sel : '')); ?>" class="btn btn-xs btn-primary" style="font-weight:700; padding:4px 10px; border-radius:4px;">
+                     <a href="<?= site_url('administrator/stok'); ?>" class="btn btn-xs btn-primary" style="font-weight:700; padding:4px 10px; border-radius:4px;">
                         <i class="fa fa-th-list"></i> Tampilkan Semua Produk (<?= is_object($summary) ? $summary->total_produk : 59; ?>)
                      </a>
                   </div>
@@ -261,10 +247,6 @@
                         <tr>
                            <th>Kode Produk</th>
                            <th>Nama Produk</th>
-                           <?php if (!$gudang_sel): ?>
-                              <th>Gudang</th>
-                           <?php endif; ?>
-                           <th>Lokasi Rak</th>
                            <th class="text-center">Stok</th>
                            <th class="text-center">Rusak</th>
                            <th class="text-center">Min. Stok</th>
@@ -278,16 +260,6 @@
                               <tr class="<?= $s->qty == 0 ? 'danger' : ($s->qty <= $s->stok_minimum ? 'warning' : ''); ?>">
                                  <td><?= _ent($s->kode_produk); ?></td>
                                  <td><strong><?= _ent($s->nama_produk); ?></strong></td>
-                                 <?php if (!$gudang_sel): ?>
-                                    <td><?= _ent($s->nama_gudang); ?></td>
-                                 <?php endif; ?>
-                                 <td>
-                                    <?php if($s->kode_rak): ?>
-                                       <span class="label label-info"><i class="fa fa-cubes"></i> <?= _ent($s->kode_rak); ?></span>
-                                    <?php else: ?>
-                                       <span class="text-muted">-</span>
-                                    <?php endif; ?>
-                                 </td>
                                  <td class="text-center"><strong><?= number_format((float)$s->qty, 0, ',', '.'); ?></strong></td>
                                  <td class="text-center <?= $s->qty_rusak > 0 ? 'text-danger' : ''; ?>">
                                     <?= $s->qty_rusak > 0 ? number_format((float)$s->qty_rusak, 0, ',', '.') : '-'; ?>
@@ -308,7 +280,7 @@
                                           <i class="fa fa-pencil"></i> Sesuaikan Stok
                                        </a>
                                     <?php endif; ?>
-                                    <a href="<?= site_url('administrator/stok/kartu/' . $s->produk_id . ($s->gudang_id ? '?gudang_id=' . $s->gudang_id : '')); ?>" class="btn btn-xs btn-primary" title="Kartu Stok">
+                                    <a href="<?= site_url('administrator/stok/kartu/' . $s->produk_id); ?>" class="btn btn-xs btn-primary" title="Kartu Stok">
                                        <i class="fa fa-list-alt"></i> Kartu Stok
                                     </a>
                                     <?php if (is_allowed('stok_delete', false)): ?>
@@ -321,7 +293,7 @@
                            <?php endforeach; ?>
                         <?php else: ?>
                            <tr>
-                              <td colspan="<?= !$gudang_sel ? '9' : '8'; ?>" class="text-center text-muted">Belum ada data stok barang.</td>
+                              <td colspan="7" class="text-center text-muted">Belum ada data stok barang.</td>
                            </tr>
                         <?php endif; ?>
                      </tbody>
@@ -330,18 +302,12 @@
 
                <div class="row" style="margin-top: 15px;">
                   <div class="col-md-7 col-sm-12">
-                     <?php if (!$gudang_sel): ?>
-                        <span class="text-muted" style="font-size: 13px;">
-                           Total: <strong><?= is_object($summary) ? $summary->total_produk : 59; ?> produk unik</strong> 
-                           <span class="label label-default" style="font-size: 11.5px; font-weight: 600; padding: 4px 8px; margin-left: 6px; background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; border-radius: 4px;">
-                              <i class="fa fa-database text-muted"></i> <?= $stok_counts; ?> baris record stok di <?= count($gudangs); ?> gudang aktif
-                           </span>
+                     <span class="text-muted" style="font-size: 13px;">
+                        Total: <strong><?= is_object($summary) ? $summary->total_produk : 59; ?> produk unik</strong> 
+                        <span class="label label-default" style="font-size: 11.5px; font-weight: 600; padding: 4px 8px; margin-left: 6px; background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; border-radius: 4px;">
+                           <i class="fa fa-database text-muted"></i> <?= $stok_counts; ?> baris record stok
                         </span>
-                     <?php else: ?>
-                        <span class="text-muted" style="font-size: 13px;">
-                           Total: <strong><?= $stok_counts; ?> produk</strong> di gudang terpilih
-                        </span>
-                     <?php endif; ?>
+                     </span>
                   </div>
                   <div class="col-md-5 col-sm-12">
                      <div class="pull-right">

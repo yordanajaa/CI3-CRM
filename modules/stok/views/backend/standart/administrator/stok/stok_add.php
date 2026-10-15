@@ -91,9 +91,6 @@
             <div class="box-header with-border">
                <h3 class="box-title"><i class="fa fa-edit text-success"></i> Formulir Input / Penyesuaian Stok Barang</h3>
                <div class="box-tools pull-right">
-                  <a href="<?= site_url('administrator/stock_opname/add'); ?>" class="btn btn-primary btn-xs" style="font-weight:600; margin-right:6px;" title="Update stok seluruh produk dalam 1 gudang">
-                     <i class="fa fa-cubes"></i> Update Keseluruhan (Opname)
-                  </a>
                   <a href="<?= site_url('administrator/stok'); ?>" class="btn btn-default btn-xs" style="font-weight:600;">
                      <i class="fa fa-arrow-left"></i> Kembali ke Stok
                   </a>
@@ -101,9 +98,9 @@
             </div>
             <div class="box-body">
 
-               <!-- Step 1: Alokasi Produk & Gudang -->
+               <!-- Step 1: Alokasi Produk -->
                <div class="row">
-                  <div class="col-md-6">
+                  <div class="col-md-12">
                      <div class="form-group">
                         <label>Pilih Produk <span class="text-danger">*</span></label>
                         <select class="form-control chosen-select" name="produk_id" id="produk_id" required style="width: 100%;">
@@ -115,19 +112,7 @@
                            <?php endforeach; ?>
                         </select>
                      </div>
-                  </div>
-                  <div class="col-md-6">
-                     <div class="form-group">
-                        <label>Pilih Gudang Penyimpanan <span class="text-danger">*</span></label>
-                        <select class="form-control chosen-select" name="gudang_id" id="gudang_id" required style="width: 100%;">
-                           <option value="">-- Pilih Gudang --</option>
-                           <?php foreach($gudangs as $g): ?>
-                              <option value="<?= $g->id; ?>">
-                                 <?= _ent($g->nama_gudang); ?>
-                              </option>
-                           <?php endforeach; ?>
-                        </select>
-                     </div>
+                     <input type="hidden" name="gudang_id" id="gudang_id" value="<?= !empty($gudangs[0]->id) ? $gudangs[0]->id : 1; ?>">
                   </div>
                </div>
 
@@ -259,26 +244,14 @@
                   </div>
                </div>
 
-               <!-- STEP 4: LOKASI RAK & ALASAN -->
+               <!-- STEP 4: ALASAN PENYESUAIAN -->
                <div class="row">
-                  <div class="col-md-6">
-                     <div class="form-group">
-                        <label>Lokasi Rak Gudang (Opsional)</label>
-                        <select class="form-control chosen-select" name="rak_id" id="rak_id" style="width: 100%;">
-                           <option value="">-- Pilih Rak (Opsional) --</option>
-                           <?php foreach($raks as $r): ?>
-                              <option value="<?= $r->id; ?>">
-                                 <?= _ent($r->kode_rak . ' - Baris ' . $r->baris . ', Kolom ' . $r->kolom . ($r->keterangan ? ' (' . $r->keterangan . ')' : '')); ?>
-                              </option>
-                           <?php endforeach; ?>
-                        </select>
-                     </div>
-                  </div>
-                  <div class="col-md-6">
+                  <div class="col-md-12">
                      <div class="form-group">
                         <label>Alasan / Keterangan Penyesuaian <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="keterangan" id="keterangan" placeholder="Misal: Stok Awal Opname, Hasil Hitung Fisik, Non-PO..." required value="Input Penyesuaian Manual Stok">
+                        <input type="text" class="form-control" name="keterangan" id="keterangan" placeholder="Misal: Stok Awal, Hasil Hitung Fisik, Non-PO..." required value="Input Penyesuaian Manual Stok">
                      </div>
+                     <input type="hidden" name="rak_id" id="rak_id" value="">
                   </div>
                </div>
 

@@ -56,21 +56,7 @@ $stok_min = (float)($stok->stok_minimum ?? 0);
                            <th style="background:#f8fafc;">Kategori</th>
                            <td><?= _ent($stok->nama_kategori ?? '-'); ?></td>
                         </tr>
-                        <tr>
-                           <th style="background:#f8fafc;">Lokasi Gudang</th>
-                           <td><i class="fa fa-bank text-primary"></i> <strong><?= _ent($stok->nama_gudang ?? '-'); ?></strong></td>
-                        </tr>
-                        <tr>
-                           <th style="background:#f8fafc;">Lokasi Rak</th>
-                           <td>
-                              <?php if(!empty($stok->kode_rak)): ?>
-                                 <span class="label label-info"><i class="fa fa-cubes"></i> <?= _ent($stok->kode_rak); ?></span>
-                              <?php else: ?>
-                                 <span class="text-muted">-</span>
-                              <?php endif; ?>
-                           </td>
-                        </tr>
-                     </table>
+                      </table>
                   </div>
 
                   <div class="col-sm-6">

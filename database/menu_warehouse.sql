@@ -15,10 +15,8 @@ INSERT INTO `menu` (`label`, `type`, `icon_color`, `link`, `sort`, `parent`, `ic
 SET @master_id = LAST_INSERT_ID();
 
 INSERT INTO `menu` (`label`, `type`, `icon_color`, `link`, `sort`, `parent`, `icon`, `menu_type_id`, `active`) VALUES
-('Supplier',   'item', NULL, '{admin_url}/supplier',  21, @master_id, 'fa fa-truck',      1, 1),
 ('Pelanggan',  'item', NULL, '{admin_url}/pelanggan', 22, @master_id, 'fa fa-users',      1, 1),
-('Produk',     'item', NULL, '{admin_url}/produk',    23, @master_id, 'fa fa-cube',       1, 1),
-('Gudang',     'item', NULL, '{admin_url}/gudang',    24, @master_id, 'fa fa-building',   1, 1);
+('Produk',     'item', NULL, '{admin_url}/produk',    23, @master_id, 'fa fa-cube',       1, 1);
 
 -- =====================
 -- PEMBELIAN (parent)
