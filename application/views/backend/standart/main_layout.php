@@ -216,7 +216,7 @@
             </a>
             <ul class="dropdown-menu" style="width: 320px; border-radius: 6px; box-shadow: 0 5px 25px rgba(0,0,0,0.15); border: none;">
               <li class="header" style="background: #f8f9fa; padding: 12px 15px; font-weight: 700; color: #2c3e50; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
-                <span><i class="fa fa-bell text-yellow" style="margin-right: 5px;"></i> <span id="notif-header-title">Notifikasi</span></span>
+                <span><i class="fa fa-bell text-yellow" style="margin-right: 5px;"></i> <span id="notif-header-title">Peringatan Follow-Up</span></span>
                 <span class="badge bg-yellow" id="notif-header-count">0</span>
               </li>
               <li>
@@ -225,7 +225,7 @@
                 </ul>
               </li>
               <li class="footer" style="background: #f8f9fa; text-align: center; padding: 8px; border-top: 1px solid #eee;">
-                <a href="<?= site_url('administrator/purchase_order'); ?>" id="notif-footer-link" style="color: #3498db; font-weight: 600; font-size: 12px;"><i class="fa fa-list"></i> Lihat Selengkapnya</a>
+                <a href="<?= site_url('administrator/crm/journal_followup?status_label=belum_direspon'); ?>" id="notif-footer-link" style="color: #3498db; font-weight: 600; font-size: 12px;"><i class="fa fa-list"></i> Lihat Follow-Up Terlewat</a>
               </li>
             </ul>
           </li>
@@ -331,62 +331,7 @@ $(document).ready(function(){
       }
    });
 
-   // Web Audio API Synth Chime for Ultra-Realtime WA Notification Sound
-   var sharedAudioCtx = null;
-   function getAudioContext() {
-      try {
-         if (!sharedAudioCtx) {
-            var AudioCtx = window.AudioContext || window.webkitAudioContext;
-            if (AudioCtx) sharedAudioCtx = new AudioCtx();
-         }
-         if (sharedAudioCtx && sharedAudioCtx.state === 'suspended') {
-            sharedAudioCtx.resume();
-         }
-      } catch(e) {}
-      return sharedAudioCtx;
-   }
-
-   $(document).on('click keydown touchstart', function() {
-      getAudioContext();
-   });
-
-   function playNotifChime() {
-      try {
-         var ctx = getAudioContext();
-         if (!ctx) return;
-         if (ctx.state === 'suspended') {
-            ctx.resume().then(function() {
-               _executeNotifChime(ctx);
-            }).catch(function() {
-               _executeNotifChime(ctx);
-            });
-         } else {
-            _executeNotifChime(ctx);
-         }
-      } catch(e) {}
-   }
-
-   function _executeNotifChime(ctx) {
-      try {
-         var now = ctx.currentTime;
-         var osc = ctx.createOscillator();
-         var gain = ctx.createGain();
-         osc.type = 'sine';
-         // Crisp 3-tone WhatsApp/iOS chime: E6 (1318 Hz) -> A6 (1760 Hz) -> B6 (1975 Hz)
-         osc.frequency.setValueAtTime(1318.5, now);
-         osc.frequency.exponentialRampToValueAtTime(1760.0, now + 0.08);
-         osc.frequency.exponentialRampToValueAtTime(1975.5, now + 0.16);
-         gain.gain.setValueAtTime(0.65, now);
-         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
-         osc.connect(gain);
-         gain.connect(ctx.destination);
-         osc.start(now);
-         osc.stop(now + 0.45);
-      } catch(e) {}
-   }
-
-   // Instant Real-Time Notification Loader (2-second polling with sessionStorage persistence)
-   var lastNotifiedWaId = parseInt(sessionStorage.getItem('lastNotifiedWaId') || '0');
+   // Real-Time Notification Loader (Overdue Follow-Up Alerts & Approvals)
    function loadApprovalNotifications() {
       $.ajax({
          url: BASE_URL + 'administrator/dashboard/get_notifications',
@@ -412,43 +357,9 @@ $(document).ready(function(){
 
                var html = '';
                if (res.items && res.items.length > 0) {
-                  var maxWaId = 0;
                   $.each(res.items, function(i, item) {
-                     if (item.type === 'incoming_wa' && item.id) {
-                        var itemId = parseInt(item.id);
-                        if (itemId > maxWaId) maxWaId = itemId;
-
-                        // Trigger instant Toastr popup & audio sound chime for NEW incoming WhatsApp message
-                        if (lastNotifiedWaId > 0 && itemId > lastNotifiedWaId) {
-                           playNotifChime();
-                           if (typeof toastr !== 'undefined') {
-                              toastr.info(
-                                 '<b>' + item.title + '</b><br>' + item.subtitle,
-                                 '💬 Pesan WhatsApp Masuk',
-                                 {
-                                    timeOut: 8000,
-                                    extendedTimeOut: 3000,
-                                    closeButton: true,
-                                    progressBar: true,
-                                    onclick: function() { window.location.href = item.url; }
-                                 }
-                              );
-                           }
-
-                           // HTML5 Desktop Notification
-                           if (window.Notification && Notification.permission === 'granted') {
-                              try {
-                                 new Notification(item.title, {
-                                    body: item.subtitle,
-                                    icon: BASE_URL + 'asset/img/icon-wide.png'
-                                 });
-                              } catch(e) {}
-                           }
-                        }
-                     }
-
                      html += '<li style="border-bottom: 1px solid #f4f4f4;" class="notif-item" data-notif-id="' + item.id + '" data-notif-type="' + item.type + '">';
-                     html += '  <a href="' + item.url + '" class="notif-link" data-chat-id="' + item.id + '" data-type="' + item.type + '" style="display: flex; align-items: flex-start; padding: 10px 15px; color: #333; text-decoration: none; transition: background 0.2s;" onmouseover="this.style.background=\'#f9f9f9\'" onmouseout="this.style.background=\'transparent\'">';
+                     html += '  <a href="' + item.url + '" class="notif-link" data-id="' + item.id + '" data-type="' + item.type + '" style="display: flex; align-items: flex-start; padding: 10px 15px; color: #333; text-decoration: none; transition: background 0.2s;" onmouseover="this.style.background=\'#f9f9f9\'" onmouseout="this.style.background=\'transparent\'">';
                      html += '    <div style="margin-right: 12px; font-size: 18px; line-height: 1;" class="' + item.icon_bg + '"><i class="fa ' + item.icon + '"></i></div>';
                      html += '    <div style="flex: 1; overflow: hidden;">';
                      html += '      <div style="font-weight: 600; font-size: 12px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; color: #2c3e50;">' + item.title + '</div>';
@@ -458,17 +369,8 @@ $(document).ready(function(){
                      html += '  </a>';
                      html += '</li>';
                   });
-
-                  if (maxWaId > 0) {
-                     if (lastNotifiedWaId === 0) {
-                        lastNotifiedWaId = maxWaId; // Baseline on first load
-                     } else if (maxWaId > lastNotifiedWaId) {
-                        lastNotifiedWaId = maxWaId;
-                     }
-                     sessionStorage.setItem('lastNotifiedWaId', lastNotifiedWaId);
-                  }
                } else {
-                  html = '<li style="text-align: center; padding: 25px 15px; color: #7f8c8d; font-size: 13px;"><i class="fa fa-check-circle-o text-green" style="font-size: 24px; display: block; margin-bottom: 5px;"></i> Tidak ada notifikasi baru</li>';
+                  html = '<li style="text-align: center; padding: 25px 15px; color: #7f8c8d; font-size: 13px;"><i class="fa fa-check-circle-o text-green" style="font-size: 24px; display: block; margin-bottom: 5px;"></i> Tidak ada peringatan follow-up</li>';
                }
                $('#notif-approval-list').html(html);
             }
@@ -478,41 +380,13 @@ $(document).ready(function(){
 
    if ($('#notif-approval-menu').length > 0) {
       loadApprovalNotifications();
-      setInterval(loadApprovalNotifications, 2000);
+      setInterval(loadApprovalNotifications, 5000);
 
-      // Click handler: mark notification as read, remove from list, then navigate
+      // Click handler: navigate to target URL directly
       $(document).on('click', '.notif-link', function(e) {
          e.preventDefault();
-         var $link = $(this);
-         var $item = $link.closest('.notif-item');
-         var chatId = $link.data('chat-id');
-         var itemType = $link.data('type');
-         var targetUrl = $link.attr('href');
-
-         // Instantly remove from visual list
-         $item.slideUp(150, function() { $(this).remove(); });
-
-         // Update badge count
-         var currentCount = parseInt($('#notif-header-count').text()) || 0;
-         var newCount = Math.max(0, currentCount - 1);
-         if (newCount > 0) {
-            $('#notif-approval-badge').text(newCount > 99 ? '99+' : newCount);
-            $('#notif-header-count').text(newCount);
-         } else {
-            $('#notif-approval-badge').hide();
-            $('#notif-header-count').text('0');
-         }
-
-         // Mark as read via AJAX (fire-and-forget)
-         if (itemType === 'incoming_wa' && chatId) {
-            $.post(BASE_URL + 'administrator/crm/mark_notification_read_ajax', { chat_id: chatId });
-         }
-
-         // Navigate immediately — force reload if already on same page
-         if (window.location.href.indexOf(targetUrl.split('?')[0]) !== -1) {
-            window.location.href = targetUrl;
-            window.location.reload(true);
-         } else {
+         var targetUrl = $(this).attr('href');
+         if (targetUrl) {
             window.location.href = targetUrl;
          }
       });

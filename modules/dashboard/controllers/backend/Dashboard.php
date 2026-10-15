@@ -47,54 +47,60 @@ class Dashboard extends Admin
 
 		$items = [];
 		$total_count = 0;
-		$wa_unread_count = 0;
+		$overdue_count = 0;
 
-		// 1. Incoming WhatsApp Messages (Visible to CS / Admin / All Staff)
-		if ($this->db->table_exists('crm_chat_history')) {
-			$incoming_chats = $this->db->select('c.id, c.label_id, c.customer_phone, c.message, c.sender_name, c.status, c.created_at, l.customer_nama, l.no_pesanan')
-				->from('crm_chat_history c')
-				->join('crm_transaction_followup_labels l', 'l.id = c.label_id', 'left')
-				->where('c.direction', 'in')
-				->where('c.is_internal_note', 0)
-				->where('c.status !=', 'read')
-				->order_by('c.id', 'DESC')
-				->limit(10)
-				->get()->result();
+		// 1. Peringatan Follow-Up Terlupakan (CRM Overdue Pending Reminders)
+		if ($this->db->table_exists('crm_transaction_followup_labels')) {
+			$today = date('Y-m-d');
 
-			foreach ($incoming_chats as $chat) {
-				// Skip Fonnte echo falsely logged as incoming
-				if (!empty($chat->message) && (stripos($chat->message, 'Sent via fonnte.com') !== false || stripos($chat->message, 'fonnte.com') !== false)) {
-					continue;
-				}
+			// Hitung total follow-up pending yang sudah jatuh tempo / terlewat
+			$overdue_row = $this->db->query("
+				SELECT COUNT(*) as cnt 
+				FROM crm_transaction_followup_labels 
+				WHERE status_label = 'Pending' 
+				  AND is_cancelled = 0 
+				  AND tanggal_label_muncul < '$today'
+			")->row();
+			$overdue_count = $overdue_row ? (int)$overdue_row->cnt : 0;
 
-				$cust_name = !empty($chat->sender_name) ? $chat->sender_name : (!empty($chat->customer_nama) ? $chat->customer_nama : $chat->customer_phone);
-				$preview = trim(strip_tags($chat->message));
-				if (mb_strlen($preview) > 40) {
-					$preview = mb_substr($preview, 0, 40) . '...';
-				}
+			// Ambil 10 data follow-up yang paling lama terlupakan (tanggal jadwal paling lampau)
+			$overdue_items = $this->db->query("
+				SELECT tfl.id, tfl.customer_nama, tfl.customer_phone, tfl.no_pesanan, tfl.order_source, 
+				       tfl.tanggal_pengiriman, tfl.tanggal_label_muncul, fc.nama_kategori,
+				       DATEDIFF('$today', tfl.tanggal_label_muncul) as terlambat_hari
+				FROM crm_transaction_followup_labels tfl
+				LEFT JOIN crm_followup_categories fc ON tfl.followup_category_id = fc.id
+				WHERE tfl.status_label = 'Pending' 
+				  AND tfl.is_cancelled = 0 
+				  AND tfl.tanggal_label_muncul < '$today'
+				ORDER BY tfl.tanggal_label_muncul ASC, tfl.id ASC
+				LIMIT 10
+			")->result();
+
+			foreach ($overdue_items as $fup) {
+				$cust = !empty($fup->customer_nama) && $fup->customer_nama !== '-' ? $fup->customer_nama : ($fup->customer_phone ?: 'Pelanggan');
+				$days = (int)$fup->terlambat_hari;
+				$kat = !empty($fup->nama_kategori) ? $fup->nama_kategori : 'Follow-Up';
+				$order_info = !empty($fup->no_pesanan) ? $fup->no_pesanan : ($fup->order_source ?: 'Pesanan');
+				$source_badge = !empty($fup->order_source) ? ' (' . $fup->order_source . ')' : '';
 
 				$items[] = [
-					'id' => (int)$chat->id,
-					'type' => 'incoming_wa',
-					'title' => '💬 WA: ' . $cust_name,
-					'subtitle' => $preview ? $preview : '[Pesan / Media]',
-					'url' => site_url('administrator/crm/journal_followup?label_id=' . $chat->label_id),
-					'icon' => 'fa-whatsapp',
-					'icon_bg' => 'text-green',
-					'date' => date('d/m H:i', strtotime($chat->created_at))
+					'id' => (int)$fup->id,
+					'type' => 'overdue_followup',
+					'title' => '⏰ Terlewat ' . $days . ' Hari: ' . $cust,
+					'subtitle' => $kat . ' • ' . $order_info . $source_badge,
+					'url' => site_url('administrator/crm/journal_followup?status_label=belum_direspon&q=' . urlencode($fup->no_pesanan ?: $cust)),
+					'icon' => 'fa-clock-o',
+					'icon_bg' => 'text-yellow',
+					'date' => date('d/m/Y', strtotime($fup->tanggal_label_muncul))
 				];
 			}
 
-			$wa_unread_count = $this->db->where([
-				'direction' => 'in',
-				'is_internal_note' => 0,
-				'status !=' => 'read'
-			])->count_all_results('crm_chat_history');
-			
-			$total_count += $wa_unread_count;
+			$total_count += $overdue_count;
 		}
 
 		// 2. Purchase Order Pending Approval (For Managers / Admins)
+		$po_count = 0;
 		if ($is_manager && $this->db->table_exists('purchase_order')) {
 			$threshold = (float) get_option('po_approval_threshold', 50000000);
 
@@ -125,21 +131,19 @@ class Dashboard extends Admin
 			$total_count += $po_count;
 		}
 
-
-		$header_title = 'Notifikasi & Pesan WA';
-		$footer_url = site_url('administrator/crm/journal_followup');
-		$footer_label = 'Lihat Journal Chat WA';
-
-		if ($wa_unread_count === 0) {
-			if ($is_manager) {
-				$header_title = 'Notifikasi Approval';
-				$footer_url = site_url('administrator/purchase_order');
-				$footer_label = 'Lihat Kelola Purchase Order';
-			} else {
-				$header_title = 'Notifikasi Saya';
-				$footer_url = site_url('administrator/hr_profile');
-				$footer_label = 'Lihat Profile & Presensi';
-			}
+		// Header & Footer
+		if ($overdue_count > 0) {
+			$header_title = 'Peringatan Follow-Up';
+			$footer_url = site_url('administrator/crm/journal_followup?status_label=belum_direspon');
+			$footer_label = 'Lihat Follow-Up Terlewat';
+		} elseif ($po_count > 0 && $is_manager) {
+			$header_title = 'Notifikasi Approval';
+			$footer_url = site_url('administrator/purchase_order');
+			$footer_label = 'Lihat Kelola Purchase Order';
+		} else {
+			$header_title = 'Notifikasi Follow-Up';
+			$footer_url = site_url('administrator/crm/journal_followup');
+			$footer_label = 'Lihat Journal Follow-Up';
 		}
 
 		return $this->response([
