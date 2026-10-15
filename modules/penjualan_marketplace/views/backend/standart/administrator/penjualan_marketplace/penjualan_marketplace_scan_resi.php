@@ -672,7 +672,7 @@ tbody#tbody_bulk_summary tr.active-scanned-row {
                         <div class="bento-card" style="padding:12px 15px; margin-bottom:12px;">
                            <div style="display:flex; align-items:center; gap:12px;">
                               <div class="bento-icon-wrapper" style="background:#e0f2fe; color:#0284c7; width:34px; height:34px; border-radius:8px; margin-bottom:0;">
-                                 <i class="fa fa-barcode"></i>
+                                 <i class="fa fa-tag"></i>
                               </div>
                               <div>
                                  <div style="font-size:10.5px; font-weight:800; color:#64748b; text-transform:uppercase;">No. Pesanan &amp; Resi</div>
@@ -1788,7 +1788,7 @@ $(document).ready(function(){
          $('#breakdown_count_label').text('Total ' + data.items.length + ' varian produk terdaftar');
          data.items.forEach(function(item, idx){
             var skuBadge = item.sku && item.sku !== '-' 
-               ? '<span class="sku-chip"><i class="fa fa-barcode text-muted"></i> ' + item.sku + '</span>'
+               ? '<span class="sku-chip"><i class="fa fa-tag text-muted"></i> ' + item.sku + '</span>'
                : '<span class="sku-chip" style="opacity:0.6;">-</span>';
 
             var variasiPill = '<span class="variasi-pill">' + (item.variasi || 'Default') + '</span>';

@@ -228,44 +228,6 @@
   border-top-right-radius: 10px;
   padding: 12px 18px;
 }
-.scanner-product-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  max-height: 150px;
-  overflow-y: auto;
-  padding: 8px;
-  background: #f8fafc;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-}
-.scanner-product-grid::-webkit-scrollbar {
-  width: 5px;
-}
-.scanner-product-grid::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-}
-.btn-simulasi-barcode {
-  border-radius: 12px !important;
-  background: #ffffff !important;
-  border: 1px solid #cbd5e1 !important;
-  padding: 4px 10px !important;
-  font-size: 11px !important;
-  color: #334155 !important;
-  font-weight: 600 !important;
-  transition: all 0.15s ease !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 4px !important;
-  cursor: pointer;
-}
-.btn-simulasi-barcode:hover, .btn-simulasi-barcode:active {
-  background: #ecfdf5 !important;
-  border-color: #10b981 !important;
-  color: #047857 !important;
-  transform: translateY(-1px) !important;
-}
 .table-pos {
   margin-bottom: 0;
   width: 100% !important;
@@ -438,30 +400,6 @@
   #btn_add_item {
     font-size: 11.5px !important;
     padding: 5px 10px !important;
-  }
-  .scanner-product-grid {
-    max-height: 130px !important;
-    padding: 6px !important;
-    gap: 5px !important;
-  }
-  .btn-simulasi-barcode {
-    font-size: 11px !important;
-    padding: 5px 9px !important;
-    min-height: 30px !important;
-  }
-  #filter_produk_quick {
-    width: 100% !important;
-    height: 30px !important;
-    margin-top: 4px !important;
-    font-size: 11.5px !important;
-  }
-  #barcode_scan_input {
-    font-size: 13.5px !important;
-    height: 40px !important;
-  }
-  #btn_do_scan {
-    padding: 0 12px !important;
-    font-size: 12px !important;
   }
   #display_grand_total_big {
     font-size: 26px !important;
@@ -1512,52 +1450,6 @@
          </div>
       </div>
 
-      <!-- Barcode Scanner & Quick Item Picker -->
-      <div class="box pos-card" style="border-top: 3px solid #0284c7;">
-         <div class="box-header with-border" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; background: #f8fafc; padding: 10px 18px;">
-            <h3 class="box-title" style="color: #0369a1; font-weight: 700; font-size: 13px; margin:0; display:flex; align-items:center; gap:6px;">
-               <i class="fa fa-search"></i> Pencarian Produk &amp; Quick Klik
-            </h3>
-            <span class="label label-success" style="font-size: 10px; padding: 3px 8px; border-radius: 10px;">
-               <i class="fa fa-bolt"></i> Siap Scan
-            </span>
-         </div>
-         <div class="box-body" style="padding: 12px 18px;">
-            <div class="input-group" style="margin-bottom: 10px;">
-               <span class="input-group-addon" style="background: #0284c7; color:#fff; border-color: #0284c7; border-radius: 8px 0 0 8px; padding: 0 12px;">
-                  <i class="fa fa-search" style="font-size:16px;"></i>
-               </span>
-               <input type="text" id="barcode_scan_input" class="form-control" placeholder="Ketik kode produk / nama barang &amp; Enter..." style="border-radius: 0; height: 40px; font-weight: 700; font-size: 14px;">
-               <span class="input-group-btn">
-                  <button type="button" id="btn_do_scan" class="btn btn-info btn-flat" style="border-radius: 0 8px 8px 0; height: 40px; font-weight: 700; padding: 0 18px;"><i class="fa fa-search"></i> Cari / Masukkan</button>
-               </span>
-            </div>
-
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px; flex-wrap:wrap; gap:6px;">
-               <span style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.3px;">
-                  <i class="fa fa-th-large text-primary"></i> Klik Cepat Tombol Produk (1-Klik Masuk / Qty +1):
-               </span>
-               <input type="text" id="filter_produk_quick" placeholder="🔍 Cari tombol produk..." style="border-radius:15px; border:1px solid #cbd5e1; padding:2px 10px; font-size:11px; outline:none; width:160px; height: 26px;">
-            </div>
-
-            <div class="scanner-product-grid">
-               <?php foreach($produks as $p): 
-                  $stok_val = (float)($p->stok_qty ?? 0);
-                  $is_habis = ($stok_val <= 0);
-               ?>
-                  <button type="button" class="btn btn-default btn-xs btn-simulasi-barcode" 
-                          data-barcode="<?= _ent($p->barcode ?: $p->kode_produk); ?>"
-                          data-id="<?= $p->id; ?>"
-                          data-nama="<?= _ent($p->nama_produk); ?>"
-                          data-stok="<?= $stok_val; ?>"<?php if($is_habis): ?> disabled style="opacity:0.5; cursor:not-allowed; pointer-events:none;"<?php endif; ?>>
-                     <i class="fa fa-cube text-primary"></i> <strong><?= _ent($p->kode_produk); ?></strong> <span><?= _ent($p->nama_produk); ?></span>
-                     <span class="badge <?= $is_habis ? 'bg-red' : 'bg-green'; ?>" style="font-size:9px;"><?= $is_habis ? 'HABIS' : $stok_val; ?></span>
-                  </button>
-               <?php endforeach; ?>
-            </div>
-         </div>
-      </div>
-
       <!-- Item Keranjang Penjualan -->
       <div class="box pos-card" style="border-top: 3px solid #3b82f6;">
          <div class="box-header with-border" style="display:flex; justify-content:space-between; align-items:center; padding: 12px 18px; background: #ffffff;">
@@ -2010,7 +1902,7 @@ function get_same_origin_url(url) {
    return url;
 }
 var item_count = 1;
-var produks_initial = <?= json_encode(array_map(function($p){ return ['id'=>$p->id, 'kode'=>$p->kode_produk, 'barcode'=>$p->barcode ?: $p->kode_produk, 'nama'=>$p->nama_produk, 'satuan'=>$p->nama_satuan ?? 'Pcs', 'harga_jual'=>$p->harga_jual, 'harga_jual_grosir'=>$p->harga_jual_grosir, 'harga_jual_distributor'=>$p->harga_jual_distributor, 'harga_jual_vip'=>$p->harga_jual_vip, 'qty'=>(float)($p->stok_qty ?? 0), 'stok'=>(float)($p->stok_qty ?? 0)]; }, $produks)); ?>;
+var produks_initial = <?= json_encode(array_map(function($p){ return ['id'=>$p->id, 'kode'=>$p->kode_produk, 'nama'=>$p->nama_produk, 'satuan'=>$p->nama_satuan ?? 'Pcs', 'harga_jual'=>$p->harga_jual, 'harga_jual_grosir'=>$p->harga_jual_grosir, 'harga_jual_distributor'=>$p->harga_jual_distributor, 'harga_jual_vip'=>$p->harga_jual_vip, 'qty'=>(float)($p->stok_qty ?? 0), 'stok'=>(float)($p->stok_qty ?? 0)]; }, $produks)); ?>;
 var available_produks = produks_initial;
 var lastReceiptData = null;
 var nextSoNumber = '';
@@ -2098,28 +1990,6 @@ function init_produk_select2($container) {
    }
 }
 
-function update_scanner_product_grid() {
-   var list = (available_produks && available_produks.length > 0) ? available_produks : [];
-   if (list.length === 0) {
-      $('.scanner-product-grid').html('<small class="text-muted" style="padding:4px 6px;"><em>Tidak ada stok produk yang tersedia di gudang ini.</em></small>');
-      return;
-   }
-   var html = '';
-   list.forEach(function(p) {
-      var bCode = p.barcode || p.kode_produk || p.kode || '';
-      var pNama = p.nama_produk || p.nama || '';
-      var stok = (p.qty !== undefined) ? parseFloat(p.qty) : 0;
-      var isHabis = (stok <= 0);
-      var btnStyle = isHabis ? 'opacity:0.5; cursor:not-allowed; pointer-events:none;' : '';
-      var badgeClass = isHabis ? 'bg-red' : 'bg-green';
-      var badgeText = isHabis ? 'HABIS' : stok;
-      html += '<button type="button" class="btn btn-default btn-xs btn-simulasi-barcode" data-barcode="' + bCode + '" data-id="' + p.id + '" data-nama="' + pNama + '" data-stok="' + stok + '"' + (isHabis ? ' disabled' : '') + ' style="' + btnStyle + '">';
-      html += '<i class="fa fa-cube text-primary"></i> <strong>' + bCode + '</strong> <span>' + pNama + '</span> <span class="badge ' + badgeClass + '" style="font-size:9px;">' + badgeText + '</span>';
-      html += '</button> ';
-   });
-   $('.scanner-product-grid').html(html);
-}
-
 function update_all_product_dropdowns() {
    var opts = build_options();
    $('.item-row').each(function() {
@@ -2137,7 +2007,6 @@ function update_all_product_dropdowns() {
       }
    });
    init_produk_select2();
-   update_scanner_product_grid();
 }
 
 function load_produk_by_gudang(gudang_id) {
@@ -2164,83 +2033,6 @@ function load_produk_by_gudang(gudang_id) {
          update_all_product_dropdowns();
       }
    });
-}
-
-function process_barcode_scan(barcode) {
-   if (!barcode) return;
-   barcode = $.trim(barcode).toLowerCase();
-   
-   var list = (available_produks && available_produks.length > 0) ? available_produks : [];
-   var found_product = null;
-   list.forEach(function(p) {
-      var bCode = (p.barcode || p.kode_produk || p.kode || '').toLowerCase();
-      var kCode = (p.kode_produk || p.kode || '').toLowerCase();
-      if ((bCode && bCode === barcode) || (kCode && kCode === barcode)) {
-         found_product = p;
-      }
-   });
-   
-   if (!found_product) {
-      if (typeof swal !== 'undefined') {
-         swal("Barcode Tidak Ditemukan!", "Kode [" + barcode + "] tidak terdaftar atau tidak memiliki stok pada gudang ini.", "warning");
-      } else {
-         alert("Barcode [" + barcode + "] tidak ditemukan atau stok kosong di gudang ini.");
-      }
-      $('#barcode_scan_input').val('').focus();
-      return;
-   }
-   
-   // Blokir jika stok produk 0
-   var found_stok = parseFloat(found_product.qty !== undefined ? found_product.qty : (found_product.stok !== undefined ? found_product.stok : 0));
-   if (found_stok <= 0) {
-      if (typeof swal !== 'undefined') {
-         swal("Stok Habis!", "Produk [" + (found_product.nama_produk || found_product.nama || barcode) + "] stoknya habis (0). Tidak bisa ditambahkan ke keranjang.", "error");
-      } else {
-         alert("Produk stok habis! Tidak bisa di-order.");
-      }
-      $('#barcode_scan_input').val('').focus();
-      return;
-   }
-
-   play_scanner_beep();
-   
-   var existing_row = null;
-   $('.item-row').each(function() {
-      var val = $(this).find('.produk-select').val();
-      if (parseInt(val) === parseInt(found_product.id)) {
-         existing_row = $(this);
-      }
-   });
-   
-   if (existing_row) {
-      var $qty_inp = existing_row.find('.qty-input');
-      var curr_qty = parseFloat($qty_inp.val()) || 0;
-      $qty_inp.val(curr_qty + 1);
-      recalc_row(existing_row);
-      validate_row_qty(existing_row);
-      existing_row.addClass('row-flash');
-      setTimeout(function(){ existing_row.removeClass('row-flash'); }, 1200);
-   } else {
-      var $first_row = $('.item-row').first();
-      var first_val = $first_row.find('.produk-select').val();
-      
-      if (!first_val) {
-         $first_row.find('.produk-select').val(found_product.id).trigger('change');
-         $first_row.addClass('row-flash');
-         setTimeout(function(){ $first_row.removeClass('row-flash'); }, 1200);
-      } else {
-         $('#btn_add_item').click();
-         var $new_row = $('.item-row').last();
-         $new_row.find('.produk-select').val(found_product.id).trigger('change');
-         $new_row.addClass('row-flash');
-         setTimeout(function(){ $new_row.removeClass('row-flash'); }, 1200);
-      }
-   }
-   
-   if (typeof toastr !== 'undefined') {
-      toastr.success('Item: ' + (found_product.nama_produk || found_product.nama), 'Scan Success ✓');
-   }
-   $('#barcode_scan_input').val('').focus();
 }
 
 function format_rp(n) {
@@ -2703,7 +2495,6 @@ function reset_pos_cart(next_so, next_ref) {
    if (currGudang) {
       load_produk_by_gudang(currGudang);
    }
-   $('#barcode_scan_input').val('').focus();
 }
 
 function recalc_row($row) {
@@ -2942,40 +2733,6 @@ $(document).ready(function(){
    if (initGudang) {
       load_produk_by_gudang(initGudang);
    }
-
-   // Barcode scanner input keyup Enter
-   $('#barcode_scan_input').on('keydown', function(e) {
-      if (e.which === 13 || e.keyCode === 13) {
-         e.preventDefault();
-         process_barcode_scan($(this).val());
-      }
-   });
-   $('#btn_do_scan').click(function(){
-      process_barcode_scan($('#barcode_scan_input').val());
-   });
-
-   $(document).on('click', '.btn-simulasi-barcode', function(){
-      var stok = parseFloat($(this).data('stok')) || 0;
-      if (stok <= 0) {
-         show_alert('Produk "' + ($(this).data('nama') || '') + '" stoknya habis (0). Tidak bisa ditambahkan ke keranjang.', 'warning');
-         return;
-      }
-      var barcode = $(this).data('barcode');
-      process_barcode_scan(barcode);
-   });
-
-   $('#filter_produk_quick').on('input', function(){
-      var q = $(this).val().toLowerCase();
-      $('.btn-simulasi-barcode').each(function(){
-         var txt = $(this).text().toLowerCase();
-         var bc = ($(this).data('barcode') || '').toString().toLowerCase();
-         if (txt.indexOf(q) !== -1 || bc.indexOf(q) !== -1) {
-            $(this).show();
-         } else {
-            $(this).hide();
-         }
-      });
-   });
 
    $('#btn_add_item').click(function(){
       var idx = item_count++;
@@ -3701,7 +3458,6 @@ $(document).ready(function(){
       setTimeout(function(){
          $('.modal-backdrop').remove();
          $('body').removeClass('modal-open').css('padding-right', '');
-         $('#barcode_scan_input').focus();
       }, 250);
    });
 
@@ -3720,7 +3476,6 @@ $(document).ready(function(){
       setTimeout(function(){
          $('.modal-backdrop').remove();
          $('body').removeClass('modal-open').css('padding-right', '');
-         $('#barcode_scan_input').val('').focus();
       }, 100);
    });
 
@@ -3743,7 +3498,6 @@ $(document).ready(function(){
             setTimeout(function(){
                $('.modal-backdrop').remove();
                $('body').removeClass('modal-open').css('padding-right', '');
-               $('#barcode_scan_input').focus();
             }, 200);
          }
       }

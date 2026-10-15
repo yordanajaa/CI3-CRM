@@ -161,7 +161,7 @@ $status_color = ['draft'=>'default','submitted'=>'info','approved'=>'primary','r
          <div class="box-header with-border"><h3 class="box-title">Informasi Supplier</h3></div>
          <div class="box-body">
             <p><i class="fa fa-building-o"></i> <?= _ent($po->nama_supplier); ?></p>
-            <p><i class="fa fa-barcode"></i> <?= _ent($po->kode_supplier); ?></p>
+            <p><i class="fa fa-tag"></i> <?= _ent($po->kode_supplier); ?></p>
          </div>
       </div>
    </div>

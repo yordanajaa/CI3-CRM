@@ -122,7 +122,7 @@
                                  </td>
                                  <td>
                                     <?php if(!empty($k->batch_no)): ?>
-                                       <span class="label label-info"><i class="fa fa-barcode"></i> <?= _ent($k->batch_no); ?></span>
+                                       <span class="label label-info"><i class="fa fa-tag"></i> <?= _ent($k->batch_no); ?></span>
                                     <?php else: ?>
                                        <span class="text-muted">-</span>
                                     <?php endif; ?>

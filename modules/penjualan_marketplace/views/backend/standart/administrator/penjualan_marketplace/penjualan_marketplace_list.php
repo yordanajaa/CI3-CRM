@@ -645,15 +645,15 @@ $per_page = isset($per_page) ? $per_page : 25;
       <div class="modal-content" style="border-radius:14px; border:none; box-shadow: 0 10px 35px rgba(0,0,0,0.15);">
          <div class="modal-header" style="background:#10b981; color:#fff; border-top-left-radius:14px; border-top-right-radius:14px; padding:18px 24px;">
             <button type="button" class="close" data-dismiss="modal" style="color:#fff; opacity:0.8;">&times;</button>
-            <h4 class="modal-title" style="font-weight:700;"><i class="fa fa-barcode"></i> Import Status Packed / Scan Barcode</h4>
+            <h4 class="modal-title" style="font-weight:700;"><i class="fa fa-qrcode"></i> Import Status Packed / Scan No. Resi</h4>
          </div>
          <div class="modal-body" style="padding:24px;">
             <p style="color:#64748b;">Fitur Scan Resi / Update Status Packed Massal dari Gudang Pengemasan.</p>
 
             <div class="text-center" style="margin-bottom:20px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:16px;">
                <h5 style="font-weight:800; color:#166534; margin-top:0;"><i class="fa fa-camera"></i> Gunakan Workstation Scan Kamera HP / Laptop</h5>
-               <p style="font-size:12px; color:#15803d; margin-bottom:12px;">Fitur scan barcode presisi menggunakan Kamera HP / Laptop, Physical Scanner USB, &amp; Paste Massal dengan bunyi Beep.</p>
-               <a href="<?= site_url('administrator/penjualan_marketplace/import_packed'); ?>" class="btn btn-success btn-flat" style="border-radius:6px; font-weight:700; background:#10b981; border-color:#10b981;"><i class="fa fa-crosshairs"></i> Buka Workstation Scan Kamera &amp; Barcode</a>
+               <p style="font-size:12px; color:#15803d; margin-bottom:12px;">Fitur scan nomor resi presisi menggunakan Kamera HP / Laptop, Physical Scanner USB, &amp; Paste Massal dengan bunyi Beep.</p>
+               <a href="<?= site_url('administrator/penjualan_marketplace/import_packed'); ?>" class="btn btn-success btn-flat" style="border-radius:6px; font-weight:700; background:#10b981; border-color:#10b981;"><i class="fa fa-crosshairs"></i> Buka Workstation Scan Resi</a>
             </div>
 
             <hr style="margin:15px 0;">
@@ -661,7 +661,7 @@ $per_page = isset($per_page) ? $per_page : 25;
             <div class="form-group">
                <label style="font-weight:700; color:#0f172a;">Scan / Input No. Resi atau No. Pesanan:</label>
                <div class="input-group">
-                  <input type="text" id="modal_quick_scan_input" class="form-control input-lg" placeholder="Scan Barcode No Resi di sini..." autofocus style="border-radius:8px 0 0 8px; font-family:monospace; text-transform:uppercase; font-weight:700;">
+                  <input type="text" id="modal_quick_scan_input" class="form-control input-lg" placeholder="Scan / Ketik No Resi di sini..." autofocus style="border-radius:8px 0 0 8px; font-family:monospace; text-transform:uppercase; font-weight:700;">
                   <span class="input-group-btn">
                      <button type="button" id="modal_quick_scan_btn" class="btn btn-success btn-lg" style="border-radius:0 8px 8px 0; font-weight:700; background:#10b981; border-color:#10b981;"><i class="fa fa-check"></i> Submit</button>
                   </span>

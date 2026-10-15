@@ -126,7 +126,7 @@ $status_color = ['draft'=>'default','confirmed'=>'success','cancelled'=>'danger'
                         <td><?= $i+1; ?></td>
                         <td>
                            <a href="<?= site_url('administrator/stok/kartu/' . $item->produk_id); ?>" title="Buka Kartu Stok Produk"><strong class="text-primary" style="font-size: 13px;"><?= _ent($item->nama_produk); ?> <i class="fa fa-external-link" style="font-size:10px;"></i></strong></a><br>
-                           <small class="text-muted"><i class="fa fa-barcode"></i> <?= _ent($item->kode_produk); ?></small>
+                           <small class="text-muted"><i class="fa fa-tag"></i> <?= _ent($item->kode_produk); ?></small>
                         </td>
                         <td class="text-center"><strong><?= number_format($item->qty_terima, 0, ',', '.'); ?></strong> <?= _ent($item->satuan); ?></td>
                         <td class="text-center text-success"><strong style="font-size: 14px;"><?= number_format($item->qty_baik, 0, ',', '.'); ?></strong></td>

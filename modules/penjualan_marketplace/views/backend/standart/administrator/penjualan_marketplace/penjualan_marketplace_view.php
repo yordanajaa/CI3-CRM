@@ -172,7 +172,7 @@ $st_display = !empty($so->status_pesanan) ? strtoupper($so->status_pesanan) : st
                               <br><small class="text-muted"><i class="fa fa-tags"></i> Variasi: <strong><?= _ent($so->nama_variasi); ?></strong></small>
                            <?php endif; ?>
                            <?php if(!empty($so->sku_induk)): ?>
-                              <br><small class="text-muted"><i class="fa fa-barcode"></i> SKU: <code><?= _ent($so->sku_induk); ?></code></small>
+                              <br><small class="text-muted"><i class="fa fa-tag"></i> SKU: <code><?= _ent($so->sku_induk); ?></code></small>
                            <?php endif; ?>
                         </td>
                         <td class="text-center" style="vertical-align:middle;">

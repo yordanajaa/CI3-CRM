@@ -109,8 +109,8 @@
    <div class="row">
       <div class="col-md-8 col-sm-12">
          <h3 style="margin:0; font-weight:800; color:#0f172a;">
-            <i class="fa fa-barcode text-success"></i> Workstation Scan Barcode &amp; Packing
-            <small style="font-size:12px; color:#64748b; display:inline-block; margin-left:8px;">Scan Resi Real-Time Menggunakan Barcode Scanner &amp; Kamera</small>
+            <i class="fa fa-qrcode text-success"></i> Workstation Scan Resi &amp; Packing
+            <small style="font-size:12px; color:#64748b; display:inline-block; margin-left:8px;">Scan Resi Real-Time Menggunakan Scanner &amp; Kamera</small>
          </h3>
       </div>
       <div class="col-md-4 col-sm-12 text-right">
@@ -155,7 +155,7 @@
          <!-- 3 Input Tabs -->
          <ul class="nav ws-nav-tabs" role="tablist">
             <li role="presentation" class="active">
-               <a href="#tab_scanner_fisik" aria-controls="tab_scanner_fisik" role="tab" data-toggle="tab"><i class="fa fa-barcode"></i> 1. Barcode Scanner Fisik</a>
+               <a href="#tab_scanner_fisik" aria-controls="tab_scanner_fisik" role="tab" data-toggle="tab"><i class="fa fa-qrcode"></i> 1. Scanner Fisik / Input Resi</a>
             </li>
             <li role="presentation">
                <a href="#tab_kamera_hp" aria-controls="tab_kamera_hp" role="tab" data-toggle="tab"><i class="fa fa-camera"></i> 2. Kamera HP / Laptop</a>
@@ -170,13 +170,13 @@
             <!-- TAB 1: PHYSICAL BARCODE SCANNER -->
             <div role="tabpanel" class="tab-pane active" id="tab_scanner_fisik">
                <div style="background:#f8fafc; border:2px dashed #cbd5e1; border-radius:12px; padding:25px 20px; text-align:center;">
-                  <i class="fa fa-barcode text-primary" style="font-size:42px; margin-bottom:10px;"></i>
-                  <h4 style="font-weight:800; color:#0f172a; margin-top:0;">Scan Barcode No. Resi di Sini</h4>
-                  <p style="color:#64748b; font-size:12.5px; max-width:480px; margin:0 auto 16px auto;">Arahkan barcode scanner USB / Bluetooth ke barcode resi pada paket. Sistem akan membaca &amp; mengupdate status secara otomatis.</p>
+                  <i class="fa fa-qrcode text-primary" style="font-size:42px; margin-bottom:10px;"></i>
+                  <h4 style="font-weight:800; color:#0f172a; margin-top:0;">Scan No. Resi di Sini</h4>
+                  <p style="color:#64748b; font-size:12.5px; max-width:480px; margin:0 auto 16px auto;">Arahkan scanner USB / Bluetooth ke nomor resi pada paket. Sistem akan membaca &amp; mengupdate status secara otomatis.</p>
                   
                   <div style="max-width:500px; margin:0 auto;">
                      <div class="input-group input-group-lg">
-                        <input type="text" id="input_scan_fisik" class="form-control" placeholder="Scan Barcode No. Resi atau No. Pesanan..." autofocus style="border-radius:8px 0 0 8px; font-weight:700; font-family:monospace; text-transform:uppercase; font-size:14px;">
+                        <input type="text" id="input_scan_fisik" class="form-control" placeholder="Scan / Ketik No. Resi atau No. Pesanan..." autofocus style="border-radius:8px 0 0 8px; font-weight:700; font-family:monospace; text-transform:uppercase; font-size:14px;">
                         <span class="input-group-btn">
                            <button type="button" id="btn_submit_scan_fisik" class="btn btn-primary btn-flat" style="border-radius:0 8px 8px 0; background:#0284c7; border-color:#0284c7; font-weight:700; font-size:14px;"><i class="fa fa-search"></i> Process Scan</button>
                         </span>
@@ -204,7 +204,7 @@
                      </div>
                   </div>
 
-                  <p style="color:#64748b; font-size:12px; margin-bottom:12px;"><i class="fa fa-info-circle text-info"></i> Arahkan barcode resi (Code 128 / QR Code) ke dalam kotak kamera hingga terdengar bunyi Beep.</p>
+                  <p style="color:#64748b; font-size:12px; margin-bottom:12px;"><i class="fa fa-info-circle text-info"></i> Arahkan nomor resi paket (Barcode / QR Code Resi) ke dalam kotak kamera hingga terdengar bunyi Beep.</p>
                   
                   <!-- Compact Camera Render Box -->
                   <div id="reader" style="display:none;"></div>
@@ -276,9 +276,9 @@
                   <tbody id="tbody_scan_history">
                      <tr id="row_empty_history">
                         <td colspan="9" class="text-center text-muted" style="padding:30px;">
-                           <i class="fa fa-barcode fa-2x" style="color:#cbd5e1; margin-bottom:6px;"></i><br>
-                           <span>Belum ada paket yang discan pada sesi ini.</span><br>
-                           <small class="text-muted">Mulai tembak barcode resi menggunakan scanner atau kamera di atas.</small>
+                           <i class="fa fa-inbox fa-2x" style="color:#cbd5e1; margin-bottom:6px;"></i><br>
+                            <span>Belum ada paket yang discan pada sesi ini.</span><br>
+                            <small class="text-muted">Mulai scan nomor resi menggunakan scanner atau kamera di atas.</small>
                         </td>
                      </tr>
                   </tbody>
@@ -503,7 +503,7 @@ $(document).ready(function(){
 
    $('#btn_clear_history').click(function(){
       if (confirm('Bersihkan riwayat scan sesi ini?')) {
-         $('#tbody_scan_history').html('<tr id="row_empty_history"><td colspan="9" class="text-center text-muted" style="padding:30px;"><i class="fa fa-barcode fa-2x" style="color:#cbd5e1; margin-bottom:6px;"></i><br><span>Belum ada paket yang discan pada sesi ini.</span></td></tr>');
+         $('#tbody_scan_history').html('<tr id="row_empty_history"><td colspan="9" class="text-center text-muted" style="padding:30px;"><i class="fa fa-inbox fa-2x" style="color:#cbd5e1; margin-bottom:6px;"></i><br><span>Belum ada paket yang discan pada sesi ini.</span></td></tr>');
          scannedCount = 0;
          totalQtySum = 0;
          totalNilaiSum = 0;

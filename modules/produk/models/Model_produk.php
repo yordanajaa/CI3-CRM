@@ -6,7 +6,7 @@ class Model_produk extends MY_Model {
 
 	private $primary_key 	= 'id';
 	private $table_name 	= 'produk';
-	private $field_search 	= ['kode_produk', 'barcode', 'nama_produk', 'deskripsi'];
+	private $field_search 	= ['kode_produk', 'nama_produk', 'deskripsi'];
 
 	public function __construct()
 	{
@@ -118,15 +118,7 @@ class Model_produk extends MY_Model {
 
 	public function generate_barcode()
 	{
-		$max_id_row = $this->db->select_max('id')->get($this->table_name)->row();
-		$next_num = ($max_id_row && $max_id_row->id) ? ((int)$max_id_row->id + 1) : 1;
-		$barcode = '899300' . str_pad($next_num, 7, '0', STR_PAD_LEFT);
-
-		while ($this->db->where('barcode', $barcode)->get($this->table_name)->num_rows() > 0) {
-			$next_num++;
-			$barcode = '899300' . str_pad($next_num, 7, '0', STR_PAD_LEFT);
-		}
-		return $barcode;
+		return null;
 	}
 
 	public function get_for_select()

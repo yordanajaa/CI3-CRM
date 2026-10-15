@@ -1084,7 +1084,7 @@ class Sales_order extends Admin
 			return;
 		}
 		
-		$produks = $this->db->select('produk.id, produk.kode_produk, produk.nama_produk, produk.harga_jual, produk.harga_jual_grosir, produk.harga_jual_distributor, produk.harga_jual_vip, produk.barcode, COALESCE(stok.qty, 0) as qty, satuan.singkatan as nama_satuan')
+		$produks = $this->db->select('produk.id, produk.kode_produk, produk.nama_produk, produk.harga_jual, produk.harga_jual_grosir, produk.harga_jual_distributor, produk.harga_jual_vip, COALESCE(stok.qty, 0) as qty, satuan.singkatan as nama_satuan')
 			->from('produk')
 			->join('stok', 'stok.produk_id = produk.id AND stok.gudang_id = ' . $gudang_id, 'LEFT')
 			->join('satuan', 'satuan.id = produk.satuan_id', 'LEFT')

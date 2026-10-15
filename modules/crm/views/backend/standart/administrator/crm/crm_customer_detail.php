@@ -437,7 +437,7 @@
             <td style="padding:12px 14px;vertical-align:middle;font-weight:700;color:#64748b;"><?= $p_no++; ?></td>
             <td style="padding:12px 14px;vertical-align:middle;">
               <strong style="color:#0f172a;"><?= htmlspecialchars($pr->nama_produk); ?></strong><br>
-              <small class="text-muted"><i class="fa fa-barcode"></i> SKU: <?= htmlspecialchars($pr->kode_produk); ?></small>
+              <small class="text-muted"><i class="fa fa-tag"></i> SKU: <?= htmlspecialchars($pr->kode_produk); ?></small>
             </td>
             <td style="padding:12px 14px;vertical-align:middle;">
               <strong style="color:#1e293b;"><?= date('d/m/Y', strtotime($pr->last_bought_date)); ?></strong><br>

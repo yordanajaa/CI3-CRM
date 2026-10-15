@@ -163,7 +163,7 @@ if ($so_disc_pct == 0) {
                         <input type="hidden" name="items[<?= $i; ?>][satuan]" value="<?= _ent($item->satuan); ?>">
                         <td>
                            <strong><?= _ent($item->nama_produk); ?></strong><br>
-                           <small class="text-muted"><i class="fa fa-barcode"></i> <?= _ent($item->kode_produk); ?></small>
+                           <small class="text-muted"><i class="fa fa-tag"></i> <?= _ent($item->kode_produk); ?></small>
                         </td>
                         <td class="text-center"><strong><?= number_format((float)($item->qty_so ?? $item->qty), 0, ',', '.'); ?></strong> <?= _ent($item->singkatan??$item->satuan); ?></td>
                         <td><input type="number" step="1" class="form-control qty-input" name="items[<?= $i; ?>][qty]" value="<?= (int)$item->qty; ?>" min="1"></td>

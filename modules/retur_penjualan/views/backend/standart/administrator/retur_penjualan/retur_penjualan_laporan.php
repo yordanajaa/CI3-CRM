@@ -144,7 +144,7 @@
                                  <td><strong><?= _ent($row->nama_pelanggan); ?></strong></td>
                                  <td>
                                     <strong><?= _ent($row->nama_produk); ?></strong><br>
-                                    <small class="text-muted"><i class="fa fa-barcode"></i> <?= _ent($row->kode_produk); ?></small>
+                                    <small class="text-muted"><i class="fa fa-tag"></i> <?= _ent($row->kode_produk); ?></small>
                                  </td>
                                  <td class="text-center">
                                     <?php if ($row->kondisi == 'baik'): ?>

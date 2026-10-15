@@ -213,41 +213,7 @@ textarea.form-control {
   box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
 }
 
-/* Scanner Product Grid */
-.scanner-product-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  max-height: 110px;
-  overflow-y: auto;
-  padding: 2px;
-}
-.scanner-product-grid::-webkit-scrollbar {
-  width: 4px;
-}
-.scanner-product-grid::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-}
-.btn-simulasi-barcode {
-  border-radius: 12px !important;
-  background: #f8fafc !important;
-  border: 1px solid #cbd5e1 !important;
-  padding: 3px 9px !important;
-  font-size: 11px !important;
-  color: #334155 !important;
-  font-weight: 600 !important;
-  transition: all 0.15s ease !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 4px !important;
-}
-.btn-simulasi-barcode:hover, .btn-simulasi-barcode:active {
-  background: #e0f2fe !important;
-  border-color: #38bdf8 !important;
-  color: #0369a1 !important;
-  transform: translateY(-1px) !important;
-}
+
 
 /* Table Item Rows */
 .table-responsive {
@@ -539,7 +505,7 @@ textarea.form-control {
 <script>
 var item_count = <?= ($is_edit && !empty($items)) ? count($items) : 1; ?>;
 var available_produks = [];
-var produks_initial = <?= json_encode(array_map(function($p){ return ['id'=>$p->id, 'kode'=>$p->kode_produk, 'barcode'=>$p->barcode ?: $p->kode_produk, 'nama'=>$p->nama_produk, 'satuan'=>$p->nama_satuan ?? 'Pcs', 'harga_jual'=>$p->harga_jual, 'harga_jual_grosir'=>$p->harga_jual_grosir, 'harga_jual_distributor'=>$p->harga_jual_distributor, 'harga_jual_vip'=>$p->harga_jual_vip, 'qty'=>(float)($p->stok_qty ?? 0), 'stok'=>(float)($p->stok_qty ?? 0)]; }, $produks)); ?>;
+var produks_initial = <?= json_encode(array_map(function($p){ return ['id'=>$p->id, 'kode'=>$p->kode_produk, 'nama'=>$p->nama_produk, 'satuan'=>$p->nama_satuan ?? 'Pcs', 'harga_jual'=>$p->harga_jual, 'harga_jual_grosir'=>$p->harga_jual_grosir, 'harga_jual_distributor'=>$p->harga_jual_distributor, 'harga_jual_vip'=>$p->harga_jual_vip, 'qty'=>(float)($p->stok_qty ?? 0), 'stok'=>(float)($p->stok_qty ?? 0)]; }, $produks)); ?>;
 
 function play_scanner_beep() {
    try {
@@ -591,27 +557,6 @@ function init_produk_select2($container) {
    }
 }
 
-function update_scanner_product_grid() {
-   var list = (available_produks && available_produks.length > 0) ? available_produks : [];
-   if (list.length === 0) {
-      $('.scanner-product-grid').html('<small class="text-muted" style="padding:4px 6px;"><em>Tidak ada stok produk yang tersedia di gudang ini.</em></small>');
-      return;
-   }
-   var html = '';
-   list.forEach(function(p) {
-      var bc = p.barcode || p.kode_produk || p.kode || '';
-      var nama = p.nama_produk || p.nama || '';
-      var stok = (p.qty !== undefined) ? parseFloat(p.qty) : 0;
-      html += '<button type="button" class="btn btn-default btn-xs btn-simulasi-barcode" '
-           + 'data-barcode="' + bc + '" data-id="' + p.id + '" data-nama="' + nama + '" '
-           + 'style="border-radius: 12px; background: #f8fafc; border: 1px solid #cbd5e1; padding: 3px 9px; font-size: 11px;">'
-           + '<i class="fa fa-cube text-primary"></i> <strong>' + bc + '</strong> <span>' + nama + '</span> '
-           + '<span class="badge bg-green" style="font-size:9px; padding:2px 6px; border-radius:10px;">' + stok + '</span>'
-           + '</button> ';
-   });
-   $('.scanner-product-grid').html(html);
-}
-
 function update_all_product_dropdowns() {
    var new_opts = build_options();
    $('.produk-select').each(function() {
@@ -627,7 +572,6 @@ function update_all_product_dropdowns() {
       cek_stok($(this).val(), $('#gudang_id').val(), $row.find('.stok-display'));
    });
    init_produk_select2();
-   update_scanner_product_grid();
 }
 
 function load_produk_by_gudang(gudang_id) {
@@ -657,70 +601,7 @@ function load_produk_by_gudang(gudang_id) {
    });
 }
 
-function process_barcode_scan(barcode) {
-   if (!barcode) return;
-   barcode = $.trim(barcode).toLowerCase();
 
-   // Auto-pick first customer if customer not selected yet
-   if (!$('#pelanggan_id').val()) {
-      var firstCust = $('#pelanggan_id option:eq(1)').val();
-      if (firstCust) {
-         $('#pelanggan_id').val(firstCust).trigger('change');
-      }
-   }
-   
-   var list = (available_produks && available_produks.length > 0) ? available_produks : [];
-   var found_product = null;
-   list.forEach(function(p) {
-      var bCode = (p.barcode || p.kode_produk || p.kode || '').toLowerCase();
-      var kCode = (p.kode_produk || p.kode || '').toLowerCase();
-      if ((bCode && bCode === barcode) || (kCode && kCode === barcode)) {
-         found_product = p;
-      }
-   });
-   
-   if (!found_product) {
-      swal("Barcode Tidak Ditemukan!", "Kode [" + barcode + "] tidak terdaftar atau tidak memiliki stok pada gudang ini.", "warning");
-      $('#barcode_scan_input').val('').focus();
-      return;
-   }
-   
-   play_scanner_beep();
-   
-   var existing_row = null;
-   $('.item-row').each(function() {
-      var val = $(this).find('.produk-select').val();
-      if (parseInt(val) === parseInt(found_product.id)) {
-         existing_row = $(this);
-      }
-   });
-   
-   if (existing_row) {
-      var $qty_inp = existing_row.find('.qty-input');
-      var curr_qty = parseFloat($qty_inp.val()) || 0;
-      $qty_inp.val(curr_qty + 1);
-      recalc_row(existing_row);
-      existing_row.css('background-color', '#d4edda').animate({backgroundColor: '#ffffff'}, 1500);
-   } else {
-      var $first_row = $('.item-row').first();
-      var first_val = $first_row.find('.produk-select').val();
-      
-      if (!first_val) {
-         $first_row.find('.produk-select').val(found_product.id).trigger('change');
-         $first_row.css('background-color', '#d4edda').animate({backgroundColor: '#ffffff'}, 1500);
-      } else {
-         $('#btn_add_item').click();
-         var $new_row = $('.item-row').last();
-         $new_row.find('.produk-select').val(found_product.id).trigger('change');
-         $new_row.css('background-color', '#d4edda').animate({backgroundColor: '#ffffff'}, 1500);
-      }
-   }
-   
-   if (typeof toastr !== 'undefined') {
-      toastr.success('Item: ' + (found_product.nama_produk || found_product.nama), 'Scan Success ✓');
-   }
-   $('#barcode_scan_input').val('').focus();
-}
 
 function format_rp(n){return 'Rp '+parseInt(n||0).toLocaleString('id-ID');}
 function format_num_id(val){return parseInt(val||0).toLocaleString('id-ID');}
@@ -866,32 +747,7 @@ $(document).ready(function(){
       recalc_total();
    });
 
-   $('#barcode_scan_input').on('keypress', function(e) {
-      if (e.which === 13) {
-         e.preventDefault();
-         process_barcode_scan($(this).val());
-      }
-   });
-   $('#btn_do_scan').click(function() {
-      process_barcode_scan($('#barcode_scan_input').val());
-   });
-   $(document).on('click', '.btn-simulasi-barcode', function() {
-      var bc = $(this).data('barcode');
-      process_barcode_scan(bc);
-   });
 
-   $('#filter_produk_quick').on('input', function(){
-      var q = $(this).val().toLowerCase();
-      $('.btn-simulasi-barcode').each(function(){
-         var txt = $(this).text().toLowerCase();
-         var bc = ($(this).data('barcode') || '').toString().toLowerCase();
-         if (txt.indexOf(q) !== -1 || bc.indexOf(q) !== -1) {
-            $(this).show();
-         } else {
-            $(this).hide();
-         }
-      });
-   });
 
    $('#btn_add_item').click(function(){
       var idx = item_count++;

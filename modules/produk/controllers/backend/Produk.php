@@ -36,7 +36,6 @@ class Produk extends Admin
 	{
 		$this->is_allowed('produk_add');
 		$this->data['kode_baru']    = $this->model_produk->generate_kode();
-		$this->data['barcode_baru'] = $this->model_produk->generate_barcode();
 		$this->data['kategoris']    = $this->db->get('kategori_produk')->result();
 		$this->data['satuans']      = $this->db->get('satuan')->result();
 		$this->data['raks']         = $this->db->where('status', 'aktif')->get('rak')->result();
@@ -54,7 +53,6 @@ class Produk extends Admin
 		$this->form_validation->set_rules('kode_produk', 'Kode Produk', 'trim|required|max_length[30]');
 
 		if ($this->form_validation->run()) {
-			$barcode_input = $this->input->post('barcode');
 			$kode_input = trim((string)$this->input->post('kode_produk'));
 			if (empty($kode_input) || $this->db->get_where('produk', ['kode_produk' => $kode_input])->num_rows() > 0) {
 				$kode_input = $this->model_produk->generate_kode();
@@ -64,7 +62,7 @@ class Produk extends Admin
 
 			$data = [
 				'kode_produk'       => $kode_input,
-				'barcode'           => !empty($barcode_input) ? $barcode_input : $this->model_produk->generate_barcode(),
+				'barcode'           => null,
 				'nama_produk'       => $this->input->post('nama_produk'),
 				'kategori_id'       => $this->input->post('kategori_id') ?: null,
 				'satuan_id'         => $this->input->post('satuan_id') ?: null,
@@ -141,7 +139,7 @@ class Produk extends Admin
 
 			$data = [
 				'nama_produk'       => $this->input->post('nama_produk'),
-				'barcode'           => $this->input->post('barcode'),
+				'barcode'           => null,
 				'kategori_id'       => $this->input->post('kategori_id') ?: null,
 				'satuan_id'         => $this->input->post('satuan_id') ?: null,
 				'default_rak_id'    => $this->input->post('default_rak_id') ?: null,

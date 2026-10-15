@@ -12,25 +12,25 @@
       <h4><i class="fa fa-info-circle"></i> Petunjuk Pengisian Hasil Hitung Fisik:</h4>
       <p>Anda dapat menginput jumlah hasil hitung fisik dengan 2 cara mudah:</p>
       <ul>
-         <li><strong>Pindai Barcode (USB Scanner / Mobile)</strong>: Arahkan scanner ke kolom Scan Barcode di bawah. Setiap scan akan otomatis menambah jumlah fisik (+1) pada produk bersangkutan.</li>
+         <li><strong>Pencarian Cepat</strong>: Ketik kode produk pada kolom di bawah. Setiap input akan otomatis menambah jumlah fisik (+1) pada produk bersangkutan.</li>
          <li><strong>Input Manual</strong>: Ketik jumlah fisik secara langsung pada kolom tabel di bawah ini.</li>
       </ul>
    </div>
 
-   <!-- Box Scan Barcode / Mobile Input -->
+   <!-- Box Pencarian Produk / Cepat Input -->
    <div class="box box-info">
       <div class="box-header with-border">
-         <h3 class="box-title"><i class="fa fa-barcode"></i> Scan Barcode Scanner / Mobile Input</h3>
+         <h3 class="box-title"><i class="fa fa-search"></i> Pencarian Cepat Kode Produk</h3>
       </div>
       <div class="box-body">
          <div class="input-group">
-            <span class="input-group-addon"><i class="fa fa-barcode fa-lg"></i></span>
-            <input type="text" id="barcode_scanner_input" class="form-control input-lg" placeholder="Scan barcode produk atau ketik Kode Produk (misal: PRD-0003, 899100100003)..." autofocus>
+            <span class="input-group-addon"><i class="fa fa-search fa-lg"></i></span>
+            <input type="text" id="quick_search_input" class="form-control input-lg" placeholder="Ketik Kode Produk atau nama barang (misal: PRD-0003)..." autofocus>
             <span class="input-group-btn">
                <button class="btn btn-info btn-lg" type="button" id="btn_scan_add"><i class="fa fa-plus-circle"></i> Hitung (+1)</button>
             </span>
          </div>
-         <small class="text-muted"><i class="fa fa-laptop"></i> Arahkan USB Barcode Scanner atau Alat Scanner Mobile ke kolom input di atas. Tekan Enter atau otomatis terdeteksi saat scan.</small>
+         <small class="text-muted"><i class="fa fa-info-circle"></i> Ketik kode produk lalu tekan Enter untuk menambah hitungan fisik produk secara cepat.</small>
       </div>
    </div>
 
@@ -62,11 +62,11 @@
                   </thead>
                   <tbody>
                      <?php foreach($items as $i => $item): ?>
-                     <tr id="row_item_<?= $item->id; ?>" data-barcode="<?= _ent(isset($item->barcode) ? $item->barcode : ''); ?>" class="<?= $item->selisih != 0 && $item->stok_fisik !== null ? ($item->selisih < 0 ? 'danger' : 'warning') : ''; ?>">
+                     <tr id="row_item_<?= $item->id; ?>" class="<?= $item->selisih != 0 && $item->stok_fisik !== null ? ($item->selisih < 0 ? 'danger' : 'warning') : ''; ?>">
                         <td><?= $i+1; ?></td>
                         <td>
                            <strong class="nama-prd-text"><?= _ent($item->nama_produk); ?></strong><br>
-                           <small class="text-muted">Kode: <span class="kode-prd-text"><?= _ent($item->kode_produk); ?></span> <?= !empty($item->barcode) ? '| Barcode: ' . _ent($item->barcode) : ''; ?></small>
+                           <small class="text-muted">Kode: <span class="kode-prd-text"><?= _ent($item->kode_produk); ?></span></small>
                         </td>
                         <td class="text-center">
                            <strong><?= number_format($item->stok_sistem, 0, ',', '.'); ?></strong>
@@ -99,15 +99,15 @@
 
 <script>
 $(document).ready(function(){
-   function processBarcodeScan(code) {
+   function processQuickSearch(code) {
       code = $.trim(code).toLowerCase();
       if (!code) return;
       var found = false;
       $('.fisik-input').each(function(){
          var $row = $(this).closest('tr');
          var kodePrd = $.trim($row.find('.kode-prd-text').text()).toLowerCase();
-         var barcodePrd = $.trim($row.attr('data-barcode') || '').toLowerCase();
-         if (kodePrd === code || barcodePrd === code) {
+         var namaPrd = $.trim($row.find('.nama-prd-text').text()).toLowerCase();
+         if (kodePrd === code || namaPrd.indexOf(code) !== -1) {
             found = true;
             var currentVal = parseFloat($(this).val()) || 0;
             var newVal = currentVal + 1;
@@ -123,20 +123,20 @@ $(document).ready(function(){
          }
       });
       if (!found) {
-         show_alert('Produk dengan Kode/Barcode "' + code + '" tidak ditemukan pada opname gudang ini!', 'warning');
+         show_alert('Produk dengan kode "' + code + '" tidak ditemukan pada opname gudang ini!', 'warning');
       }
-      $('#barcode_scanner_input').val('').focus();
+      $('#quick_search_input').val('').focus();
    }
 
-   $('#barcode_scanner_input').on('keypress', function(e){
+   $('#quick_search_input').on('keypress', function(e){
       if (e.which == 13) {
          e.preventDefault();
-         processBarcodeScan($(this).val());
+         processQuickSearch($(this).val());
       }
    });
 
    $('#btn_scan_add').click(function(){
-      processBarcodeScan($('#barcode_scanner_input').val());
+      processQuickSearch($('#quick_search_input').val());
    });
 
    $(document).on('input', '.fisik-input', function(){
