@@ -1433,13 +1433,15 @@ class Crm extends Admin
 				}
 				$this->db->where('id', $label_id)->update('crm_transaction_followup_labels', $update_data);
 			} else {
+				$clean_p = preg_replace('/[^0-9]/', '', $phone);
+				$fallback_no = 'SO-' . date('Ymd') . '-' . (strlen($clean_p) >= 4 ? substr($clean_p, -4) : rand(1000, 9999));
 				$this->db->insert('crm_transaction_followup_labels', [
-					'order_source' => $is_group ? 'WA Group' : 'WhatsApp Live',
+					'order_source' => 'Toko',
 					'order_id' => 0,
-					'order_table' => 'waha_direct',
+					'order_table' => 'sales_order',
 					'customer_nama' => $name,
 					'customer_phone' => $phone,
-					'no_pesanan' => $is_group ? 'GROUP' : 'WAHA-LIVE',
+					'no_pesanan' => $fallback_no,
 					'tanggal_pengiriman' => date('Y-m-d'),
 					'followup_category_id' => $default_cat_id,
 					'tanggal_label_muncul' => date('Y-m-d'),

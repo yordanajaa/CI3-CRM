@@ -502,8 +502,6 @@
               <option value="Shopee" <?= ($filters['order_source'] ?? '') == 'Shopee' ? 'selected' : ''; ?>>Shopee</option>
               <option value="Tokopedia" <?= ($filters['order_source'] ?? '') == 'Tokopedia' ? 'selected' : ''; ?>>Tokopedia</option>
               <option value="TikTok Shop" <?= ($filters['order_source'] ?? '') == 'TikTok Shop' ? 'selected' : ''; ?>>TikTok Shop</option>
-              <option value="WhatsApp Live" <?= ($filters['order_source'] ?? '') == 'WhatsApp Live' ? 'selected' : ''; ?>>WhatsApp Live</option>
-              <option value="WhatsApp Group" <?= ($filters['order_source'] ?? '') == 'WhatsApp Group' ? 'selected' : ''; ?>>WhatsApp Group</option>
             </select>
           </div>
           <div class="col-md-2">
@@ -572,17 +570,39 @@
             </td>
             <td><strong><?= htmlspecialchars($e->customer_nama); ?></strong></td>
             <td style="font-size:12px;"><i class="fa fa-phone" style="color:#27ae60;"></i> <?= htmlspecialchars($e->customer_phone); ?></td>
-            <td style="font-size:12px;"><?= htmlspecialchars($e->no_pesanan ?: '-'); ?></td>
+            <td style="font-size:12px;">
+              <?php 
+              $display_no_p = $e->no_pesanan ?: '-';
+              if (stripos($display_no_p, 'WAHA-LIVE') !== false || stripos($display_no_p, 'GROUP') !== false) {
+                $display_no_p = '-';
+              }
+              echo htmlspecialchars($display_no_p);
+              ?>
+            </td>
             <td>
               <?php
+              $src = $e->order_source;
+              $no_p = $e->no_pesanan ?: '';
               $cls = 'badge-toko';
-              if (stripos($e->order_source, 'Shopee') !== false) $cls = 'badge-shopee';
-              elseif (stripos($e->order_source, 'Tokopedia') !== false) $cls = 'badge-tokopedia';
-              elseif (stripos($e->order_source, 'TikTok') !== false) $cls = 'badge-tiktok';
-              elseif (stripos($e->order_source, 'Group') !== false) $cls = 'badge-wa-group';
-              elseif (stripos($e->order_source, 'WhatsApp') !== false) $cls = 'badge-whatsapp';
+
+              if (stripos($src, 'Shopee') !== false || stripos($no_p, 'SHP') !== false) {
+                $cls = 'badge-shopee';
+                $src = 'Shopee';
+              } elseif (stripos($src, 'Tokopedia') !== false || stripos($no_p, 'TKP') !== false) {
+                $cls = 'badge-tokopedia';
+                $src = 'Tokopedia';
+              } elseif (stripos($src, 'TikTok') !== false || stripos($no_p, 'TTK') !== false) {
+                $cls = 'badge-tiktok';
+                $src = 'TikTok Shop';
+              } elseif (stripos($src, 'WhatsApp') !== false) {
+                $cls = 'badge-whatsapp';
+                $src = 'WhatsApp';
+              } elseif (stripos($src, 'WAHA') !== false || stripos($src, 'Group') !== false) {
+                $cls = 'badge-toko';
+                $src = 'Toko';
+              }
               ?>
-              <span class="badge-source <?= $cls; ?>"><?= $e->order_source; ?></span>
+              <span class="badge-source <?= $cls; ?>"><?= htmlspecialchars($src); ?></span>
             </td>
             <td>
               <?php

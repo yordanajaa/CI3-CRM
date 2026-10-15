@@ -2283,13 +2283,40 @@ class Model_crm extends CI_Model
 			}
 		}
 
-		// Find customer name from sales_order or marketplace
-		$nama = !empty($nama_fallback) ? $nama_fallback : ($is_jid ? 'WhatsApp Group' : 'Customer');
+		// Find customer and order info from sales_order or marketplace
+		$nama = !empty($nama_fallback) ? $nama_fallback : 'Customer';
+		$order_source = 'Toko';
+		$order_table = 'sales_order';
+		$order_id = 0;
+		$clean_num = preg_replace('/[^0-9]/', '', $phone);
+		$no_pesanan = 'SO-' . date('Ymd') . '-' . (strlen($clean_num) >= 4 ? substr($clean_num, -4) : rand(1000, 9999));
+
 		if (!$is_jid) {
-			$so_cust = $this->db->query("SELECT nama_penerima as nama FROM sales_order so WHERE " . $this->get_phone_where_clause('so.no_telepon', $phone) . " LIMIT 1")->row();
-			$pm_cust = $this->db->query("SELECT nama_penerima as nama FROM penjualan_marketplace pm WHERE " . $this->get_phone_where_clause('pm.no_telepon', $phone) . " LIMIT 1")->row();
-			if (!empty($so_cust->nama)) $nama = $so_cust->nama;
-			elseif (!empty($pm_cust->nama)) $nama = $pm_cust->nama;
+			$pm_cust = $this->db->query("SELECT pm.id, pm.no_pesanan, pm.nomor_so, pm.source, pm.nama_penerima as nama FROM penjualan_marketplace pm WHERE " . $this->get_phone_where_clause('pm.no_telepon', $phone) . " ORDER BY pm.id DESC LIMIT 1")->row();
+			$so_cust = $this->db->query("SELECT so.id, so.no_pesanan, so.nomor_so, so.source, so.nama_penerima as nama FROM sales_order so WHERE " . $this->get_phone_where_clause('so.no_telepon', $phone) . " ORDER BY so.id DESC LIMIT 1")->row();
+
+			if ($pm_cust) {
+				$nama = !empty($pm_cust->nama) ? $pm_cust->nama : $nama;
+				$order_table = 'penjualan_marketplace';
+				$order_id = $pm_cust->id;
+				$no_pesanan = $pm_cust->no_pesanan ?: ($pm_cust->nomor_so ?: $no_pesanan);
+				$pm_src = strtolower($pm_cust->source ?: '');
+				$pm_nop = strtolower($no_pesanan);
+				if (strpos($pm_src, 'tokopedia') !== false || strpos($pm_nop, 'tkp') !== false) $order_source = 'Tokopedia';
+				elseif (strpos($pm_src, 'tiktok') !== false || strpos($pm_nop, 'ttk') !== false) $order_source = 'TikTok Shop';
+				else $order_source = 'Shopee';
+			} elseif ($so_cust) {
+				$nama = !empty($so_cust->nama) ? $so_cust->nama : $nama;
+				$order_table = 'sales_order';
+				$order_id = $so_cust->id;
+				$no_pesanan = $so_cust->no_pesanan ?: ($so_cust->nomor_so ?: $no_pesanan);
+				$so_src = strtolower($so_cust->source ?: '');
+				$so_nop = strtolower($no_pesanan);
+				if (strpos($so_src, 'shopee') !== false || strpos($so_nop, 'shp') !== false) $order_source = 'Shopee';
+				elseif (strpos($so_src, 'tokopedia') !== false || strpos($so_nop, 'tkp') !== false) $order_source = 'Tokopedia';
+				elseif (strpos($so_src, 'tiktok') !== false || strpos($so_nop, 'ttk') !== false) $order_source = 'TikTok Shop';
+				else $order_source = 'Toko';
+			}
 		}
 
 		$categories = $this->get_categories(true);
@@ -2297,12 +2324,12 @@ class Model_crm extends CI_Model
 		$now = date('Y-m-d H:i:s');
 
 		$this->db->insert('crm_transaction_followup_labels', [
-			'order_source' => $is_jid ? 'GROUP' : 'WAHA-LIVE',
-			'order_id' => 0,
-			'order_table' => $is_jid ? 'whatsapp_group' : 'manual_entry',
+			'order_source' => $order_source,
+			'order_id' => $order_id,
+			'order_table' => $order_table,
 			'customer_nama' => $nama,
 			'customer_phone' => $phone,
-			'no_pesanan' => $is_jid ? 'GROUP' : 'WAHA-LIVE',
+			'no_pesanan' => $no_pesanan,
 			'tanggal_pengiriman' => date('Y-m-d'),
 			'followup_category_id' => $cat_id,
 			'tanggal_label_muncul' => date('Y-m-d'),
@@ -2364,7 +2391,7 @@ class Model_crm extends CI_Model
 
 			$sql .= " AND (tfl.customer_nama LIKE '%" . $s . "%' OR (" . $phone_sql . ") OR tfl.no_pesanan LIKE '%" . $s . "%')";
 		} else {
-			$sql .= " HAVING (last_message_at IS NOT NULL OR order_source IN ('WhatsApp Live', 'WhatsApp Group', 'WAHA-LIVE', 'GROUP'))";
+			$sql .= " HAVING (last_message_at IS NOT NULL)";
 		}
 
 		$sql .= " ORDER BY 
@@ -2658,47 +2685,65 @@ class Model_crm extends CI_Model
 
 		// Fallback 2: If no label exists at all for this customer phone, check sales_order / penjualan_marketplace
 		if (empty($matched_labels)) {
-			$cust_name = !empty($sender_name) ? $sender_name : '';
-			$so_match = $this->db->query("SELECT id, nama_penerima FROM sales_order WHERE no_telepon LIKE ? ORDER BY id DESC LIMIT 1", ["%" . $phone_tail . "%"])->row();
-			if ($so_match && !empty($so_match->nama_penerima)) {
-				$cust_name = $so_match->nama_penerima;
-			} else {
-				$mp_match = $this->db->query("SELECT id, nama_penerima FROM penjualan_marketplace WHERE no_telepon LIKE ? ORDER BY id DESC LIMIT 1", ["%" . $phone_tail . "%"])->row();
-				if ($mp_match && !empty($mp_match->nama_penerima)) {
-					$cust_name = $mp_match->nama_penerima;
-				}
-			}
+			$cust_name = !empty($sender_name) ? $sender_name : ($is_jid ? 'WhatsApp Group' : ('+' . $phone));
+			$order_table = 'sales_order';
+			$order_id = 0;
+			$order_source = 'Toko';
+			$clean_num = preg_replace('/[^0-9]/', '', $phone);
+			$no_pesanan = 'SO-' . date('Ymd') . '-' . (strlen($clean_num) >= 4 ? substr($clean_num, -4) : rand(1000, 9999));
 
-			if (empty($cust_name)) {
-				$cust_name = !empty($sender_name) ? $sender_name : ($is_jid ? 'WhatsApp Group' : ('+' . $phone));
+			$so_match = $this->db->query("SELECT id, nomor_so, no_pesanan, source, nama_penerima FROM sales_order WHERE no_telepon LIKE ? ORDER BY id DESC LIMIT 1", ["%" . $phone_tail . "%"])->row();
+			$mp_match = $this->db->query("SELECT id, nomor_so, no_pesanan, source, nama_penerima FROM penjualan_marketplace WHERE no_telepon LIKE ? ORDER BY id DESC LIMIT 1", ["%" . $phone_tail . "%"])->row();
+
+			if ($mp_match) {
+				if (!empty($mp_match->nama_penerima)) $cust_name = $mp_match->nama_penerima;
+				$order_table = 'penjualan_marketplace';
+				$order_id = $mp_match->id;
+				$no_pesanan = $mp_match->no_pesanan ?: ($mp_match->nomor_so ?: $no_pesanan);
+				$mp_src = strtolower($mp_match->source ?: '');
+				$mp_nop = strtolower($no_pesanan);
+				if (strpos($mp_src, 'tokopedia') !== false || strpos($mp_nop, 'tkp') !== false) $order_source = 'Tokopedia';
+				elseif (strpos($mp_src, 'tiktok') !== false || strpos($mp_nop, 'ttk') !== false) $order_source = 'TikTok Shop';
+				else $order_source = 'Shopee';
+			} elseif ($so_match) {
+				if (!empty($so_match->nama_penerima)) $cust_name = $so_match->nama_penerima;
+				$order_table = 'sales_order';
+				$order_id = $so_match->id;
+				$no_pesanan = $so_match->no_pesanan ?: ($so_match->nomor_so ?: $no_pesanan);
+				$so_src = strtolower($so_match->source ?: '');
+				$so_nop = strtolower($no_pesanan);
+				if (strpos($so_src, 'shopee') !== false || strpos($so_nop, 'shp') !== false) $order_source = 'Shopee';
+				elseif (strpos($so_src, 'tokopedia') !== false || strpos($so_nop, 'tkp') !== false) $order_source = 'Tokopedia';
+				elseif (strpos($so_src, 'tiktok') !== false || strpos($so_nop, 'ttk') !== false) $order_source = 'TikTok Shop';
+				else $order_source = 'Toko';
 			}
 
 			$first_cat = $this->db->query("SELECT id FROM crm_followup_categories WHERE is_active = 1 ORDER BY urutan ASC LIMIT 1")->row();
 			$cat_id = $first_cat ? $first_cat->id : 1;
 
 			$new_label_data = [
-				'order_source' => $is_jid ? 'GROUP' : 'WAHA-LIVE',
-				'order_id' => 0,
-				'order_table' => $is_jid ? 'whatsapp_group' : 'manual_entry',
+				'order_source' => $order_source,
+				'order_id' => $order_id,
+				'order_table' => $order_table,
 				'customer_nama' => $cust_name,
 				'customer_phone' => $phone,
-				'no_pesanan' => $is_jid ? 'GROUP' : 'WAHA-LIVE',
-					'tanggal_pengiriman' => date('Y-m-d'),
-					'followup_category_id' => $cat_id,
-					'tanggal_label_muncul' => date('Y-m-d'),
-					'status_label' => 'Direspon',
-					'handled_by' => 'system',
-					'created_at' => date('Y-m-d H:i:s'),
-					'updated_at' => date('Y-m-d H:i:s'),
-				];
-				$this->db->insert('crm_transaction_followup_labels', $new_label_data);
-				$new_id = $this->db->insert_id();
+				'no_pesanan' => $no_pesanan,
+				'tanggal_pengiriman' => date('Y-m-d'),
+				'followup_category_id' => $cat_id,
+				'tanggal_label_muncul' => date('Y-m-d'),
+				'status_label' => 'Direspon',
+				'handled_by' => 'system',
+				'created_at' => date('Y-m-d H:i:s'),
+				'updated_at' => date('Y-m-d H:i:s'),
+			];
+			$this->db->insert('crm_transaction_followup_labels', $new_label_data);
+			$new_id = $this->db->insert_id();
 
-				$new_label = $this->db->get_where('crm_transaction_followup_labels', ['id' => $new_id])->row();
-				if ($new_label) {
-					$matched_labels[] = $new_label;
-				}
+			$new_label = $this->db->get_where('crm_transaction_followup_labels', ['id' => $new_id])->row();
+			if ($new_label) {
+				$matched_labels[] = $new_label;
 			}
+		}
 
 		$logged_count = 0;
 
@@ -3872,10 +3917,11 @@ class Model_crm extends CI_Model
 			$phone = $so->no_telepon ?: ($so->telepon ?: ($so->no_telp ?: ''));
 			$nama = $so->nama_penerima ?: ($so->nama_pelanggan ?: 'Customer');
 			$so_src = strtolower($so->source ?: '');
+			$so_no = strtolower(($so->no_pesanan ?: '') . ' ' . ($so->nomor_so ?: ''));
 			$source = 'Toko';
-			if (strpos($so_src, 'shopee') !== false) $source = 'Shopee';
-			elseif (strpos($so_src, 'tokopedia') !== false) $source = 'Tokopedia';
-			elseif (strpos($so_src, 'tiktok') !== false) $source = 'TikTok Shop';
+			if (strpos($so_src, 'shopee') !== false || strpos($so_no, 'shp') !== false) $source = 'Shopee';
+			elseif (strpos($so_src, 'tokopedia') !== false || strpos($so_no, 'tkp') !== false) $source = 'Tokopedia';
+			elseif (strpos($so_src, 'tiktok') !== false || strpos($so_no, 'ttk') !== false) $source = 'TikTok Shop';
 
 			foreach ($categories as $cat) {
 				$exists = $this->db->get_where('crm_transaction_followup_labels', [
@@ -3972,10 +4018,11 @@ class Model_crm extends CI_Model
 			$phone = $so->no_telepon ?: ($so->telepon ?: ($so->no_telp ?: ''));
 			$nama = $so->nama_penerima ?: ($so->nama_pelanggan ?: '-');
 			$so_src = strtolower($so->source ?: '');
+			$so_no = strtolower(($so->no_pesanan ?: '') . ' ' . ($so->nomor_so ?: ''));
 			$source = 'Toko';
-			if (strpos($so_src, 'shopee') !== false) $source = 'Shopee';
-			elseif (strpos($so_src, 'tokopedia') !== false) $source = 'Tokopedia';
-			elseif (strpos($so_src, 'tiktok') !== false) $source = 'TikTok Shop';
+			if (strpos($so_src, 'shopee') !== false || strpos($so_no, 'shp') !== false) $source = 'Shopee';
+			elseif (strpos($so_src, 'tokopedia') !== false || strpos($so_no, 'tkp') !== false) $source = 'Tokopedia';
+			elseif (strpos($so_src, 'tiktok') !== false || strpos($so_no, 'ttk') !== false) $source = 'TikTok Shop';
 
 			foreach ($categories as $cat) {
 				$key = 'sales_order_' . $so->id . '_' . $cat->id;
@@ -4061,10 +4108,9 @@ class Model_crm extends CI_Model
 			    tfl.tanggal_pengiriman
 			  ), INTERVAL fc.jumlah_hari DAY),
 			  tfl.order_source = CASE 
-			    WHEN LOWER(so.source) LIKE '%toko%' OR so.source = 'manual' OR so.source IS NULL THEN 'Toko'
-			    WHEN LOWER(so.source) LIKE '%shopee%' THEN 'Shopee'
-			    WHEN LOWER(so.source) LIKE '%tokopedia%' THEN 'Tokopedia'
-			    WHEN LOWER(so.source) LIKE '%tiktok%' THEN 'TikTok Shop'
+			    WHEN LOWER(so.source) LIKE '%shopee%' OR so.no_pesanan LIKE '%SHP%' OR so.nomor_so LIKE '%SHP%' THEN 'Shopee'
+			    WHEN LOWER(so.source) LIKE '%tokopedia%' OR so.no_pesanan LIKE '%TKP%' OR so.nomor_so LIKE '%TKP%' THEN 'Tokopedia'
+			    WHEN LOWER(so.source) LIKE '%tiktok%' OR so.no_pesanan LIKE '%TTK%' OR so.nomor_so LIKE '%TTK%' THEN 'TikTok Shop'
 			    ELSE 'Toko'
 			  END
 		");
