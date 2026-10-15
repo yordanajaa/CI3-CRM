@@ -1582,34 +1582,49 @@ html, body {
         font-size: 11px !important;
     }
 
-    /* 2. Top Navigation Bar & Header */
+    /* 2. Top Navigation Bar & Header - Unified Single 50px Row */
     .main-header {
         position: relative !important;
-    }
-    .main-header .logo {
-        height: 50px !important;
-        line-height: 50px !important;
-        overflow: hidden !important;
         display: flex !important;
         align-items: center !important;
+        justify-content: space-between !important;
+        height: 50px !important;
+        background: #ffffff !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+    }
+    .main-header .navbar {
+        display: contents !important;
+    }
+    .main-header .sidebar-toggle {
+        order: 1 !important;
+        padding: 15px 14px !important;
+        line-height: 20px !important;
+        color: #334155 !important;
+        display: inline-flex !important;
+        align-items: center !important;
         justify-content: center !important;
-        padding: 0 10px !important;
+    }
+    .main-header .logo {
+        order: 2 !important;
+        height: 50px !important;
+        line-height: 50px !important;
+        background: transparent !important;
+        border: none !important;
+        padding: 0 6px !important;
+        display: flex !important;
+        align-items: center !important;
+        margin-right: auto !important;
     }
     .main-header .logo img {
-        max-height: 32px !important;
+        max-height: 28px !important;
         width: auto !important;
         object-fit: contain !important;
     }
-    .main-header .navbar {
-        margin-left: 0 !important;
-        min-height: 50px !important;
-    }
-    .sidebar-toggle {
-        padding: 15px !important;
-        line-height: 20px !important;
-    }
     .navbar-custom-menu {
-        float: right !important;
+        order: 3 !important;
+        float: none !important;
+        margin-left: auto !important;
     }
     .navbar-custom-menu .navbar-nav {
         margin: 0 !important;
@@ -1622,7 +1637,8 @@ html, body {
         float: none !important;
     }
     .navbar-custom-menu .navbar-nav > li > a {
-        padding: 15px 10px !important;
+        padding: 14px 8px !important;
+        color: #334155 !important;
     }
 
     /* Notification Dropdown Mobile Optimization */
