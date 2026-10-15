@@ -134,7 +134,7 @@ class Sales_order extends Admin
 
 		$this->form_validation->set_rules('pelanggan_id', 'Pelanggan', 'trim|required');
 		$this->form_validation->set_rules('gudang_id', 'Gudang', 'trim|required');
-		$this->form_validation->set_rules('tanggal_so', 'Tanggal SO', 'trim|required');
+		$this->form_validation->set_rules('tanggal_so', 'Tanggal Penjualan', 'trim|required');
 
 		if ($this->form_validation->run()) {
 			$pelanggan_raw    = trim($this->input->post('pelanggan_id'));
@@ -509,7 +509,7 @@ class Sales_order extends Admin
 
 		$this->form_validation->set_rules('pelanggan_id', 'Pelanggan', 'trim|required');
 		$this->form_validation->set_rules('gudang_id', 'Gudang', 'trim|required');
-		$this->form_validation->set_rules('tanggal_so', 'Tanggal SO', 'trim|required');
+		$this->form_validation->set_rules('tanggal_so', 'Tanggal Penjualan', 'trim|required');
 
 		if ($this->form_validation->run()) {
 			$pelanggan_id = $this->input->post('pelanggan_id');

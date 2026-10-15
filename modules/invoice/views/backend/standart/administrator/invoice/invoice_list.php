@@ -179,7 +179,7 @@ $kirim_c = [
                      <thead>
                         <tr class="active">
                            <th>No Sales Order</th>
-                           <th>Tanggal SO</th>
+                           <th>Tanggal Penjualan</th>
                            <th>Pelanggan</th>
                            <th class="text-right">Grand Total</th>
                            <th class="text-center">Status</th>

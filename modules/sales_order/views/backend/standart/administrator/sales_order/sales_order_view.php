@@ -222,7 +222,7 @@ $display_kurir = !empty($so->opsi_pengiriman) ? $so->opsi_pengiriman : (!empty($
                      <div class="panel-heading" style="background:#f8fafc; font-weight:700; color:#334155;"><i class="fa fa-calendar text-primary"></i> Tanggal &amp; Pengiriman Pesanan</div>
                      <div class="panel-body" style="padding: 15px;">
                         <table class="table table-condensed table-borderless" style="margin-bottom:0; font-size:13px;">
-                           <tr><th style="width:40%; color:#64748b;">Tanggal SO:</th><td><i class="fa fa-calendar text-muted"></i> <?= date('d/m/Y', strtotime($so->tanggal_so)); ?></td></tr>
+                           <tr><th style="width:40%; color:#64748b;">Tanggal Penjualan:</th><td><i class="fa fa-calendar text-muted"></i> <?= date('d/m/Y', strtotime($so->tanggal_so)); ?></td></tr>
                            <tr><th style="color:#64748b;">Est. Tanggal / Deadline Kirim:</th><td><strong class="text-warning"><i class="fa fa-clock-o"></i> <?= $display_est_kirim; ?></strong></td></tr>
                            <tr><th style="color:#64748b;">Opsi / Ekspedisi Kirim:</th><td><span class="label label-default" style="font-size:11px; padding:3px 7px;"><?= _ent($display_kurir); ?></span></td></tr>
                            <tr><th style="color:#64748b;">No. Resi Pengiriman:</th><td><span class="label label-info" style="font-size:11px; font-family:monospace;"><?= _ent($display_resi); ?></span></td></tr>

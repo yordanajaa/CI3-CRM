@@ -372,7 +372,7 @@ textarea.form-control {
                ?>
                <input type="hidden" name="gudang_id" id="gudang_id" value="<?= $default_gudang_id; ?>">
                <div class="col-md-3 col-sm-6 col-xs-6">
-                  <div class="form-group"><label>Tanggal SO <span class="text-danger">*</span></label>
+                  <div class="form-group"><label>Tanggal Penjualan <span class="text-danger">*</span></label>
                      <input type="date" class="form-control" name="tanggal_so" value="<?= $is_edit ? $so->tanggal_so : date('Y-m-d'); ?>" required>
                   </div>
                </div>

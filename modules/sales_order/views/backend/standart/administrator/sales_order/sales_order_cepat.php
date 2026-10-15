@@ -1423,7 +1423,7 @@
                 <input type="hidden" name="gudang_id" id="gudang_id" value="<?= $default_gudang_id; ?>">
                 <div class="col-xs-12 col-sm-4 col-md-4">
                   <div class="form-group" style="margin-bottom: 10px;">
-                     <label style="font-size:12px; font-weight:700; margin-bottom:4px; display:block;"><i class="fa fa-calendar text-primary"></i> Tanggal</label>
+                     <label style="font-size:12px; font-weight:700; margin-bottom:4px; display:block;"><i class="fa fa-calendar text-primary"></i> Tanggal Penjualan</label>
                      <input type="date" class="form-control" name="tanggal_so" id="tanggal_so" value="<?= date('Y-m-d'); ?>" required style="height:36px; border-radius:6px;">
                   </div>
                </div>

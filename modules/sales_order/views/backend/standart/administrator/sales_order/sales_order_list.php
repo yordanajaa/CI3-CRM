@@ -352,7 +352,7 @@ $status_display = [
                         <tr style="background:#f8fafc; font-size:12px; color:#555;">
                            <th width="40" class="text-center">No</th>
                            <th width="170">No. Sales Order</th>
-                           <th>Tanggal SO</th>
+                           <th>Tanggal Penjualan</th>
                            <th>Pelanggan & Tier</th>
                            <th class="text-right">Grand Total (Rp)</th>
                            <th class="text-center">Status Pesanan</th>
