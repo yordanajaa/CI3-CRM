@@ -41775,7 +41775,6 @@ INSERT INTO `menu` (`id`, `label`, `type`, `icon_color`, `link`, `sort`, `parent
 (109, 'Penerimaan Kas (BKM)', 'controller', NULL, '{admin_url}/piutang_usaha/kas_masuk', 38, 94, 'fa-download', 1, 1),
 (97, 'Kategori Barang', 'controller', NULL, '{admin_url}/kategori_produk', 14, 75, 'fa-circle-o', 1, 1),
 (98, 'Unit Barang', 'controller', NULL, '{admin_url}/satuan', 15, 75, 'fa-circle-o', 1, 1),
-(107, 'Pengeluaran Kas (BKK)', 'controller', NULL, '{admin_url}/utang_usaha/kas_keluar', 36, 94, 'fa-upload', 1, 1),
 (106, 'Utang Usaha (AP)', 'controller', NULL, '{admin_url}/utang_usaha', 35, 94, 'fa-credit-card', 1, 1),
 (108, 'Piutang Usaha (AR)', 'controller', NULL, '{admin_url}/piutang_usaha', 37, 94, 'fa-money', 1, 1),
 (111, 'Buku Besar (General Ledger)', 'item', NULL, '{admin_url}/buku_besar', 110, 94, 'fa fa-book', 1, 1),

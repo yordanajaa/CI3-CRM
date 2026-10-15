@@ -103,7 +103,7 @@ class Utang_usaha extends Admin
 		], ['id' => $utang_id]);
 
 		set_message('Pembayaran utang berhasil dicatat dengan Bukti Kas Keluar (' . $nomor_bkk . ').', 'success');
-		$this->response(['success' => true, 'redirect' => site_url('administrator/utang_usaha/kas_keluar')]);
+		$this->response(['success' => true, 'redirect' => site_url('administrator/utang_usaha')]);
 	}
 
 	public function kas_keluar($offset = 0)

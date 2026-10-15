@@ -155,9 +155,6 @@
             <div class="box-header with-border" style="padding: 15px 20px;">
                <h3 class="box-title" style="font-weight:600;"><i class="fa fa-book text-primary"></i> Buku Besar Utang Usaha & Status Pelunasan</h3>
                <div class="box-tools pull-right">
-                  <a href="<?= site_url('administrator/utang_usaha/kas_keluar'); ?>" class="btn btn-info btn-sm btn-flat" style="border-radius:4px;">
-                     <i class="fa fa-list-alt"></i> Riwayat Kas Keluar (BKK)
-                  </a>
                </div>
             </div>
             <div class="box-body" style="padding: 20px;">
