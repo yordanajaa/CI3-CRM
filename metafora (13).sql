@@ -41786,7 +41786,6 @@ INSERT INTO `menu` (`id`, `label`, `type`, `icon_color`, `link`, `sort`, `parent
 (141, 'Analisis Kohort', 'menu', 'default', 'administrator/rfm/cohort', 4, 136, 'fa-calendar-check-o', 1, 1),
 (143, 'Edit Semua Stok', 'item', NULL, '{admin_url}/stok/edit_massal', 2, 88, 'fa-pencil-square-o', 1, 1),
 (144, 'Kasir Cepat (POS)', NULL, NULL, '{admin_url}/sales_order/cepat', 1, 84, 'fa-bolt', 1, 1),
-(145, 'Stock Opname', NULL, NULL, '{admin_url}/stock_opname', 3, 88, 'fa-check-square-o', 1, 1),
 (146, 'Developer Tools', NULL, NULL, '#', 99, 0, 'fa-code', 1, 1);
 
 -- --------------------------------------------------------
