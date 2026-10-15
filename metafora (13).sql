@@ -212,16 +212,6 @@ INSERT INTO `aauth_perms` (`id`, `name`, `definition`) VALUES
 (124, 'menu_call_log', ''),
 (125, 'menu_projects', ''),
 (126, 'menu_consultation', ''),
-(127, 'hr_division_add', ''),
-(128, 'hr_division_update', ''),
-(129, 'hr_division_view', ''),
-(130, 'hr_division_delete', ''),
-(131, 'hr_division_list', ''),
-(132, 'hr_employee_add', ''),
-(133, 'hr_employee_update', ''),
-(134, 'hr_employee_view', ''),
-(135, 'hr_employee_delete', ''),
-(136, 'hr_employee_list', ''),
 (137, 'menu_human_capital', ''),
 (138, 'menu_hc_division', ''),
 (139, 'menu_employee', ''),
@@ -395,39 +385,10 @@ INSERT INTO `aauth_perms` (`id`, `name`, `definition`) VALUES
 (561, 'keuangan_update', 'keuangan_update permission'),
 (562, 'keuangan_delete', 'keuangan_delete permission'),
 (563, 'satuan_export', ''),
-(564, 'hr_karyawan_list', 'Permission for hr_karyawan_list'),
-(565, 'hr_karyawan_add', 'Permission for hr_karyawan_add'),
-(566, 'hr_karyawan_update', 'Permission for hr_karyawan_update'),
-(567, 'hr_karyawan_view', 'Permission for hr_karyawan_view'),
-(568, 'hr_karyawan_delete', 'Permission for hr_karyawan_delete'),
-(569, 'hr_pengaturan_update', 'Permission for hr_pengaturan_update'),
-(570, 'hr_absensi_list', 'Permission for hr_absensi_list'),
-(571, 'hr_absensi_add', 'Permission for hr_absensi_add'),
-(572, 'hr_laporan_list', 'Permission for hr_laporan_list'),
-(573, 'menu_hr_&_absensi', 'Menu Permission for menu_hr_&_absensi'),
 (574, 'menu_karyawan', 'Menu Permission for menu_karyawan'),
 (575, 'menu_live_absensi', 'Menu Permission for menu_live_absensi'),
 (576, 'menu_laporan_absen', 'Menu Permission for menu_laporan_absen'),
 (577, 'menu_pengaturan_hr', 'Menu Permission for menu_pengaturan_hr'),
-(578, 'hr_laporan_view', ''),
-(579, 'hr_rekap_list', 'Melihat Rekap Absensi'),
-(580, 'hr_hari_libur_list', ''),
-(581, 'hr_hari_libur_add', ''),
-(582, 'hr_payroll_list', ''),
-(583, 'hr_payroll_add', ''),
-(584, 'hr_payroll_view', ''),
-(585, 'hr_shift_list', 'Access to hr_shift_list'),
-(586, 'hr_shift_add', 'Access to hr_shift_add'),
-(587, 'hr_shift_update', 'Access to hr_shift_update'),
-(588, 'hr_shift_view', 'Access to hr_shift_view'),
-(589, 'hr_shift_delete', 'Access to hr_shift_delete'),
-(590, 'hr_kantor_list', 'Access to hr_kantor_list'),
-(591, 'hr_kantor_add', 'Access to hr_kantor_add'),
-(592, 'hr_kantor_update', 'Access to hr_kantor_update'),
-(593, 'hr_kantor_view', 'Access to hr_kantor_view'),
-(594, 'hr_kantor_delete', 'Access to hr_kantor_delete'),
-(595, 'hr_hari_libur_update', ''),
-(596, 'hr_payroll_update', ''),
 (597, 'menu_crud_builder', 'Menu Permission for CRUD Builder'),
 (598, 'menu_api_builder', 'Menu Permission for API Builder'),
 (599, 'menu_page_builder', 'Menu Permission for Page Builder'),
@@ -472,7 +433,6 @@ INSERT INTO `aauth_perms` (`id`, `name`, `definition`) VALUES
 (638, 'menu_utang_usaha_ap', 'Menu Permission for Utang Usaha (AP)'),
 (639, 'menu_piutang_usaha_ar', 'Menu Permission for Piutang Usaha (AR)'),
 (640, 'menu_buku_besar_general_ledger', 'Menu Permission for Buku Besar (General Ledger)'),
-(641, 'menu_hr_and_absensi', 'Menu Permission for HR & Absensi'),
 (642, 'menu_karyawan', 'Menu Permission for Karyawan'),
 (643, 'menu_live_absensi', 'Menu Permission for Live Absensi'),
 (644, 'menu_laporan_absen', 'Menu Permission for Laporan Absen'),
@@ -482,7 +442,6 @@ INSERT INTO `aauth_perms` (`id`, `name`, `definition`) VALUES
 (648, 'menu_daftar_kantor', 'Menu Permission for Daftar Kantor'),
 (649, 'menu_jadwal_shift', 'Menu Permission for Jadwal Shift'),
 (650, 'menu_perangkat_karyawan', 'Menu Permission for Perangkat Karyawan'),
-(651, 'menu_penggajian', 'Menu Permission for Penggajian'),
 (652, 'menu_gaji_karyawan', 'Menu Permission for Gaji Karyawan'),
 (653, 'menu_pengaturan', 'Menu Permission for Pengaturan'),
 (654, 'menu_dashboard', 'Menu Permission for Dashboard'),
@@ -41211,322 +41170,50 @@ INSERT INTO `harga_pelanggan` (`id`, `produk_id`, `tipe_pelanggan`, `min_qty`, `
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `hr_absensi`
---
-
-CREATE TABLE `hr_absensi` (
-  `id` int NOT NULL,
-  `karyawan_id` int NOT NULL,
-  `tanggal` date NOT NULL,
-  `waktu_masuk` datetime DEFAULT NULL,
-  `foto_masuk` varchar(255) DEFAULT NULL,
-  `lat_masuk` varchar(100) DEFAULT NULL,
-  `lng_masuk` varchar(100) DEFAULT NULL,
-  `jarak_masuk_meter` int DEFAULT NULL,
-  `waktu_pulang` datetime DEFAULT NULL,
-  `foto_pulang` varchar(255) DEFAULT NULL,
-  `lat_pulang` varchar(100) DEFAULT NULL,
-  `lng_pulang` varchar(100) DEFAULT NULL,
-  `jarak_pulang_meter` int DEFAULT NULL,
-  `status_kehadiran` enum('Hadir','Telat','Alpha','Izin','Sakit','Cuti','Sakit (Dengan Surat)','Sakit (Tanpa Surat)','Izin Khusus','Hadir (Lupa Absen)','Telat (Lupa Absen)','Hadir (Lupa Absen Pulang)','Telat (Lupa Absen Pulang)','Lupa Absen Pulang') DEFAULT NULL,
-  `alasan_terlambat` text,
-  `terlambat_menit` int DEFAULT '0',
-  `catatan` text,
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `file_surat` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Dumping data untuk tabel `hr_absensi`
---
-
-INSERT INTO `hr_absensi` (`id`, `karyawan_id`, `tanggal`, `waktu_masuk`, `foto_masuk`, `lat_masuk`, `lng_masuk`, `jarak_masuk_meter`, `waktu_pulang`, `foto_pulang`, `lat_pulang`, `lng_pulang`, `jarak_pulang_meter`, `status_kehadiran`, `alasan_terlambat`, `terlambat_menit`, `catatan`, `created_at`, `file_surat`) VALUES
-(1, 4, '2026-08-12', '2026-08-12 21:47:25', 'uploads/absensi/6a7c877d353d0_4.jpeg', '-7.7682121', '110.4083341', 0, '2026-08-12 17:00:00', NULL, NULL, NULL, NULL, 'Hadir', NULL, 0, NULL, '2026-08-12 21:47:25', NULL),
-(2, 7, '2026-08-14', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Izin Khusus', 'nikah', 0, NULL, '2026-08-14 11:02:48', NULL),
-(3, 9, '2026-08-14', '2026-08-14 12:17:01', 'uploads/absensi/6a7ea4cd2303e_9.jpeg', '-7.7844003', '110.346532', 0, '2026-08-14 17:00:00', NULL, NULL, NULL, NULL, 'Telat (Lupa Absen Pulang)', 'tes', 257, NULL, '2026-08-14 12:17:01', NULL),
-(4, 8, '2026-08-14', '2026-08-14 12:22:53', 'uploads/absensi/6a7ea62da900c_8.jpeg', '-7.7844003', '110.346532', 0, '2026-08-14 17:00:00', NULL, NULL, NULL, NULL, 'Telat (Lupa Absen Pulang)', 'macet', 262, NULL, '2026-08-14 12:22:53', NULL),
-(5, 10, '2026-08-14', '2026-08-14 12:41:48', 'uploads/absensi/6a7eaa9c8be9d_10.jpeg', '-7.7844003', '110.346532', 0, '2026-08-14 22:00:00', NULL, NULL, NULL, NULL, 'Hadir (Lupa Absen Pulang)', NULL, 0, NULL, '2026-08-14 12:41:48', NULL);
 
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `hr_device_fingerprint`
---
-
-CREATE TABLE `hr_device_fingerprint` (
-  `id` int NOT NULL,
-  `user_id` int NOT NULL,
-  `username` varchar(100) DEFAULT NULL,
-  `full_name` varchar(150) DEFAULT NULL,
-  `device_id` varchar(80) NOT NULL,
-  `device_label` varchar(100) DEFAULT 'Perangkat',
-  `os_platform` varchar(200) DEFAULT NULL,
-  `screen_info` varchar(100) DEFAULT NULL,
-  `gpu_info` varchar(300) DEFAULT NULL,
-  `cpu_cores` int DEFAULT '0',
-  `ram_gb` float DEFAULT '0',
-  `timezone` varchar(100) DEFAULT NULL,
-  `is_touchscreen` tinyint(1) DEFAULT '0',
-  `browser_info` varchar(300) DEFAULT NULL,
-  `ip_address` varchar(45) DEFAULT NULL,
-  `last_lat` varchar(50) DEFAULT NULL,
-  `last_lng` varchar(50) DEFAULT NULL,
-  `last_seen` datetime NOT NULL,
-  `first_seen` datetime NOT NULL,
-  `absen_count` int DEFAULT '1',
-  `status` enum('aktif','dicabut') DEFAULT 'aktif'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Dumping data untuk tabel `hr_device_fingerprint`
---
-
-INSERT INTO `hr_device_fingerprint` (`id`, `user_id`, `username`, `full_name`, `device_id`, `device_label`, `os_platform`, `screen_info`, `gpu_info`, `cpu_cores`, `ram_gb`, `timezone`, `is_touchscreen`, `browser_info`, `ip_address`, `last_lat`, `last_lng`, `last_seen`, `first_seen`, `absen_count`, `status`) VALUES
-(1, 27, 'iqbal', 'iqbal', 'fpx_6b587119408a461f6bb8daa3b31ffd1da49f05bdb2c4bb837c1b3bcd5a71bc51', 'Perangkat #1', 'Win32 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Sa', '1477x831 @1.2999999523162842x', 'ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11) (Google Inc. (AMD))', 16, 16, 'Asia/Jakarta', 0, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36 Edg/151.0.0.0', '127.0.0.1', NULL, NULL, '2026-08-10 15:31:45', '2026-08-10 15:31:45', 1, 'aktif'),
-(2, 25, 'yordan', 'yordan', 'fpx_9a25e9800569c4326869eea3dce255a4c693d7739fcdae1c75f4bb8c09708ec2', 'Perangkat #1', 'Win32 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Sa', '1477x831 @1.2999999523162842x', 'ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11) (Google Inc. (AMD))', 16, 16, 'Asia/Jakarta', 0, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 OPR/133.0.0.0', '127.0.0.1', '-7.7824', '110.3855616', '2026-08-10 20:34:21', '2026-08-10 15:32:40', 7, 'aktif'),
-(3, 29, 'developer', 'developer', 'fpx_9a25e9800569c4326869eea3dce255a4c693d7739fcdae1c75f4bb8c09708ec2', 'Perangkat #1', 'Win32 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Sa', '1477x831 @1.2999999523162842x', 'ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11) (Google Inc. (AMD))', 16, 16, 'Asia/Jakarta', 0, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 OPR/133.0.0.0', '127.0.0.1', '-7.7682121', '110.4083341', '2026-08-10 21:56:51', '2026-08-10 20:31:27', 10, 'aktif'),
-(4, 31, 'testing2', 'testing2', 'fpx_9a25e9800569c4326869eea3dce255a4c693d7739fcdae1c75f4bb8c09708ec2', 'Perangkat #1', 'Win32 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Sa', '1477x831 @1.2999999523162842x', 'ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11) (Google Inc. (AMD))', 16, 16, 'Asia/Jakarta', 0, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 OPR/133.0.0.0', '127.0.0.1', '-7.7682121', '110.4083341', '2026-08-10 21:47:26', '2026-08-10 20:32:24', 12, 'aktif'),
-(5, 30, 'testing1', 'testing1', 'fpx_9a25e9800569c4326869eea3dce255a4c693d7739fcdae1c75f4bb8c09708ec2', 'Perangkat #1', 'Win32 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Sa', '1477x831 @1.2999999523162842x', 'ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11) (Google Inc. (AMD))', 16, 16, 'Asia/Jakarta', 0, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 OPR/133.0.0.0', '127.0.0.1', '-7.7405503', '110.3663293', '2026-08-10 21:43:00', '2026-08-10 21:38:04', 4, 'aktif'),
-(6, 30, 'testing1', 'testing1', 'fpx_fc11ba33adb3d14a1fc6cb39af2497d90e6d84ee0bb7be162e8655d015b55820', 'Perangkat #2', 'Win32', '1477x831', 'ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11)', 16, 16, 'Asia/Jakarta', 0, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Sa', '127.0.0.1', '-7.7844003', '110.346532', '2026-08-14 12:21:31', '2026-08-12 09:56:17', 20, 'aktif'),
-(7, 29, 'developer', 'developer', 'fpx_fc11ba33adb3d14a1fc6cb39af2497d90e6d84ee0bb7be162e8655d015b55820', 'Perangkat #2', 'Win32', '1477x831', 'ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11)', 16, 16, 'Asia/Jakarta', 0, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Sa', '127.0.0.1', '-7.7920108', '110.3453812', '2026-08-18 12:56:12', '2026-08-12 10:55:13', 14, 'aktif'),
-(8, 27, 'iqbal', 'iqbal', 'fpx_fc11ba33adb3d14a1fc6cb39af2497d90e6d84ee0bb7be162e8655d015b55820', 'Perangkat #2', 'Win32', '1477x831', 'ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11)', 16, 16, 'Asia/Jakarta', 0, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Sa', '127.0.0.1', '-7.7682121', '110.4083341', '2026-08-12 21:51:38', '2026-08-12 21:38:44', 16, 'aktif'),
-(9, 30, 'testing1', 'testing1', 'fpv4_878e565fde7c62ba56d238694533179d29c561fb17a60d250ddaf34f840292a3', 'Perangkat #3', 'Win32', '1477x831', 'ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11)', 16, 16, 'Asia/Jakarta', 0, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Sa', '127.0.0.1', NULL, NULL, '2026-08-14 11:02:50', '2026-08-14 11:02:50', 1, 'aktif'),
-(10, 32, 'testing3', 'testing3', 'fpx_fc11ba33adb3d14a1fc6cb39af2497d90e6d84ee0bb7be162e8655d015b55820', 'Perangkat #1', 'Win32', '1477x831', 'ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11)', 16, 16, 'Asia/Jakarta', 0, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Sa', '127.0.0.1', '-7.7709556', '110.346532', '2026-08-18 10:30:05', '2026-08-14 12:16:51', 6, 'aktif'),
-(11, 31, 'testing2', 'testing2', 'fpx_fc11ba33adb3d14a1fc6cb39af2497d90e6d84ee0bb7be162e8655d015b55820', 'Perangkat #2', 'Win32', '1477x831', 'ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11)', 16, 16, 'Asia/Jakarta', 0, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Sa', '127.0.0.1', '-7.7844003', '110.346532', '2026-08-14 12:24:41', '2026-08-14 12:21:52', 8, 'aktif'),
-(12, 33, 'testing4', 'testing4', 'fpx_fc11ba33adb3d14a1fc6cb39af2497d90e6d84ee0bb7be162e8655d015b55820', 'Perangkat #1', 'Win32', '1477x831', 'ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11)', 16, 16, 'Asia/Jakarta', 0, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Sa', '127.0.0.1', '-7.7844003', '110.346532', '2026-08-14 12:41:53', '2026-08-14 12:40:59', 8, 'aktif');
 
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `hr_hari_libur`
---
-
-CREATE TABLE `hr_hari_libur` (
-  `id` int NOT NULL,
-  `tanggal` date NOT NULL,
-  `keterangan` varchar(255) NOT NULL,
-  `is_national` tinyint(1) DEFAULT '0',
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Dumping data untuk tabel `hr_hari_libur`
---
-
-INSERT INTO `hr_hari_libur` (`id`, `tanggal`, `keterangan`, `is_national`, `created_at`) VALUES
-(1, '2026-08-17', 'HUT Kemerdekaan RI', 1, '2026-08-09 20:27:43'),
-(2, '2026-01-01', 'Tahun Baru 2026 Masehi', 1, '2026-08-09 22:09:55'),
-(3, '2026-02-17', 'Isra Mikraj Nabi Muhammad SAW', 1, '2026-08-09 22:09:55'),
-(4, '2026-03-19', 'Hari Raya Nyepi Tahun Baru Saka 1948', 1, '2026-08-09 22:09:55'),
-(5, '2026-03-20', 'Hari Raya Idul Fitri 1447 Hijriah', 1, '2026-08-09 22:09:55'),
-(6, '2026-03-21', 'Hari Raya Idul Fitri 1447 Hijriah', 1, '2026-08-09 22:09:55'),
-(7, '2026-04-03', 'Wafat Isa Al Masih', 1, '2026-08-09 22:09:55'),
-(8, '2026-05-01', 'Hari Buruh Internasional', 1, '2026-08-09 22:09:55'),
-(9, '2026-05-14', 'Kenaikan Isa Al Masih', 1, '2026-08-09 22:09:55'),
-(10, '2026-05-27', 'Hari Raya Idul Adha 1447 Hijriah', 1, '2026-08-09 22:09:55'),
-(11, '2026-06-01', 'Hari Lahir Pancasila', 1, '2026-08-09 22:09:55'),
-(12, '2026-06-17', 'Tahun Baru Islam 1448 Hijriah', 1, '2026-08-09 22:09:55'),
-(13, '2026-08-26', 'Maulid Nabi Muhammad SAW', 1, '2026-08-09 22:09:55'),
-(14, '2026-12-25', 'Hari Raya Natal', 1, '2026-08-09 22:09:55'),
-(15, '2026-04-05', 'Paskah', 1, '2026-08-12 10:22:34');
 
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `hr_kantor`
---
-
-CREATE TABLE `hr_kantor` (
-  `id` int NOT NULL,
-  `nama_kantor` varchar(150) NOT NULL,
-  `latitude` varchar(50) NOT NULL,
-  `longitude` varchar(50) NOT NULL,
-  `radius_meter` int NOT NULL DEFAULT '50',
-  `alamat` text,
-  `created_at` datetime DEFAULT NULL,
-  `updated_at` datetime DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Dumping data untuk tabel `hr_kantor`
---
-
-INSERT INTO `hr_kantor` (`id`, `nama_kantor`, `latitude`, `longitude`, `radius_meter`, `alamat`, `created_at`, `updated_at`) VALUES
-(1, 'Kantor Pusat', '-7.7920201', '110.3453868', 10, 'Head Office / Kantor Utama', '2026-08-10 09:35:59', '2026-08-10 14:08:13'),
-(2, 'kantor bantul', '-7.797228160892599', '110.35688674376483', 10, 'bantul aja', '2026-08-10 10:06:15', '2026-08-10 10:25:56');
 
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `hr_karyawan`
---
-
-CREATE TABLE `hr_karyawan` (
-  `id` int NOT NULL,
-  `user_id` int UNSIGNED NOT NULL,
-  `nama_lengkap` varchar(255) DEFAULT NULL,
-  `jenis_kelamin` enum('L','P') DEFAULT NULL,
-  `tanggal_lahir` date DEFAULT NULL,
-  `alamat` text,
-  `no_telepon` varchar(20) DEFAULT NULL,
-  `nik` varchar(50) DEFAULT NULL,
-  `jabatan` varchar(100) DEFAULT NULL,
-  `departemen` varchar(100) DEFAULT NULL,
-  `shift_id` int DEFAULT '1',
-  `kantor_id` int DEFAULT '1',
-  `tanggal_bergabung` date DEFAULT NULL,
-  `tipe_kerja` enum('WFO','WFH','WFA') DEFAULT 'WFO',
-  `gaji_pokok` decimal(15,2) DEFAULT '0.00',
-  `tunjangan` decimal(15,2) DEFAULT '0.00',
-  `tunjangan_tetap` decimal(15,2) DEFAULT '0.00',
-  `tunjangan_kehadiran` decimal(15,2) DEFAULT '0.00',
-  `device_id` varchar(255) DEFAULT NULL COMMENT 'Token LocalStorage untuk mengunci device',
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-  `jam_masuk_standar` time DEFAULT '08:00:00'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Dumping data untuk tabel `hr_karyawan`
---
-
-INSERT INTO `hr_karyawan` (`id`, `user_id`, `nama_lengkap`, `jenis_kelamin`, `tanggal_lahir`, `alamat`, `no_telepon`, `nik`, `jabatan`, `departemen`, `shift_id`, `kantor_id`, `tanggal_bergabung`, `tipe_kerja`, `gaji_pokok`, `tunjangan`, `tunjangan_tetap`, `tunjangan_kehadiran`, `device_id`, `created_at`, `updated_at`, `jam_masuk_standar`) VALUES
-(1, 25, 'yordan', 'L', '2000-05-13', 'jalan solo', '01234567889', '33224', 'Manager / Atasan Utama', 'IT & Teknologi', 1, 1, '2000-01-12', 'WFH', 0.00, 0.00, 0.00, 0.00, NULL, '2026-08-07 15:00:56', '2026-08-18 13:40:42', '08:00:00'),
-(4, 27, 'iqbal', 'L', '2026-08-10', 'solo', '8992', '0222', 'karyawan', 'sada', 4, 1, '2026-08-10', 'WFH', 5000000.00, 1000000.00, 1000000.00, 0.00, NULL, '2026-08-08 12:22:14', '2026-08-18 13:39:07', '08:00:00'),
-(6, 29, 'developer', 'L', '2026-08-10', 'fdgdd', '8992', '222', 'Manager / Atasan Utama', 'IT & Teknologi', 4, 1, '2026-08-10', 'WFH', 0.00, 0.00, 0.00, 0.00, NULL, '2026-08-10 20:25:10', '2026-08-18 14:07:11', '08:00:00'),
-(7, 30, 'testing1', 'P', '2026-08-13', 'asajhfjaas', '29138912', '1209031', 'Staff Karyawan', 'marketing', 4, 2, '2026-08-10', 'WFO', 0.00, 0.00, 0.00, 0.00, NULL, '2026-08-10 20:26:29', '2026-08-18 13:38:54', '08:00:00'),
-(8, 31, 'testing2', 'P', '2002-10-12', 'sadafasa', '01234567889', '198291381', 'Staff Karyawan', 'fullstack', 1, 2, '2026-08-10', 'WFA', 0.00, 0.00, 0.00, 0.00, NULL, '2026-08-10 20:31:17', '2026-08-18 13:38:48', '08:00:00'),
-(9, 32, 'testing3', 'L', '2026-05-12', 'saafasa', '32532', '121141412', 'Staff Karyawan', 'IT & Teknologi', 1, 1, '2026-08-11', 'WFH', 0.00, 0.00, 0.00, 0.00, NULL, '2026-08-11 14:05:29', '2026-08-18 13:38:43', '08:00:00'),
-(10, 33, 'testing4', 'P', '2026-08-13', 'whjahsjanda', '29018391812', '819281931', 'Staff Karyawan', 'IT & Teknologi', 3, 1, '2026-08-14', 'WFH', 0.00, 0.00, 0.00, 0.00, NULL, '2026-08-14 12:35:56', '2026-08-18 13:38:36', '08:00:00');
 
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `hr_payroll`
---
-
-CREATE TABLE `hr_payroll` (
-  `id` int NOT NULL,
-  `karyawan_id` int NOT NULL,
-  `periode_bulan` varchar(7) NOT NULL,
-  `gaji_pokok` decimal(15,2) DEFAULT '0.00',
-  `tunjangan` decimal(15,2) DEFAULT '0.00',
-  `tunjangan_tetap` decimal(15,2) DEFAULT '0.00',
-  `tunjangan_kehadiran` decimal(15,2) DEFAULT '0.00',
-  `hari_kerja_sebulan` int DEFAULT '0',
-  `jumlah_hadir` int DEFAULT '0',
-  `jumlah_alfa` int DEFAULT '0',
-  `jumlah_terlambat_ringan` int DEFAULT '0',
-  `jumlah_terlambat_berat` int DEFAULT '0',
-  `jumlah_izin_sakit` int DEFAULT '0',
-  `potongan_alfa` decimal(15,2) DEFAULT '0.00',
-  `potongan_terlambat` decimal(15,2) DEFAULT '0.00',
-  `potongan_izin_sakit` decimal(15,2) DEFAULT '0.00',
-  `total_potongan` decimal(15,2) DEFAULT '0.00',
-  `gaji_kotor` decimal(15,2) DEFAULT '0.00',
-  `gaji_bersih` decimal(15,2) DEFAULT '0.00',
-  `status` enum('Draft','Paid') DEFAULT 'Draft',
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `hari_dibayar_penuh` int DEFAULT '0',
-  `gaji_harian_pokok` decimal(15,2) DEFAULT '0.00',
-  `tunjangan_harian` decimal(15,2) DEFAULT '0.00',
-  `gaji_pokok_diterima` decimal(15,2) DEFAULT '0.00',
-  `tunjangan_diterima` decimal(15,2) DEFAULT '0.00',
-  `jumlah_hari_telat_denda` int DEFAULT '0',
-  `potongan_tidak_hadir` decimal(15,2) DEFAULT '0.00',
-  `tunj_tetap_harian` decimal(15,2) DEFAULT '0.00',
-  `tunj_kehadiran_harian` decimal(15,2) DEFAULT '0.00',
-  `tunj_tetap_diterima` decimal(15,2) DEFAULT '0.00',
-  `tunj_kehadiran_diterima` decimal(15,2) DEFAULT '0.00',
-  `hari_hadir_fisik` int DEFAULT '0',
-  `uang_lembur` decimal(15,2) DEFAULT '0.00',
-  `jumlah_cuti` int DEFAULT '0',
-  `jumlah_sakit_surat` int DEFAULT '0',
-  `jumlah_sakit_tanpa_surat` int DEFAULT '0',
-  `jumlah_izin_khusus` int DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Dumping data untuk tabel `hr_payroll`
---
-
-INSERT INTO `hr_payroll` (`id`, `karyawan_id`, `periode_bulan`, `gaji_pokok`, `tunjangan`, `tunjangan_tetap`, `tunjangan_kehadiran`, `hari_kerja_sebulan`, `jumlah_hadir`, `jumlah_alfa`, `jumlah_terlambat_ringan`, `jumlah_terlambat_berat`, `jumlah_izin_sakit`, `potongan_alfa`, `potongan_terlambat`, `potongan_izin_sakit`, `total_potongan`, `gaji_kotor`, `gaji_bersih`, `status`, `created_at`, `hari_dibayar_penuh`, `gaji_harian_pokok`, `tunjangan_harian`, `gaji_pokok_diterima`, `tunjangan_diterima`, `jumlah_hari_telat_denda`, `potongan_tidak_hadir`, `tunj_tetap_harian`, `tunj_kehadiran_harian`, `tunj_tetap_diterima`, `tunj_kehadiran_diterima`, `hari_hadir_fisik`, `uang_lembur`, `jumlah_cuti`, `jumlah_sakit_surat`, `jumlah_sakit_tanpa_surat`, `jumlah_izin_khusus`) VALUES
-(74, 1, '2026-08', 5000000.00, 1000000.00, 1000000.00, 0.00, 26, 0, 0, 0, 0, 0, 0.00, 0.00, 0.00, 0.00, 6000000.00, 6000000.00, 'Draft', '2026-08-14 12:48:17', 1, 192308.00, 38462.00, 5000000.00, 1000000.00, 0, 0.00, 38462.00, 0.00, 1000000.00, 0.00, 0, 0.00, 0, 0, 0, 0),
-(75, 4, '2026-08', 5000000.00, 1000000.00, 1000000.00, 0.00, 26, 1, 0, 0, 0, 0, 0.00, 0.00, 0.00, 0.00, 6000000.00, 6000000.00, 'Draft', '2026-08-14 12:48:17', 2, 192308.00, 38462.00, 5000000.00, 1000000.00, 0, 0.00, 38462.00, 0.00, 1000000.00, 0.00, 1, 0.00, 0, 0, 0, 0),
-(76, 6, '2026-08', 6000000.00, 500000.00, 500000.00, 0.00, 26, 0, 0, 0, 0, 0, 0.00, 0.00, 0.00, 0.00, 6500000.00, 6500000.00, 'Draft', '2026-08-14 12:48:17', 1, 230769.00, 19231.00, 6000000.00, 500000.00, 0, 0.00, 19231.00, 0.00, 500000.00, 0.00, 0, 0.00, 0, 0, 0, 0),
-(77, 7, '2026-08', 5000000.00, 2000000.00, 1000000.00, 1000000.00, 26, 0, 0, 0, 0, 1, 0.00, 0.00, 38462.00, 38462.00, 7000000.00, 6961538.00, 'Draft', '2026-08-14 12:48:18', 2, 192308.00, 76924.00, 5000000.00, 2000000.00, 0, 38462.00, 38462.00, 38462.00, 1000000.00, 1000000.00, 1, 0.00, 0, 0, 0, 1),
-(78, 8, '2026-08', 5000000.00, 530000.00, 500000.00, 30000.00, 26, 1, 0, 1, 0, 0, 0.00, 38461.60, 0.00, 38461.60, 5500000.00, 5461538.00, 'Draft', '2026-08-14 12:48:18', 2, 192308.00, 19231.00, 5000000.00, 500000.00, 0, 0.00, 19231.00, 0.00, 500000.00, 0.00, 1, 0.00, 0, 0, 0, 0),
-(79, 9, '2026-08', 5000000.00, 1000000.00, 1000000.00, 0.00, 26, 1, 0, 1, 0, 0, 0.00, 38461.60, 0.00, 38461.60, 6000000.00, 5961538.00, 'Draft', '2026-08-14 12:48:18', 2, 192308.00, 38462.00, 5000000.00, 1000000.00, 0, 0.00, 38462.00, 0.00, 1000000.00, 0.00, 1, 0.00, 0, 0, 0, 0),
-(80, 10, '2026-08', 6000000.00, 500000.00, 500000.00, 0.00, 26, 1, 0, 0, 0, 0, 0.00, 0.00, 0.00, 0.00, 6500000.00, 6500000.00, 'Draft', '2026-08-14 12:48:18', 2, 230769.00, 19231.00, 6000000.00, 500000.00, 0, 0.00, 19231.00, 0.00, 500000.00, 0.00, 1, 0.00, 0, 0, 0, 0);
 
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `hr_pengaturan`
---
-
-CREATE TABLE `hr_pengaturan` (
-  `id` int NOT NULL,
-  `default_kantor_id` int DEFAULT '1',
-  `nama_kantor` varchar(100) NOT NULL DEFAULT 'Kantor Pusat',
-  `latitude_kantor` varchar(100) DEFAULT NULL,
-  `longitude_kantor` varchar(100) DEFAULT NULL,
-  `radius_toleransi_meter` int DEFAULT '50',
-  `jam_masuk` time DEFAULT '08:00:00',
-  `toleransi_terlambat_menit` int DEFAULT '15',
-  `jam_pulang` time DEFAULT '17:00:00',
-  `batas_jam_pulang` time DEFAULT '20:00:00',
-  `toleransi_pulang_awal_menit` int DEFAULT '0',
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-  `menit_batas_denda_telat` int DEFAULT '15',
-  `persen_denda_telat` int DEFAULT '5',
-  `hari_kerja_per_minggu` enum('senin_jumat','senin_sabtu') DEFAULT 'senin_sabtu',
-  `potong_gaji_sakit_tanpa_surat` tinyint(1) DEFAULT '1',
-  `potong_gaji_sakit_dengan_surat` tinyint(1) DEFAULT '0',
-  `denda_tier1_menit` int DEFAULT '15',
-  `denda_tier1_persen` int DEFAULT '0',
-  `denda_tier2_menit` int DEFAULT '30',
-  `denda_tier2_persen` int DEFAULT '5',
-  `denda_tier3_menit` int DEFAULT '60',
-  `denda_tier3_persen` int DEFAULT '10',
-  `denda_tier4_persen` int DEFAULT '25',
-  `cap_denda_persen` int DEFAULT '30',
-  `tgl_cutoff_mulai` int DEFAULT '21',
-  `tgl_cutoff_akhir` int DEFAULT '20'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Dumping data untuk tabel `hr_pengaturan`
---
-
-INSERT INTO `hr_pengaturan` (`id`, `default_kantor_id`, `nama_kantor`, `latitude_kantor`, `longitude_kantor`, `radius_toleransi_meter`, `jam_masuk`, `toleransi_terlambat_menit`, `jam_pulang`, `batas_jam_pulang`, `toleransi_pulang_awal_menit`, `created_at`, `updated_at`, `menit_batas_denda_telat`, `persen_denda_telat`, `hari_kerja_per_minggu`, `potong_gaji_sakit_tanpa_surat`, `potong_gaji_sakit_dengan_surat`, `denda_tier1_menit`, `denda_tier1_persen`, `denda_tier2_menit`, `denda_tier2_persen`, `denda_tier3_menit`, `denda_tier3_persen`, `denda_tier4_persen`, `cap_denda_persen`, `tgl_cutoff_mulai`, `tgl_cutoff_akhir`) VALUES
-(1, 1, 'Kantor Pusat', '-7.814405308846437', '110.34953403220165', 50, '08:00:00', 15, '17:00:00', '20:00:00', 0, '2026-08-07 13:33:59', '2026-08-12 22:02:37', 15, 5, 'senin_sabtu', 1, 0, 15, 0, 30, 5, 60, 10, 20, 30, 21, 20);
 
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `hr_shift`
---
-
-CREATE TABLE `hr_shift` (
-  `id` int NOT NULL,
-  `nama_shift` varchar(100) NOT NULL,
-  `jam_masuk` time NOT NULL,
-  `jam_pulang` time NOT NULL,
-  `created_at` datetime DEFAULT NULL,
-  `updated_at` datetime DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Dumping data untuk tabel `hr_shift`
---
-
-INSERT INTO `hr_shift` (`id`, `nama_shift`, `jam_masuk`, `jam_pulang`, `created_at`, `updated_at`) VALUES
-(1, 'Shift Reguler', '08:00:00', '17:00:00', '2026-08-10 08:46:57', NULL),
-(2, 'Shift Pagi', '06:00:00', '14:00:00', '2026-08-10 08:46:57', NULL),
-(3, 'Shift Siang', '14:00:00', '22:00:00', '2026-08-10 08:46:57', NULL),
-(4, 'Shift Malam', '22:00:00', '06:00:00', '2026-08-10 08:46:57', NULL);
 
 -- --------------------------------------------------------
 
@@ -137944,55 +137631,20 @@ ALTER TABLE `harga_pelanggan`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indeks untuk tabel `hr_absensi`
---
-ALTER TABLE `hr_absensi`
-  ADD PRIMARY KEY (`id`);
 
 --
--- Indeks untuk tabel `hr_device_fingerprint`
---
-ALTER TABLE `hr_device_fingerprint`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `user_id` (`user_id`),
-  ADD KEY `device_id` (`device_id`);
 
 --
--- Indeks untuk tabel `hr_hari_libur`
---
-ALTER TABLE `hr_hari_libur`
-  ADD PRIMARY KEY (`id`);
 
 --
--- Indeks untuk tabel `hr_kantor`
---
-ALTER TABLE `hr_kantor`
-  ADD PRIMARY KEY (`id`);
 
 --
--- Indeks untuk tabel `hr_karyawan`
---
-ALTER TABLE `hr_karyawan`
-  ADD PRIMARY KEY (`id`);
 
 --
--- Indeks untuk tabel `hr_payroll`
---
-ALTER TABLE `hr_payroll`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `karyawan_id` (`karyawan_id`,`periode_bulan`);
 
 --
--- Indeks untuk tabel `hr_pengaturan`
---
-ALTER TABLE `hr_pengaturan`
-  ADD PRIMARY KEY (`id`);
 
 --
--- Indeks untuk tabel `hr_shift`
---
-ALTER TABLE `hr_shift`
-  ADD PRIMARY KEY (`id`);
 
 --
 -- Indeks untuk tabel `invoice`
@@ -138531,52 +138183,20 @@ ALTER TABLE `harga_pelanggan`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
--- AUTO_INCREMENT untuk tabel `hr_absensi`
---
-ALTER TABLE `hr_absensi`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
--- AUTO_INCREMENT untuk tabel `hr_device_fingerprint`
---
-ALTER TABLE `hr_device_fingerprint`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
--- AUTO_INCREMENT untuk tabel `hr_hari_libur`
---
-ALTER TABLE `hr_hari_libur`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
--- AUTO_INCREMENT untuk tabel `hr_kantor`
---
-ALTER TABLE `hr_kantor`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
--- AUTO_INCREMENT untuk tabel `hr_karyawan`
---
-ALTER TABLE `hr_karyawan`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
--- AUTO_INCREMENT untuk tabel `hr_payroll`
---
-ALTER TABLE `hr_payroll`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=81;
 
 --
--- AUTO_INCREMENT untuk tabel `hr_pengaturan`
---
-ALTER TABLE `hr_pengaturan`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
--- AUTO_INCREMENT untuk tabel `hr_shift`
---
-ALTER TABLE `hr_shift`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT untuk tabel `invoice`
