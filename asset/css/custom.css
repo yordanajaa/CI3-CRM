@@ -34,7 +34,7 @@ i.required, span.required {
     background: #fff !important;
 }
 .label-default .fa {
-    color: #1089CE
+    color: #1089CE;
 }
 .widget-user-header {
     margin-left: 0px !important;
@@ -94,14 +94,14 @@ i.required, span.required {
 
 .loading-hide {
     margin-left: 10px;
-    display: none
+    display: none;
 }
 .view-nav {
     padding-bottom: 10px;
 }
 .no-message-padding .message-alert {
     margin-left: 0px !important;
-    padding-left: 0px !important
+    padding-left: 0px !important;
 }
 .table-striped>tbody>tr:nth-of-type(even) {
     background-color: #fff !important;
@@ -113,7 +113,7 @@ i.required, span.required {
     padding-bottom: 20px !important;
 }
 .chosen-single .search-choice-close {
-    margin-bottom: -30px !important
+    margin-bottom: -30px !important;
 }
 /*crud generator*/
 
@@ -127,7 +127,7 @@ i.required, span.required {
     border-bottom: 1px solid #E2E2E2 !important;
 }
 .textarea {
-    width: 100%
+    width: 100%;
 }
 .show-password, .show-password:focus, .show-password:active {
     background: #fff !important;
@@ -968,7 +968,7 @@ i.required, span.required {
     background: rgb(0, 0, 0) !important;
     color: #FFFFFF;
     border: none !important;
-    margin-bottom: 0px !important
+    margin-bottom: 0px !important;
 }
 .box.box-transparent .box-header {
     padding: 5px;
@@ -1158,14 +1158,14 @@ ul li .btn-mode.active {
     background: #FAE0E0 !important;
 }
 .box {
-    border-top-color: #fff !important
+    border-top-color: #fff !important;
 }
 .text-danger {
-    color: #FA7B7B
+    color: #FA7B7B;
 }
 .callout-warning-cc {
     background: #FFFADD !important;
-    border-left-color: #ECB907
+    border-left-color: #ECB907;
 }
 div.phpdebugbar-header, .phpdebugbar-restore-btn {
     background: url('https://s3.envato.com/files/218847280/icon-80x80.png') !important;
@@ -1180,7 +1180,7 @@ div.phpdebugbar-header, .phpdebugbar-restore-btn {
 .extension-body {
     padding: 10px 0px;
     padding-bottom: 10px;
-    color: #969696
+    color: #969696;
 }
 .extension-body i {
     font-size: 12px;
@@ -1255,10 +1255,10 @@ div.phpdebugbar-header, .phpdebugbar-restore-btn {
     margin-right: 10px;
 }
 .color-caret {
-    color: #C2C2C2
+    color: #C2C2C2;
 }
 .color-red {
-    color: #F45E5E
+    color: #F45E5E;
 }
 #nesteable a {
     color: #546973 !important;
@@ -1302,7 +1302,7 @@ div.phpdebugbar-header, .phpdebugbar-restore-btn {
 .blog-slug {
     border: none !important;
     outline: none;
-    color: #C6B207
+    color: #C6B207;
 }
 
 /*
