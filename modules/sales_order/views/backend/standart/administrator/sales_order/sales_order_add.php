@@ -281,6 +281,79 @@ textarea.form-control {
     display: none !important;
   }
 }
+
+/* Payment Status & Terms Cards */
+.payment-option-card {
+  display: block;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  background: #ffffff;
+  transition: all 0.2s ease;
+  margin-bottom: 10px;
+  position: relative;
+  text-decoration: none !important;
+}
+.payment-option-card:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+  transform: translateY(-1px);
+}
+.payment-option-card.active {
+  border-color: #f59e0b !important;
+  background: #fffdf5 !important;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.15) !important;
+}
+.payment-option-card.active#card_opt_lunas {
+  border-color: #10b981 !important;
+  background: #f0fdf4 !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.15) !important;
+}
+.payment-option-card.active#card_opt_draft {
+  border-color: #64748b !important;
+  background: #f8fafc !important;
+  box-shadow: 0 4px 14px rgba(100, 116, 139, 0.15) !important;
+}
+.option-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.option-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  flex-shrink: 0;
+}
+.option-icon.bg-amber { background: #fef3c7; color: #d97706; }
+.option-icon.bg-emerald { background: #d1fae5; color: #059669; }
+.option-icon.bg-slate { background: #e2e8f0; color: #475569; }
+.option-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #1e293b;
+  display: block;
+  line-height: 1.25;
+}
+.option-sub {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  margin-top: 2px;
+}
+.option-desc {
+  font-size: 11.5px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.4;
+  font-weight: normal;
+}
 </style>
 
 <section class="content-header">
@@ -477,19 +550,159 @@ textarea.form-control {
             </div>
          </div>
 
+         <!-- Section Status Pembayaran & Ketentuan Tagihan (Piutang Usaha) -->
+         <div style="padding: 18px 20px 8px 20px; background: #fafcff; border-top: 1px solid #e2e8f0;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:6px;">
+               <h4 style="margin:0; font-size:14px; font-weight:700; color:#1e293b;">
+                  <i class="fa fa-credit-card text-warning"></i> Status Pembayaran &amp; Ketentuan Tagihan (Piutang Usaha)
+               </h4>
+               <span class="text-muted" style="font-size:12px;">Pilih metode penyelesaian: Tempo (masuk piutang), Lunas langsung, atau Draft</span>
+            </div>
+
+            <div class="row">
+               <div class="col-md-4 col-sm-12">
+                  <!-- Option 1: Belum Bayar / Tempo (Default) -->
+                  <label class="payment-option-card active" id="card_opt_tempo">
+                     <input type="radio" name="status_pembayaran" value="tempo" checked style="position:absolute; opacity:0;">
+                     <div class="option-header">
+                        <span class="option-icon bg-amber"><i class="fa fa-clock-o"></i></span>
+                        <div>
+                           <strong class="option-title">Belum Bayar (Tempo / Kredit)</strong>
+                           <div class="option-sub"><i class="fa fa-arrow-circle-right text-warning"></i> Otomatis Masuk Piutang Usaha (AR)</div>
+                        </div>
+                     </div>
+                     <p class="option-desc">Menerbitkan Faktur resmi &amp; mencatat tagihan ke modul <b>Piutang Usaha</b> dengan status <i>Belum Bayar</i>.</p>
+                  </label>
+               </div>
+
+               <div class="col-md-4 col-sm-12">
+                  <!-- Option 2: Sudah Bayar Lunas -->
+                  <label class="payment-option-card" id="card_opt_lunas">
+                     <input type="radio" name="status_pembayaran" value="lunas" style="position:absolute; opacity:0;">
+                     <div class="option-header">
+                        <span class="option-icon bg-emerald"><i class="fa fa-check-circle"></i></span>
+                        <div>
+                           <strong class="option-title">Sudah Bayar / Lunas</strong>
+                           <div class="option-sub"><i class="fa fa-arrow-circle-right text-success"></i> Masuk Kas/Bank &amp; Faktur Lunas</div>
+                        </div>
+                     </div>
+                     <p class="option-desc">Mencatat pelunasan langsung ke Kas/Bank, menerbitkan Faktur Lunas, dan Bukti Kas Masuk (BKM).</p>
+                  </label>
+               </div>
+
+               <div class="col-md-4 col-sm-12">
+                  <!-- Option 3: Draft Pemesanan -->
+                  <label class="payment-option-card" id="card_opt_draft">
+                     <input type="radio" name="status_pembayaran" value="draft" style="position:absolute; opacity:0;">
+                     <div class="option-header">
+                        <span class="option-icon bg-slate"><i class="fa fa-file-text-o"></i></span>
+                        <div>
+                           <strong class="option-title">Draft Pemesanan Saja</strong>
+                           <div class="option-sub"><i class="fa fa-arrow-circle-right text-muted"></i> Belum Diterbitkan Tagihan</div>
+                        </div>
+                      </div>
+                     <p class="option-desc">Menyimpan sebagai draf penawaran/pemesanan awal tanpa memotong stok dan belum masuk ke piutang.</p>
+                  </label>
+               </div>
+            </div>
+
+            <!-- Sub-Panel: Detail Tempo / Piutang -->
+            <div id="panel_tempo_details" class="panel-payment-sub" style="margin-top:4px; margin-bottom:12px; padding:14px 16px; background:#fffbeb; border:1px solid #fde68a; border-radius:8px;">
+               <div class="row">
+                  <div class="col-md-4 col-sm-6">
+                     <div class="form-group" style="margin-bottom:0;">
+                        <label style="font-weight:700; color:#92400e; font-size:12px;"><i class="fa fa-calendar"></i> Syarat Pembayaran (Termin)</label>
+                        <select class="form-control" name="syarat_pembayaran" id="syarat_pembayaran" style="border-radius:6px; font-weight:600; height:38px; border-color:#fcd34d;">
+                           <option value="net_30" selected>Net 30 (Jatuh Tempo 30 Hari)</option>
+                           <option value="net_14">Net 14 (Jatuh Tempo 14 Hari)</option>
+                           <option value="net_7">Net 7 (Jatuh Tempo 7 Hari)</option>
+                           <option value="net_60">Net 60 (Jatuh Tempo 60 Hari)</option>
+                           <option value="cod">COD (Bayar Saat Pengiriman / Serah Terima)</option>
+                           <option value="custom">Custom (Pilih Tanggal Bebas)</option>
+                        </select>
+                     </div>
+                  </div>
+                  <div class="col-md-4 col-sm-6">
+                     <div class="form-group" style="margin-bottom:0;">
+                        <label style="font-weight:700; color:#92400e; font-size:12px;"><i class="fa fa-clock-o"></i> Tanggal Jatuh Tempo <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" name="tanggal_jatuh_tempo" id="tanggal_jatuh_tempo" value="<?= date('Y-m-d', strtotime('+30 days')); ?>" style="border-radius:6px; font-weight:700; height:38px; border-color:#fcd34d;">
+                        <div style="margin-top:5px; display:flex; gap:4px; flex-wrap:wrap;">
+                           <button type="button" class="btn btn-xs btn-default btn-quick-due" data-days="7" style="font-size:10px; border-radius:4px; padding:2px 7px;">+7 Hari</button>
+                           <button type="button" class="btn btn-xs btn-default btn-quick-due" data-days="14" style="font-size:10px; border-radius:4px; padding:2px 7px;">+14 Hari</button>
+                           <button type="button" class="btn btn-xs btn-default btn-quick-due active" data-days="30" style="font-size:10px; border-radius:4px; padding:2px 7px; background:#fef3c7; border-color:#d97706; font-weight:700;">+30 Hari</button>
+                           <button type="button" class="btn btn-xs btn-default btn-quick-due" data-days="60" style="font-size:10px; border-radius:4px; padding:2px 7px;">+60 Hari</button>
+                        </div>
+                     </div>
+                  </div>
+                  <div class="col-md-4 col-sm-12">
+                     <div class="form-group" style="margin-bottom:0;">
+                        <label style="font-weight:700; color:#92400e; font-size:12px;"><i class="fa fa-info-circle"></i> Info Tagihan Piutang</label>
+                        <div style="font-size:11.5px; color:#78350f; line-height:1.45; padding-top:2px;">
+                           Setelah disimpan, tagihan senilai <b id="preview_total_piutang" class="text-danger">Rp 0</b> akan otomatis tercatat pada daftar <b>Piutang Usaha</b> pelanggan dan siap dicicil/dilunasi kapan saja.
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+
+            <!-- Sub-Panel: Detail Lunas Langsung -->
+            <div id="panel_lunas_details" class="panel-payment-sub" style="display:none; margin-top:4px; margin-bottom:12px; padding:14px 16px; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:8px;">
+               <div class="row">
+                  <div class="col-md-4 col-sm-6">
+                     <div class="form-group" style="margin-bottom:0;">
+                        <label style="font-weight:700; color:#065f46; font-size:12px;"><i class="fa fa-money"></i> Metode Pembayaran</label>
+                        <select class="form-control" name="metode_pembayaran" id="metode_pembayaran" style="border-radius:6px; font-weight:600; height:38px; border-color:#6ee7b7;">
+                           <option value="tunai" selected>Tunai / Cash</option>
+                           <option value="bank_transfer">Transfer Bank</option>
+                           <option value="qris">QRIS / E-Wallet</option>
+                           <option value="debit">Kartu Debit</option>
+                           <option value="giro">Giro / Cek</option>
+                        </select>
+                     </div>
+                  </div>
+                  <div class="col-md-4 col-sm-6">
+                     <div class="form-group" style="margin-bottom:0;">
+                        <label style="font-weight:700; color:#065f46; font-size:12px;"><i class="fa fa-university"></i> Setor ke Akun Kas/Bank</label>
+                        <select class="form-control" name="akun_kas_bank" id="akun_kas_bank" style="border-radius:6px; font-weight:600; height:38px; border-color:#6ee7b7;">
+                           <option value="Kas Tunai Kasir" selected>Kas Tunai Kasir</option>
+                           <option value="Bank BCA (Rek: 8830-123-456)">Bank BCA (Rek: 8830-123-456)</option>
+                           <option value="Bank Mandiri (Rek: 137-00-98765)">Bank Mandiri (Rek: 137-00-98765)</option>
+                           <option value="Bank BNI">Bank BNI</option>
+                           <option value="Bank BRI">Bank BRI</option>
+                        </select>
+                     </div>
+                  </div>
+                  <div class="col-md-4 col-sm-12">
+                     <div class="form-group" style="margin-bottom:0;">
+                        <label style="font-weight:700; color:#065f46; font-size:12px;"><i class="fa fa-hashtag"></i> No. Referensi / Bukti Transfer (Opsional)</label>
+                        <input type="text" class="form-control" name="nomor_referensi" id="nomor_referensi" placeholder="Contoh: REF-TRX-12345" style="border-radius:6px; height:38px; border-color:#6ee7b7;">
+                     </div>
+                  </div>
+               </div>
+            </div>
+
+            <!-- Sub-Panel: Detail Draft -->
+            <div id="panel_draft_details" class="panel-payment-sub" style="display:none; margin-top:4px; margin-bottom:12px; padding:12px 16px; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:8px;">
+               <div style="font-size:12px; color:#475569; display:flex; align-items:center; gap:8px;">
+                  <i class="fa fa-info-circle text-primary" style="font-size:16px;"></i>
+                  <span>Mode <b>Draft</b> akan menyimpan dokumen pemesanan tanpa memotong stok dan tanpa mencatat tagihan ke piutang. Tagihan dapat diterbitkan di kemudian hari melalui tombol Konfirmasi &amp; Terbitkan Invoice.</span>
+               </div>
+            </div>
+         </div>
+
          <!-- Card Footer: Action Buttons at the Bottom! -->
-         <div class="box-footer" style="padding:15px 20px; background:#f8fafc; border-top:1px solid #f1f5f9; border-radius: 0 0 8px 8px;">
+         <div class="box-footer" style="padding:15px 20px; background:#f8fafc; border-top:1px solid #e2e8f0; border-radius: 0 0 8px 8px;">
             <div class="pull-left">
                <a href="<?= base_url('administrator/sales_order'); ?>" class="btn btn-default btn-flat" style="border-radius:6px; font-weight:600; padding:8px 18px;">
                   <i class="fa fa-arrow-left"></i> Kembali ke Daftar SO
                </a>
             </div>
             <div class="pull-right" style="display:flex; gap:10px; align-items:center;">
-               <button type="button" id="btn_save" class="btn btn-default btn-flat" style="border-radius:6px; font-weight:600; padding:8px 18px; font-size:14px; border:1px solid #cbd5e1;">
-                  <i class="fa fa-save text-muted"></i> <?= $is_edit ? 'Simpan (Draft)' : 'Simpan Draft'; ?>
+               <button type="button" id="btn_save" class="btn btn-default btn-flat" style="border-radius:6px; font-weight:600; padding:8px 18px; font-size:13.5px; border:1px solid #cbd5e1;">
+                  <i class="fa fa-save text-muted"></i> <?= $is_edit ? 'Simpan (Draft)' : 'Simpan Draft Saja'; ?>
                </button>
-               <button type="button" id="btn_save_confirm" class="btn btn-success btn-flat" style="border-radius:6px; font-weight:700; padding:8px 22px; font-size:14px; box-shadow:0 3px 10px rgba(16,185,129,0.25);">
-                  <i class="fa fa-check-circle"></i> <?= $is_edit ? 'Update &amp; Konfirmasi Langsung' : '⚡ Simpan &amp; Konfirmasi Langsung'; ?>
+               <button type="button" id="btn_save_confirm" class="btn btn-warning btn-flat" style="border-radius:6px; font-weight:700; padding:8px 22px; font-size:14px; background:#f59e0b; border-color:#d97706; color:#ffffff; box-shadow:0 3px 10px rgba(245,158,11,0.25);">
+                  <i class="fa fa-clock-o"></i> <?= $is_edit ? 'Simpan &amp; Terbitkan Piutang (Tempo)' : '⚡ Simpan &amp; Terbitkan Piutang (Tempo)'; ?>
                </button>
             </div>
          </div>
@@ -706,6 +919,7 @@ function recalc_total(){
    $('#display_diskon').text('- ' + format_rp(dis_nominal));
    $('#display_pajak').text(format_rp(pjk_nominal) + (pjk_pct > 0 ? ' (' + pjk_pct + '%)' : ''));
    $('#display_total').text(format_rp(total));
+   $('#preview_total_piutang').text(format_rp(total));
 }
 
 function validate_row_qty($row) {
@@ -970,12 +1184,85 @@ $(document).ready(function(){
       });
    }
 
+   // Event Listener: Opsi Pembayaran (Tempo / Lunas / Draft)
+   $('input[name="status_pembayaran"]').change(function(){
+      var val = $(this).val();
+      $('.payment-option-card').removeClass('active');
+      $('#card_opt_' + val).addClass('active');
+
+      $('.panel-payment-sub').hide();
+      if (val === 'tempo') {
+         $('#panel_tempo_details').slideDown(180);
+         $('#btn_save_confirm')
+            .removeClass('btn-success btn-default')
+            .addClass('btn-warning')
+            .css({'background': '#f59e0b', 'border-color': '#d97706', 'color': '#ffffff'})
+            .html('<i class="fa fa-clock-o"></i> ⚡ Simpan &amp; Terbitkan Piutang (Tempo)');
+      } else if (val === 'lunas') {
+         $('#panel_lunas_details').slideDown(180);
+         $('#btn_save_confirm')
+            .removeClass('btn-warning btn-default')
+            .addClass('btn-success')
+            .css({'background': '#10b981', 'border-color': '#059669', 'color': '#ffffff'})
+            .html('<i class="fa fa-check-circle"></i> ✓ Simpan &amp; Bayar Lunas Langsung');
+      } else {
+         $('#panel_draft_details').slideDown(180);
+         $('#btn_save_confirm')
+            .removeClass('btn-warning btn-success')
+            .addClass('btn-default')
+            .css({'background': '#64748b', 'border-color': '#475569', 'color': '#ffffff'})
+            .html('<i class="fa fa-save"></i> Simpan Dokumen Draft');
+      }
+   });
+
+   // Tombol Cepat Jatuh Tempo (+7, +14, +30, +60 hari)
+   $('.btn-quick-due').click(function(e){
+      e.preventDefault();
+      $('.btn-quick-due').removeClass('active').css({'background': '#ffffff', 'border-color': '#cbd5e1', 'font-weight': 'normal'});
+      $(this).addClass('active').css({'background': '#fef3c7', 'border-color': '#d97706', 'font-weight': 'bold'});
+      var days = parseInt($(this).data('days'));
+      var d = new Date();
+      d.setDate(d.getDate() + days);
+      var yyyy = d.getFullYear();
+      var mm = String(d.getMonth() + 1).padStart(2, '0');
+      var dd = String(d.getDate()).padStart(2, '0');
+      $('#tanggal_jatuh_tempo').val(yyyy + '-' + mm + '-' + dd);
+
+      if (days === 7) $('#syarat_pembayaran').val('net_7');
+      else if (days === 14) $('#syarat_pembayaran').val('net_14');
+      else if (days === 30) $('#syarat_pembayaran').val('net_30');
+      else if (days === 60) $('#syarat_pembayaran').val('net_60');
+   });
+
+   $('#syarat_pembayaran').change(function(){
+      var v = $(this).val();
+      var d = new Date();
+      var days = 30;
+      if (v === 'net_7') days = 7;
+      else if (v === 'net_14') days = 14;
+      else if (v === 'net_30') days = 30;
+      else if (v === 'net_60') days = 60;
+      else if (v === 'cod') days = 0;
+
+      if (v !== 'custom') {
+         d.setDate(d.getDate() + days);
+         var yyyy = d.getFullYear();
+         var mm = String(d.getMonth() + 1).padStart(2, '0');
+         var dd = String(d.getDate()).padStart(2, '0');
+         $('#tanggal_jatuh_tempo').val(yyyy + '-' + mm + '-' + dd);
+         $('.btn-quick-due').removeClass('active').css({'background': '#ffffff', 'border-color': '#cbd5e1', 'font-weight': 'normal'});
+         $('.btn-quick-due[data-days="' + days + '"]').addClass('active').css({'background': '#fef3c7', 'border-color': '#d97706', 'font-weight': 'bold'});
+      }
+   });
+
+   // Submit Handlers
    $('#btn_save').click(function(){
       submit_so_form('draft', $(this));
    });
 
    $('#btn_save_confirm').click(function(){
-      submit_so_form('confirm', $(this));
+      var mode = $('input[name="status_pembayaran"]:checked').val() || 'tempo';
+      submit_so_form(mode, $(this));
    });
 
    $('#btn_refresh_pelanggan').click(function(){

@@ -94,6 +94,10 @@ $display_kurir = !empty($so->opsi_pengiriman) ? $so->opsi_pengiriman : (!empty($
    <div class="col-md-12">
       <?php 
       $linked_inv = $this->db->get_where('invoice', ['so_id' => $so->id])->row();
+      $linked_piu = $this->db->get_where('piutang_usaha', ['so_id' => $so->id])->row();
+      if (!$linked_piu && $linked_inv) {
+         $linked_piu = $this->db->get_where('piutang_usaha', ['invoice_id' => $linked_inv->id])->row();
+      }
       ?>
       <div class="box box-primary" style="border-radius:6px; border-top: 3px solid #3c8dbc;">
          <div class="box-header with-border" style="padding: 15px 20px;">
@@ -102,8 +106,10 @@ $display_kurir = !empty($so->opsi_pengiriman) ? $so->opsi_pengiriman : (!empty($
                   <span class="label label-primary" style="font-size:11px;"><?= _ent($so->no_pesanan); ?></span>
                <?php endif; ?>
                <span class="label label-<?= $status_color[$so->status]??'default'; ?>" style="font-size:11px; margin-left:4px;"><?= strtoupper($so->status); ?></span>
-               <?php if(!empty($so->waktu_pembayaran) || ($linked_inv && $linked_inv->status == 'paid')): ?>
+               <?php if(!empty($so->waktu_pembayaran) || ($linked_inv && $linked_inv->status == 'paid') || ($linked_piu && $linked_piu->status == 'lunas')): ?>
                   <span class="label label-success" style="font-size:11px; margin-left:4px;"><i class="fa fa-check-circle"></i> LUNAS (PAID)</span>
+               <?php elseif ($linked_piu && $linked_piu->status != 'lunas'): ?>
+                  <span class="label label-warning" style="font-size:11px; margin-left:4px;"><i class="fa fa-clock-o"></i> PIUTANG: BELUM BAYAR</span>
                <?php endif; ?>
                <?php if ($so->source == 'pos' || strpos((string)$so->catatan, '[POS CEPAT') !== false): ?>
                   <span class="label" style="background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; font-size:11px; margin-left:4px;"><i class="fa fa-bolt"></i> POS KASIR</span>
@@ -116,6 +122,12 @@ $display_kurir = !empty($so->opsi_pengiriman) ? $so->opsi_pengiriman : (!empty($
                   <a href="<?= site_url('administrator/invoice/view/' . $linked_inv->id); ?>" class="btn btn-info btn-sm btn-flat" style="border-radius:4px; font-weight:600;"><i class="fa fa-file-text-o"></i> Lihat Invoice <?= _ent($linked_inv->nomor_invoice); ?></a>
                <?php elseif (in_array($so->status, ['confirmed', 'processing', 'packing', 'shipped', 'delivered']) && is_allowed('invoice_add', false)): ?>
                   <a href="<?= site_url('administrator/invoice/from_so/' . $so->id); ?>" class="btn btn-success btn-sm btn-flat" style="border-radius:4px; font-weight:600;"><i class="fa fa-file-text-o"></i> Buat Invoice</a>
+               <?php endif; ?>
+
+               <?php if ($linked_piu): ?>
+                  <a href="<?= site_url('administrator/piutang_usaha/view/' . $linked_piu->id); ?>" class="btn <?= $linked_piu->status == 'lunas' ? 'btn-success' : 'btn-warning'; ?> btn-sm btn-flat" style="border-radius:4px; font-weight:600;">
+                     <i class="fa fa-money"></i> Piutang: <?= _ent($linked_piu->nomor_piutang); ?> (<?= strtoupper($linked_piu->status == 'belum_bayar' ? 'Belum Bayar' : $linked_piu->status); ?>)
+                  </a>
                <?php endif; ?>
 
                <?php if ($so->status == 'draft' && is_allowed('sales_order_update', false)): ?>
@@ -243,7 +255,7 @@ $display_kurir = !empty($so->opsi_pengiriman) ? $so->opsi_pengiriman : (!empty($
                ->limit(1)
                ->get()->row();
             ?>
-            <?php if ($bkm_payment || !empty($so->waktu_pembayaran)): ?>
+            <?php if ($bkm_payment || !empty($so->waktu_pembayaran) || ($linked_piu && $linked_piu->status == 'lunas')): ?>
             <div class="alert alert-success" style="background:#ecfdf5 !important; border:1px solid #a7f3d0 !important; color:#065f46 !important; border-radius:8px; margin-bottom:20px; padding:12px 18px;">
                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                   <div>
@@ -256,7 +268,7 @@ $display_kurir = !empty($so->opsi_pengiriman) ? $so->opsi_pengiriman : (!empty($
                            <?php if (!empty($bkm_payment->nomor_referensi)): ?> &bull; Ref: <strong><?= _ent($bkm_payment->nomor_referensi); ?></strong><?php endif; ?>
                            <?php if (!empty($bkm_payment->catatan)): ?><br><small style="color:#059669; font-style:italic;"><i class="fa fa-info-circle"></i> <?= _ent($bkm_payment->catatan); ?></small><?php endif; ?>
                         <?php else: ?>
-                           Waktu Pembayaran: <strong><?= date('d/m/Y H:i', strtotime($so->waktu_pembayaran)); ?></strong> &bull; Total: <strong>Rp <?= number_format($so->total, 0, ',', '.'); ?></strong>
+                           Waktu Pembayaran: <strong><?= !empty($so->waktu_pembayaran) ? date('d/m/Y H:i', strtotime($so->waktu_pembayaran)) : date('d/m/Y'); ?></strong> &bull; Total: <strong>Rp <?= number_format($so->total, 0, ',', '.'); ?></strong>
                         <?php endif; ?>
                      </div>
                   </div>
@@ -265,6 +277,28 @@ $display_kurir = !empty($so->opsi_pengiriman) ? $so->opsi_pengiriman : (!empty($
                         <a href="<?= site_url('administrator/invoice/view/' . $linked_inv->id); ?>" class="btn btn-xs btn-info" style="border-radius:4px; font-weight:600;"><i class="fa fa-file-text-o"></i> Lihat Faktur Lunas</a>
                      <?php endif; ?>
                      <a href="<?= site_url('administrator/piutang_usaha'); ?>" class="btn btn-xs btn-success" style="border-radius:4px; font-weight:600;"><i class="fa fa-book"></i> Rekap Piutang &amp; Kas</a>
+                  </div>
+               </div>
+            </div>
+            <?php elseif ($linked_piu && $linked_piu->status != 'lunas'): ?>
+            <div class="alert alert-warning" style="background:#fffbeb !important; border:1px solid #fde68a !important; color:#92400e !important; border-radius:8px; margin-bottom:20px; padding:14px 18px;">
+               <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                  <div>
+                     <h4 style="margin:0 0 5px 0; font-size:15px; font-weight:700;"><i class="fa fa-clock-o text-warning"></i> Tagihan Penjualan Tempo — Masuk Piutang Usaha (Belum Bayar)</h4>
+                     <div style="font-size:12.5px; color:#b45309;">
+                        No. Piutang: <strong style="font-family:monospace;"><?= _ent($linked_piu->nomor_piutang); ?></strong> &bull; 
+                        Total Tagihan: <strong>Rp <?= number_format($linked_piu->total, 0, ',', '.'); ?></strong> &bull; 
+                        Sisa Belum Bayar: <strong class="text-danger">Rp <?= number_format($linked_piu->sisa, 0, ',', '.'); ?></strong> &bull; 
+                        Jatuh Tempo: <strong><i class="fa fa-calendar"></i> <?= date('d/m/Y', strtotime($linked_piu->tanggal_jatuh_tempo)); ?></strong>
+                     </div>
+                  </div>
+                  <div style="display:flex; gap:6px;">
+                     <?php if ($linked_inv): ?>
+                        <a href="<?= site_url('administrator/invoice/view/' . $linked_inv->id); ?>" class="btn btn-sm btn-default" style="border-radius:4px; font-weight:600;"><i class="fa fa-file-text-o"></i> Faktur Tagihan</a>
+                     <?php endif; ?>
+                     <a href="<?= site_url('administrator/piutang_usaha/view/' . $linked_piu->id); ?>" class="btn btn-sm btn-warning" style="border-radius:4px; font-weight:700; background:#f59e0b; border-color:#d97706; color:#fff;">
+                        <i class="fa fa-money"></i> Input Pembayaran / Cicilan Piutang
+                     </a>
                   </div>
                </div>
             </div>
