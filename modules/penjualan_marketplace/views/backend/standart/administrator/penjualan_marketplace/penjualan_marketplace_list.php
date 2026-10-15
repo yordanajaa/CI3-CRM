@@ -341,15 +341,6 @@ $per_page = isset($per_page) ? $per_page : 25;
                   <option value="manual" <?= $this->input->get('source') == 'manual' ? 'selected':''; ?>>Sales Order Regular / Manual</option>
                </select>
             </div>
-            <div class="col-md-3 col-sm-6">
-               <label class="text-muted" style="font-size:11px; font-weight:700;">Gudang Asal:</label>
-               <select class="form-control input-sm" name="gudang_id" style="border-radius:6px;">
-                  <option value="">-- Semua Gudang --</option>
-                  <?php foreach($gudangs as $g): ?>
-                  <option value="<?= $g->id; ?>" <?= $this->input->get('gudang_id') == $g->id ? 'selected':''; ?>><?= _ent($g->nama_gudang); ?></option>
-                  <?php endforeach; ?>
-               </select>
-            </div>
             <div class="col-md-4 col-sm-8">
                <label class="text-muted" style="font-size:11px; font-weight:700;">Cari No Pesanan / Resi / Buyer / Receiver:</label>
                <input type="text" class="form-control input-sm" name="q" placeholder="Ketik No. Pesanan, Resi, atau Username..." value="<?= _ent($this->input->get('q')); ?>" style="border-radius:6px;">

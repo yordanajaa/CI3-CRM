@@ -27,7 +27,6 @@
          </td>
          <td style="width: 50%; vertical-align: top;">
             <table style="width: 100%;">
-               <tr><td style="width: 40%;"><strong>Gudang Pengirim:</strong></td><td><?= _ent($so->nama_gudang ?? '-'); ?></td></tr>
                <tr><td style="width: 40%;"><strong>Est. Kirim:</strong></td><td><?= !empty($so->tanggal_estimasi_kirim) ? date('d/m/Y', strtotime($so->tanggal_estimasi_kirim)) : '-'; ?></td></tr>
                <tr><td style="width: 40%;"><strong>Salesperson:</strong></td><td><?= _ent($so->created_by ?? '-'); ?></td></tr>
             </table>

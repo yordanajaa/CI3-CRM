@@ -62,7 +62,6 @@
       </td>
       <td width="50%">
          <table style="width: 100%;">
-            <tr><td width="40%"><strong>Gudang Pengirim:</strong></td><td><?= _ent($so->nama_gudang ?? '-'); ?></td></tr>
             <tr><td width="40%"><strong>Est. Tgl Kirim:</strong></td><td><?= _ent($so->tanggal_kirim ?? '-'); ?></td></tr>
             <tr><td width="40%"><strong>Salesperson:</strong></td><td><?= _ent($so->created_by ?? '-'); ?></td></tr>
          </table>

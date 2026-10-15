@@ -211,7 +211,6 @@ $display_kurir = !empty($so->opsi_pengiriman) ? $so->opsi_pengiriman : (!empty($
                                  <?php endif; ?>
                               </td>
                            </tr>
-                           <tr><th style="color:#64748b;">Gudang Sumber:</th><td><i class="fa fa-bank text-muted"></i> <?= _ent($so->nama_gudang ?? 'Gudang Utama Jakarta'); ?></td></tr>
                            <tr><th style="color:#64748b;">Dibuat Oleh:</th><td><i class="fa fa-user-circle text-muted"></i> <?= _ent($so->created_by ?: 'admin'); ?></td></tr>
                         </table>
                      </div>

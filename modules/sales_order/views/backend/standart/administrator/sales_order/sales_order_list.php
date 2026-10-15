@@ -309,16 +309,7 @@ $status_display = [
                               <?php endforeach; ?>
                            </select>
                         </div>
-                        <div class="col-md-2 col-sm-6">
-                           <label class="text-muted" style="font-size:12px;">Gudang Asal:</label>
-                           <select class="form-control chosen" name="gudang_id">
-                              <option value="">-- Semua Gudang --</option>
-                              <?php foreach($gudangs as $g): ?>
-                              <option value="<?= $g->id; ?>" <?= $this->input->get('gudang_id') == $g->id ? 'selected':''; ?>><?= _ent($g->nama_gudang); ?></option>
-                              <?php endforeach; ?>
-                           </select>
-                        </div>
-                        <div class="col-md-2 col-sm-6">
+                        <div class="col-md-3 col-sm-6">
                            <label class="text-muted" style="font-size:12px;">Filter Status:</label>
                            <select class="form-control" name="status" style="border-radius:4px;">
                               <option value="">-- Semua Status --</option>
@@ -344,7 +335,7 @@ $status_display = [
                               <option value="excel_import" <?= $this->input->get('source') == 'excel_import' ? 'selected' : ''; ?>>🛍️ Marketplace (Shopee/Online)</option>
                            </select>
                         </div>
-                        <div class="col-md-2 col-sm-6">
+                        <div class="col-md-3 col-sm-6">
                            <label class="text-muted" style="font-size:12px;">Cari No SO / Nama:</label>
                            <input type="text" class="form-control" name="q" placeholder="Ketik No. SO / Nama..." value="<?= _ent($this->input->get('q')); ?>">
                         </div>
@@ -363,7 +354,6 @@ $status_display = [
                            <th width="170">No. Sales Order</th>
                            <th>Tanggal SO</th>
                            <th>Pelanggan & Tier</th>
-                           <th>Gudang Asal</th>
                            <th class="text-right">Grand Total (Rp)</th>
                            <th class="text-center">Status Pesanan</th>
                            <th class="text-center">Pembayaran</th>
@@ -418,8 +408,7 @@ $status_display = [
                                      <?php endif; ?>
                                   </small>
                                </td>
-                              <td><i class="fa fa-bank text-muted"></i> <?= _ent(isset($so->nama_gudang) ? $so->nama_gudang : '-'); ?></td>
-                              <td class="text-right"><strong class="text-success" style="font-size:13px;">Rp <?= number_format($so->total, 0, ',', '.'); ?></strong></td>
+                               <td class="text-right"><strong class="text-success" style="font-size:13px;">Rp <?= number_format($so->total, 0, ',', '.'); ?></strong></td>
                                <td class="text-center">
                                   <span class="label <?= isset($status_color[$so->status]) ? $status_color[$so->status] : 'label-default'; ?>" style="font-size:11px; padding:4px 8px; display:inline-block;">
                                      <?= isset($status_display[$so->status]) ? $status_display[$so->status] : strtoupper($so->status); ?>
@@ -484,7 +473,7 @@ $status_display = [
                            <?php endforeach; ?>
                          <?php else: ?>
                             <tr>
-                               <td colspan="9" class="text-center text-muted" style="padding:40px;">
+                               <td colspan="8" class="text-center text-muted" style="padding:40px;">
                                   <i class="fa fa-shopping-cart fa-3x" style="color:#cbd5e1; margin-bottom:10px;"></i><br>
                                   <span style="font-size:16px; font-weight:600; color:#475569;">Tidak ada data Sales Order Offline untuk filter ini.</span><br>
                                   <small class="text-muted" style="display:inline-block; margin-top:6px;">

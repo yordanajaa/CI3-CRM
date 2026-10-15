@@ -1434,7 +1434,7 @@
       <div class="box pos-card" style="border-top: 3px solid #10b981;">
          <div class="box-header with-border" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; padding: 12px 18px; background: #fafcff;">
             <h3 class="box-title" style="font-weight: 700; color: #047857; font-size: 13.5px; margin:0; display:flex; align-items:center; gap:6px;">
-               <i class="fa fa-user-circle text-success"></i> Pelanggan &amp; Gudang Sumber
+               <i class="fa fa-user-circle text-success"></i> Pelanggan &amp; Tanggal Transaksi
             </h3>
             <span class="text-muted" style="font-size: 12px; font-weight: 600;">
                No. SO Baru: <strong class="text-primary" id="display_nomor_so"><?= _ent($nomor_baru); ?></strong>
@@ -1442,7 +1442,7 @@
          </div>
          <div class="box-body" style="padding: 14px 18px;">
             <div class="row">
-               <div class="col-md-6 col-sm-6 col-pelanggan-wrap">
+               <div class="col-md-8 col-sm-8 col-xs-12 col-pelanggan-wrap">
                   <div class="form-group" style="margin-bottom: 10px;">
                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; flex-wrap:wrap; gap:4px;">
                         <label style="margin:0; font-size:12px; font-weight:700;"><i class="fa fa-user text-primary"></i> Pelanggan <span class="text-danger">*</span></label>
@@ -1481,21 +1481,9 @@
                   </div>
                </div>
 
-               <div class="col-xs-6 col-sm-3 col-md-3">
-                  <div class="form-group" style="margin-bottom: 10px;">
-                     <label style="font-size:12px; font-weight:700; margin-bottom:4px; display:block;"><i class="fa fa-bank text-primary"></i> Gudang Stok <span class="text-danger">*</span></label>
-                     <?php $default_gudang_id = isset($gudangs[0]) ? $gudangs[0]->id : ''; ?>
-                     <select class="form-control" name="gudang_id" id="gudang_id" required style="height:36px; font-weight:600; border-radius:6px;">
-                        <?php foreach($gudangs as $g): ?>
-                           <option value="<?= $g->id; ?>" <?= ($default_gudang_id == $g->id) ? 'selected' : ''; ?>>
-                              <?= _ent($g->nama_gudang); ?>
-                           </option>
-                        <?php endforeach; ?>
-                     </select>
-                  </div>
-               </div>
-
-               <div class="col-xs-6 col-sm-3 col-md-3">
+               <?php $default_gudang_id = isset($gudangs[0]) ? $gudangs[0]->id : (isset($default_gudang->id) ? $default_gudang->id : 1); ?>
+                <input type="hidden" name="gudang_id" id="gudang_id" value="<?= $default_gudang_id; ?>">
+                <div class="col-xs-12 col-sm-4 col-md-4">
                   <div class="form-group" style="margin-bottom: 10px;">
                      <label style="font-size:12px; font-weight:700; margin-bottom:4px; display:block;"><i class="fa fa-calendar text-primary"></i> Tanggal</label>
                      <input type="date" class="form-control" name="tanggal_so" id="tanggal_so" value="<?= date('Y-m-d'); ?>" required style="height:36px; border-radius:6px;">

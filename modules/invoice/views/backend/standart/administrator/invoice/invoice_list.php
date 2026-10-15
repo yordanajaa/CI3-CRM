@@ -181,7 +181,6 @@ $kirim_c = [
                            <th>No Sales Order</th>
                            <th>Tanggal SO</th>
                            <th>Pelanggan</th>
-                           <th>Gudang Asal</th>
                            <th class="text-right">Grand Total</th>
                            <th class="text-center">Status</th>
                            <th class="text-center" width="160">Aksi</th>
@@ -194,7 +193,6 @@ $kirim_c = [
                               <td><strong><?= _ent($so_item->nomor_so); ?></strong></td>
                               <td><?= date('d/m/Y', strtotime($so_item->tanggal_so)); ?></td>
                               <td><strong><?= _ent($so_item->nama_pelanggan); ?></strong></td>
-                              <td><?= _ent($so_item->nama_gudang ?? '-'); ?></td>
                               <td class="text-right"><strong class="text-success">Rp <?= number_format($so_tot, 0, ',', '.'); ?></strong></td>
                               <td class="text-center">
                                  <span class="label label-<?= $so_item->status == 'shipped' ? 'success' : ($so_item->status == 'confirmed' ? 'info' : 'default'); ?>">

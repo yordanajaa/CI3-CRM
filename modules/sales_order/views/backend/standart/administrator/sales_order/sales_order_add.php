@@ -351,7 +351,7 @@ textarea.form-control {
          </div>
          <div class="box-body">
             <div class="row">
-               <div class="col-md-4 col-sm-6 col-xs-12">
+               <div class="col-md-6 col-sm-12 col-xs-12">
                   <div class="form-group">
                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
                         <label style="margin:0;"><i class="fa fa-user text-primary"></i> Pelanggan <span class="text-danger">*</span></label>
@@ -401,27 +401,16 @@ textarea.form-control {
                      </div>
                   </div>
                </div>
-               <div class="col-md-4 col-sm-6 col-xs-12">
-                  <div class="form-group"><label>Gudang Sumber Stok <span class="text-danger">*</span></label>
-                     <?php 
-                        $default_gudang_id = $is_edit ? ($so->gudang_id ?? '') : (isset($gudangs[0]) ? $gudangs[0]->id : '');
-                     ?>
-                     <select class="form-control select2" name="gudang_id" id="gudang_id" required>
-                        <option value="">-- Pilih Gudang --</option>
-                        <?php foreach($gudangs as $g): ?>
-                           <option value="<?= $g->id; ?>" <?= ($default_gudang_id == $g->id) ? 'selected' : ''; ?>>
-                              <?= _ent($g->nama_gudang); ?>
-                           </option>
-                        <?php endforeach; ?>
-                     </select>
-                  </div>
-               </div>
-               <div class="col-md-2 col-sm-6 col-xs-6">
+               <?php
+                  $default_gudang_id = $is_edit ? ($so->gudang_id ?? '') : (isset($gudangs[0]) ? $gudangs[0]->id : (isset($default_gudang->id) ? $default_gudang->id : 1));
+               ?>
+               <input type="hidden" name="gudang_id" id="gudang_id" value="<?= $default_gudang_id; ?>">
+               <div class="col-md-3 col-sm-6 col-xs-6">
                   <div class="form-group"><label>Tanggal SO <span class="text-danger">*</span></label>
                      <input type="date" class="form-control" name="tanggal_so" value="<?= $is_edit ? $so->tanggal_so : date('Y-m-d'); ?>" required>
                   </div>
                </div>
-               <div class="col-md-2 col-sm-6 col-xs-6">
+               <div class="col-md-3 col-sm-6 col-xs-6">
                   <div class="form-group"><label>Est. Tanggal Kirim</label>
                      <input type="date" class="form-control" name="tanggal_estimasi_kirim" value="<?= $is_edit ? $so->tanggal_estimasi_kirim : ''; ?>">
                   </div>
@@ -879,9 +868,11 @@ $(document).ready(function(){
          allowClear: true,
          width: '100%'
       });
-      $('#gudang_id').select2({
-         width: '100%'
-      });
+      if ($('#gudang_id').is('select')) {
+         $('#gudang_id').select2({
+            width: '100%'
+         });
+      }
       init_produk_select2();
    }
 

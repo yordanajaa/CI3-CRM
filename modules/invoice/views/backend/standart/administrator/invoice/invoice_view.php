@@ -67,7 +67,6 @@
                                </td>
                             </tr>
                            <tr><th>Referensi SO:</th><td><?= !empty($invoice->so_id) ? '<a href="'.site_url('administrator/sales_order/view/'.$invoice->so_id).'"><span class="label label-info">' . _ent($invoice->nomor_so) . ' <i class="fa fa-external-link" style="font-size:10px;"></i></span></a>' : '-'; ?></td></tr>
-                           <tr><th>Gudang Asal:</th><td><?= _ent($invoice->nama_gudang??'-'); ?></td></tr>
                         </table>
                      </div>
                   </div>
