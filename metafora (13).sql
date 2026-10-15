@@ -42004,7 +42004,7 @@ INSERT INTO `menu` (`id`, `label`, `type`, `icon_color`, `link`, `sort`, `parent
 (85, 'Sales Order Manual', 'item', NULL, '{admin_url}/sales_order', 26, 84, 'fa fa-file-text-o', 1, 1),
 (86, 'Invoice', 'item', NULL, '{admin_url}/invoice', 28, 84, 'fa fa-file-text', 1, 1),
 (87, 'Retur Penjualan', 'item', NULL, '{admin_url}/retur_penjualan', 29, 84, 'fa fa-line-chart', 1, 1),
-(88, 'Warehouse', 'item', NULL, '', 27, 0, 'fa fa-database', 1, 1),
+(88, 'Warehouse', 'item', NULL, '', 16, 0, 'fa fa-database', 1, 1),
 (89, 'Dashboard Stok', 'item', NULL, '{admin_url}/stok', 31, 88, 'fa fa-database', 1, 1),
 (90, 'Stock Opname', 'item', NULL, '{admin_url}/stock_opname', 33, 88, 'fa fa-clipboard', 1, 1),
 (91, 'Transfer Stok', 'item', NULL, '{admin_url}/transfer_stok', 34, 88, 'fa fa-exchange', 1, 1),
