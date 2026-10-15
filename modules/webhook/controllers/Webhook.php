@@ -3,9 +3,10 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
  * Public Webhook Controller for WhatsApp Gateway (Fonnte, Wablas, WAHA, etc.)
+ * Module: Webhook (HMVC)
  * 
- * This controller extends CI_Controller directly (NOT Admin) so it can be
- * accessed without authentication — required for external webhook callbacks.
+ * This controller extends MY_Controller directly (NOT Admin) so it can be
+ * accessed without admin session authentication — required for external webhook callbacks.
  * 
  * Webhook URL to configure in Fonnte Dashboard:
  *   https://yourdomain.com/webhook/fonnte
@@ -38,7 +39,7 @@ class Webhook extends MY_Controller
 		header('Content-Type: application/json');
 		echo json_encode([
 			'success' => true,
-			'message' => 'WhatsApp Webhook endpoint is active',
+			'message' => 'WhatsApp Webhook endpoint is active (HMVC Module)',
 			'endpoints' => [
 				'fonnte' => base_url('webhook/fonnte'),
 				'waha'   => base_url('webhook/waha'),
