@@ -5,7 +5,8 @@ $active_group = 'default';
 $query_builder = TRUE;
 
 // Auto detect database credentials (Localhost vs Hostinger)
-$server_name = isset($_SERVER['SERVER_NAME']) ? $_SERVER['SERVER_NAME'] : (isset($_SERVER['HTTP_HOST']) ? explode(':', $_SERVER['HTTP_HOST'])[0] : 'localhost');
+$raw_host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : (isset($_SERVER['SERVER_NAME']) ? $_SERVER['SERVER_NAME'] : 'localhost');
+$server_name = explode(':', $raw_host)[0];
 $local_hosts = array('localhost', '127.0.0.1', 'ci3_metafora.test', 'host.docker.internal');
 $is_local = in_array($server_name, $local_hosts) 
     || (substr($server_name, -5) === '.test') 
