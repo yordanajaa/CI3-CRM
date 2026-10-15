@@ -438,47 +438,6 @@ textarea.form-control {
          </div>
       </div>
 
-      <!-- Barcode Scanner & Quick Select Widget -->
-      <div class="box form-card" style="border-top: 3px solid #0284c7; margin-bottom: 18px;">
-         <div class="box-header with-border" style="background: #fafcff; padding: 10px 18px;">
-            <h3 class="box-title" style="color: #0369a1; font-weight: 700; font-size: 13px;">
-               <i class="fa fa-barcode"></i> Barcode Scanner &amp; Quick Add Produk
-            </h3>
-            <span class="label label-success pull-right" style="font-size: 10px; padding: 2px 7px; border-radius: 10px;">
-               <i class="fa fa-bolt"></i> Siap Scan
-            </span>
-         </div>
-         <div class="box-body" style="padding: 14px 18px;">
-            <div class="input-group" style="margin-bottom: 10px;">
-               <span class="input-group-addon" style="background: #0284c7; color:#fff; border-color: #0284c7; border-radius: 8px 0 0 8px; padding: 0 12px;">
-                  <i class="fa fa-qrcode"></i>
-               </span>
-               <input type="text" id="barcode_scan_input" class="form-control" placeholder="Scan barcode barang atau ketik kode/nama di sini..." style="border-radius: 0; height: 38px; font-weight: 600;">
-               <span class="input-group-btn">
-                  <button type="button" id="btn_do_scan" class="btn btn-info btn-flat" style="border-radius: 0 8px 8px 0; height: 38px; font-weight: 700; padding: 0 16px;"><i class="fa fa-search"></i> Scan!</button>
-               </span>
-            </div>
-            <div>
-               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px; flex-wrap:wrap; gap:6px;">
-                  <span style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.3px;">
-                     <i class="fa fa-th-large text-primary"></i> Klik Cepat Tombol Produk (1-Klik Masuk / Qty +1):
-                  </span>
-                  <input type="text" id="filter_produk_quick" placeholder="🔍 Cari tombol produk..." style="border-radius:15px; border:1px solid #cbd5e1; padding:2px 10px; font-size:11px; outline:none; width:160px; height: 26px;">
-               </div>
-               <div class="scanner-product-grid">
-                  <?php foreach($produks as $p): ?>
-                     <button type="button" class="btn btn-default btn-xs btn-simulasi-barcode" 
-                             data-barcode="<?= _ent($p->barcode ?: $p->kode_produk); ?>"
-                             data-id="<?= $p->id; ?>"
-                             data-nama="<?= _ent($p->nama_produk); ?>"
-                             style="border-radius: 12px; background: #f8fafc; border: 1px solid #cbd5e1; padding: 3px 9px; font-size: 11px;">
-                        <i class="fa fa-barcode text-primary"></i> <strong><?= _ent($p->barcode ?: $p->kode_produk); ?></strong> <span><?= _ent($p->nama_produk); ?></span>
-                     </button>
-                  <?php endforeach; ?>
-               </div>
-            </div>
-         </div>
-      </div>
 
       <!-- Item Box -->
       <div class="box form-card" style="border-top: 3px solid #10b981;">
