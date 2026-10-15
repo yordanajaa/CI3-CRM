@@ -29,7 +29,7 @@ class Model_sales_order extends MY_Model {
 
 	public function join_available()
 	{
-		$this->db->select('sales_order.*, pelanggan.nama_pelanggan, pelanggan.kode_pelanggan, pelanggan.tipe_pelanggan, pelanggan.alamat as alamat_pelanggan, pelanggan.no_telp as telp_pelanggan, gudang.nama_gudang, (SELECT COALESCE(SUM(qty), 1) FROM sales_order_item WHERE sales_order_item.so_id = sales_order.id) as total_qty');
+		$this->db->select('sales_order.*, pelanggan.nama_pelanggan, pelanggan.kode_pelanggan, pelanggan.tipe_pelanggan, pelanggan.alamat as alamat_pelanggan, pelanggan.no_telp as telp_pelanggan, gudang.nama_gudang, (SELECT COALESCE(SUM(qty), 1) FROM sales_order_item WHERE sales_order_item.so_id = sales_order.id) as total_qty, (SELECT pp.metode_pembayaran FROM pembayaran_piutang pp JOIN piutang_usaha pu ON pu.id = pp.piutang_id WHERE pu.so_id = sales_order.id ORDER BY pp.id DESC LIMIT 1) as metode_bayar_db, (SELECT pp.akun_kas_bank FROM pembayaran_piutang pp JOIN piutang_usaha pu ON pu.id = pp.piutang_id WHERE pu.so_id = sales_order.id ORDER BY pp.id DESC LIMIT 1) as akun_kas_bank_db, (SELECT inv.status FROM invoice inv WHERE inv.so_id = sales_order.id LIMIT 1) as inv_status_db');
 		$this->db->join('pelanggan', 'pelanggan.id = sales_order.pelanggan_id', 'LEFT');
 		$this->db->join('gudang', 'gudang.id = sales_order.gudang_id', 'LEFT');
 		return $this;

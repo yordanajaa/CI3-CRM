@@ -356,7 +356,7 @@ $status_display = [
                            <th>Pelanggan & Tier</th>
                            <th class="text-right">Grand Total (Rp)</th>
                            <th class="text-center">Status Pesanan</th>
-                           <th class="text-center">Pembayaran</th>
+                           <th class="text-center" width="160">Metode Pembayaran</th>
                            <th class="text-center" width="220">Aksi</th>
                         </tr>
                      </thead>
@@ -432,20 +432,63 @@ $status_display = [
                                   </div>
                                   <?php endif; ?>
                                </td>
-                              <td class="text-center">
+                              <td class="text-center" style="vertical-align: middle;">
                                  <?php
-                                    if (!empty($so->waktu_pembayaran)) {
-                                       $channel_tag = ($so->source == 'manual') ? 'Kasir (POS)' : 'Marketplace';
-                                       echo '<span class="label label-success" style="font-size:10.5px; padding:3px 7px; display:inline-block; line-height:1.3;" title="Pembayaran Telah Diterima (' . date('d/m/Y H:i', strtotime($so->waktu_pembayaran)) . ')"><i class="fa fa-check-circle"></i> PAID<br><span style="font-size:8.5px; opacity:0.9; font-weight:normal;">' . $channel_tag . '</span></span>';
-                                    } else {
-                                       $inv = $this->db->get_where('invoice', ['so_id' => $so->id])->row();
-                                       if ($inv && $inv->status == 'paid') {
-                                          echo '<span class="label label-success" style="font-size:10.5px; padding:3px 7px; display:inline-block; line-height:1.3;" title="Pembayaran Telah Lunas via Faktur Invoice B2B"><i class="fa fa-check-circle"></i> PAID<br><span style="font-size:8.5px; opacity:0.9; font-weight:normal;">Invoice B2B</span></span>';
+                                    $is_pos = ($so->source == 'pos' || strpos((string)$so->catatan, '[POS CEPAT') !== false);
+                                    $is_mp  = ($so->source == 'excel_import' || (!empty($so->no_pesanan) && $so->source != 'manual'));
+                                    
+                                    $inv_status = isset($so->inv_status_db) ? $so->inv_status_db : null;
+                                    if ($inv_status === null && empty($so->waktu_pembayaran) && !$is_pos && !$is_mp) {
+                                       $inv_row = $this->db->select('status')->get_where('invoice', ['so_id' => $so->id])->row();
+                                       $inv_status = $inv_row ? $inv_row->status : null;
+                                    }
+                                    
+                                    $is_paid = !empty($so->waktu_pembayaran) || ($inv_status == 'paid');
+                                    $metode_code = !empty($so->metode_bayar_db) ? strtolower(trim($so->metode_bayar_db)) : '';
+
+                                    if ($is_pos) {
+                                       if (empty($metode_code) || $metode_code == 'tunai' || $metode_code == 'cash') {
+                                          $metode_label = 'Tunai (Cash)';
+                                          $icon = 'fa-money text-success';
+                                       } elseif ($metode_code == 'bank_transfer' || $metode_code == 'transfer') {
+                                          $metode_label = 'Transfer Bank';
+                                          $icon = 'fa-bank text-primary';
+                                       } elseif ($metode_code == 'qris') {
+                                          $metode_label = 'QRIS';
+                                          $icon = 'fa-qrcode text-purple';
+                                       } elseif (strpos($metode_code, 'debit') !== false) {
+                                          $metode_label = 'Kartu Debit';
+                                          $icon = 'fa-credit-card text-info';
+                                       } elseif (strpos($metode_code, 'kredit') !== false) {
+                                          $metode_label = 'Kartu Kredit';
+                                          $icon = 'fa-credit-card text-warning';
                                        } else {
-                                          echo '<span class="label label-danger" style="font-size:10.5px; padding:3px 7px; display:inline-block; line-height:1.3;" title="Menunggu Pelunasan / Piutang Tempo"><i class="fa fa-clock-o"></i> TEMPO<br><span style="font-size:8.5px; opacity:0.9; font-weight:normal;">Unpaid</span></span>';
+                                          $metode_label = strtoupper($metode_code);
+                                          $icon = 'fa-money text-success';
                                        }
+                                       $status_badge = '<span class="label label-success" style="font-size:9.5px; padding:2px 6px; border-radius:3px; display:inline-block; margin-top:3px;"><i class="fa fa-check-circle"></i> Lunas (POS)</span>';
+                                    } elseif ($is_mp) {
+                                       $metode_label = 'Marketplace';
+                                       $icon = 'fa-shopping-bag text-warning';
+                                       $status_badge = '<span class="label" style="background:#fff2ee; color:#ee4d2d; border:1px solid #ffccbe; font-size:9.5px; padding:2px 6px; border-radius:3px; display:inline-block; margin-top:3px;"><i class="fa fa-check-circle"></i> Lunas (Online)</span>';
+                                    } elseif ($is_paid) {
+                                       if (!empty($metode_code)) {
+                                          $metode_label = ($metode_code == 'bank_transfer' || $metode_code == 'transfer') ? 'Transfer Bank' : strtoupper($metode_code);
+                                       } else {
+                                          $metode_label = 'Transfer Bank';
+                                       }
+                                       $icon = 'fa-bank text-primary';
+                                       $status_badge = '<span class="label label-success" style="font-size:9.5px; padding:2px 6px; border-radius:3px; display:inline-block; margin-top:3px;"><i class="fa fa-check-circle"></i> Lunas</span>';
+                                    } else {
+                                       $metode_label = 'Tempo / Kredit';
+                                       $icon = 'fa-clock-o text-muted';
+                                       $status_badge = '<span class="label label-danger" style="font-size:9.5px; padding:2px 6px; border-radius:3px; display:inline-block; margin-top:3px;"><i class="fa fa-clock-o"></i> Menunggu Bayar</span>';
                                     }
                                  ?>
+                                 <div style="font-size:12px; font-weight:700; color:#1e293b; margin-bottom:1px;">
+                                    <i class="fa <?= $icon; ?>"></i> <?= _ent($metode_label); ?>
+                                 </div>
+                                 <?= $status_badge; ?>
                               </td>
                               <td class="text-center">
                                  <a href="<?= site_url('administrator/sales_order/view/' . $so->id); ?>" class="btn btn-default btn-xs" title="Detail"><i class="fa fa-eye"></i></a>
