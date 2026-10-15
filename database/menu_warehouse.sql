@@ -18,18 +18,6 @@ INSERT INTO `menu` (`label`, `type`, `icon_color`, `link`, `sort`, `parent`, `ic
 ('Pelanggan',  'item', NULL, '{admin_url}/pelanggan', 22, @master_id, 'fa fa-users',      1, 1),
 ('Produk',     'item', NULL, '{admin_url}/produk',    23, @master_id, 'fa fa-cube',       1, 1);
 
--- =====================
--- PEMBELIAN (parent)
--- =====================
-INSERT INTO `menu` (`label`, `type`, `icon_color`, `link`, `sort`, `parent`, `icon`, `menu_type_id`, `active`) VALUES
-('Pembelian', 'item', NULL, '', 30, 0, 'fa fa-shopping-cart', 1, 1);
-
-SET @beli_id = LAST_INSERT_ID();
-
-INSERT INTO `menu` (`label`, `type`, `icon_color`, `link`, `sort`, `parent`, `icon`, `menu_type_id`, `active`) VALUES
-('Purchase Order',    'item', NULL, '{admin_url}/purchase_order',   31, @beli_id, 'fa fa-file-text',    1, 1),
-('Penerimaan Barang', 'item', NULL, '{admin_url}/penerimaan_barang',32, @beli_id, 'fa fa-truck',        1, 1),
-('Retur Pembelian',   'item', NULL, '{admin_url}/retur_pembelian',  33, @beli_id, 'fa fa-reply',        1, 1);
 
 -- =====================
 -- PENJUALAN (parent)
