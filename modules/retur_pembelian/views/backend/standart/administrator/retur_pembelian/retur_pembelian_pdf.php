@@ -6,28 +6,54 @@
             <span style="font-size: 11px; color: #555;">Sistem Penjualan, Pembelian &amp; Inventory</span><br>
             <span style="font-size: 10px; color: #666;">Telp: (0274) 123456 | Email: info@idmetafora.com</span>
          </td>
-         <td style="width: 45%; text-align: right;">
+         <td style="width: 45%; text-align: right; vertical-align: top;">
             <strong style="font-size: 16px; color: #0056b3;">NOTA RETUR PEMBELIAN</strong><br>
-            <span style="font-size: 11px;"><strong>No Retur:</strong> <?= _ent($retur->nomor_retur ?? ''); ?></span><br>
-            <span style="font-size: 11px;"><strong>Tanggal:</strong> <?= isset($retur->tanggal_retur) ? date('d/m/Y', strtotime($retur->tanggal_retur)) : '-'; ?></span>
+            <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 3px;">
+               <tr>
+                  <td style="width: 50%; text-align: right; padding: 1px 0; color: #1e293b;"><strong>No Retur</strong></td>
+                  <td style="width: 5%; text-align: center; padding: 1px 0; color: #1e293b;">:</td>
+                  <td style="width: 45%; text-align: left; padding: 1px 0; color: #1e293b;"><strong><?= _ent($retur->nomor_retur ?? '-'); ?></strong></td>
+               </tr>
+               <tr>
+                  <td style="text-align: right; padding: 1px 0; color: #475569;"><strong>Tanggal</strong></td>
+                  <td style="text-align: center; padding: 1px 0; color: #475569;">:</td>
+                  <td style="text-align: left; padding: 1px 0; color: #475569;"><?= isset($retur->tanggal_retur) ? date('d/m/Y', strtotime($retur->tanggal_retur)) : '-'; ?></td>
+               </tr>
+            </table>
          </td>
       </tr>
    </table>
 
    <br>
 
-   <table style="width: 100%; font-size: 11px;">
+   <table style="width: 100%; font-size: 11px; border-collapse: collapse;">
       <tr>
-         <td style="width: 50%; vertical-align: top;">
-            <table style="width: 100%;">
-               <tr><td style="width: 35%;"><strong>Supplier:</strong></td><td><?= _ent($retur->nama_supplier ?? '-'); ?></td></tr>
-               <tr><td style="width: 35%;"><strong>Ref. Penerimaan:</strong></td><td><?= _ent($retur->nomor_penerimaan ?? '-'); ?></td></tr>
-               <tr><td style="width: 35%;"><strong>Alasan Utama:</strong></td><td><?= _ent($retur->alasan ?? '-'); ?></td></tr>
+         <td style="width: 50%; vertical-align: top; padding-right: 15px;">
+            <table style="width: 100%; border-collapse: collapse;">
+               <tr>
+                  <td style="width: 32%; padding: 3px 0; color: #475569;"><strong>Supplier</strong></td>
+                  <td style="width: 4%; padding: 3px 0; text-align: center; color: #475569;">:</td>
+                  <td style="width: 64%; padding: 3px 0;"><strong><?= _ent($retur->nama_supplier ?? '-'); ?></strong></td>
+               </tr>
+               <tr>
+                  <td style="padding: 3px 0; color: #475569;"><strong>Ref. PO</strong></td>
+                  <td style="padding: 3px 0; text-align: center; color: #475569;">:</td>
+                  <td style="padding: 3px 0;"><?= _ent($retur->nomor_po ?? '-'); ?></td>
+               </tr>
+               <tr>
+                  <td style="padding: 3px 0; color: #475569;"><strong>Alasan Utama</strong></td>
+                  <td style="padding: 3px 0; text-align: center; color: #475569;">:</td>
+                  <td style="padding: 3px 0;"><?= _ent($retur->alasan ?? '-'); ?></td>
+               </tr>
             </table>
          </td>
-         <td style="width: 50%; vertical-align: top;">
-            <table style="width: 100%;">
-               <tr><td style="width: 40%;"><strong>Petugas:</strong></td><td><?= _ent($retur->created_by ?? '-'); ?></td></tr>
+         <td style="width: 50%; vertical-align: top; padding-left: 15px;">
+            <table style="width: 100%; border-collapse: collapse;">
+               <tr>
+                  <td style="width: 35%; padding: 3px 0; color: #475569;"><strong>Petugas</strong></td>
+                  <td style="width: 4%; padding: 3px 0; text-align: center; color: #475569;">:</td>
+                  <td style="width: 61%; padding: 3px 0;"><?= _ent($retur->created_by ?? '-'); ?></td>
+               </tr>
             </table>
          </td>
       </tr>

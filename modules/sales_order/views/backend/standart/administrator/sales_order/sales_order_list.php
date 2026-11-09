@@ -30,17 +30,28 @@ $status_display = [
 ];
 ?>
 <style>
+/* Modern Responsive Sales Order UI */
+.so-kpi-grid {
+   display: grid;
+   grid-template-columns: repeat(4, 1fr);
+   gap: 14px;
+   margin-bottom: 20px;
+}
 .kpi-card {
    background: #ffffff;
-   border-radius: 8px;
-   padding: 16px 20px;
+   border-radius: 10px;
+   padding: 16px 18px;
    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+   border: 1px solid #e2e8f0;
    border-left: 4px solid #00c0ef;
-   margin-bottom: 20px;
+   margin-bottom: 0 !important;
    transition: all 0.2s ease;
    cursor: pointer;
    position: relative;
    user-select: none;
+   display: flex;
+   flex-direction: column;
+   justify-content: space-between;
 }
 .kpi-card:hover {
    transform: translateY(-3px);
@@ -71,66 +82,232 @@ $status_display = [
    box-shadow: 0 0 0 2px #605ca8, 0 8px 24px rgba(96, 92, 168, 0.25);
 }
 
-.kpi-title { font-size: 11px; text-transform: uppercase; font-weight: 700; color: #888; letter-spacing: 0.5px; display:flex; justify-content:space-between; align-items:center; }
-.kpi-value { font-size: 22px; font-weight: 700; color: #222; margin: 4px 0; }
-.kpi-sub { font-size: 11px; color: #999; }
-.kpi-icon { font-size: 28px; opacity: 0.2; float: right; margin-top: -35px; }
+.kpi-title {
+   font-size: 11px;
+   text-transform: uppercase;
+   font-weight: 700;
+   color: #64748b;
+   letter-spacing: 0.5px;
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+}
+.kpi-value {
+   font-size: 22px;
+   font-weight: 800;
+   color: #0f172a;
+   margin: 4px 0;
+   line-height: 1.2;
+}
+.kpi-sub {
+   font-size: 11px;
+   color: #64748b;
+}
+.kpi-icon {
+   font-size: 26px;
+   opacity: 0.2;
+   float: right;
+   margin-top: -32px;
+}
 
 .kpi-pill-badge {
-   display: inline-block;
-   padding: 2px 7px;
+   display: inline-flex;
+   align-items: center;
+   gap: 4px;
+   padding: 3px 8px;
    border-radius: 4px;
    font-size: 10px;
    font-weight: 700;
    cursor: pointer;
    transition: all 0.15s ease;
+   white-space: nowrap;
 }
 .kpi-pill-badge:hover {
-   transform: scale(1.05);
+   transform: scale(1.04);
    box-shadow: 0 2px 5px rgba(0,0,0,0.12);
 }
 
-.clean-filter-box {
-   background: #fdfdfd;
-   border: 1px solid #e9ecef;
+/* Action Header & Tools */
+.so-header-wrap {
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+   width: 100%;
+   flex-wrap: wrap;
+   gap: 12px;
+}
+.so-header-title {
+   font-size: 16px;
+   font-weight: 700;
+   color: #0f172a;
+   margin: 0;
+   display: flex;
+   align-items: center;
+   gap: 8px;
+}
+.so-action-tools {
+   display: flex;
+   align-items: center;
+   gap: 8px;
+   flex-wrap: wrap;
+}
+.so-btn {
+   display: inline-flex;
+   align-items: center;
+   justify-content: center;
+   gap: 6px;
+   padding: 7px 14px;
    border-radius: 6px;
-   padding: 15px;
+   font-size: 12px;
+   font-weight: 700;
+   text-decoration: none !important;
+   transition: all 0.2s ease;
+   border: 1px solid transparent;
+   white-space: nowrap;
+   cursor: pointer;
+}
+.so-btn:hover {
+   transform: translateY(-1px);
+   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.so-btn-pos {
+   background: linear-gradient(135deg, #059669, #10b981);
+   color: #fff !important;
+   box-shadow: 0 2px 8px rgba(5,150,105,0.25);
+}
+.so-btn-add {
+   background: #2563eb;
+   color: #fff !important;
+   box-shadow: 0 2px 8px rgba(37,99,235,0.25);
+}
+.so-btn-mp {
+   background: #0284c7;
+   color: #fff !important;
+}
+.so-btn-cust {
+   background: #f1f5f9;
+   color: #334155 !important;
+   border-color: #cbd5e1;
+}
+.so-btn-cust:hover {
+   background: #e2e8f0;
+}
+
+.clean-filter-box {
+   background: #f8fafc;
+   border: 1px solid #e2e8f0;
+   border-radius: 8px;
+   padding: 16px;
    margin-bottom: 20px;
 }
 .table-responsive {
    -webkit-overflow-scrolling: touch;
 }
-@media (max-width: 767px) {
-   .content { padding: 8px 6px !important; }
-   .kpi-card { padding: 12px 10px; margin-bottom: 10px; }
-   .kpi-title { font-size: 10px; }
-   .kpi-value { font-size: 16px; }
-   .kpi-sub { font-size: 9.5px; }
-   .kpi-icon { font-size: 22px; margin-top: -26px; }
-   .clean-filter-box { padding: 10px; margin-bottom: 12px; }
-   .box-header { padding: 12px 14px !important; }
-   .box-header .box-title { font-size: 14px !important; display: block !important; margin-bottom: 8px; }
-   .box-header .box-tools.pull-right {
-      position: static !important;
-      float: none !important;
-      width: 100% !important;
-      display: flex !important;
-      flex-wrap: wrap !important;
-      gap: 6px !important;
+
+/* Responsive Breakpoints */
+@media (max-width: 991px) {
+   .so-kpi-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
    }
-   .box-header .box-tools .btn {
-      flex: 1 1 calc(50% - 4px) !important;
-      margin-right: 0 !important;
+   .so-action-tools {
+      width: 100%;
+      justify-content: flex-start;
+   }
+}
+
+@media (max-width: 767px) {
+   .content {
+      padding: 10px 8px !important;
+   }
+   .content-header {
+      padding: 10px 10px 0 10px !important;
+   }
+   .content-header > h1 {
+      font-size: 20px !important;
+   }
+   /* KPI Grid on Mobile: Top Card 100% width, 3 cards in 3 columns below it */
+   .so-kpi-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+   }
+   .so-kpi-card-omset {
+      grid-column: 1 / -1 !important; /* Full width 100% */
+      padding: 14px 16px !important;
+   }
+   .so-kpi-card-omset .kpi-value {
+      font-size: 20px !important;
+      margin: 4px 0 6px !important;
+   }
+   .so-kpi-card-omset .kpi-sub {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+   }
+   .so-kpi-card-omset .kpi-icon {
+      font-size: 24px;
+      margin-top: -30px;
+   }
+   .so-kpi-stage-card {
+      padding: 10px 8px !important;
+      min-height: 86px;
+      justify-content: center;
+   }
+   .so-kpi-stage-card .kpi-title {
+      font-size: 9.5px !important;
+      line-height: 1.2;
+   }
+   .so-kpi-stage-card .kpi-value {
+      font-size: 17px !important;
+      font-weight: 800 !important;
+      margin: 2px 0 !important;
+   }
+   .so-kpi-stage-card .kpi-sub {
+      font-size: 9px !important;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+   }
+   .so-kpi-stage-card .kpi-icon {
+      display: none !important;
+   }
+
+   /* Header and 2x2 Buttons */
+   .box-header {
+      padding: 12px 14px !important;
+   }
+   .so-header-wrap {
+      flex-direction: column !important;
+      align-items: stretch !important;
+      gap: 10px !important;
+   }
+   .so-action-tools {
+      display: grid !important;
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 6px !important;
+      width: 100% !important;
+   }
+   .so-btn {
+      padding: 8px 6px !important;
       font-size: 11px !important;
-      padding: 6px 8px !important;
+      width: 100% !important;
       text-align: center !important;
    }
-   .table-responsive { border: none !important; }
-   .table-responsive table { min-width: 820px; }
-}
-@media (max-width: 480px) {
-   .box-header .box-tools .btn {
-      flex: 1 1 100% !important;
+   .clean-filter-box {
+      padding: 12px !important;
+      margin-bottom: 14px !important;
+   }
+   .clean-filter-box .row > div {
+      margin-bottom: 8px;
+   }
+   .clean-filter-box .row > div:last-child {
+      margin-bottom: 0;
+      padding-top: 4px !important;
+   }
+   .clean-filter-box button[type="submit"] {
+      height: 36px;
    }
 }
 </style>
@@ -147,151 +324,73 @@ $status_display = [
 </section>
 
 <section class="content">
+
    <?php 
-      $current_status = $this->input->get('status');
+   $f_message = $this->session->flashdata('f_message');
+   $f_type    = $this->session->flashdata('f_type');
+   if (!empty($f_message)):
+      $alert_bg = ($f_type == 'error') ? '#fef2f2' : (($f_type == 'warning') ? '#fffbeb' : '#f0fdf4');
+      $alert_border = ($f_type == 'error') ? '#ef4444' : (($f_type == 'warning') ? '#f59e0b' : '#10b981');
+      $alert_icon = ($f_type == 'error') ? 'fa-exclamation-triangle text-danger' : (($f_type == 'warning') ? 'fa-exclamation-circle text-warning' : 'fa-check-circle text-success');
+      $alert_title = ($f_type == 'error') ? 'Peringatan / Gagal' : 'Berhasil';
    ?>
-
-   <!-- 4 Interactive Clickable KPI Cards -->
-   <div class="row">
-      <div class="col-md-3 col-sm-6 col-xs-6">
-         <div class="kpi-card <?= ($current_status == 'lunas' || $current_status == 'tempo') ? 'active-kpi' : (empty($current_status) ? '' : ''); ?>"
-              onclick="window.location.href='<?= site_url('administrator/sales_order'); ?>';"
-              role="button" tabindex="0" title="Klik untuk menampilkan SEMUA pesanan sales order">
-            <div class="kpi-title">
-               <span>Total Omset Penjualan</span>
-               <?php if (empty($current_status)): ?>
-                  <span class="badge" style="background:#e0f2fe; color:#0369a1; font-size:9px;">SEMUA</span>
-               <?php elseif ($current_status == 'lunas'): ?>
-                  <span class="badge" style="background:#10b981; color:#fff; font-size:9px;">LUNAS</span>
-               <?php elseif ($current_status == 'tempo'): ?>
-                  <span class="badge" style="background:#ef4444; color:#fff; font-size:9px;">TEMPO</span>
-               <?php endif; ?>
-            </div>
-            <div class="kpi-value">Rp <?= number_format($stats['total_omset_all'] ?? $stats['penjualan_bulan_ini'] ?? 0, 0, ',', '.'); ?></div>
-            <div class="kpi-sub" style="font-size:11px; margin-top:4px;">
-               <span class="kpi-pill-badge" 
-                     onclick="event.stopPropagation(); window.location.href='<?= $current_status == 'lunas' ? site_url('administrator/sales_order') : site_url('administrator/sales_order?status=lunas'); ?>';"
-                     style="background:<?= $current_status == 'lunas' ? '#10b981' : '#f0fdf4'; ?>; color:<?= $current_status == 'lunas' ? '#fff' : '#15803d'; ?>; border:1px solid #bbf7d0;"
-                     title="Klik untuk filter data khusus pesanan LUNAS">
-                  <i class="fa fa-check-circle"></i> Lunas: Rp <?= number_format($stats['terbayar_lunas'] ?? 0, 0, ',', '.'); ?>
-               </span> | 
-               <span class="kpi-pill-badge" 
-                     onclick="event.stopPropagation(); window.location.href='<?= $current_status == 'tempo' ? site_url('administrator/sales_order') : site_url('administrator/sales_order?status=tempo'); ?>';"
-                     style="background:<?= $current_status == 'tempo' ? '#ef4444' : '#fef2f2'; ?>; color:<?= $current_status == 'tempo' ? '#fff' : '#b91c1c'; ?>; border:1px solid #fecaca;"
-                     title="Klik untuk filter data khusus pesanan TEMPO (Unpaid)">
-                  <i class="fa fa-clock-o"></i> Tempo: Rp <?= number_format($stats['piutang_unpaid'] ?? 0, 0, ',', '.'); ?>
-               </span>
-            </div>
-            <i class="fa fa-line-chart kpi-icon text-info"></i>
-         </div>
-      </div>
-      <div class="col-md-3 col-sm-6 col-xs-6">
-         <div class="kpi-card orange <?= $current_status == 'aktif' ? 'active-kpi' : ''; ?>"
-              onclick="window.location.href='<?= $current_status == 'aktif' ? site_url('administrator/sales_order') : site_url('administrator/sales_order?status=aktif'); ?>';"
-              role="button" tabindex="0" title="Klik untuk masuk ke filter Pesanan Aktif (Draft, Baru Masuk)">
-            <div class="kpi-title">
-               <span>Pesanan Aktif</span>
-               <?php if ($current_status == 'aktif'): ?>
-                  <span class="badge" style="background:#f59e0b; color:#fff; font-size:9px;">AKTIF</span>
-               <?php endif; ?>
-            </div>
-            <div class="kpi-value"><?= $stats['pesanan_aktif'] ?? 0; ?> <small style="font-size:14px;">Order</small></div>
-            <div class="kpi-sub"><i class="fa fa-clock-o"></i> Draft / Baru Masuk</div>
-            <i class="fa fa-shopping-cart kpi-icon text-warning"></i>
-         </div>
-      </div>
-      <div class="col-md-3 col-sm-6 col-xs-6">
-         <div class="kpi-card green <?= $current_status == 'proses' ? 'active-kpi' : ''; ?>"
-              onclick="window.location.href='<?= $current_status == 'proses' ? site_url('administrator/sales_order') : site_url('administrator/sales_order?status=proses'); ?>';"
-              role="button" tabindex="0" title="Klik untuk masuk ke filter Proses Gudang & Pengiriman (Packing, Shipped)">
-            <div class="kpi-title">
-               <span>Proses Gudang &amp; Kirim</span>
-               <?php if ($current_status == 'proses'): ?>
-                  <span class="badge" style="background:#00a65a; color:#fff; font-size:9px;">AKTIF</span>
-               <?php endif; ?>
-            </div>
-            <div class="kpi-value"><?= ($stats['proses_gudang'] ?? 0) + ($stats['siap_kirim'] ?? 0); ?> <small style="font-size:14px;">Order</small></div>
-            <div class="kpi-sub"><i class="fa fa-truck"></i> Packing &amp; Pengiriman</div>
-            <i class="fa fa-truck kpi-icon text-success"></i>
-         </div>
-      </div>
-      <div class="col-md-3 col-sm-6 col-xs-6">
-         <div class="kpi-card purple <?= $current_status == 'selesai' ? 'active-kpi' : ''; ?>"
-              onclick="window.location.href='<?= $current_status == 'selesai' ? site_url('administrator/sales_order') : site_url('administrator/sales_order?status=selesai'); ?>';"
-              role="button" tabindex="0" title="Klik untuk masuk ke filter Pesanan Selesai (Delivered, Selesai)">
-            <div class="kpi-title">
-               <span>Pesanan Selesai</span>
-               <?php if ($current_status == 'selesai'): ?>
-                  <span class="badge" style="background:#605ca8; color:#fff; font-size:9px;">AKTIF</span>
-               <?php endif; ?>
-            </div>
-            <div class="kpi-value"><?= $stats['pesanan_terkirim'] ?? 0; ?> <small style="font-size:14px;">Order</small></div>
-            <div class="kpi-sub"><i class="fa fa-check-circle"></i> Delivered / Selesai</div>
-            <i class="fa fa-check-square-o kpi-icon text-purple"></i>
-         </div>
-      </div>
-   </div>
-
-   <!-- Active Filter Indicator Banner -->
-   <?php if (!empty($current_status)): 
-      $filter_titles = [
-         'aktif'     => ['title' => 'Pesanan Aktif (Draft / Baru Masuk)', 'color' => '#f59e0b', 'icon' => 'fa-shopping-cart'],
-         'proses'    => ['title' => 'Proses Gudang & Kirim (Packing / Dalam Pengiriman)', 'color' => '#00a65a', 'icon' => 'fa-truck'],
-         'selesai'   => ['title' => 'Pesanan Selesai (Delivered / Selesai)', 'color' => '#605ca8', 'icon' => 'fa-check-circle'],
-         'lunas'     => ['title' => 'Pesanan Terbayar (Lunas)', 'color' => '#00a65a', 'icon' => 'fa-money'],
-         'tempo'     => ['title' => 'Pesanan Belum Lunas (Piutang Tempo)', 'color' => '#dd4b39', 'icon' => 'fa-clock-o'],
-         'draft'     => ['title' => 'Status: Draft', 'color' => '#f39c12', 'icon' => 'fa-file-text-o'],
-         'confirmed' => ['title' => 'Status: Terkonfirmasi', 'color' => '#00c0ef', 'icon' => 'fa-check'],
-         'packing'   => ['title' => 'Status: Sedang Dikemas (Packing)', 'color' => '#3c8dbc', 'icon' => 'fa-archive'],
-         'shipped'   => ['title' => 'Status: Dalam Pengiriman (Shipped)', 'color' => '#00a65a', 'icon' => 'fa-truck'],
-         'delivered' => ['title' => 'Status: Delivered (Selesai)', 'color' => '#605ca8', 'icon' => 'fa-check-square-o'],
-         'cancelled' => ['title' => 'Status: Dibatalkan', 'color' => '#dd4b39', 'icon' => 'fa-times-circle'],
-      ];
-      $f_info = $filter_titles[$current_status] ?? ['title' => 'Status: ' . strtoupper($current_status), 'color' => '#3c8dbc', 'icon' => 'fa-filter'];
-   ?>
-   <div style="background:#ffffff; border:1px solid #e2e8f0; border-left:4px solid <?= $f_info['color']; ?>; border-radius:8px; padding:12px 18px; margin-bottom:18px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+   <div class="alert alert-dismissible" style="background:<?= $alert_bg; ?>; border:1px solid <?= $alert_border; ?>; border-left:6px solid <?= $alert_border; ?>; border-radius:10px; color:#0f172a; padding:14px 18px; margin-bottom:18px; box-shadow:0 3px 12px rgba(0,0,0,0.03);">
+      <button type="button" class="close" data-dismiss="alert" aria-hidden="true" style="color:#0f172a; opacity:0.6; font-size:20px;">&times;</button>
       <div style="display:flex; align-items:center; gap:12px;">
-         <span style="display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:50%; background:<?= $f_info['color']; ?>18; color:<?= $f_info['color']; ?>; font-size:15px;">
-            <i class="fa <?= $f_info['icon']; ?>"></i>
-         </span>
+         <i class="fa <?= $alert_icon; ?>" style="font-size:22px;"></i>
          <div>
-            <div style="font-size:11px; text-transform:uppercase; color:#64748b; font-weight:700;">Menampilkan Filter Kartu:</div>
-            <div style="font-size:14px; font-weight:700; color:#1e293b;">
-               <?= $f_info['title']; ?> 
-               <span class="badge" style="background:<?= $f_info['color']; ?>; font-size:11px; margin-left:6px;"><?= number_format($so_counts); ?> Order Ditemukan</span>
-            </div>
+            <strong style="font-size:14px; font-weight:800; color:#0f172a;"><?= $alert_title; ?>: </strong>
+            <span style="font-size:13px; color:#334155;"><?= $f_message; ?></span>
          </div>
-      </div>
-      <div>
-         <a href="<?= site_url('administrator/sales_order'); ?>" class="btn btn-default btn-sm btn-flat" style="border-radius:5px; font-weight:600; color:#475569;">
-            <i class="fa fa-times text-danger"></i> Reset / Tampilkan Semua Pesanan
-         </a>
       </div>
    </div>
    <?php endif; ?>
 
    <div class="row">
       <div class="col-md-12">
-         <div class="box box-primary" style="border-radius:6px; border-top: 3px solid #3c8dbc;">
-            <div class="box-header with-border" style="padding: 15px 20px;">
-               <h3 class="box-title" style="font-weight:600;"><i class="fa fa-list-alt text-primary"></i> Daftar Dokumen Penjualan</h3>
-               <div class="box-tools pull-right">
-                  <a href="<?= site_url('administrator/penjualan_marketplace'); ?>" class="btn btn-info btn-sm btn-flat" style="margin-right:5px; border-radius:4px; font-weight:600;">
-                     <i class="fa fa-shopping-bag"></i> Penjualan Register All (Marketplace)
-                  </a>
-                  <?php if (is_allowed('pelanggan_list', false)): ?>
-                     <a href="<?= site_url('administrator/pelanggan'); ?>" class="btn btn-default btn-sm btn-flat" style="margin-right:5px; border-radius:4px;">
-                        <i class="fa fa-users"></i> Data Pelanggan
-                     </a>
-                  <?php endif; ?>
-                  <?php if (is_allowed('sales_order_add', false)): ?>
-                      <a href="<?= site_url('administrator/sales_order/cepat'); ?>" class="btn btn-success btn-sm btn-flat" style="margin-right:5px; border-radius:4px; font-weight:700; background:#059669; border-color:#047857; box-shadow:0 2px 6px rgba(5,150,105,0.3);">
-                         <i class="fa fa-bolt"></i> ⚡ Penjualan Cepat (POS)
-                      </a>
-                      <a href="<?= site_url('administrator/sales_order/add'); ?>" class="btn btn-primary btn-sm btn-flat" style="border-radius:4px; font-weight:600; background:#2563eb; border-color:#1d4ed8;">
-                         <i class="fa fa-plus-circle"></i> + Tambah Penjualan
-                      </a>
-                  <?php endif; ?>
+         <div class="box box-primary" style="border-radius:8px; border-top: 3px solid #3c8dbc;">
+            <div class="box-header with-border">
+               <div class="so-header-wrap">
+                  <h3 class="so-header-title">
+                     <i class="fa fa-list-alt text-primary"></i> Daftar Dokumen Penjualan
+                  </h3>
+                  <div class="so-action-tools">
+                     <!-- 1. Quick POS Kasir -->
+                     <?php if (is_allowed('sales_order_add', false)): ?>
+                        <a href="<?= site_url('administrator/sales_order/cepat'); ?>" class="so-btn so-btn-pos" title="Buka Penjualan Cepat POS">
+                           <i class="fa fa-bolt"></i> <span>Penjualan Cepat (POS)</span>
+                        </a>
+                        <a href="<?= site_url('administrator/sales_order/add'); ?>" class="so-btn so-btn-add" title="Input Pesanan Baru Manual">
+                           <i class="fa fa-plus"></i> <span>Tambah Penjualan</span>
+                        </a>
+                     <?php endif; ?>
+                     
+                     <?php if (is_allowed('pelanggan_list', false)): ?>
+                        <a href="<?= site_url('administrator/pelanggan'); ?>" class="so-btn so-btn-cust" title="Buka Data Pelanggan">
+                           <i class="fa fa-users"></i> <span>Data Pelanggan</span>
+                        </a>
+                     <?php endif; ?>
+
+                     <!-- 3. Export / Print Tools -->
+                     <?php if (is_allowed('sales_order_export', false)): ?>
+                        <?php
+                        $export_params = array_filter([
+                           'pelanggan_id' => $this->input->get('pelanggan_id') ?: null,
+                           'status'       => $this->input->get('status') ?: null,
+                           'source'       => $this->input->get('source') ?: null,
+                           'q'            => $this->input->get('q') ?: null,
+                           'f'            => $this->input->get('f') ?: null,
+                        ]);
+                        $export_qs = !empty($export_params) ? '?' . http_build_query($export_params) : '';
+                        ?>
+                        <a href="<?= site_url('administrator/sales_order/export' . $export_qs); ?>" class="so-btn so-btn-cust" style="background:#f8fafc; color:#15803d; border-color:#cbd5e1;" title="Export Rekap Penjualan ke Excel">
+                           <i class="fa fa-file-excel-o text-success"></i> <span>Export Excel</span>
+                        </a>
+                        <a href="<?= site_url('administrator/sales_order/export_pdf' . $export_qs); ?>" target="_blank" class="so-btn so-btn-cust" style="background:#f8fafc; color:#b91c1c; border-color:#cbd5e1;" title="Cetak Rekap Laporan Penjualan (PDF)">
+                           <i class="fa fa-file-pdf-o text-danger"></i> <span>Cetak PDF</span>
+                        </a>
+                     <?php endif; ?>
+                  </div>
                </div>
             </div>
 
@@ -300,9 +399,9 @@ $status_display = [
                <div class="clean-filter-box">
                   <form action="<?= base_url('administrator/sales_order/index'); ?>" method="GET">
                      <div class="row">
-                        <div class="col-md-3 col-sm-6">
+                        <div class="col-md-4 col-sm-6">
                            <label class="text-muted" style="font-size:12px;">Pelanggan:</label>
-                           <select class="form-control chosen" name="pelanggan_id">
+                           <select class="form-control chosen" name="pelanggan_id" onchange="this.form.submit()">
                               <option value="">-- Semua Pelanggan --</option>
                               <?php foreach($pelanggans as $p): ?>
                               <option value="<?= $p->id; ?>" <?= $this->input->get('pelanggan_id') == $p->id ? 'selected':''; ?>><?= _ent($p->nama_pelanggan); ?></option>
@@ -310,37 +409,22 @@ $status_display = [
                            </select>
                         </div>
                         <div class="col-md-3 col-sm-6">
-                           <label class="text-muted" style="font-size:12px;">Filter Status:</label>
-                           <select class="form-control" name="status" style="border-radius:4px;">
-                              <option value="">-- Semua Status --</option>
-                              <option value="aktif" <?= $current_status == 'aktif' ? 'selected' : ''; ?>>🟡 Pesanan Aktif (Draft / Baru Masuk)</option>
-                              <option value="proses" <?= $current_status == 'proses' ? 'selected' : ''; ?>>📦 Proses Gudang &amp; Kirim (Packing / Shipped)</option>
-                              <option value="selesai" <?= $current_status == 'selesai' ? 'selected' : ''; ?>>🟢 Pesanan Selesai (Delivered)</option>
-                              <option value="lunas" <?= $current_status == 'lunas' ? 'selected' : ''; ?>>💵 Pembayaran Lunas (Paid)</option>
-                              <option value="tempo" <?= $current_status == 'tempo' ? 'selected' : ''; ?>>⏰ Pembayaran Tempo (Unpaid)</option>
-                              <option value="draft" <?= $current_status == 'draft' ? 'selected' : ''; ?>>Draft</option>
-                              <option value="confirmed" <?= $current_status == 'confirmed' ? 'selected' : ''; ?>>Terkonfirmasi</option>
-                              <option value="packing" <?= $current_status == 'packing' ? 'selected' : ''; ?>>Sedang Dikemas (Packing)</option>
-                              <option value="shipped" <?= $current_status == 'shipped' ? 'selected' : ''; ?>>Dalam Pengiriman (Shipped)</option>
-                              <option value="delivered" <?= $current_status == 'delivered' ? 'selected' : ''; ?>>Selesai (Delivered)</option>
-                              <option value="cancelled" <?= $current_status == 'cancelled' ? 'selected' : ''; ?>>Dibatalkan</option>
-                           </select>
-                        </div>
-                        <div class="col-md-2 col-sm-6">
                            <label class="text-muted" style="font-size:12px;">Saluran / Channel:</label>
-                           <select class="form-control" name="source" style="border-radius:4px;">
+                           <select class="form-control" name="source" style="border-radius:4px;" onchange="this.form.submit()">
                               <option value="">-- Semua Saluran --</option>
                               <option value="pos" <?= $this->input->get('source') == 'pos' ? 'selected' : ''; ?>>⚡ POS Kasir (Cepat)</option>
-                              <option value="manual" <?= $this->input->get('source') == 'manual' ? 'selected' : ''; ?>>🏢 Regular (B2B Offline)</option>
-                              <option value="excel_import" <?= $this->input->get('source') == 'excel_import' ? 'selected' : ''; ?>>🛍️ Marketplace (Shopee/Online)</option>
+                              <option value="manual" <?= in_array($this->input->get('source'), ['manual', 'offline']) ? 'selected' : ''; ?>>🏢 Transaksi Offline</option>
                            </select>
                         </div>
                         <div class="col-md-3 col-sm-6">
-                           <label class="text-muted" style="font-size:12px;">Cari No SO / Nama:</label>
-                           <input type="text" class="form-control" name="q" placeholder="Ketik No. SO / Nama..." value="<?= _ent($this->input->get('q')); ?>">
+                           <label class="text-muted" style="font-size:12px;">Cari No. Transaksi Penjualan / Nama:</label>
+                           <input type="text" class="form-control" name="q" placeholder="Ketik No. Transaksi / Nama..." value="<?= _ent($this->input->get('q')); ?>">
                         </div>
-                        <div class="col-md-1 col-sm-6" style="padding-top: 23px;">
-                           <button type="submit" class="btn btn-primary btn-flat btn-block" style="border-radius:4px;" title="Cari Data"><i class="fa fa-search"></i></button>
+                        <div class="col-md-2 col-sm-6" style="padding-top: 23px; display:flex; gap:6px;">
+                           <button type="submit" class="btn btn-primary btn-flat" style="border-radius:4px; flex:1;" title="Cari Data"><i class="fa fa-search"></i> Cari</button>
+                           <?php if (!empty($this->input->get('source')) || !empty($this->input->get('pelanggan_id')) || !empty($this->input->get('q'))): ?>
+                           <a href="<?= site_url('administrator/sales_order'); ?>" class="btn btn-default btn-flat" style="border-radius:4px;" title="Reset / Tampilkan Semua"><i class="fa fa-refresh"></i> Reset</a>
+                           <?php endif; ?>
                         </div>
                      </div>
                   </form>
@@ -351,11 +435,10 @@ $status_display = [
                      <thead>
                         <tr style="background:#f8fafc; font-size:12px; color:#555;">
                            <th width="40" class="text-center">No</th>
-                           <th width="170">No. Sales Order</th>
+                           <th width="170">No. Transaksi Penjualan</th>
                            <th>Tanggal Penjualan</th>
-                           <th>Pelanggan & Tier</th>
+                           <th>Pelanggan</th>
                            <th class="text-right">Grand Total (Rp)</th>
-                           <th class="text-center">Status Pesanan</th>
                            <th class="text-center" width="160">Metode Pembayaran</th>
                            <th class="text-center" width="220">Aksi</th>
                         </tr>
@@ -372,70 +455,91 @@ $status_display = [
                                      <span class="label" style="background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; font-size:9.5px; padding:2px 5px; border-radius:3px;">
                                         <i class="fa fa-bolt"></i> POS Kasir (Cepat)
                                      </span>
-                                  <?php elseif ($so->source == 'excel_import' || (!empty($so->no_pesanan) && $so->source != 'manual')): ?>
-                                     <span class="label" style="background:#fff2ee; color:#ee4d2d; border:1px solid #ffccbe; font-size:9.5px; padding:2px 5px; border-radius:3px;">
-                                        <i class="fa fa-shopping-bag"></i> Marketplace (Shopee)
+                                  <?php elseif ($so->source == 'excel_import' || in_array(strtolower((string)$so->source), ['shopee', 'tokopedia', 'tiktok', 'tiktokshop', 'lazada', 'marketplace']) || (!empty($so->no_pesanan) && $so->source != 'manual' && $so->source != 'pos')): ?>
+                                     <?php
+                                        $s_low = strtolower((string)$so->source);
+                                        $mp_name = 'Marketplace (Shopee)';
+                                        $mp_bg = '#fff2ee'; $mp_color = '#ee4d2d'; $mp_border = '#ffccbe'; $mp_icon = 'fa-shopping-bag';
+                                        if ($s_low == 'tokopedia') {
+                                           $mp_name = 'Tokopedia'; $mp_bg = '#f0fdf4'; $mp_color = '#15803d'; $mp_border = '#bbf7d0'; $mp_icon = 'fa-shopping-cart';
+                                        } elseif (in_array($s_low, ['tiktok', 'tiktokshop'])) {
+                                           $mp_name = 'TikTok Shop'; $mp_bg = '#f1f5f9'; $mp_color = '#0f172a'; $mp_border = '#cbd5e1'; $mp_icon = 'fa-music';
+                                        } elseif ($s_low == 'shopee') {
+                                           $mp_name = 'Shopee'; $mp_bg = '#fff2ee'; $mp_color = '#ee4d2d'; $mp_border = '#ffccbe'; $mp_icon = 'fa-shopping-bag';
+                                        }
+                                     ?>
+                                     <span class="label" style="background:<?= $mp_bg; ?>; color:<?= $mp_color; ?>; border:1px solid <?= $mp_border; ?>; font-size:9.5px; padding:2px 5px; border-radius:3px;">
+                                        <i class="fa <?= $mp_icon; ?>"></i> <?= $mp_name; ?>
                                      </span>
+                                     <?php if (!empty($so->no_pesanan) && $so->no_pesanan !== $so->nomor_so): ?>
+                                        <br><small style="font-family:monospace; color:#64748b; font-size:10px;">#<?= _ent($so->no_pesanan); ?></small>
+                                     <?php endif; ?>
+                                     <?php if (!empty($so->nomor_resi) && $so->nomor_resi !== '-'): ?>
+                                        <br><small style="font-family:monospace; color:#0284c7; font-size:9.5px;"><i class="fa fa-barcode"></i> <?= _ent($so->nomor_resi); ?></small>
+                                     <?php endif; ?>
                                   <?php else: ?>
                                      <span class="label" style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; font-size:9.5px; padding:2px 5px; border-radius:3px;">
-                                        <i class="fa fa-building-o"></i> Penjualan Regular (B2B)
+                                        <i class="fa fa-building-o"></i> Transaksi Offline
                                      </span>
                                   <?php endif; ?>
                               </td>
                               <td><i class="fa fa-calendar text-muted"></i> <?= date('d/m/Y', strtotime($so->tanggal_so)); ?></td>
                                <td>
                                   <?php
-                                     $customer_name = !empty($so->nama_pelanggan) 
-                                         ? $so->nama_pelanggan 
-                                         : (!empty($so->nama_penerima) 
-                                             ? $so->nama_penerima 
-                                             : (!empty($so->username_pembeli) 
-                                                 ? $so->username_pembeli 
-                                                 : (!empty($so->no_telepon) 
-                                                     ? $so->no_telepon 
-                                                     : 'Pelanggan Umum')));
-                                     $customer_phone = !empty($so->no_telepon) ? $so->no_telepon : ($so->telp_pelanggan ?? '');
+                                     $is_mp = ($so->source == 'excel_import' 
+                                         || in_array(strtolower((string)$so->source), ['shopee', 'tokopedia', 'tiktok', 'tiktokshop', 'lazada', 'marketplace']) 
+                                         || (!empty($so->no_pesanan) && !in_array(strtolower((string)$so->source), ['manual', 'pos', 'regular', 'b2b'])));
+
+                                     if ($is_mp) {
+                                         if (!empty($so->nama_penerima) && $so->nama_penerima !== '-') {
+                                             $raw_cust = $so->nama_penerima;
+                                         } elseif (!empty($so->nama_pelanggan) && stripos($so->nama_pelanggan, 'Kencana Retail') === false) {
+                                             $raw_cust = $so->nama_pelanggan;
+                                         } elseif (!empty($so->username_pembeli) && !in_array(strtolower($so->username_pembeli), ['-', '_', 'buyer'])) {
+                                             $raw_cust = $so->username_pembeli;
+                                         } else {
+                                             $raw_cust = !empty($so->nama_pelanggan) ? $so->nama_pelanggan : 'Pelanggan Umum';
+                                         }
+                                     } else {
+                                         $raw_cust = !empty($so->nama_pelanggan) ? $so->nama_pelanggan : (!empty($so->nama_penerima) ? $so->nama_penerima : 'Pelanggan Umum');
+                                     }
+
+                                     $customer_name = clean_customer_name($raw_cust) ?: 'Pelanggan Umum';
+                                     $customer_user = clean_customer_username($so->username_pembeli ?? '', $customer_name);
+                                     $raw_ph = ($is_mp && (int)$so->pelanggan_id === 1) ? (!empty($so->no_telepon) ? $so->no_telepon : '') : (!empty($so->no_telepon) ? $so->no_telepon : ($so->telp_pelanggan ?? ''));
+                                     $customer_phone = clean_customer_phone($raw_ph);
                                   ?>
                                   <strong style="color:#1e293b; font-size:13px;"><?= _ent($customer_name); ?></strong>
-                                  <?php if (!empty($so->username_pembeli) && $so->username_pembeli != $customer_name): ?>
-                                     <small class="text-muted">(@<?= _ent($so->username_pembeli); ?>)</small>
+                                  <?php if (!empty($customer_user)): ?>
+                                     <small class="text-muted">(@<?= _ent($customer_user); ?>)</small>
                                   <?php endif; ?>
-                                  <br>
-                                  <small>
-                                     <span class="label label-info" style="font-size:9px; font-weight:600;"><?= strtoupper(_ent($so->tipe_pelanggan ?? 'RETAIL')); ?></span>
-                                     <?php if (!empty($customer_phone)): ?>
-                                        <span class="text-muted" style="font-size:11px; margin-left:4px;"><i class="fa fa-phone"></i> <?= _ent($customer_phone); ?></span>
-                                     <?php endif; ?>
-                                  </small>
-                               </td>
-                               <td class="text-right"><strong class="text-success" style="font-size:13px;">Rp <?= number_format($so->total, 0, ',', '.'); ?></strong></td>
-                               <td class="text-center">
-                                  <span class="label <?= isset($status_color[$so->status]) ? $status_color[$so->status] : 'label-default'; ?>" style="font-size:11px; padding:4px 8px; display:inline-block;">
-                                     <?= isset($status_display[$so->status]) ? $status_display[$so->status] : strtoupper($so->status); ?>
-                                  </span>
-
-                                  <?php if (is_allowed('sales_order_update', false)): ?>
-                                  <div class="dropdown" style="margin-top:4px;">
-                                     <button class="btn btn-xs btn-default dropdown-toggle" type="button" data-toggle="dropdown" style="font-size:10px; padding:2px 7px; border-radius:3px;">
-                                        <i class="fa fa-refresh text-primary"></i> Ubah Status <span class="caret"></span>
-                                     </button>
-                                     <ul class="dropdown-menu dropdown-menu-right" style="font-size:11px; text-align:left; min-width:210px; box-shadow:0 4px 15px rgba(0,0,0,0.15);">
-                                        <li class="dropdown-header" style="font-weight:700; color:#475569;">Progres Status Berkala:</li>
-                                        <li><a href="<?= site_url('administrator/sales_order/update_status/'.$so->id.'?status=draft'); ?>">🟡 1. DRAFT (Pesanan Baru)</a></li>
-                                        <li><a href="<?= site_url('administrator/sales_order/update_status/'.$so->id.'?status=confirmed'); ?>">🔵 2. TERKONFIRMASI (Stok Ready)</a></li>
-                                        <li><a href="<?= site_url('administrator/sales_order/update_status/'.$so->id.'?status=packing'); ?>">📦 3. SEDANG DIKEMAS (Packing)</a></li>
-                                        <li><a href="<?= site_url('administrator/sales_order/update_status/'.$so->id.'?status=shipped'); ?>">🚚 4. DALAM PENGIRIMAN (Shipped)</a></li>
-                                        <li><a href="<?= site_url('administrator/sales_order/update_status/'.$so->id.'?status=delivered'); ?>">🟢 5. PESANAN SELESAI (Delivered)</a></li>
-                                        <li class="divider"></li>
-                                        <li><a href="<?= site_url('administrator/sales_order/update_status/'.$so->id.'?status=cancelled'); ?>" class="text-danger"><i class="fa fa-times-circle"></i> Dibatalkan</a></li>
-                                     </ul>
-                                  </div>
+                                  <?php if (!empty($customer_phone)): ?>
+                                     <small class="text-muted" style="font-size:11.5px; margin-left:3px;"><i class="fa fa-phone text-muted"></i> <?= _ent($customer_phone); ?></small>
+                                  <?php endif; ?>
+                                  <?php if (!empty($so->nama_pengirim) && $so->nama_pengirim !== '-'): ?>
+                                     <div style="margin-top:2px; font-size:11px; color:#64748b;">
+                                        <i class="fa fa-paper-plane text-info"></i> Pengirim: <span style="color:#1e293b; font-weight:600;"><?= _ent($so->nama_pengirim); ?></span><?= (!empty($so->no_telepon_pengirim) && $so->no_telepon_pengirim !== '-') ? ' <span style="color:#0284c7; font-weight:600;">(' . _ent($so->no_telepon_pengirim) . ')</span>' : ''; ?>
+                                     </div>
                                   <?php endif; ?>
                                </td>
+                               <td class="text-right">
+                                   <?php 
+                                      $is_so_cod = (strtolower($so->tipe_pengiriman ?? '') === 'cod' || (!empty($so->total) && (float)$so->total > 0 && stripos($so->catatan ?? '', 'COD') !== false));
+                                   ?>
+                                   <?php if ($so->total > 0): ?>
+                                      <strong class="text-success" style="font-size:13px;">Rp <?= number_format($so->total, 0, ',', '.'); ?></strong>
+                                      <?php if ($is_so_cod): ?>
+                                         <br><span class="badge" style="background:#fee2e2; color:#b91c1c; border:1px solid #fecaca; font-size:9.5px; padding:1px 5px;"><i class="fa fa-money"></i> COD</span>
+                                      <?php endif; ?>
+                                   <?php else: ?>
+                                      <span class="text-muted" style="font-size:12px; font-style:italic;">Rp 0</span>
+                                      <br><span class="badge" style="background:#f8fafc; color:#64748b; border:1px solid #e2e8f0; font-size:9px; padding:1px 4px;">Cashless</span>
+                                   <?php endif; ?>
+                                </td>
                               <td class="text-center" style="vertical-align: middle;">
                                  <?php
                                     $is_pos = ($so->source == 'pos' || strpos((string)$so->catatan, '[POS CEPAT') !== false);
-                                    $is_mp  = ($so->source == 'excel_import' || (!empty($so->no_pesanan) && $so->source != 'manual'));
+                                    $is_mp  = ($so->source == 'excel_import' || in_array(strtolower((string)$so->source), ['shopee', 'tokopedia', 'tiktok', 'tiktokshop', 'lazada', 'marketplace']) || (!empty($so->no_pesanan) && $so->source != 'manual' && $so->source != 'pos'));
                                     
                                     $inv_status = isset($so->inv_status_db) ? $so->inv_status_db : null;
                                     if ($inv_status === null && empty($so->waktu_pembayaran) && !$is_pos && !$is_mp) {
@@ -492,11 +596,13 @@ $status_display = [
                               </td>
                               <td class="text-center">
                                  <a href="<?= site_url('administrator/sales_order/view/' . $so->id); ?>" class="btn btn-default btn-xs" title="Detail"><i class="fa fa-eye"></i></a>
+                                 <?php if ($is_pos): ?>
+                                 <a href="<?= site_url('administrator/sales_order/cetak_struk/' . $so->id . '?template=thermal'); ?>" target="_blank" class="btn btn-success btn-xs" style="background:#059669; border-color:#047857;" title="Cetak Struk Thermal (POS Kasir 58mm/80mm)"><i class="fa fa-ticket"></i></a>
+                                 <?php endif; ?>
                                  <a href="<?= site_url('administrator/sales_order/cetak/' . $so->id); ?>" target="_blank" class="btn btn-info btn-xs" title="Cetak PDF"><i class="fa fa-print"></i></a>
                                  
-                                 <?php if ($so->status == 'draft' && is_allowed('sales_order_update', false)): ?>
+                                 <?php if (is_allowed('sales_order_update', false)): ?>
                                  <a href="<?= site_url('administrator/sales_order/edit/'.$so->id); ?>" class="btn btn-warning btn-xs" title="Edit Order"><i class="fa fa-edit"></i></a>
-                                 <a href="<?= site_url('administrator/sales_order/konfirmasi/' . $so->id); ?>" class="btn btn-primary btn-xs" title="Konfirmasi Order"><i class="fa fa-check"></i></a>
                                  <?php endif; ?>
 
                                  <?php 
@@ -504,11 +610,11 @@ $status_display = [
                                  if ($linked_inv): 
                                  ?>
                                     <a href="<?= site_url('administrator/invoice/view/' . $linked_inv->id); ?>" class="btn btn-info btn-xs" title="Lihat Invoice <?= _ent($linked_inv->nomor_invoice); ?>"><i class="fa fa-file-text-o"></i> <?= _ent($linked_inv->nomor_invoice); ?></a>
-                                 <?php elseif (in_array($so->status, ['confirmed', 'processing', 'approved']) && is_allowed('invoice_add', false)): ?>
+                                 <?php elseif (is_allowed('invoice_add', false)): ?>
                                     <a href="<?= site_url('administrator/invoice/from_so/' . $so->id); ?>" class="btn btn-success btn-xs" title="Terbitkan Invoice"><i class="fa fa-file-text-o"></i> Invoice</a>
                                  <?php endif; ?>
 
-                                 <?php if (is_allowed('sales_order_delete', false) && $so->status == 'draft'): ?>
+                                 <?php if (is_allowed('sales_order_delete', false)): ?>
                                  <a href="javascript:void(0);" data-href="<?= site_url('administrator/sales_order/delete/' . $so->id); ?>" class="btn btn-danger btn-xs remove-data" title="Hapus"><i class="fa fa-trash"></i></a>
                                  <?php endif; ?>
                               </td>
@@ -516,9 +622,9 @@ $status_display = [
                            <?php endforeach; ?>
                          <?php else: ?>
                             <tr>
-                               <td colspan="8" class="text-center text-muted" style="padding:40px;">
+                               <td colspan="7" class="text-center text-muted" style="padding:40px;">
                                   <i class="fa fa-shopping-cart fa-3x" style="color:#cbd5e1; margin-bottom:10px;"></i><br>
-                                  <span style="font-size:16px; font-weight:600; color:#475569;">Tidak ada data Sales Order Offline untuk filter ini.</span><br>
+                                  <span style="font-size:16px; font-weight:600; color:#475569;">Tidak ada data Transaksi Penjualan untuk filter ini.</span><br>
                                   <small class="text-muted" style="display:inline-block; margin-top:6px;">
                                      Jika pelanggan bertransaksi melalui <strong>Shopee, Tokopedia, atau TikTok Shop</strong>, silakan cek di menu: 
                                      <a href="<?= site_url('administrator/penjualan_marketplace'); ?>" class="btn btn-xs btn-info btn-flat" style="border-radius:3px; margin-left:3px; font-weight:600;">
@@ -534,7 +640,7 @@ $status_display = [
 
                <div class="row" style="margin-top: 15px;">
                   <div class="col-md-6">
-                     <span class="text-muted">Total: <strong><?= $so_counts; ?></strong> Sales Order</span>
+                     <span class="text-muted">Total: <strong><?= $so_counts; ?></strong> Transaksi Penjualan</span>
                   </div>
                   <div class="col-md-6">
                      <div class="pull-right">
@@ -550,10 +656,12 @@ $status_display = [
 
 <script>
 $(document).ready(function(){
+   $('select[name="source"]').on('change', function(){ $(this).closest('form').submit(); });
+   $('select[name="pelanggan_id"]').on('change', function(){ $(this).closest('form').submit(); });
    $('.remove-data').click(function(){
       var url = $(this).attr('data-href');
       swal({
-         title: "Hapus Sales Order?",
+         title: "Hapus Transaksi Penjualan?",
          text: "Data yang dihapus tidak dapat dikembalikan!",
          type: "warning",
          showCancelButton: true,

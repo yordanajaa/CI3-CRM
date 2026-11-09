@@ -44,50 +44,55 @@
 .profile-header .name { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 .profile-header .phone { font-size: 15px; color: #cbd5e1; font-weight: 500; }
 
-/* Navigation Tab Bar */
+/* Navigation Tab Bar - Touch Scrollable */
 .profile-header .nav-tabs-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 8px;
   padding-top: 14px;
   margin-top: 18px;
   border-top: 1px solid rgba(255,255,255,0.18);
   position: relative;
   z-index: 2;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.profile-header .nav-tabs-bar::-webkit-scrollbar {
+  display: none;
 }
 .profile-header .nav-tab-btn {
-  padding: 8px 18px;
-  border-radius: 25px;
-  font-size: 12px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 12.5px;
   font-weight: 700;
-  color: #e0e7ff;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  text-decoration: none !important;
+  color: rgba(255,255,255,0.92);
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.22);
+  text-decoration: none;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 .profile-header .nav-tab-btn:hover {
-  background: rgba(255, 255, 255, 0.22);
-  color: #ffffff;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  background: rgba(255,255,255,0.25);
+  color: #fff;
+  transform: translateY(-1px);
 }
 .profile-header .nav-tab-btn.active {
   background: #ffffff !important;
   color: #312e81 !important;
   border-color: #ffffff !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.18) !important;
 }
-.profile-header .nav-tab-btn.active .active-dot {
+.profile-header .nav-tab-btn .active-dot {
   width: 7px;
   height: 7px;
-  background: #6366f1;
   border-radius: 50%;
+  background: #6366f1;
   display: inline-block;
 }
 
@@ -230,8 +235,22 @@
         <i class="fa fa-user-circle-o" style="font-size: 50px; opacity: 0.8;"></i>
       </div>
       <div class="col-md-7">
+        <?php
+          $is_resi_ident = (strpos($summary['phone'] ?? '', 'RESI_') === 0);
+          $disp_phone = $is_resi_ident ? ('Resi: ' . substr($summary['phone'], 5)) : ($summary['phone'] ?? '-');
+          $phone_clean = preg_replace('/[^0-9]/', '', $summary['phone'] ?? '');
+          $has_valid_top_phone = (!empty($phone_clean) && strlen($phone_clean) >= 8 && !$is_resi_ident);
+        ?>
         <div class="name"><?= htmlspecialchars($summary['nama']); ?></div>
-        <div class="phone"><i class="fa fa-phone"></i> <?= htmlspecialchars($summary['phone']); ?></div>
+        <div class="phone">
+          <?php if ($is_resi_ident): ?>
+            <i class="fa fa-barcode"></i> <?= htmlspecialchars($disp_phone); ?> <span class="badge" style="background:#0284c7;font-size:10px;margin-left:4px;">Resi Marketplace</span>
+          <?php elseif (!empty($summary['phone']) && $summary['phone'] !== '-'): ?>
+            <i class="fa fa-phone"></i> <?= htmlspecialchars($summary['phone']); ?>
+          <?php else: ?>
+            <i class="fa fa-phone-slash" style="opacity:0.6;"></i> <span style="opacity:0.8;">(Tanpa No. HP)</span>
+          <?php endif; ?>
+        </div>
         <div style="margin-top: 8px;">
           <?php foreach ($summary['sources'] as $s):
             $cls = 'badge-toko';
@@ -245,9 +264,9 @@
       </div>
       <div class="col-md-4 text-right" style="padding-top: 10px;">
         <a href="<?= site_url('administrator/crm'); ?>" class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);"><i class="fa fa-arrow-left"></i> Kembali</a>
-        <a href="<?= site_url('administrator/sales_order/add'); ?>" class="btn btn-sm" style="background:#f39c12;color:#fff;border:none;" title="Buat Sales Order Repeat Order"><i class="fa fa-cart-plus"></i> Repeat Order</a>
-        <?php if (!empty($summary['phone'])):
-          $top_phone = preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $summary['phone']));
+        <a href="<?= site_url('administrator/sales_order/add'); ?>" class="btn btn-sm" style="background:#f39c12;color:#fff;border:none;" title="Buat Transaksi Penjualan Repeat Order"><i class="fa fa-cart-plus"></i> Repeat Order</a>
+        <?php if ($has_valid_top_phone):
+          $top_phone = preg_replace('/^0/', '62', $phone_clean);
           if (substr($top_phone, 0, 2) !== '62') $top_phone = '62' . $top_phone;
           $top_act = !empty($summary['rfm']['action']) ? $summary['rfm']['action'] : 'Terima kasih telah berbelanja bersama kami.';
           $top_msg = "Halo Kak " . $summary['nama'] . ",\n\nSalam dari Metafora! " . $top_act . "\n\nAda yang bisa kami bantu hari ini?";
@@ -277,9 +296,6 @@
       </a>
       <a href="<?= site_url('administrator/crm/followup_setting'); ?>" class="nav-tab-btn">
         <i class="fa fa-cogs"></i> 6. Kelompok Follow-Up
-      </a>
-      <a href="<?= site_url('administrator/crm/automations'); ?>" class="nav-tab-btn">
-        <i class="fa fa-bolt"></i> 7. Otomasi CRM
       </a>
     </div>
   </div>

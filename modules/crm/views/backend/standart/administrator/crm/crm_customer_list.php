@@ -247,8 +247,6 @@
 
       <div class="action-tools">
         <a href="<?= site_url('administrator/crm/journal_followup'); ?>" class="btn" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);"><i class="fa fa-tasks"></i> Journal Follow-Up</a>
-        <a href="<?= site_url('administrator/crm/export_customers?q=' . urlencode($filter ?? '') . '&rfm_segment=' . urlencode($rfm_segment ?? '')); ?>" class="btn btn-success" style="background:#10b981; color:#fff;"><i class="fa fa-file-excel-o"></i> Export CSV</a>
-        <a href="<?= site_url('administrator/crm/export_customers_pdf?q=' . urlencode($filter ?? '') . '&rfm_segment=' . urlencode($rfm_segment ?? '')); ?>" target="_blank" class="btn btn-danger" style="background:#ef4444; color:#fff;"><i class="fa fa-file-pdf-o"></i> Export PDF</a>
       </div>
     </div>
 
@@ -272,41 +270,41 @@
       <a href="<?= site_url('administrator/crm/followup_setting'); ?>" class="nav-tab-btn">
         <i class="fa fa-cogs"></i> 6. Kelompok Follow-Up
       </a>
-      <a href="<?= site_url('administrator/crm/automations'); ?>" class="nav-tab-btn">
-        <i class="fa fa-bolt"></i> 7. Otomasi CRM
-      </a>
     </div>
   </div>
 
   <!-- Search & Filter -->
-  <div class="box box-default">
-    <div class="box-body">
+  <div class="box box-default" style="border-radius:12px; border:1px solid #e2e8f0; box-shadow:0 2px 10px rgba(0,0,0,0.03); margin-bottom:18px;">
+    <div class="box-body" style="padding:14px 18px;">
       <form method="get" action="<?= site_url('administrator/crm'); ?>">
-        <div class="row">
-          <div class="col-md-5" style="margin-bottom:8px;">
-            <div class="input-group">
-              <span class="input-group-addon"><i class="fa fa-search"></i></span>
-              <input type="text" name="q" class="form-control" placeholder="Cari nama customer atau nomor HP..." value="<?= htmlspecialchars($filter ?? ''); ?>">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;">
+          <div style="display:flex; flex:1 1 480px; gap:10px; flex-wrap:wrap; align-items:center;">
+            <div style="flex:1 1 260px; min-width:220px;">
+              <div class="input-group">
+                <span class="input-group-addon" style="border-radius:8px 0 0 8px; background:#f8fafc; border:1px solid #cbd5e1; border-right:none;"><i class="fa fa-search text-muted"></i></span>
+                <input type="text" name="q" class="form-control" placeholder="Cari nama customer, nomor HP, atau nomor resi..." value="<?= htmlspecialchars($filter ?? ''); ?>" style="border-radius:0 8px 8px 0; height:38px; border:1px solid #cbd5e1; font-size:12.5px;">
+              </div>
+            </div>
+            <div style="flex:0 1 220px; min-width:180px;">
+              <select name="rfm_segment" class="form-control" style="border-radius:8px; height:38px; border:1px solid #cbd5e1; font-size:12.5px;">
+                <option value="">-- Semua Segmen RFM --</option>
+                <?php
+                $segments_list = ['Champions', 'Loyal Customers', 'Potential Loyalist', 'New Customers', 'Big Spenders', 'Frequent Low Value', 'Need Attention', 'At Risk Customers', "Can't Lose Them", 'Hibernating'];
+                foreach ($segments_list as $seg_item):
+                  $sel = (strcasecmp($rfm_segment ?? '', $seg_item) === 0) ? 'selected' : '';
+                ?>
+                <option value="<?= $seg_item; ?>" <?= $sel; ?>><?= $seg_item; ?></option>
+                <?php endforeach; ?>
+              </select>
             </div>
           </div>
-          <div class="col-md-3" style="margin-bottom:8px;">
-            <select name="rfm_segment" class="form-control">
-              <option value="">-- Semua Segmen RFM --</option>
-              <?php
-              $segments_list = ['Champions', 'Loyal Customers', 'Potential Loyalist', 'New Customers', 'Big Spenders', 'Frequent Low Value', 'Need Attention', 'At Risk Customers', "Can't Lose Them", 'Hibernating'];
-              foreach ($segments_list as $seg_item):
-                $sel = (strcasecmp($rfm_segment ?? '', $seg_item) === 0) ? 'selected' : '';
-              ?>
-              <option value="<?= $seg_item; ?>" <?= $sel; ?>><?= $seg_item; ?></option>
-              <?php endforeach; ?>
-            </select>
-          </div>
-          <div class="col-md-4" style="margin-bottom:8px;">
-            <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> Filter</button>
-            <a href="<?= site_url('administrator/crm'); ?>" class="btn btn-default"><i class="fa fa-refresh"></i> Reset</a>
-            <a href="<?= site_url('administrator/crm/export_customers?q=' . urlencode($filter ?? '') . '&rfm_segment=' . urlencode($rfm_segment ?? '')); ?>" class="btn btn-success"><i class="fa fa-file-excel-o"></i> CSV</a>
-            <a href="<?= site_url('administrator/crm/export_customers_pdf?q=' . urlencode($filter ?? '') . '&rfm_segment=' . urlencode($rfm_segment ?? '')); ?>" target="_blank" class="btn btn-danger"><i class="fa fa-file-pdf-o"></i> PDF</a>
-            <a href="<?= site_url('administrator/crm/journal_followup'); ?>" class="btn btn-warning"><i class="fa fa-tasks"></i> Journal</a>
+          
+          <div style="display:flex; gap:6px; align-items:center; flex-wrap:nowrap; margin-left:auto;">
+            <button type="submit" class="btn btn-primary" style="border-radius:8px; height:38px; font-weight:700; padding:0 14px; display:inline-flex; align-items:center; gap:5px; font-size:12.5px; white-space:nowrap;"><i class="fa fa-search"></i> Filter</button>
+            <a href="<?= site_url('administrator/crm'); ?>" class="btn btn-default" style="border-radius:8px; height:38px; font-weight:600; padding:0 12px; display:inline-flex; align-items:center; gap:5px; font-size:12.5px; white-space:nowrap;"><i class="fa fa-refresh"></i> Reset</a>
+            <a href="<?= site_url('administrator/crm/export_customers?q=' . urlencode($filter ?? '') . '&rfm_segment=' . urlencode($rfm_segment ?? '')); ?>" class="btn btn-success" style="border-radius:8px; height:38px; font-weight:700; padding:0 12px; display:inline-flex; align-items:center; gap:5px; font-size:12.5px; white-space:nowrap; background:#10b981; border:none;"><i class="fa fa-file-excel-o"></i> CSV</a>
+            <a href="<?= site_url('administrator/crm/export_customers_pdf?q=' . urlencode($filter ?? '') . '&rfm_segment=' . urlencode($rfm_segment ?? '')); ?>" target="_blank" class="btn btn-danger" style="border-radius:8px; height:38px; font-weight:700; padding:0 12px; display:inline-flex; align-items:center; gap:5px; font-size:12.5px; white-space:nowrap; background:#ef4444; border:none;"><i class="fa fa-file-pdf-o"></i> PDF</a>
+            <a href="<?= site_url('administrator/crm/journal_followup'); ?>" class="btn btn-warning" style="border-radius:8px; height:38px; font-weight:700; padding:0 14px; display:inline-flex; align-items:center; gap:5px; font-size:12.5px; white-space:nowrap; background:#f59e0b; border:none; color:#fff;"><i class="fa fa-tasks"></i> Journal</a>
           </div>
         </div>
       </form>
@@ -344,9 +342,22 @@
           ?>
           <tr>
             <td><?= $no++; ?></td>
-            <td><strong><?= htmlspecialchars($c->customer_nama); ?></strong></td>
             <td>
-              <i class="fa fa-phone" style="color:#27ae60;"></i> <?= htmlspecialchars($c->customer_phone); ?>
+              <strong><?= htmlspecialchars($c->customer_nama); ?></strong>
+              <?php if (!empty($c->nomor_resi) && $c->nomor_resi !== '-'): ?>
+                <div style="margin-top:3px;">
+                  <span class="label" style="font-family:monospace; font-size:10.5px; background:#f0f9ff; color:#0284c7; border:1px solid #bae6fd; font-weight:600; padding:2px 7px; border-radius:4px; display:inline-flex; align-items:center; gap:4px;" title="Nomor Resi: <?= htmlspecialchars($c->nomor_resi); ?>">
+                    <i class="fa fa-barcode text-primary"></i> <?= htmlspecialchars($c->nomor_resi); ?>
+                  </span>
+                </div>
+              <?php endif; ?>
+            </td>
+            <td>
+              <?php if (!empty($c->customer_phone) && $c->customer_phone !== '-'): ?>
+                <i class="fa fa-phone" style="color:#27ae60;"></i> <?= htmlspecialchars($c->customer_phone); ?>
+              <?php else: ?>
+                <span class="text-muted" style="font-size:11.5px; font-style:italic;" title="No. HP tidak dicantumkan pada label/resi"><i class="fa fa-phone-slash text-muted"></i> -</span>
+              <?php endif; ?>
             </td>
             <td>
               <?php
@@ -357,6 +368,7 @@
                 if (stripos($s, 'Shopee') !== false) $cls = 'badge-shopee';
                 elseif (stripos($s, 'Tokopedia') !== false) $cls = 'badge-tokopedia';
                 elseif (stripos($s, 'TikTok') !== false) $cls = 'badge-tiktok';
+                elseif (stripos($s, 'Resi') !== false) $cls = 'badge-tokopedia';
               ?>
               <span class="badge-source <?= $cls; ?>"><?= $s; ?></span>
               <?php endforeach; ?>
@@ -370,19 +382,22 @@
             <td class="text-center"><strong><?= $c->total_orders; ?></strong></td>
             <td><?= $c->last_order_date ? date('d M Y', strtotime($c->last_order_date)) : '-'; ?></td>
             <td class="text-center">
-              <?php if ($c->pending_followups > 0): ?>
+              <?php if (isset($c->pending_followups) && $c->pending_followups > 0): ?>
                 <span class="pending-badge"><?= $c->pending_followups; ?> pending</span>
               <?php else: ?>
                 <span style="color:#27ae60;font-size:12px;"><i class="fa fa-check-circle"></i> Done</span>
               <?php endif; ?>
             </td>
             <td class="text-center" style="white-space:nowrap; min-width:160px; width:160px;">
-              <a href="<?= site_url('administrator/crm/customer_detail?phone=' . urlencode($c->customer_phone)); ?>" class="btn btn-sm btn-info" title="Lihat Detail & Analisis RFM" style="border-radius:6px; font-weight:700;">
+              <?php
+                $detail_param = (!empty($c->cust_group_key) && ($c->customer_phone === '-' || empty($c->customer_phone))) ? $c->cust_group_key : $c->customer_phone;
+              ?>
+              <a href="<?= site_url('administrator/crm/customer_detail?phone=' . urlencode($detail_param)); ?>" class="btn btn-sm btn-info" title="Lihat Detail & Analisis RFM" style="border-radius:6px; font-weight:700;">
                 <i class="fa fa-eye"></i> Detail
               </a>
               <?php 
                 $clean_phone = preg_replace('/[^0-9]/', '', $c->customer_phone ?? '');
-                if (!empty($clean_phone)):
+                if (!empty($clean_phone) && strlen($clean_phone) >= 8):
                   $wa_phone = preg_replace('/^0/', '62', $clean_phone);
                   if (substr($wa_phone, 0, 2) !== '62') $wa_phone = '62' . $wa_phone;
                   $wa_action = !empty($rfm['action']) ? $rfm['action'] : 'Terima kasih telah menjadi pelanggan setia kami.';

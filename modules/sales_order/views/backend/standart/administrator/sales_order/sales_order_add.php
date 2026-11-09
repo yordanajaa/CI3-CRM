@@ -8,6 +8,19 @@ $diskon_persen_init = 0;
 if ($is_edit && isset($so->subtotal) && $so->subtotal > 0 && isset($so->diskon_total)) {
     $diskon_persen_init = round(($so->diskon_total / $so->subtotal) * 100, 2);
 }
+
+$is_lunas_init = false;
+if ($is_edit) {
+    if (!empty($so->waktu_pembayaran) || ($so->status ?? '') == 'delivered' || ($so->source ?? '') == 'pos') {
+        $is_lunas_init = true;
+    }
+    if (isset($so->id)) {
+        $chk_inv = $this->db->get_where('invoice', ['so_id' => $so->id])->row();
+        if ($chk_inv && $chk_inv->status == 'paid') $is_lunas_init = true;
+        $chk_piu = $this->db->get_where('piutang_usaha', ['so_id' => $so->id])->row();
+        if ($chk_piu && $chk_piu->status == 'lunas') $is_lunas_init = true;
+    }
+}
 ?>
 <link rel="stylesheet" href="<?= base_url('asset/admin-lte/plugins/select2/select2.min.css'); ?>">
 <style>
@@ -246,34 +259,156 @@ textarea.form-control {
 
 /* Responsive & Mobile Screens */
 @media (max-width: 768px) {
-  .form-card .box-body {
-    padding: 14px 12px;
+  body, .wrapper, .content-wrapper, .content {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+  }
+  .content {
+    padding: 10px 10px !important;
+  }
+  .content-header {
+    padding: 12px 10px 4px 10px !important;
+  }
+  .content-header h1 {
+    font-size: 19px !important;
+    line-height: 1.3 !important;
+  }
+  .content-header .breadcrumb {
+    position: static !important;
+    float: none !important;
+    padding: 4px 0 8px 0 !important;
+    margin-bottom: 0 !important;
+    font-size: 11.5px !important;
+  }
+  
+  /* Banner mode switcher */
+  .banner-mode-switcher {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    padding: 12px 14px !important;
+    gap: 10px !important;
+  }
+  .banner-mode-action {
+    width: 100% !important;
+  }
+  .btn-banner-pos {
+    width: 100% !important;
+    white-space: normal !important;
+    padding: 9px 12px !important;
+    line-height: 1.35 !important;
+    text-align: center !important;
+    border-radius: 6px !important;
+    display: block !important;
+  }
+
+  /* Form cards */
+  .form-card {
+    border-radius: 10px !important;
+    margin-bottom: 12px !important;
+    overflow: hidden !important;
   }
   .form-card .box-header {
-    padding: 12px 14px;
+    padding: 12px 14px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
   }
+  .form-card .box-header .box-title {
+    font-size: 14.5px !important;
+  }
+  .form-card .box-header .box-tools {
+    position: static !important;
+    width: 100% !important;
+    float: none !important;
+  }
+  .form-card .box-header .box-tools button {
+    width: 100% !important;
+    padding: 8px 12px !important;
+    font-size: 12.5px !important;
+  }
+  .form-card .box-body {
+    padding: 14px 12px !important;
+  }
+  .form-card .box-body .row {
+    margin-left: -6px !important;
+    margin-right: -6px !important;
+  }
+  .form-card .box-body [class*="col-"] {
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+  }
+
   .mobile-table-hint {
     display: block !important;
   }
-  #tbl_items {
-    min-width: 650px;
+  .table-responsive {
+    border-radius: 8px !important;
+    margin-bottom: 0 !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
   }
-  
-  
-  
-  /* Stack footer buttons cleanly */
+  #tbl_items {
+    min-width: 650px !important;
+  }
+
+  /* Payment cards */
+  .payment-option-card {
+    padding: 12px 14px !important;
+    margin-bottom: 10px !important;
+  }
+  .option-header {
+    margin-bottom: 4px !important;
+  }
+  .option-icon {
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 15px !important;
+  }
+  .option-title {
+    font-size: 13px !important;
+  }
+  .option-sub {
+    font-size: 10.5px !important;
+  }
+  .option-desc {
+    font-size: 11px !important;
+  }
+
+  /* Subpanel */
+  .panel-payment-sub {
+    padding: 12px 12px !important;
+  }
+
+  /* Stack footer buttons cleanly: Save on top, Back below */
+  .box-footer {
+    padding: 12px 14px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
   .box-footer .pull-left,
   .box-footer .pull-right {
     float: none !important;
     width: 100% !important;
     display: flex !important;
     flex-direction: column !important;
-    gap: 8px !important;
-    margin-bottom: 6px;
+    margin: 0 !important;
+  }
+  .box-footer .pull-right {
+    order: 1 !important;
+  }
+  .box-footer .pull-left {
+    order: 2 !important;
   }
   .box-footer .btn {
     width: 100% !important;
-    padding: 10px !important;
+    padding: 11px 14px !important;
+    font-size: 13.5px !important;
+    border-radius: 8px !important;
+    text-align: center !important;
+    white-space: normal !important;
   }
 }
 @media (min-width: 769px) {
@@ -367,15 +502,18 @@ textarea.form-control {
 
 <section class="content">
 
-<!-- Banner Mode Switcher to Penjualan Cepat -->
-<div class="alert alert-info" style="background:#eff6ff !important; border:1px solid #bfdbfe !important; color:#1e40af !important; border-radius:8px; margin-bottom:18px; padding:12px 18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-   <div>
-      <i class="fa fa-file-text-o text-primary" style="font-size:16px;"></i> 
-      <strong>Mode Penjualan Regular:</strong> Digunakan untuk penawaran pesanan, B2B regular, sistem tempo, dan pengiriman terjadwal.
+<!-- Banner Mode Switcher to Penjualan Cepat (Clean White & Emerald Green Aesthetic) -->
+<div class="banner-mode-switcher" style="background: #ffffff !important; border: 1px solid #e2e8f0 !important; color: #0f172a !important; border-radius: 14px; margin-bottom: 20px; padding: 18px 22px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; box-shadow: 0 4px 18px -2px rgba(15, 23, 42, 0.05);">
+   <div class="banner-mode-text" style="line-height: 1.45;">
+      <div style="display:inline-flex; align-items:center; gap:6px; padding:3px 12px; border-radius:9999px; background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; font-size:10.5px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; margin-bottom:6px;">
+         <span style="width:6px; height:6px; border-radius:50%; background:#16a34a; box-shadow:0 0 6px rgba(22,163,74,0.4);"></span> Mode Transaksi Offline
+      </div>
+      <div style="font-size: 15px; font-weight: 800; color: #0f172a; letter-spacing: -0.2px;">Penawaran, Pesanan B2B, &amp; Sistem Tempo (Piutang)</div>
+      <div style="font-size: 12.5px; color: #64748b; margin-top: 2px;">Digunakan untuk pesanan terjadwal, tempo, atau penagihan bertahap.</div>
    </div>
-   <div>
-      <a href="<?= site_url('administrator/sales_order/cepat'); ?>" class="btn btn-xs btn-success" style="font-weight:700; border-radius:4px; padding:6px 14px; background:#059669; border-color:#047857; color:#fff; box-shadow:0 2px 6px rgba(5,150,105,0.3);">
-         <i class="fa fa-bolt"></i> Pelanggan Mau Langsung Bayar Lunas? Buka Penjualan Cepat (POS) &rarr;
+   <div class="banner-mode-action">
+      <a href="<?= site_url('administrator/sales_order/cepat'); ?>" class="btn btn-banner-pos" style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color: #ffffff !important; font-weight: 700; border-radius: 10px; padding: 10px 18px; font-size: 12.5px; border: none; box-shadow: 0 4px 14px rgba(22, 163, 74, 0.28); display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; transition: all 0.2s ease;">
+         <i class="fa fa-bolt" style="color: #fef08a; font-size: 14px;"></i> <span>Pelanggan Mau Langsung Bayar Lunas? Buka POS &rarr;</span>
       </a>
    </div>
 </div>
@@ -384,18 +522,24 @@ textarea.form-control {
 <div class="row">
    <div class="col-md-12">
       <!-- Header Box -->
-      <div class="box form-card" style="border-top: 3px solid #3b82f6;">
-         <div class="box-header with-border">
-            <h3 class="box-title"><i class="fa fa-file-text-o text-primary"></i> Header &amp; Konfigurasi Penjualan</h3>
+      <div class="box form-card" style="border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 4px 20px -2px rgba(15,23,42,0.05);">
+         <div class="box-header with-border" style="background:#f8fafc; padding:16px 20px; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; gap:10px;">
+            <div style="width:34px; height:34px; border-radius:10px; background:rgba(244,63,94,0.1); color:#e11d48; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0;">
+               <i class="fa fa-file-text-o"></i>
+            </div>
+            <div>
+               <h3 class="box-title" style="margin:0; font-size:15px; font-weight:800; color:#0f172a; letter-spacing:-0.2px;">Konfigurasi Penjualan</h3>
+               <small class="text-muted" style="font-size:11.5px; display:block; margin-top:2px;">Tentukan data pelanggan, tanggal transaksi, dan ketentuan pesanan</small>
+            </div>
          </div>
          <div class="box-body">
             <div class="row">
                <div class="col-md-6 col-sm-12 col-xs-12">
                   <div class="form-group">
-                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
                         <label style="margin:0;"><i class="fa fa-user text-primary"></i> Pelanggan <span class="text-danger">*</span></label>
-                        <div>
-                           <a href="javascript:void(0);" id="btn_refresh_pelanggan" class="text-success" style="font-size:11px; font-weight:600; margin-right:8px;" title="Segarkan daftar pelanggan">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                           <a href="javascript:void(0);" id="btn_refresh_pelanggan" class="text-success" style="font-size:11px; font-weight:600;" title="Segarkan daftar pelanggan">
                               <i class="fa fa-refresh"></i> Segarkan List
                            </a>
                            <?php if (is_allowed('pelanggan_add', false)): ?>
@@ -409,68 +553,73 @@ textarea.form-control {
                         <option value="">-- Pilih Pelanggan --</option>
                         <?php foreach($pelanggans as $p): ?>
                            <?php 
-                              $t_badge = strtoupper($p->tipe_pelanggan ?: 'RETAIL');
-                              $telp_fmt = !empty($p->no_telp) ? ' ('.$p->no_telp.')' : '';
+                              $clean_n = clean_customer_name($p->nama_pelanggan) ?: $p->nama_pelanggan;
+                              $clean_t = clean_customer_phone($p->no_telp ?: ($p->telepon ?? ''));
+                              $telp_fmt = !empty($clean_t) ? ' (' . $clean_t . ')' : '';
+                              $clean_a = ($p->alamat !== 'Auto Created from Scan Resi' && $p->alamat !== '-') ? $p->alamat : (!empty($p->kota) ? $p->kota : '');
                            ?>
                            <option value="<?= $p->id; ?>" 
                                    data-kode="<?= _ent($p->kode_pelanggan); ?>"
-                                   data-nama="<?= _ent($p->nama_pelanggan); ?>"
+                                   data-nama="<?= _ent($clean_n); ?>"
                                    data-tipe="<?= _ent($p->tipe_pelanggan); ?>"
-                                   data-telp="<?= _ent($p->no_telp); ?>"
-                                   data-alamat="<?= _ent($p->alamat); ?>"
+                                   data-telp="<?= _ent($clean_t); ?>"
+                                   data-alamat="<?= _ent($clean_a); ?>"
                                    <?= (($is_edit && $so->pelanggan_id == $p->id) || (!$is_edit && $this->input->get('pelanggan_id') == $p->id)) ? 'selected' : ''; ?>>
-                              <?= _ent($p->kode_pelanggan.' - '.$p->nama_pelanggan . ' [' . $t_badge . ']' . $telp_fmt); ?>
+                              <?= _ent($p->kode_pelanggan . ' - ' . $clean_n . $telp_fmt); ?>
                            </option>
                         <?php endforeach; ?>
                      </select>
 
                      <!-- Live Customer Info Preview Card -->
-                     <div id="customer_info_card" style="display:none; margin-top:8px; padding:8px 12px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px;">
+                     <div id="customer_info_card" style="display:none; margin-top:8px; padding:9px 13px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px;">
                         <div>
-                           <strong id="card_cust_nama" style="font-size:13px; color:#1e40af;">-</strong>
-                           <span id="card_cust_tipe" class="label label-info" style="font-size:9px; margin-left:4px; vertical-align:middle;">RETAIL</span>
-                           <div style="font-size:11px; color:#2563eb; margin-top:3px;">
-                              <i class="fa fa-phone"></i> <span id="card_cust_telp">-</span> | 
+                           <strong id="card_cust_nama" style="font-size:13.5px; color:#1e40af; font-weight:700;">-</strong>
+                           <span id="card_cust_tipe" style="display:none;"></span>
+                           <div style="font-size:11.5px; color:#2563eb; margin-top:3px;">
+                              <span id="card_cust_telp_box"><i class="fa fa-phone"></i> <span id="card_cust_telp">-</span> | </span>
                               <i class="fa fa-id-card-o"></i> Kode: <span id="card_cust_kode">-</span>
                            </div>
-                           <div style="font-size:11px; color:#475569; margin-top:2px;">
-                              <i class="fa fa-map-marker"></i> <span id="card_cust_alamat">-</span>
+                           <div style="font-size:11.5px; color:#475569; margin-top:2px;" id="card_cust_alamat_box">
+                              <i class="fa fa-map-marker text-danger"></i> <span id="card_cust_alamat">-</span>
                            </div>
                         </div>
                      </div>
                   </div>
                </div>
                <?php
-                  $default_gudang_id = $is_edit ? ($so->gudang_id ?? '') : (isset($gudangs[0]) ? $gudangs[0]->id : (isset($default_gudang->id) ? $default_gudang->id : 1));
                ?>
-               <input type="hidden" name="gudang_id" id="gudang_id" value="<?= $default_gudang_id; ?>">
-               <div class="col-md-3 col-sm-6 col-xs-6">
-                  <div class="form-group"><label>Tanggal Penjualan <span class="text-danger">*</span></label>
-                     <input type="date" class="form-control" name="tanggal_so" value="<?= $is_edit ? $so->tanggal_so : date('Y-m-d'); ?>" required>
+               <div class="col-md-3 col-sm-6 col-xs-12">
+                  <div class="form-group">
+                     <label style="font-size:12px; font-weight:700; color:#334155;"><i class="fa fa-calendar text-primary"></i> Tanggal Penjualan <span class="text-danger">*</span></label>
+                     <input type="date" class="form-control" name="tanggal_so" value="<?= $is_edit ? $so->tanggal_so : date('Y-m-d'); ?>" required style="height:38px; border-radius:6px;">
                   </div>
                </div>
-               <div class="col-md-3 col-sm-6 col-xs-6">
-                  <div class="form-group"><label>Est. Tanggal Kirim</label>
-                     <input type="date" class="form-control" name="tanggal_estimasi_kirim" value="<?= $is_edit ? $so->tanggal_estimasi_kirim : ''; ?>">
+               <div class="col-md-3 col-sm-6 col-xs-12">
+                  <div class="form-group">
+                     <label style="font-size:12px; font-weight:700; color:#334155;"><i class="fa fa-truck text-muted"></i> Est. Tanggal Kirim</label>
+                     <input type="date" class="form-control" name="tanggal_estimasi_kirim" value="<?= $is_edit ? ($so->tanggal_estimasi_kirim ?: (!empty($so->pesanan_harus_dikirim_sebelum) ? date('Y-m-d', strtotime($so->pesanan_harus_dikirim_sebelum)) : '')) : ''; ?>" style="height:38px; border-radius:6px;">
                   </div>
                </div>
             </div>
 
             <div class="row">
                <div class="col-md-3 col-sm-6 col-xs-6">
-                  <div class="form-group"><label>Diskon Keseluruhan (%)</label>
-                     <input type="number" step="0.1" min="0" max="100" class="form-control" name="diskon_persen_total" id="diskon_persen_total" value="<?= $diskon_persen_init; ?>">
+                  <div class="form-group">
+                     <label style="font-size:12px; font-weight:700; color:#334155;"><i class="fa fa-percent text-danger"></i> Diskon <span class="hidden-xs">Keseluruhan</span> (%)</label>
+                     <input type="number" step="0.1" min="0" max="100" class="form-control" name="diskon_persen_total" id="diskon_persen_total" value="<?= $diskon_persen_init; ?>" style="height:38px; border-radius:6px;">
                      <input type="hidden" name="diskon_total" id="diskon_total" value="<?= $is_edit ? (float)$so->diskon_total : 0; ?>">
                   </div>
                </div>
                <div class="col-md-3 col-sm-6 col-xs-6">
-                  <div class="form-group"><label>Pajak (%)</label>
-                     <input type="number" step="1" min="0" class="form-control" name="pajak_persen" id="pajak_persen" value="<?= $is_edit ? (float)$so->pajak_persen : 0; ?>">
+                  <div class="form-group">
+                     <label style="font-size:12px; font-weight:700; color:#334155;"><i class="fa fa-calculator text-primary"></i> Pajak (%)</label>
+                     <input type="number" step="1" min="0" class="form-control" name="pajak_persen" id="pajak_persen" value="<?= $is_edit ? (float)$so->pajak_persen : 0; ?>" style="height:38px; border-radius:6px;">
                   </div>
                </div>
                <div class="col-md-6 col-sm-12 col-xs-12">
-                  <div class="form-group" style="margin-bottom:0;"><label>Catatan Penjualan</label>
-                     <textarea class="form-control" name="catatan" rows="1" placeholder="Catatan khusus transaksi penjualan..."><?= $is_edit ? _ent($so->catatan) : ''; ?></textarea>
+                  <div class="form-group" style="margin-bottom:0;">
+                     <label style="font-size:12px; font-weight:700; color:#334155;"><i class="fa fa-pencil text-muted"></i> Catatan Penjualan</label>
+                     <textarea class="form-control" name="catatan" rows="1" placeholder="Catatan khusus transaksi penjualan..." style="height:38px; border-radius:6px; resize:vertical;"><?= $is_edit ? _ent($so->catatan) : ''; ?></textarea>
                   </div>
                </div>
             </div>
@@ -479,11 +628,21 @@ textarea.form-control {
 
 
       <!-- Item Box -->
-      <div class="box form-card" style="border-top: 3px solid #10b981;">
-         <div class="box-header with-border">
-            <h3 class="box-title"><i class="fa fa-cubes text-success"></i> Item Produk Pesanan</h3>
-            <div class="box-tools pull-right">
-               <button type="button" id="btn_add_item" class="btn btn-sm btn-success" style="border-radius:4px;"><i class="fa fa-plus"></i> Tambah Item Produk</button>
+      <div class="box form-card" style="border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 4px 20px -2px rgba(15,23,42,0.05); margin-top:20px;">
+         <div class="box-header with-border" style="background:#f8fafc; padding:16px 20px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+               <div style="width:34px; height:34px; border-radius:10px; background:rgba(16,185,129,0.1); color:#059669; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0;">
+                  <i class="fa fa-cubes"></i>
+               </div>
+               <div>
+                  <h3 class="box-title" style="margin:0; font-size:15px; font-weight:800; color:#0f172a; letter-spacing:-0.2px;">Item Produk Pesanan</h3>
+                  <small class="text-muted" style="font-size:11.5px; display:block; margin-top:2px;">Daftar barang, quantity, harga satuan, dan diskon per item</small>
+               </div>
+            </div>
+            <div class="box-tools">
+               <button type="button" id="btn_add_item" class="btn" style="background:linear-gradient(135deg, #10b981 0%, #059669 100%); color:#fff; border-radius:10px; font-weight:700; padding:8px 16px; font-size:12.5px; border:none; box-shadow:0 4px 12px rgba(16,185,129,0.25); display:inline-flex; align-items:center; gap:6px;">
+                  <i class="fa fa-plus"></i> Tambah Item Produk
+               </button>
             </div>
          </div>
          <div class="box-body">
@@ -548,6 +707,29 @@ textarea.form-control {
                   </tfoot>
                </table>
             </div>
+
+            <!-- Mobile Order Summary Card (Visible on Mobile Only) -->
+            <div class="mobile-summary-card visible-xs" style="margin-top:10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 14px;">
+               <div style="font-size:11px; font-weight:700; text-transform:uppercase; color:#64748b; margin-bottom:8px; letter-spacing:0.4px;">
+                  <i class="fa fa-calculator text-primary"></i> Ringkasan Total Pesanan
+               </div>
+               <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:12.5px;">
+                  <span class="text-muted">Subtotal:</span>
+                  <strong id="display_subtotal_mob" style="color:#1e293b;">Rp 0</strong>
+               </div>
+               <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:12.5px;">
+                  <span class="text-muted">Diskon:</span>
+                  <strong class="text-danger" id="display_diskon_mob">- Rp 0</strong>
+               </div>
+               <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:12.5px;">
+                  <span class="text-muted">Pajak:</span>
+                  <strong id="display_pajak_mob" style="color:#1e293b;">Rp 0</strong>
+               </div>
+               <div style="display:flex; justify-content:space-between; padding-top:8px; border-top:1px dashed #cbd5e1; font-size:15px; align-items:center;">
+                  <strong style="color:#0f172a;">TOTAL AKHIR:</strong>
+                  <strong class="text-success" id="display_total_mob" style="font-size:16px;">Rp 0</strong>
+               </div>
+            </div>
          </div>
 
          <!-- Section Status Pembayaran & Ketentuan Tagihan (Piutang Usaha) -->
@@ -556,14 +738,14 @@ textarea.form-control {
                <h4 style="margin:0; font-size:14px; font-weight:700; color:#1e293b;">
                   <i class="fa fa-credit-card text-warning"></i> Status Pembayaran &amp; Ketentuan Tagihan (Piutang Usaha)
                </h4>
-               <span class="text-muted" style="font-size:12px;">Pilih metode penyelesaian: Tempo (masuk piutang), Lunas langsung, atau Draft</span>
+               <span class="text-muted" style="font-size:12px;">Pilih metode penyelesaian: Tempo (masuk piutang) atau Lunas langsung</span>
             </div>
 
             <div class="row">
-               <div class="col-md-4 col-sm-12">
-                  <!-- Option 1: Belum Bayar / Tempo (Default) -->
-                  <label class="payment-option-card active" id="card_opt_tempo">
-                     <input type="radio" name="status_pembayaran" value="tempo" checked style="position:absolute; opacity:0;">
+               <div class="col-md-6 col-sm-12">
+                  <!-- Option 1: Belum Bayar / Tempo -->
+                  <label class="payment-option-card <?= !$is_lunas_init ? 'active' : ''; ?>" id="card_opt_tempo">
+                     <input type="radio" name="status_pembayaran" value="tempo" <?= !$is_lunas_init ? 'checked' : ''; ?> style="position:absolute; opacity:0;">
                      <div class="option-header">
                         <span class="option-icon bg-amber"><i class="fa fa-clock-o"></i></span>
                         <div>
@@ -575,10 +757,10 @@ textarea.form-control {
                   </label>
                </div>
 
-               <div class="col-md-4 col-sm-12">
+               <div class="col-md-6 col-sm-12">
                   <!-- Option 2: Sudah Bayar Lunas -->
-                  <label class="payment-option-card" id="card_opt_lunas">
-                     <input type="radio" name="status_pembayaran" value="lunas" style="position:absolute; opacity:0;">
+                  <label class="payment-option-card <?= $is_lunas_init ? 'active' : ''; ?>" id="card_opt_lunas">
+                     <input type="radio" name="status_pembayaran" value="lunas" <?= $is_lunas_init ? 'checked' : ''; ?> style="position:absolute; opacity:0;">
                      <div class="option-header">
                         <span class="option-icon bg-emerald"><i class="fa fa-check-circle"></i></span>
                         <div>
@@ -589,25 +771,10 @@ textarea.form-control {
                      <p class="option-desc">Mencatat pelunasan langsung ke Kas/Bank, menerbitkan Faktur Lunas, dan Bukti Kas Masuk (BKM).</p>
                   </label>
                </div>
-
-               <div class="col-md-4 col-sm-12">
-                  <!-- Option 3: Draft Pemesanan -->
-                  <label class="payment-option-card" id="card_opt_draft">
-                     <input type="radio" name="status_pembayaran" value="draft" style="position:absolute; opacity:0;">
-                     <div class="option-header">
-                        <span class="option-icon bg-slate"><i class="fa fa-file-text-o"></i></span>
-                        <div>
-                           <strong class="option-title">Draft Pemesanan Saja</strong>
-                           <div class="option-sub"><i class="fa fa-arrow-circle-right text-muted"></i> Belum Diterbitkan Tagihan</div>
-                        </div>
-                      </div>
-                     <p class="option-desc">Menyimpan sebagai draf penawaran/pemesanan awal tanpa memotong stok dan belum masuk ke piutang.</p>
-                  </label>
-               </div>
             </div>
 
             <!-- Sub-Panel: Detail Tempo / Piutang -->
-            <div id="panel_tempo_details" class="panel-payment-sub" style="margin-top:4px; margin-bottom:12px; padding:14px 16px; background:#fffbeb; border:1px solid #fde68a; border-radius:8px;">
+            <div id="panel_tempo_details" class="panel-payment-sub" style="<?= $is_lunas_init ? 'display:none;' : ''; ?> margin-top:4px; margin-bottom:12px; padding:14px 16px; background:#fffbeb; border:1px solid #fde68a; border-radius:8px;">
                <div class="row">
                   <div class="col-md-4 col-sm-6">
                      <div class="form-group" style="margin-bottom:0;">
@@ -646,7 +813,7 @@ textarea.form-control {
             </div>
 
             <!-- Sub-Panel: Detail Lunas Langsung -->
-            <div id="panel_lunas_details" class="panel-payment-sub" style="display:none; margin-top:4px; margin-bottom:12px; padding:14px 16px; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:8px;">
+            <div id="panel_lunas_details" class="panel-payment-sub" style="<?= !$is_lunas_init ? 'display:none;' : ''; ?> margin-top:4px; margin-bottom:12px; padding:14px 16px; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:8px;">
                <div class="row">
                   <div class="col-md-4 col-sm-6">
                      <div class="form-group" style="margin-bottom:0;">
@@ -664,11 +831,8 @@ textarea.form-control {
                      <div class="form-group" style="margin-bottom:0;">
                         <label style="font-weight:700; color:#065f46; font-size:12px;"><i class="fa fa-university"></i> Setor ke Akun Kas/Bank</label>
                         <select class="form-control" name="akun_kas_bank" id="akun_kas_bank" style="border-radius:6px; font-weight:600; height:38px; border-color:#6ee7b7;">
-                           <option value="Kas Tunai Kasir" selected>Kas Tunai Kasir</option>
-                           <option value="Bank BCA (Rek: 8830-123-456)">Bank BCA (Rek: 8830-123-456)</option>
-                           <option value="Bank Mandiri (Rek: 137-00-98765)">Bank Mandiri (Rek: 137-00-98765)</option>
-                           <option value="Bank BNI">Bank BNI</option>
-                           <option value="Bank BRI">Bank BRI</option>
+                           <option value="Cash" <?= (!$is_edit || !isset($so->akun_kas_bank) || stripos($so->akun_kas_bank, 'kas') !== false || stripos($so->akun_kas_bank, 'cash') !== false) ? 'selected' : ''; ?>>Cash</option>
+                           <option value="Transfer Bank" <?= ($is_edit && isset($so->akun_kas_bank) && (stripos($so->akun_kas_bank, 'bank') !== false || stripos($so->akun_kas_bank, 'transfer') !== false)) ? 'selected' : ''; ?>>Transfer Bank</option>
                         </select>
                      </div>
                   </div>
@@ -680,29 +844,19 @@ textarea.form-control {
                   </div>
                </div>
             </div>
-
-            <!-- Sub-Panel: Detail Draft -->
-            <div id="panel_draft_details" class="panel-payment-sub" style="display:none; margin-top:4px; margin-bottom:12px; padding:12px 16px; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:8px;">
-               <div style="font-size:12px; color:#475569; display:flex; align-items:center; gap:8px;">
-                  <i class="fa fa-info-circle text-primary" style="font-size:16px;"></i>
-                  <span>Mode <b>Draft</b> akan menyimpan dokumen pemesanan tanpa memotong stok dan tanpa mencatat tagihan ke piutang. Tagihan dapat diterbitkan di kemudian hari melalui tombol Konfirmasi &amp; Terbitkan Invoice.</span>
-               </div>
-            </div>
          </div>
 
-         <!-- Card Footer: Action Buttons at the Bottom! -->
-         <div class="box-footer" style="padding:15px 20px; background:#f8fafc; border-top:1px solid #e2e8f0; border-radius: 0 0 8px 8px;">
+         <!-- Card Footer: Action Buttons at the Bottom -->
+         <div class="box-footer" style="padding:18px 22px; background:#f8fafc; border-top:1px solid #e2e8f0; border-radius: 0 0 16px 16px;">
             <div class="pull-left">
-               <a href="<?= base_url('administrator/sales_order'); ?>" class="btn btn-default btn-flat" style="border-radius:6px; font-weight:600; padding:8px 18px;">
-                  <i class="fa fa-arrow-left"></i> Kembali ke Daftar SO
+               <a href="<?= base_url('administrator/sales_order'); ?>" class="btn btn-default" style="border-radius:10px; font-weight:600; padding:10px 20px; background:#ffffff; border:1px solid #cbd5e1; color:#334155; font-size:13.5px;">
+                  <i class="fa fa-arrow-left"></i> Kembali ke Daftar Transaksi Penjualan
                </a>
             </div>
-            <div class="pull-right" style="display:flex; gap:10px; align-items:center;">
-               <button type="button" id="btn_save" class="btn btn-default btn-flat" style="border-radius:6px; font-weight:600; padding:8px 18px; font-size:13.5px; border:1px solid #cbd5e1;">
-                  <i class="fa fa-save text-muted"></i> <?= $is_edit ? 'Simpan (Draft)' : 'Simpan Draft Saja'; ?>
-               </button>
-               <button type="button" id="btn_save_confirm" class="btn btn-warning btn-flat" style="border-radius:6px; font-weight:700; padding:8px 22px; font-size:14px; background:#f59e0b; border-color:#d97706; color:#ffffff; box-shadow:0 3px 10px rgba(245,158,11,0.25);">
-                  <i class="fa fa-clock-o"></i> <?= $is_edit ? 'Simpan &amp; Terbitkan Piutang (Tempo)' : '⚡ Simpan &amp; Terbitkan Piutang (Tempo)'; ?>
+            <div class="pull-right">
+               <button type="button" id="btn_save_confirm" class="btn" style="border-radius:12px; font-weight:800; padding:11px 26px; font-size:14px; letter-spacing:-0.2px; border:none; color:#ffffff; background:<?= $is_lunas_init ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'; ?>; box-shadow:0 6px 20px rgba(<?= $is_lunas_init ? '16,185,129' : '245,158,11'; ?>, 0.35);">
+                  <i class="fa <?= $is_lunas_init ? 'fa-check-circle' : 'fa-clock-o'; ?>"></i> 
+                  <?= $is_edit ? ($is_lunas_init ? '✓ Simpan Perubahan (Lunas)' : 'Simpan Perubahan (Tempo)') : ($is_lunas_init ? '✓ Simpan &amp; Bayar Lunas Langsung' : '⚡ Simpan &amp; Terbitkan Piutang (Tempo)'); ?>
                </button>
             </div>
          </div>
@@ -731,24 +885,14 @@ textarea.form-control {
             </div>
 
             <div class="row">
-               <div class="col-xs-12 col-sm-6">
+               <div class="col-xs-12">
                   <div class="form-group" style="margin-bottom: 12px;">
                      <label style="font-size: 12px; font-weight: 700; color: #334155;"><i class="fa fa-phone text-success"></i> No. Telp / WhatsApp <span class="text-danger">*</span></label>
                      <input type="text" class="form-control" name="telepon" id="modal_cust_telp" placeholder="08xxxxxxxxxx" required style="border-radius: 6px; font-weight: 600; height: 38px;">
                      <small class="text-muted" style="font-size: 10.5px;">Untuk kontak &amp; riwayat CRM.</small>
                   </div>
                </div>
-               <div class="col-xs-12 col-sm-6">
-                  <div class="form-group" style="margin-bottom: 12px;">
-                     <label style="font-size: 12px; font-weight: 700; color: #334155;">Tipe Pelanggan</label>
-                     <select class="form-control" name="tipe_pelanggan" id="modal_cust_tipe" style="border-radius: 6px; font-weight: 600; height: 38px;">
-                        <option value="retail" selected>Retail / Eceran (Umum)</option>
-                        <option value="grosir">Grosir</option>
-                        <option value="distributor">Distributor</option>
-                        <option value="vip">VIP / Member</option>
-                     </select>
-                  </div>
-               </div>
+               <input type="hidden" name="tipe_pelanggan" id="modal_cust_tipe" value="retail">
             </div>
 
             <div class="form-group" style="margin-bottom: 12px;">
@@ -852,37 +996,11 @@ function update_all_product_dropdowns() {
          $(this).val(current_val);
       }
       var $row = $(this).closest('.item-row');
-      cek_stok($(this).val(), $('#gudang_id').val(), $row.find('.stok-display'));
+      cek_stok($(this).val(), $row.find('.stok-display'));
    });
    init_produk_select2();
 }
 
-function load_produk_by_gudang(gudang_id) {
-   if (!gudang_id) {
-      available_produks = [];
-      update_all_product_dropdowns();
-      return;
-   }
-   
-   $.ajax({
-      url: '<?= base_url("administrator/sales_order/get_produk_by_gudang"); ?>',
-      data: {gudang_id: gudang_id},
-      dataType: 'json',
-      cache: false,
-      success: function(res) {
-         if (res && res.success && res.data) {
-            available_produks = res.data;
-         } else {
-            available_produks = [];
-         }
-         update_all_product_dropdowns();
-      },
-      error: function() {
-         available_produks = [];
-         update_all_product_dropdowns();
-      }
-   });
-}
 
 
 
@@ -920,6 +1038,12 @@ function recalc_total(){
    $('#display_pajak').text(format_rp(pjk_nominal) + (pjk_pct > 0 ? ' (' + pjk_pct + '%)' : ''));
    $('#display_total').text(format_rp(total));
    $('#preview_total_piutang').text(format_rp(total));
+
+   // Sync mobile summary displays
+   $('#display_subtotal_mob').text($('#display_subtotal').text());
+   $('#display_diskon_mob').text($('#display_diskon').text());
+   $('#display_pajak_mob').text($('#display_pajak').text());
+   $('#display_total_mob').text($('#display_total').text());
 }
 
 function validate_row_qty($row) {
@@ -937,7 +1061,7 @@ function validate_row_qty($row) {
       $qtyInp.css({'border': '2px solid #ef4444', 'background-color': '#fef2f2'});
       $qtyInp.after('<small class="text-danger stok-warn-msg" style="display:block; font-weight:600; font-size:11px; margin-top:3px;"><i class="fa fa-exclamation-triangle"></i> Max Stok: <b>' + stokMax + '</b></small>');
       if (typeof swal !== 'undefined') {
-         swal("Stok Tidak Cukup!", "Jumlah pesanan melebihi stok yang tersedia di gudang ini (" + stokMax + " unit). Qty otomatis disesuaikan ke " + stokMax + ".", "warning");
+         swal("Stok Tidak Cukup!", "Jumlah pesanan melebihi stok yang tersedia (" + stokMax + " unit). Qty otomatis disesuaikan ke " + stokMax + ".", "warning");
       }
       recalc_row($row);
    } else if (qty <= 0) {
@@ -947,12 +1071,12 @@ function validate_row_qty($row) {
    }
 }
 
-function cek_stok(produk_id, gudang_id, $span){
-   if(!produk_id || !gudang_id){
+function cek_stok(produk_id, $span){
+   if(!produk_id){
       $span.text('-').removeClass('bg-red bg-green').addClass('bg-gray');
       return;
    }
-   $.get('<?= site_url("administrator/produk/cek_stok"); ?>', {produk_id: produk_id, gudang_id: gudang_id}, function(r){
+   $.get('<?= site_url("administrator/produk/cek_stok"); ?>', {produk_id: produk_id}, function(r){
       var stok_num = parseFloat(r.stok) || 0;
       var $row = $span.closest('.item-row');
       $row.find('.qty-input').data('stok-max', stok_num).attr('max', stok_num);
@@ -992,21 +1116,11 @@ $(document).ready(function(){
          allowClear: true,
          width: '100%'
       });
-      if ($('#gudang_id').is('select')) {
-         $('#gudang_id').select2({
-            width: '100%'
-         });
-      }
-      init_produk_select2();
+            init_produk_select2();
    }
 
-   var initial_gudang = $('#gudang_id').val();
-   if (initial_gudang) {
-      load_produk_by_gudang(initial_gudang);
-   } else {
-      available_produks = produks_initial.slice();
-      update_all_product_dropdowns();
-   }
+   available_produks = produks_initial.slice();
+   update_all_product_dropdowns();
    
    var init_disc = parseFloat($('#diskon_persen_total').val()) || 0;
    if (init_disc > 0) {
@@ -1038,7 +1152,7 @@ $(document).ready(function(){
       $('#item_rows').append('<tr id="item_row_'+idx+'" class="item-row"><td><select class="form-control produk-select" style="width:100%;" name="items['+idx+'][produk_id]">'+build_options()+'</select></td><td><input type="number" step="1" min="1" class="form-control qty-input" name="items['+idx+'][qty]" value="1"></td><td><input type="text" class="form-control" name="items['+idx+'][satuan]" style="width:60px"></td><td><input type="number" class="form-control harga-input rupiah" name="items['+idx+'][harga_satuan]" value="0"></td><td><input type="number" step="1" min="1" class="form-control disc-input rupiah" name="items['+idx+'][diskon_persen]" value="0"></td><td><input type="text" class="form-control subtotal-display" value="0" readonly></td><td><span class="stok-display badge bg-gray">-</span></td><td><button type="button" class="btn btn-xs btn-danger remove-row"><i class="fa fa-times"></i></button></td></tr>');
       var $new_row = $('#item_rows tr:last');
       init_produk_select2($new_row);
-      cek_stok($new_row.find('.produk-select').val(), $('#gudang_id').val(), $new_row.find('.stok-display'));
+      cek_stok($new_row.find('.produk-select').val(), $new_row.find('.stok-display'));
    });
 
    $(document).on('change','.produk-select',function(){
@@ -1050,7 +1164,7 @@ $(document).ready(function(){
       $row.find('.harga-input').val(harga);
       $row.find('input[name*="[satuan]"]').val(satuan);
       recalc_row($row);
-      cek_stok(pid, $('#gudang_id').val(), $row.find('.stok-display'));
+      cek_stok(pid, $row.find('.stok-display'));
    });
 
    $(document).on('input keyup change','.qty-input', function(){
@@ -1062,11 +1176,7 @@ $(document).ready(function(){
    $(document).on('click','.remove-row',function(){if($('.item-row').length>1){$(this).closest('.item-row').remove();recalc_total();}});
    $('#diskon_persen_total,#diskon_total,#pajak_persen').on('input change',function(){recalc_total();});
    
-   $('#gudang_id').on('change',function(){
-      var gid = $(this).val();
-      load_produk_by_gudang(gid);
-   });
-
+   
    function render_customer_card() {
       var $opt = $('#pelanggan_id option:selected');
       var val = $('#pelanggan_id').val();
@@ -1077,14 +1187,26 @@ $(document).ready(function(){
       var kode = $opt.data('kode') || '-';
       var nama = $opt.data('nama') || $opt.text();
       var tipe = ($opt.data('tipe') || 'RETAIL').toUpperCase();
-      var telp = $opt.data('telp') || '-';
-      var alamat = $opt.data('alamat') || 'Alamat pengiriman belum diatur';
+      var telp = $opt.data('telp') || '';
+      var alamat = $opt.data('alamat') || '';
 
       $('#card_cust_nama').text(nama);
       $('#card_cust_kode').text(kode);
       $('#card_cust_tipe').text(tipe);
-      $('#card_cust_telp').text(telp);
-      $('#card_cust_alamat').text(alamat);
+
+      if (telp && telp !== '-' && telp !== 'null') {
+         $('#card_cust_telp').text(telp);
+         $('#card_cust_telp_box').show();
+      } else {
+         $('#card_cust_telp_box').hide();
+      }
+
+      if (alamat && alamat !== '-' && alamat !== 'Auto Created from Scan Resi') {
+         $('#card_cust_alamat').text(alamat);
+         $('#card_cust_alamat_box').show();
+      } else {
+         $('#card_cust_alamat_box').hide();
+      }
       $('#customer_info_card').slideDown(150);
    }
 
@@ -1107,10 +1229,6 @@ $(document).ready(function(){
    function submit_so_form(actionType, $btn, extraData) {
       if (!$('#pelanggan_id').val()) {
          show_alert('Pilih Pelanggan terlebih dahulu!', 'warning');
-         return;
-      }
-      if (!$('#gudang_id').val()) {
-         show_alert('Pilih Gudang Sumber terlebih dahulu!', 'warning');
          return;
       }
 
@@ -1138,7 +1256,7 @@ $(document).ready(function(){
 
          if (stok > 0 && qty > stok) {
             is_valid = false;
-            err_msg = 'Qty pesanan untuk (' + prod_nama + ') sejumlah ' + qty + ' melebihi Stok Gudang yang tersedia (' + stok + ')!';
+            err_msg = 'Qty pesanan untuk (' + prod_nama + ') sejumlah ' + qty + ' melebihi Stok yang tersedia (' + stok + ')!';
             return false;
          }
       });
@@ -1184,7 +1302,7 @@ $(document).ready(function(){
       });
    }
 
-   // Event Listener: Opsi Pembayaran (Tempo / Lunas / Draft)
+   // Event Listener: Opsi Pembayaran (Tempo / Lunas)
    $('input[name="status_pembayaran"]').change(function(){
       var val = $(this).val();
       $('.payment-option-card').removeClass('active');
@@ -1205,13 +1323,24 @@ $(document).ready(function(){
             .addClass('btn-success')
             .css({'background': '#10b981', 'border-color': '#059669', 'color': '#ffffff'})
             .html('<i class="fa fa-check-circle"></i> ✓ Simpan &amp; Bayar Lunas Langsung');
+      }
+   });
+
+   $('#metode_pembayaran').on('change', function(){
+      var m = $(this).val();
+      if (m === 'tunai') {
+         $('#akun_kas_bank').val('Cash');
       } else {
-         $('#panel_draft_details').slideDown(180);
-         $('#btn_save_confirm')
-            .removeClass('btn-warning btn-success')
-            .addClass('btn-default')
-            .css({'background': '#64748b', 'border-color': '#475569', 'color': '#ffffff'})
-            .html('<i class="fa fa-save"></i> Simpan Dokumen Draft');
+         $('#akun_kas_bank').val('Transfer Bank');
+      }
+   });
+
+   $('#akun_kas_bank').on('change', function(){
+      var a = $(this).val();
+      if (a === 'Cash') {
+         $('#metode_pembayaran').val('tunai');
+      } else if (a === 'Transfer Bank') {
+         $('#metode_pembayaran').val('bank_transfer');
       }
    });
 
@@ -1255,11 +1384,7 @@ $(document).ready(function(){
       }
    });
 
-   // Submit Handlers
-   $('#btn_save').click(function(){
-      submit_so_form('draft', $(this));
-   });
-
+   // Submit Handler
    $('#btn_save_confirm').click(function(){
       var mode = $('input[name="status_pembayaran"]:checked').val() || 'tempo';
       submit_so_form(mode, $(this));
@@ -1273,11 +1398,10 @@ $(document).ready(function(){
             var currVal = $('#pelanggan_id').val();
             var html = '<option value="">-- Pilih Pelanggan --</option>';
             $.each(res.data, function(i, p){
-               var t_badge = (p.tipe_pelanggan || 'RETAIL').toUpperCase();
                var telp = p.no_telp || p.telepon || '';
                var telp_fmt = telp ? ' (' + telp + ')' : '';
                var sel = (currVal == p.id) ? ' selected' : '';
-               html += '<option value="' + p.id + '" data-kode="' + (p.kode_pelanggan||'') + '" data-nama="' + (p.nama_pelanggan||'') + '" data-tipe="' + (p.tipe_pelanggan||'') + '" data-telp="' + telp + '"' + sel + '>' + (p.kode_pelanggan||'') + ' - ' + (p.nama_pelanggan||'') + ' [' + t_badge + ']' + telp_fmt + '</option>';
+               html += '<option value="' + p.id + '" data-kode="' + (p.kode_pelanggan||'') + '" data-nama="' + (p.nama_pelanggan||'') + '" data-tipe="' + (p.tipe_pelanggan||'') + '" data-telp="' + telp + '"' + sel + '>' + (p.kode_pelanggan||'') + ' - ' + (p.nama_pelanggan||'') + telp_fmt + '</option>';
             });
             $('#pelanggan_id').html(html);
             if (typeof $.fn.select2 === 'function') {
@@ -1351,9 +1475,8 @@ $(document).ready(function(){
             $btn.prop('disabled', false).html(origHtml);
             if (res && res.success && res.data) {
                var p = res.data;
-               var t_badge = (p.tipe || 'RETAIL').toUpperCase();
                var telpFmt = p.telp ? ' (' + p.telp + ')' : '';
-               var optionText = (p.kode ? p.kode + ' - ' : '') + p.nama + ' [' + t_badge + ']' + telpFmt;
+               var optionText = (p.kode ? p.kode + ' - ' : '') + p.nama + telpFmt;
                
                // Buat option baru di select2 dan pilih langsung
                var newOption = new Option(optionText, p.id, true, true);

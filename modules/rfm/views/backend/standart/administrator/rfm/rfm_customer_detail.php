@@ -441,8 +441,8 @@ $direct_wa_url = 'https://api.whatsapp.com/send?phone=' . $wa_phone . '&text=' .
     <a href="<?= site_url('administrator/rfm' . $nav_qs); ?>" class="nav-tab-btn">
       <i class="fa fa-users"></i> 2. Daftar Customer
     </a>
-    <a href="<?= site_url('administrator/rfm/tracking' . $nav_qs); ?>" class="nav-tab-btn">
-      <i class="fa fa-line-chart"></i> 3. Tracking RFM Bulanan
+    <a href="<?= site_url('administrator/rfm/tracking'); ?>" class="nav-tab-btn">
+      <i class="fa fa-line-chart"></i> 3. Tracking RFM
     </a>
     <a href="<?= site_url('administrator/rfm/cohort'); ?>" class="nav-tab-btn">
       <i class="fa fa-th"></i> 4. Analisis Kohort

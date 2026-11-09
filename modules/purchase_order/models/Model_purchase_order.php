@@ -21,9 +21,8 @@ class Model_purchase_order extends MY_Model {
 
 	public function join_available()
 	{
-		$this->db->select('purchase_order.*, supplier.nama_supplier, supplier.kode_supplier, gudang.nama_gudang');
+		$this->db->select('purchase_order.*, supplier.nama_supplier, supplier.kode_supplier, supplier.alamat, supplier.alamat AS alamat_supplier, supplier.kota, supplier.no_telp, supplier.no_telp AS telp_supplier, supplier.telepon, supplier.email, supplier.kontak_person');
 		$this->db->join('supplier', 'supplier.id = purchase_order.supplier_id', 'LEFT');
-		$this->db->join('gudang', 'gudang.id = purchase_order.gudang_id', 'LEFT');
 		return $this;
 	}
 
@@ -114,7 +113,7 @@ class Model_purchase_order extends MY_Model {
 		$total = $subtotal_bersih + $pajak_nominal;
 
 		$total_idr = $total * ($po->kurs ?: 1);
-		$approval_level = ($total_idr >= 50000000) ? 2 : 1;
+		$approval_level = 1;
 
 		$this->db->update($this->table_name, [
 			'subtotal'       => $subtotal_bersih,
@@ -142,18 +141,9 @@ class Model_purchase_order extends MY_Model {
 		}
 	}
 
-	public function get_penerimaan_list($po_id)
-	{
-		return $this->db->select('penerimaan_barang.*, gudang.nama_gudang')
-			->join('gudang', 'gudang.id = penerimaan_barang.gudang_id', 'LEFT')
-			->order_by('penerimaan_barang.id', 'DESC')
-			->get_where('penerimaan_barang', ['po_id' => $po_id])->result();
-	}
+	public function get_penerimaan_list($po_id) { return []; }
 
-	public function get_draft_penerimaan($po_id)
-	{
-		return $this->db->get_where('penerimaan_barang', ['po_id' => $po_id, 'status' => 'draft'])->row();
-	}
+	public function get_draft_penerimaan($po_id) { return null; }
 
 
 }

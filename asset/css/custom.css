@@ -1732,10 +1732,22 @@ html, body {
         margin-bottom: 0 !important;
         -webkit-overflow-scrolling: touch !important;
     }
-    .table th, .table td {
+    .table:not(.table-borderless):not(.table-detail):not(.table-info):not(.table-invoice-info) th,
+    .table:not(.table-borderless):not(.table-detail):not(.table-info):not(.table-invoice-info) td {
         font-size: 11.5px !important;
         padding: 7px 6px !important;
         white-space: nowrap !important;
+    }
+    .table-borderless th, .table-borderless td,
+    .table-detail th, .table-detail td,
+    .table-info th, .table-info td,
+    .table-invoice-info th, .table-invoice-info td {
+        font-size: 12px !important;
+        padding: 6px 4px !important;
+        white-space: normal !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+        word-break: break-word !important;
     }
     /* Touch target comfort for table action buttons */
     .table .btn-xs, .table .btn-sm {
@@ -1953,5 +1965,280 @@ html, body {
     .modal-dialog {
         margin: 4px auto !important;
         width: calc(100% - 8px) !important;
+    }
+}
+
+/* ==========================================================================
+   UNIVERSAL RESPONSIVE ENHANCEMENTS (MOBILE & DESKTOP UI/UX)
+   ========================================================================== */
+
+/* 1. Global Table Responsiveness Across All Viewports */
+.table-responsive {
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    margin-bottom: 12px;
+}
+.table-responsive::-webkit-scrollbar {
+    height: 6px;
+}
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* 2. Touch-Friendly & Clean Desktop Button Groups */
+@media (max-width: 768px) {
+    .btn-group, .btn-group-vertical {
+        display: inline-flex !important;
+        flex-wrap: wrap !important;
+        gap: 5px !important;
+        width: 100% !important;
+    }
+    .btn-group > .btn, .btn-group-vertical > .btn {
+        flex: 1 1 auto !important;
+        border-radius: 6px !important;
+        margin-left: 0 !important;
+        float: none !important;
+        text-align: center !important;
+    }
+    .content-header > h1 {
+        font-size: 20px !important;
+        line-height: 1.25 !important;
+    }
+    .content-header > h1 > small {
+        display: block !important;
+        font-size: 12px !important;
+        margin-top: 4px !important;
+        padding-left: 0 !important;
+    }
+    .content-header > .breadcrumb {
+        position: relative !important;
+        top: 0 !important;
+        right: 0 !important;
+        float: none !important;
+        padding: 4px 0 8px 0 !important;
+        background: transparent !important;
+        font-size: 11px !important;
+    }
+    /* Fixed offcanvas touch overlay */
+    .sidebar-open .content-wrapper::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(15, 23, 42, 0.45);
+        z-index: 800;
+        backdrop-filter: blur(2px);
+    }
+}
+
+/* 3. Mobile Form & Header Enhancements */
+@media (max-width: 768px) {
+    .box-header {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 8px !important;
+        padding: 12px 14px !important;
+    }
+    .box-header .box-title {
+        float: none !important;
+        max-width: 100% !important;
+        font-size: 16px !important;
+    }
+    .box-header .box-tools {
+        position: static !important;
+        float: none !important;
+        width: 100% !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+        margin-top: 4px !important;
+    }
+    .box-header .box-tools .btn, .box-header .box-tools a {
+        flex: 1 1 auto !important;
+        text-align: center !important;
+    }
+    .modal-dialog {
+        margin: 10px auto !important;
+        width: calc(100% - 20px) !important;
+        max-width: 100% !important;
+    }
+    /* DataTables Mobile Layout */
+    div.dataTables_wrapper div.dataTables_length,
+    div.dataTables_wrapper div.dataTables_filter {
+        text-align: left !important;
+        float: none !important;
+        width: 100% !important;
+        margin-bottom: 8px !important;
+    }
+    div.dataTables_wrapper div.dataTables_filter input {
+        width: 100% !important;
+        margin-left: 0 !important;
+    }
+    div.dataTables_wrapper div.dataTables_info,
+    div.dataTables_wrapper div.dataTables_paginate {
+        text-align: center !important;
+        float: none !important;
+        width: 100% !important;
+        margin-top: 10px !important;
+    }
+    div.dataTables_wrapper div.dataTables_paginate ul.pagination {
+        display: inline-flex !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+    }
+}
+
+/* 4. Desktop Large Screen Polish */
+@media (min-width: 992px) {
+    .content-wrapper {
+        min-height: calc(100vh - 100px) !important;
+    }
+    .content {
+        padding: 20px 24px !important;
+    }
+    .box {
+        border-radius: 12px !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03) !important;
+        border: 1px solid #e2e8f0 !important;
+    }
+    .box-header {
+        padding: 16px 20px !important;
+        border-bottom: 1px solid #f1f5f9 !important;
+    }
+}
+
+
+
+/* =========================================================
+   5. COMPREHENSIVE UNIVERSAL MOBILE POLISH FOR ALL MODULES
+   ========================================================= */
+@media (max-width: 767px) {
+    /* Touch target sizes & smooth scrolling */
+    button, input, select, textarea, a.btn {
+        touch-action: manipulation;
+    }
+    
+    /* Box header tools auto-grid */
+    .box-header .box-tools {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+        width: 100% !important;
+        float: none !important;
+        margin-top: 6px !important;
+    }
+    .box-header .box-tools .btn,
+    .box-header .box-tools a {
+        flex: 1 1 auto !important;
+        text-align: center !important;
+        font-size: 11.5px !important;
+        padding: 7px 10px !important;
+        justify-content: center !important;
+    }
+    
+    /* Form control touch sizing */
+    .form-control {
+        font-size: 13.5px !important;
+        height: 38px !important;
+    }
+    .input-group-btn > .btn {
+        height: 38px !important;
+        padding: 6px 14px !important;
+    }
+    
+    /* Global scrollable tab bars */
+    .nav-tabs {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        white-space: nowrap !important;
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: none !important;
+        border-bottom: 2px solid #e2e8f0 !important;
+    }
+    .nav-tabs::-webkit-scrollbar {
+        display: none !important;
+    }
+    .nav-tabs > li {
+        float: none !important;
+        display: inline-block !important;
+        flex-shrink: 0 !important;
+    }
+    .nav-tabs > li > a {
+        padding: 8px 14px !important;
+        font-size: 12.5px !important;
+    }
+    
+    /* KPI Metric Cards 2-column grid */
+    .kpi-row, .row-kpi, .stats-row {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+    }
+    .kpi-row::before, .kpi-row::after,
+    .row-kpi::before, .row-kpi::after,
+    .stats-row::before, .stats-row::after {
+        display: none !important;
+        content: none !important;
+    }
+    .kpi-row > div, .row-kpi > div, .stats-row > div {
+        width: 100% !important;
+        max-width: 100% !important;
+        float: none !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        margin: 0 !important;
+    }
+    .kpi-row > div > .kpi-card, 
+    .row-kpi > div > .kpi-card, 
+    .stats-row > div > .stat-card,
+    .stats-row > div > .kpi-card {
+        margin-bottom: 0 !important;
+        height: 100% !important;
+    }
+    
+    /* Sweetalert & Toastr Mobile Centering */
+    .sweet-alert {
+        width: calc(100vw - 30px) !important;
+        margin-left: 0 !important;
+        left: 15px !important;
+        padding: 16px !important;
+    }
+    #toast-container {
+        width: calc(100vw - 20px) !important;
+        left: 10px !important;
+        right: 10px !important;
+    }
+    #toast-container > div {
+        width: 100% !important;
+        margin-bottom: 6px !important;
+    }
+    
+    /* Universal Table Scrollbar Indicator */
+    .table-responsive {
+        -webkit-overflow-scrolling: touch !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 8px !important;
+        margin-bottom: 12px !important;
+    }
+    .table-responsive::-webkit-scrollbar {
+        height: 5px !important;
+    }
+    .table-responsive::-webkit-scrollbar-thumb {
+        background: #94a3b8 !important;
+        border-radius: 4px !important;
     }
 }

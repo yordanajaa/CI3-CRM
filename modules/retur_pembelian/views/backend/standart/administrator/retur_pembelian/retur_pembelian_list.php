@@ -28,6 +28,16 @@ $status_color = [
             <div class="box-header with-border">
                <h3 class="box-title"><i class="fa fa-reply"></i> Daftar Pengembalian Barang ke Supplier</h3>
                <div class="box-tools pull-right">
+                  <?php 
+                  $export_qs = !empty($_SERVER['QUERY_STRING']) ? ('?' . $_SERVER['QUERY_STRING']) : '';
+                  if (is_allowed('retur_pembelian_export', false)): ?>
+                     <a href="<?= site_url('administrator/retur_pembelian/export' . $export_qs); ?>" class="btn btn-primary btn-sm btn-flat" style="border-radius:4px; font-weight:600; margin-right:4px;">
+                        <i class="fa fa-file-excel-o"></i> Export XLS
+                     </a>
+                     <a href="<?= site_url('administrator/retur_pembelian/export_pdf' . $export_qs); ?>" target="_blank" class="btn btn-info btn-sm btn-flat" style="border-radius:4px; font-weight:600; margin-right:4px;">
+                        <i class="fa fa-file-pdf-o"></i> Export PDF
+                     </a>
+                  <?php endif; ?>
                   <?php if (is_allowed('retur_pembelian_add', false)): ?>
                      <a href="<?= site_url('administrator/retur_pembelian/add'); ?>" class="btn btn-danger btn-sm btn-flat">
                         <i class="fa fa-plus-circle"></i> Buat Retur Baru
@@ -56,7 +66,7 @@ $status_color = [
                            <tr>
                               <th>No. Retur</th>
                               <th>Tanggal Retur</th>
-                              <th>No. Referensi (GRN / PO)</th>
+                              <th>No. Referensi (PO)</th>
                               <th>Supplier</th>
                               <th>Alasan Retur</th>
                               <th class="text-right">Total Nilai</th>
@@ -70,7 +80,7 @@ $status_color = [
                                  <tr>
                                     <td><strong class="text-danger"><a href="<?= site_url('administrator/retur_pembelian/view/' . $r->id); ?>"><?= _ent($r->nomor_retur); ?></a></strong></td>
                                     <td><i class="fa fa-calendar"></i> <?= date('d/m/Y', strtotime($r->tanggal_retur)); ?></td>
-                                    <td><span class="label label-info"><i class="fa fa-file-text-o"></i> <?= _ent($r->nomor_penerimaan ?? $r->nomor_po ?? '-'); ?></span></td>
+                                    <td><span class="label label-info"><i class="fa fa-file-text-o"></i> <?= _ent($r->nomor_po ?? '-'); ?></span></td>
                                     <td>
                                        <strong><?= _ent($r->nama_supplier); ?></strong><br>
                                        <small class="text-muted"><i class="fa fa-tag"></i> <?= _ent(isset($r->kode_supplier) && $r->kode_supplier ? $r->kode_supplier : 'SUP-'.$r->supplier_id); ?></small>

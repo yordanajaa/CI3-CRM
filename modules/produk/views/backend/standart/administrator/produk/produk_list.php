@@ -13,11 +13,11 @@
 </style>
 
 <section class="content-header">
-   <h1>Data Products <small>Register All Data Products</small></h1>
+   <h1>Produk <small>Katalog &amp; Master Data Produk</small></h1>
    <ol class="breadcrumb">
-      <li><a href="<?= base_url('administrator/dashboard'); ?>"><i class="fa fa-dashboard"></i> Home</a></li>
-      <li><a href="<?= base_url('administrator/produk'); ?>">Master Data</a></li>
-      <li class="active">Data Products</li>
+      <li><a href="<?= base_url('administrator/dashboard'); ?>"><i class="fa fa-dashboard"></i> Beranda</a></li>
+      <li>Master Data</li>
+      <li class="active">Produk</li>
    </ol>
 </section>
 <section class="content">
@@ -25,18 +25,20 @@
       <div class="col-md-12">
          <div class="box box-primary">
             <div class="box-header with-border">
-               <h3 class="box-title"><i class="fa fa-cube"></i> Data Products <span class="label label-warning" style="font-size:11px;"><?= $produk_counts; ?> Item</span></h3>
+               <h3 class="box-title"><i class="fa fa-cube text-primary"></i> Daftar Master Produk <span class="label label-warning" style="font-size:11px;"><?= $produk_counts; ?> Item</span></h3>
                <div class="box-tools pull-right">
                   <?php is_allowed('produk_add', function(){ ?>
                   <a href="<?= site_url('administrator/produk/add'); ?>" class="btn btn-success btn-sm btn-flat">
                      <i class="fa fa-plus"></i> Tambah Produk Baru
                   </a>
                   <?php }); ?>
-                  <?php is_allowed('produk_export', function(){ ?>
-                  <a href="<?= site_url('administrator/produk/export'); ?>" class="btn btn-primary btn-sm btn-flat">
+                  <?php 
+                  $export_qs = !empty($_SERVER['QUERY_STRING']) ? ('?' . $_SERVER['QUERY_STRING']) : '';
+                  is_allowed('produk_export', function() use ($export_qs){ ?>
+                  <a href="<?= site_url('administrator/produk/export' . $export_qs); ?>" class="btn btn-primary btn-sm btn-flat">
                      <i class="fa fa-file-excel-o"></i> Export XLS
                   </a>
-                  <a href="<?= site_url('administrator/produk/export_pdf'); ?>" class="btn btn-info btn-sm btn-flat">
+                  <a href="<?= site_url('administrator/produk/export_pdf' . $export_qs); ?>" target="_blank" class="btn btn-info btn-sm btn-flat">
                      <i class="fa fa-file-pdf-o"></i> Export PDF
                   </a>
                   <?php }); ?>

@@ -205,6 +205,7 @@
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 #f8fafc;
+  position: relative;
 }
 .cohort-table-wrap::-webkit-scrollbar { height: 6px; }
 .cohort-table-wrap::-webkit-scrollbar-track { background: #f8fafc; border-radius: 4px; }
@@ -227,28 +228,40 @@
   background: #f1f5f9;
   border-radius: 4px;
 }
+
+/* Sticky frozen columns: High z-index to stay strictly above scrolling data cells */
 .cohort-table th.cohort-label-th {
   text-align: left;
-  min-width: 120px;
+  width: 130px;
+  min-width: 130px;
+  max-width: 130px;
   position: sticky;
   left: 0;
-  z-index: 3;
-  background: #f1f5f9;
+  z-index: 25;
+  background-color: #f1f5f9 !important;
+  box-sizing: border-box;
 }
 .cohort-table th.cohort-size-th {
-  min-width: 60px;
+  width: 75px;
+  min-width: 75px;
+  max-width: 75px;
   position: sticky;
-  left: 120px;
-  z-index: 3;
-  background: #f1f5f9;
+  left: 130px;
+  z-index: 25;
+  background-color: #f1f5f9 !important;
+  box-sizing: border-box;
 }
 .cohort-table th.cohort-rev-th {
+  width: 95px;
   min-width: 95px;
+  max-width: 95px;
   position: sticky;
-  left: 180px;
-  z-index: 3;
-  background: #f1f5f9;
+  left: 205px;
+  z-index: 25;
+  background-color: #f1f5f9 !important;
+  box-sizing: border-box;
 }
+
 .cohort-table td {
   padding: 6px 5px;
   text-align: center;
@@ -260,10 +273,11 @@
   position: relative;
 }
 .cohort-table td:hover {
-  transform: scale(1.15);
+  transform: scale(1.1);
   z-index: 5;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
+
 .cohort-table td.cohort-label-td {
   text-align: left;
   font-size: 11.5px;
@@ -271,32 +285,51 @@
   font-weight: 800;
   position: sticky;
   left: 0;
-  z-index: 2;
-  background: #fff;
-  min-width: 120px;
+  z-index: 20;
+  background-color: #ffffff !important;
+  width: 130px;
+  min-width: 130px;
+  max-width: 130px;
   white-space: nowrap;
+  box-sizing: border-box;
 }
 .cohort-table td.cohort-size-td {
   font-size: 11.5px;
   color: #334155;
   font-weight: 800;
   position: sticky;
-  left: 120px;
-  z-index: 2;
-  background: #fff;
-  min-width: 60px;
+  left: 130px;
+  z-index: 20;
+  background-color: #ffffff !important;
+  width: 75px;
+  min-width: 75px;
+  max-width: 75px;
+  box-sizing: border-box;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.06);
 }
 .cohort-table td.cohort-rev-td {
   font-size: 11px;
   color: #059669;
   font-weight: 800;
   position: sticky;
-  left: 180px;
-  z-index: 2;
-  background: #fff;
+  left: 205px;
+  z-index: 20;
+  background-color: #ffffff !important;
+  width: 95px;
   min-width: 95px;
+  max-width: 95px;
   white-space: nowrap;
+  box-sizing: border-box;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.06);
 }
+
+/* Ensure aggregate row frozen cells have solid opaque background */
+tr[style*="border-top"] td.cohort-label-td,
+tr[style*="border-top"] td.cohort-size-td,
+tr[style*="border-top"] td.cohort-rev-td {
+  background-color: #eef2ff !important;
+}
+
 .cohort-table td.cohort-cell-null {
   background: #f8fafc;
   color: transparent;
@@ -308,10 +341,114 @@
   transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.16s ease !important;
 }
 .cohort-cell-clickable:hover {
-  transform: scale(1.18) !important;
-  z-index: 10 !important;
-  box-shadow: 0 6px 16px rgba(0,0,0,0.25) !important;
+  transform: scale(1.15) !important;
+  z-index: 6 !important; /* Kept strictly below sticky columns (z-index: 20) */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
   outline: 2px solid #ffffff;
+}
+
+/* Mobile Responsiveness for Cohort Table */
+@media (max-width: 767px) {
+  .cohort-table-wrap {
+    padding: 10px 0 !important;
+    margin: 0 !important;
+  }
+  .cohort-table {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    width: max-content !important;
+    min-width: 100% !important;
+  }
+  .cohort-table th,
+  .cohort-table td {
+    box-sizing: border-box !important;
+    border-right: 1px solid #f1f5f9;
+    border-bottom: 1px solid #f1f5f9;
+    border-radius: 0 !important;
+    white-space: nowrap !important;
+  }
+  .cohort-table td {
+    min-width: 52px !important;
+    padding: 6px 4px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+  }
+  .cohort-table th.cohort-label-th,
+  .cohort-table td.cohort-label-td {
+    width: 94px !important;
+    min-width: 94px !important;
+    max-width: 94px !important;
+    left: 0 !important;
+    font-size: 10.5px !important;
+    padding: 7px 5px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    z-index: 20 !important;
+    background-color: #ffffff !important;
+  }
+  .cohort-table th.cohort-label-th {
+    background-color: #f1f5f9 !important;
+    z-index: 25 !important;
+    text-align: left !important;
+  }
+  .cohort-table th.cohort-size-th,
+  .cohort-table td.cohort-size-td {
+    width: 62px !important;
+    min-width: 62px !important;
+    max-width: 62px !important;
+    left: 94px !important;
+    font-size: 10.5px !important;
+    padding: 7px 3px !important;
+    text-align: center !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    z-index: 20 !important;
+    background-color: #ffffff !important;
+    border-right: 2px solid #94a3b8 !important;
+    box-shadow: 3px 0 8px rgba(0, 0, 0, 0.16) !important;
+  }
+  .cohort-table th.cohort-size-th {
+    background-color: #f1f5f9 !important;
+    z-index: 25 !important;
+  }
+  /* In Table 2 (Omset), un-stick 3rd column on mobile so it scrolls naturally with months */
+  .cohort-table th.cohort-rev-th,
+  .cohort-table td.cohort-rev-td {
+    position: static !important;
+    left: auto !important;
+    z-index: auto !important;
+    box-shadow: none !important;
+    border-right: 1px solid #f1f5f9 !important;
+    min-width: 82px !important;
+    font-size: 10px !important;
+    padding: 6px 4px !important;
+  }
+  /* Table 2 monthly revenue cells: generous width so numbers and trend arrows never get cut off */
+  #section-cohort-revenue-table .cohort-table td {
+    min-width: 68px !important;
+    font-size: 10px !important;
+    padding: 6px 3px !important;
+  }
+  #section-cohort-revenue-table .cohort-table th {
+    min-width: 68px !important;
+  }
+  /* Aggregate row solid background */
+  tr[style*="border-top"] td.cohort-label-td,
+  tr[style*="border-top"] td.cohort-size-td {
+    background-color: #eef2ff !important;
+  }
+  #section-cohort-revenue-table tr[style*="border-top"] td.cohort-label-td,
+  #section-cohort-revenue-table tr[style*="border-top"] td.cohort-size-td {
+    background-color: #ecfdf5 !important;
+  }
+  /* Disable cell scale transformation on touch to prevent bleeding into adjacent cells */
+  .cohort-table td:hover,
+  .cohort-cell-clickable:hover {
+    transform: none !important;
+    outline: none !important;
+  }
 }
 
 /* Modal Drilldown Styling */
@@ -702,8 +839,8 @@
       <a href="<?= site_url('administrator/rfm' . $nav_qs); ?>" class="nav-tab-btn">
         <i class="fa fa-users"></i> 2. Daftar Customer
       </a>
-      <a href="<?= site_url('administrator/rfm/tracking' . $nav_qs); ?>" class="nav-tab-btn">
-        <i class="fa fa-line-chart"></i> 3. Tracking RFM Bulanan
+      <a href="<?= site_url('administrator/rfm/tracking'); ?>" class="nav-tab-btn">
+        <i class="fa fa-line-chart"></i> 3. Tracking RFM
       </a>
       <a href="<?= site_url('administrator/rfm/cohort' . $nav_qs); ?>" class="nav-tab-btn active">
         <span class="active-dot"></span> <i class="fa fa-th"></i> 4. Analisis Kohort
@@ -751,7 +888,7 @@
                 if (empty($c_name)) continue;
               ?>
               <option value="<?= htmlspecialchars($c_name); ?>" <?= (!empty($c_category) && $c_category === $c_name) ? 'selected' : ''; ?>>
-                📁 <?= htmlspecialchars($c_name); ?>
+                <?= (stripos($c_name, 'Resi') !== false ? '📦 ' : '📁 ') . htmlspecialchars($c_name); ?>
               </option>
               <?php endforeach; ?>
             <?php endif; ?>
@@ -914,7 +1051,7 @@
 
     <!-- Card 4: Total Omset & Populasi Customer -->
     <div class="col-md-3 col-sm-6 col-xs-12" style="margin-bottom:12px;">
-      <div class="kpi-mini-card" role="button" tabindex="0" onclick="window.location.href='<?= site_url('administrator/rfm/tracking' . $nav_qs); ?>';" title="Klik untuk melihat analisis riwayat omset di Tracking RFM Bulanan" style="border-left:4px solid #3b82f6;">
+      <div class="kpi-mini-card" role="button" tabindex="0" onclick="window.location.href='<?= site_url('administrator/rfm/tracking'); ?>';" title="Klik untuk melihat analisis riwayat omset di Tracking RFM" style="border-left:4px solid #3b82f6;">
         <div style="display:flex; justify-content:space-between; align-items:flex-start;">
           <div style="flex:1;">
             <div class="kpi-mini-lbl" style="color:#1d4ed8;">Total Seluruh Omset Penjualan &rarr;</div>
@@ -1000,8 +1137,8 @@
         <table class="cohort-table">
           <thead>
             <tr>
-              <th class="cohort-label-th">Bulan Pertama Belanja</th>
-              <th class="cohort-size-th">Jumlah Pelanggan</th>
+              <th class="cohort-label-th"><span class="hidden-xs">Bulan Pertama Belanja</span><span class="visible-xs">Bulan</span></th>
+              <th class="cohort-size-th"><span class="hidden-xs">Jumlah Pelanggan</span><span class="visible-xs">Jml Cust</span></th>
               <?php foreach ($periods as $p_label): ?>
               <th><?= $p_label; ?></th>
               <?php endforeach; ?>
@@ -1072,7 +1209,7 @@
             <tr style="border-top:3px solid #6366f1;">
               <td class="cohort-label-td" style="background:#eef2ff; font-weight:800; color:#4338ca;">
                 <i class="fa fa-users" style="font-size:10px; margin-right:4px;"></i>
-                <?= $aggregate['label']; ?>
+                <span class="hidden-xs"><?= $aggregate['label']; ?></span><span class="visible-xs">Semua</span>
               </td>
               <td class="cohort-size-td" style="background:#eef2ff; font-weight:800; color:#4338ca;">
                 <?= number_format($aggregate['size']); ?>
@@ -1116,7 +1253,7 @@
   <!-- ==========================================
        LAYER 4B: COHORT REVENUE / OMSET HEATMAP TABLE (Rp) - SEPARATE TABLE
        ========================================== -->
-  <div class="section-card-custom" style="padding:0; overflow:hidden; margin-bottom:24px;">
+  <div class="section-card-custom" id="section-cohort-revenue-table" style="padding:0; overflow:hidden; margin-bottom:24px;">
     <div style="padding:18px 22px; background:#fafbfc; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
       <h3 style="margin:0; font-size:15px; font-weight:800; color:#0f172a; display:flex; align-items:center; gap:8px;">
         <i class="fa fa-line-chart" style="color:#059669;"></i>
@@ -1149,9 +1286,9 @@
         <table class="cohort-table">
           <thead>
             <tr>
-              <th class="cohort-label-th">Bulan Pertama Belanja</th>
-              <th class="cohort-size-th">Jumlah Pelanggan</th>
-              <th class="cohort-rev-th">Total Omset</th>
+              <th class="cohort-label-th"><span class="hidden-xs">Bulan Pertama Belanja</span><span class="visible-xs">Bulan</span></th>
+              <th class="cohort-size-th"><span class="hidden-xs">Jumlah Pelanggan</span><span class="visible-xs">Jml Cust</span></th>
+              <th class="cohort-rev-th"><span class="hidden-xs">Total Omset</span><span class="visible-xs">Omset</span></th>
               <?php foreach ($periods as $p_label): ?>
               <th><?= $p_label; ?></th>
               <?php endforeach; ?>
@@ -1252,7 +1389,7 @@
             <tr style="border-top:3px solid #059669;">
               <td class="cohort-label-td" style="background:#ecfdf5; font-weight:800; color:#065f46;">
                 <i class="fa fa-users" style="font-size:10px; margin-right:4px;"></i>
-                <?= $aggregate['label']; ?> (Total Omset)
+                <span class="hidden-xs"><?= $aggregate['label']; ?> (Total Omset)</span><span class="visible-xs">Total</span>
               </td>
               <td class="cohort-size-td" style="background:#ecfdf5; font-weight:800; color:#065f46;">
                 <?= number_format($aggregate['size']); ?>
@@ -1769,7 +1906,8 @@ $(document).ready(function() {
 <div class="modal fade" id="modal-import-excel" tabindex="-1" role="dialog" aria-labelledby="modalImportExcelLabel" aria-hidden="true">
   <div class="modal-dialog" role="document" style="max-width:560px; margin:40px auto;">
     <div class="modal-content" style="border-radius:16px; border:none; box-shadow:0 20px 40px rgba(0,0,0,0.15); overflow:hidden;">
-      <form method="POST" action="<?= site_url('administrator/rfm/import_excel'); ?>" enctype="multipart/form-data" id="form-import-excel">
+      <form method="POST" action="<?= site_url('administrator/rfm/import_excel'); ?>" enctype="multipart/form-data" id="form-import-excel" onsubmit="var b=document.getElementById('btn-submit-import-cohort'); if(b){b.disabled=true; b.innerHTML='<i class=\'fa fa-spinner fa-spin\'></i> Mengimport Data...';}">
+        <input type="hidden" name="<?= $this->security->get_csrf_token_name(); ?>" value="<?= $this->security->get_csrf_hash(); ?>">
         <div class="modal-header" style="background:linear-gradient(135deg, #1e1b4b, #312e81, #4338ca); color:#fff; padding:18px 24px; border:none; position:relative;">
           <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color:#fff; opacity:0.8; font-size:24px; position:absolute; right:20px; top:18px;">&times;</button>
           <h4 class="modal-title" id="modalImportExcelLabel" style="font-weight:700; font-size:17px; margin:0; display:flex; align-items:center; gap:10px;">
@@ -1799,7 +1937,7 @@ $(document).ready(function() {
         </div>
         <div class="modal-footer" style="background:#f8fafc; border-top:1px solid #e2e8f0; padding:14px 24px; border-radius:0 0 16px 16px; display:flex; justify-content:flex-end; gap:10px;">
           <button type="button" class="btn btn-default" data-dismiss="modal" style="border-radius:8px; font-weight:600; padding:8px 18px;">Batal</button>
-          <button type="submit" class="btn" style="background:linear-gradient(135deg, #4338ca, #6366f1); color:#fff; border-radius:8px; font-weight:700; padding:8px 22px;"><i class="fa fa-upload"></i> Mulai Import Data</button>
+          <button type="submit" id="btn-submit-import-cohort" class="btn" style="background:linear-gradient(135deg, #4338ca, #6366f1); color:#fff; border-radius:8px; font-weight:700; padding:8px 22px;"><i class="fa fa-upload"></i> Mulai Import Data</button>
         </div>
       </form>
     </div>

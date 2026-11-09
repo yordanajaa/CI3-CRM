@@ -10,19 +10,49 @@
 
    <table style="width: 100%; font-size: 11px;">
       <tr>
-         <td style="width: 55%; vertical-align: top;">
-            <strong>Diterima Dari (Pelanggan):</strong><br>
+         <td style="width: 50%; vertical-align: top; padding-right: 15px;">
+            <strong style="color: #64748b; font-size: 10px; text-transform: uppercase;">Diterima Dari (Pelanggan):</strong><br>
             <strong style="font-size: 13px; color: #10b981;"><?= _ent($bkm->nama_pelanggan); ?></strong><br>
-            Kode Pelanggan: <?= _ent($bkm->kode_pelanggan ?? '-'); ?><br>
-            Alamat: <?= _ent($bkm->alamat ?? '-'); ?>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 10.5px;">
+               <tr>
+                  <td style="width: 35%; padding: 2px 0; color: #64748b;"><strong>Kode Pelanggan</strong></td>
+                  <td style="width: 5%; text-align: center; color: #64748b;">:</td>
+                  <td style="width: 60%; padding: 2px 0;"><?= _ent($bkm->kode_pelanggan ?? '-'); ?></td>
+               </tr>
+               <tr>
+                  <td style="padding: 2px 0; color: #64748b;"><strong>Alamat</strong></td>
+                  <td style="text-align: center; color: #64748b;">:</td>
+                  <td style="padding: 2px 0;"><?= _ent($bkm->alamat ?? '-'); ?></td>
+               </tr>
+            </table>
          </td>
-         <td style="width: 45%; vertical-align: top;">
-            <table style="width: 100%; font-size: 11px;">
-               <tr><td style="width: 45%;"><strong>No. Voucher BKM:</strong></td><td><strong><?= _ent($bkm->nomor_bkm); ?></strong></td></tr>
-               <tr><td><strong>Tanggal Terima:</strong></td><td><?= date('d/m/Y', strtotime($bkm->tanggal_bayar)); ?></td></tr>
-               <tr><td><strong>No. Tagihan Piutang:</strong></td><td><?= _ent($bkm->nomor_piutang ?? '-'); ?></td></tr>
-               <tr><td><strong>Akun Kas / Bank:</strong></td><td><?= _ent($bkm->akun_kas_bank); ?></td></tr>
-               <tr><td><strong>Metode Terima:</strong></td><td><?= strtoupper(str_replace('_', ' ', $bkm->metode_pembayaran)); ?></td></tr>
+         <td style="width: 50%; vertical-align: top; padding-left: 15px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+               <tr>
+                  <td style="width: 42%; padding: 2px 0; color: #475569;"><strong>No. Voucher BKM</strong></td>
+                  <td style="width: 5%; text-align: center; color: #475569;">:</td>
+                  <td style="width: 53%; padding: 2px 0;"><strong><?= _ent($bkm->nomor_bkm); ?></strong></td>
+               </tr>
+               <tr>
+                  <td style="padding: 2px 0; color: #475569;"><strong>Tanggal Terima</strong></td>
+                  <td style="text-align: center; color: #475569;">:</td>
+                  <td style="padding: 2px 0;"><?= date('d/m/Y', strtotime($bkm->tanggal_bayar)); ?></td>
+               </tr>
+               <tr>
+                  <td style="padding: 2px 0; color: #475569;"><strong>No. Tagihan Piutang</strong></td>
+                  <td style="text-align: center; color: #475569;">:</td>
+                  <td style="padding: 2px 0;"><?= _ent($bkm->nomor_piutang ?? '-'); ?></td>
+               </tr>
+               <tr>
+                  <td style="padding: 2px 0; color: #475569;"><strong>Akun Kas / Bank</strong></td>
+                  <td style="text-align: center; color: #475569;">:</td>
+                  <td style="padding: 2px 0;"><?= _ent($bkm->akun_kas_bank); ?></td>
+               </tr>
+               <tr>
+                  <td style="padding: 2px 0; color: #475569;"><strong>Metode Terima</strong></td>
+                  <td style="text-align: center; color: #475569;">:</td>
+                  <td style="padding: 2px 0;"><?= strtoupper(str_replace('_', ' ', $bkm->metode_pembayaran)); ?></td>
+               </tr>
             </table>
          </td>
       </tr>
@@ -61,7 +91,7 @@
    <br>
 
    <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px 12px; border-radius: 4px; font-size: 11px;">
-      <strong>Terbilang:</strong> <em># <?= ucwords(trim(terbilang($bkm->nominal))); ?> Rupiah #</em>
+      <strong>Terbilang:</strong> <em><?= ucwords(trim(preg_replace('/\s+/', ' ', terbilang($bkm->nominal)))); ?> Rupiah</em>
    </div>
 
    <br><br><br>

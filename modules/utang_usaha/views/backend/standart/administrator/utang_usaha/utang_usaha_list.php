@@ -182,7 +182,7 @@
                         </div>
                         <div class="col-md-4 col-sm-8">
                            <label class="text-muted" style="font-size:12px;">Cari Nomor / Keyword:</label>
-                           <input type="text" class="form-control" name="q" placeholder="Cari No. Utang / Supplier / GRN..." value="<?= _ent($this->input->get('q')); ?>">
+                           <input type="text" class="form-control" name="q" placeholder="Cari No. Utang / Supplier / PO..." value="<?= _ent($this->input->get('q')); ?>">
                         </div>
                         <div class="col-md-2 col-sm-4" style="padding-top: 23px;">
                            <button type="submit" class="btn btn-primary btn-flat btn-block" style="border-radius:4px;"><i class="fa fa-filter"></i> Filter</button>
@@ -198,7 +198,7 @@
                            <th width="40" class="text-center">No</th>
                            <th>No. Tagihan Utang</th>
                            <th>Supplier</th>
-                           <th>Ref Penerimaan (GRN)</th>
+                           <th>Ref Purchase Order</th>
                            <th>Tgl Jatuh Tempo</th>
                            <th class="text-right">Total Tagihan</th>
                            <th class="text-right">Telah Dibayar</th>
@@ -307,7 +307,7 @@
                         <label>Akun Kas / Bank <span class="text-danger">*</span></label>
                         <select class="form-control" name="akun_kas_bank" id="akun_kas_bank" required>
                            <option value="Kas Tunai / Cash">💵 Kas Tunai / Cash (Kasir/Operasional)</option>
-                           <option value="Kas Utama Gudang">🏢 Kas Utama Gudang</option>
+                           <option value="Kas Operasional">🏢 Kas Operasional</option>
                            <option value="Bank BCA" selected>🏦 Bank BCA - Operasional</option>
                            <option value="Bank Mandiri">🏦 Bank Mandiri - Operasional</option>
                            <option value="Bank BNI">🏦 Bank BNI</option>

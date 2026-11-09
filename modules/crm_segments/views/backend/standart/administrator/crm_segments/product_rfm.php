@@ -11,6 +11,8 @@ $sel_prod = isset($selected_product) ? $selected_product : '';
 $sel_year = $selected_year ?? '2026';
 $sel_period = $selected_period ?? '';
 $sel_cat = $selected_category ?? '';
+$sel_mode = $selected_mode ?? 'cumulative';
+$is_cumulative = ($sel_mode === 'cumulative');
 $prod_display_title = !empty($sel_prod) ? $sel_prod : (!empty($sel_cat) ? 'Semua Produk Kategori: ' . $sel_cat : 'Semua Produk (Keseluruhan)');
 
 // Build navigation query string
@@ -18,9 +20,17 @@ $nav_params = array_filter([
   'product'  => $sel_prod,
   'year'     => $sel_year,
   'period'   => $sel_period,
-  'kategori' => $sel_cat
+  'kategori' => $sel_cat,
+  'mode'     => $sel_mode,
 ]);
 $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
+
+// Customer list query string (excludes period so it never opens an empty month)
+$nav_cust_params = array_filter([
+  'product'  => $sel_prod,
+  'kategori' => $sel_cat,
+]);
+$nav_cust_qs = !empty($nav_cust_params) ? '?' . http_build_query($nav_cust_params) : '';
 ?>
 
 <style>
@@ -419,7 +429,7 @@ $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
       <div class="action-tools">
         <a href="<?= site_url('administrator/crm/broadcast'); ?>" class="btn" style="background:#25D366; color:#fff;" title="Broadcast WA"><i class="fa fa-bullhorn"></i> Broadcast WA</a>
         <button type="button" class="btn" data-toggle="modal" data-target="#modal-import-excel" style="background:#10b981; color:#fff; box-shadow:0 4px 12px rgba(16,185,129,0.35);"><i class="fa fa-file-excel-o"></i> Import Excel Data</button>
-        <a href="<?= site_url('administrator/crm_segments/export_csv?product=' . urlencode($sel_prod) . '&year=' . urlencode($sel_year) . '&period=' . urlencode($sel_period) . '&kategori=' . urlencode($sel_cat)); ?>" class="btn" style="background:rgba(255,255,255,0.18); color:#fff; border:1px solid rgba(255,255,255,0.3);" title="Export Matrix ke CSV / Excel">
+        <a href="<?= site_url('administrator/crm_segments/export_csv?product=' . urlencode($sel_prod) . '&year=' . urlencode($sel_year) . '&period=' . urlencode($sel_period) . '&kategori=' . urlencode($sel_cat) . '&mode=' . urlencode($sel_mode)); ?>" class="btn" style="background:rgba(255,255,255,0.18); color:#fff; border:1px solid rgba(255,255,255,0.3);" title="Export Matrix ke CSV / Excel">
           <i class="fa fa-download"></i> Export CSV
         </a>
       </div>
@@ -430,11 +440,11 @@ $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
       <a href="<?= site_url('administrator/rfm/dashboard' . $nav_qs); ?>" class="nav-tab-btn">
         <i class="fa fa-tachometer"></i> 1. Dashboard RFM
       </a>
-      <a href="<?= site_url('administrator/rfm' . $nav_qs); ?>" class="nav-tab-btn">
+      <a href="<?= site_url('administrator/rfm' . $nav_cust_qs); ?>" class="nav-tab-btn">
         <i class="fa fa-users"></i> 2. Daftar Customer
       </a>
-      <a href="<?= site_url('administrator/rfm/tracking' . $nav_qs); ?>" class="nav-tab-btn">
-        <i class="fa fa-line-chart"></i> 3. Tracking RFM Bulanan
+      <a href="<?= site_url('administrator/rfm/tracking'); ?>" class="nav-tab-btn">
+        <i class="fa fa-line-chart"></i> 3. Tracking RFM
       </a>
       <a href="<?= site_url('administrator/rfm/cohort' . $nav_qs); ?>" class="nav-tab-btn">
         <i class="fa fa-th"></i> 4. Analisis Kohort
@@ -468,7 +478,7 @@ $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
                 if (empty($c_name)) continue;
               ?>
               <option value="<?= htmlspecialchars($c_name); ?>" <?= (!empty($sel_cat) && $sel_cat === $c_name) ? 'selected' : ''; ?>>
-                📁 <?= htmlspecialchars($c_name); ?>
+                <?= (stripos($c_name, 'Resi') !== false ? '📦 ' : '📁 ') . htmlspecialchars($c_name); ?>
               </option>
               <?php endforeach; ?>
             <?php endif; ?>
@@ -549,12 +559,13 @@ $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
         </div>
 
         <!-- Action Buttons -->
+        <input type="hidden" name="mode" value="<?= htmlspecialchars($sel_mode); ?>">
         <div class="col-md-2 col-sm-4 col-xs-12" style="padding:0 8px; margin-bottom:8px; display:flex; gap:6px; align-items:flex-end;">
           <button type="submit" class="btn btn-primary" style="background:#6366f1; border:none; border-radius:8px; font-weight:700; height:38px; flex:1; margin-top:21px; display:inline-flex; align-items:center; justify-content:center; gap:6px; box-shadow:0 2px 6px rgba(99,102,241,0.3);">
             <i class="fa fa-filter"></i> Terapkan
           </button>
           <?php if (!empty($sel_cat) || (!empty($sel_year) && $sel_year !== '2026') || !empty($sel_period)): ?>
-          <a href="<?= site_url('administrator/crm_segments/product_rfm?product=' . urlencode($sel_prod)); ?>" class="btn btn-default" style="border-radius:8px; font-weight:600; height:38px; margin-top:21px; border:1px solid #cbd5e1; color:#64748b; display:inline-flex; align-items:center; justify-content:center;" title="Reset Filter">
+          <a href="<?= site_url('administrator/crm_segments/product_rfm?product=' . urlencode($sel_prod) . '&mode=' . urlencode($sel_mode)); ?>" class="btn btn-default" style="border-radius:8px; font-weight:600; height:38px; margin-top:21px; border:1px solid #cbd5e1; color:#64748b; display:inline-flex; align-items:center; justify-content:center;" title="Reset Filter">
             <i class="fa fa-refresh"></i> Reset
           </a>
           <?php endif; ?>
@@ -581,13 +592,13 @@ $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
     }
 
     $kpi_active_cust = $has_period ? $m_data['period_active_customers'] : $m_data['active_customers_count'];
-    $kpi_active_lbl = $has_period ? "Pelanggan Aktif ({$period_lbl})" : "Pelanggan Unik Aktif";
+    $kpi_active_lbl = $has_period ? "Pelanggan Aktif ({$period_lbl})" : ($is_cumulative ? "Total Basis Pelanggan" : "Pelanggan Unik Aktif");
     
     $kpi_omset = $has_period ? $m_data['period_omset'] : $m_data['accumulated_omset'];
     $kpi_omset_lbl = $has_period ? "Omset Penjualan ({$period_lbl})" : "Akumulasi Omset Penjualan";
     
     $kpi_growth = $has_period ? ($m_data['period_mom_growth'] ?? 0) : ($m_data['net_growth_pct'] ?? 0);
-    $kpi_growth_lbl = $has_period ? (!empty($prev_period_lbl) ? "Pertumbuhan MoM (vs {$prev_period_lbl})" : "Pertumbuhan MoM") : "Laju Pertumbuhan Net";
+    $kpi_growth_lbl = $has_period ? (!empty($prev_period_lbl) ? "Pertumbuhan MoM (vs {$prev_period_lbl})" : "Pertumbuhan MoM") : ($is_cumulative ? "Pertumbuhan Basis (Net)" : "Laju Pertumbuhan Net");
 
     $kpi_top_seg = $has_period ? ($m_data['period_top_segment_name'] ?? '-') : ($m_data['top_segment_name'] ?? '-');
     $kpi_top_cnt = $has_period ? ($m_data['period_top_segment_count'] ?? 0) : ($m_data['top_segment_count'] ?? 0);
@@ -596,7 +607,7 @@ $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
   <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:12px; margin-bottom:20px;">
     <!-- KPI 1: Pelanggan Aktif -->
     <div>
-      <div class="kpi-mini-card" role="button" tabindex="0" onclick="window.location.href='<?= site_url('administrator/rfm' . $nav_qs); ?>';" title="Klik untuk membuka dan melihat daftar pelanggan di Daftar Customer RFM" style="border-left:4px solid #10b981;">
+      <div class="kpi-mini-card" role="button" tabindex="0" onclick="window.location.href='<?= site_url('administrator/rfm' . ($kpi_active_cust > 0 ? $nav_qs : $nav_cust_qs)); ?>';" title="Klik untuk membuka dan melihat daftar pelanggan di Daftar Customer RFM" style="border-left:4px solid #10b981;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div>
             <div class="kpi-mini-val" style="color:#15803d;">
@@ -616,7 +627,7 @@ $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
 
     <!-- KPI 2: Akumulasi / Periode Omset -->
     <div>
-      <div class="kpi-mini-card" role="button" tabindex="0" onclick="window.location.href='<?= site_url('administrator/rfm/tracking' . $nav_qs); ?>';" title="Klik untuk melihat analisis tracking omset penjualan di Tracking RFM Bulanan" style="border-left:4px solid #0284c7;">
+      <div class="kpi-mini-card" role="button" tabindex="0" onclick="window.location.href='<?= site_url('administrator/rfm/tracking'); ?>';" title="Klik untuk melihat analisis tracking omset penjualan di Tracking RFM" style="border-left:4px solid #0284c7;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div>
             <div class="kpi-mini-val" style="color:#0369a1;">
@@ -683,17 +694,40 @@ $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
   <div class="section-card-custom" id="section-product-matrix" style="padding:0; overflow:hidden;">
     
     <!-- Table Header Info Bar -->
-    <div style="padding:16px 22px; background:#f8fafc; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <div style="padding:16px 22px; background:#f8fafc; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
       <div>
         <h4 style="margin:0; font-weight:800; font-size:15px; color:#0f172a; display:flex; align-items:center; gap:8px;">
           <i class="fa fa-th" style="color:#6366f1;"></i> Matriks Distribusi Segmen per Bulan
+          <span class="badge" style="background:<?= $is_cumulative ? '#dbeafe' : '#fef3c7'; ?>; color:<?= $is_cumulative ? '#1e40af' : '#92400e'; ?>; font-size:11px; font-weight:800; padding:4px 8px; border-radius:6px; border:1px solid <?= $is_cumulative ? '#bfdbfe' : '#fde68a'; ?>;">
+            <i class="fa <?= $is_cumulative ? 'fa-line-chart' : 'fa-calendar-check-o'; ?>"></i> <?= $is_cumulative ? 'Mode Kumulatif (Basis Pelanggan)' : 'Mode Bulanan (Aktivitas Transaksi)'; ?>
+          </span>
         </h4>
-        <div style="font-size:12px; color:#64748b; margin-top:2px;">
-          Klik pada angka di dalam kotak untuk membuka detail daftar nama pelanggan dan riwayat transaksi pada segmen & bulan tersebut.
+        <div style="font-size:12px; color:#64748b; margin-top:3px;">
+          <?= $is_cumulative ? 'Menghitung seluruh basis pelanggan kumulatif yang tercatat hingga bulan bersangkutan dan memetakan dinamika transisi segmen RFM-nya.' : 'Menghitung pelanggan yang aktif melakukan transaksi pada masing-masing bulan saja.'; ?> Klik kotak angka untuk membuka detail nama pelanggan.
         </div>
       </div>
-      <div style="display:flex; align-items:center; gap:8px;">
-        <span class="badge" style="background:#e0e7ff; color:#3730a3; font-weight:700; padding:6px 12px; border-radius:8px;">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <!-- Toggle Mode Switch: Kumulatif vs Per Bulan -->
+        <?php
+          $url_cum = site_url('administrator/crm_segments/product_rfm?' . http_build_query(array_merge($_GET, ['mode' => 'cumulative'])));
+          $url_mon = site_url('administrator/crm_segments/product_rfm?' . http_build_query(array_merge($_GET, ['mode' => 'monthly'])));
+        ?>
+        <div class="btn-group" role="group" aria-label="Mode Distribusi RFM" style="box-shadow:0 1px 3px rgba(0,0,0,0.08); border-radius:8px;">
+          <a href="<?= $url_cum; ?>" 
+             class="btn btn-sm <?= $is_cumulative ? 'btn-primary' : 'btn-default'; ?>"
+             style="<?= $is_cumulative ? 'background:#4338ca; border-color:#4338ca; color:#fff; font-weight:700;' : 'background:#fff; color:#475569; font-weight:600;'; ?> border-radius:8px 0 0 8px; padding:6px 14px; font-size:12px;"
+             title="Mode Kumulatif: Menampilkan seluruh basis pelanggan terakumulasi hingga bulan tersebut">
+            <i class="fa fa-line-chart"></i> Kumulatif
+          </a>
+          <a href="<?= $url_mon; ?>" 
+             class="btn btn-sm <?= !$is_cumulative ? 'btn-primary' : 'btn-default'; ?>"
+             style="<?= !$is_cumulative ? 'background:#4338ca; border-color:#4338ca; color:#fff; font-weight:700;' : 'background:#fff; color:#475569; font-weight:600;'; ?> border-radius:0 8px 8px 0; padding:6px 14px; font-size:12px;"
+             title="Mode Bulanan: Hanya menampilkan pelanggan yang belanja di bulan tersebut">
+            <i class="fa fa-calendar-check-o"></i> Per Bulan
+          </a>
+        </div>
+
+        <span class="badge" style="background:#e0e7ff; color:#3730a3; font-weight:700; padding:7px 12px; border-radius:8px;">
           <i class="fa fa-calendar"></i> Total <?= count($months); ?> Bulan Ditampilkan
         </span>
       </div>
@@ -716,7 +750,7 @@ $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
               </th>
             <?php endforeach; ?>
             <th style="background:#f1f5f9; color:#0f172a; min-width:130px;">
-              <i class="fa fa-users"></i> TOTAL PELANGGAN
+              <i class="fa fa-users"></i> <?= $is_cumulative ? 'TOTAL PELANGGAN (KUMULATIF)' : 'TOTAL PELANGGAN'; ?>
             </th>
             <th style="background:#f1f5f9; color:#0f172a; min-width:90px;">
               <i class="fa fa-line-chart"></i> TREN
@@ -737,12 +771,16 @@ $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
               $c = $row['counts'][$ym] ?? 0;
               $g = $row['growth'][$ym] ?? null;
               $is_col_sel = (!empty($sel_period) && $sel_period === $ym);
+              $show_zero = !empty($row['display_zero'][$ym]);
+              $is_drop_cell = ($c == 0 && $show_zero && $g !== null && $g < 0);
 
               // Density heatmap background
               $bg_style = 'background: #ffffff;';
               if ($c > 0) {
                 $intensity = min(0.75, max(0.12, ($c / $max_val) * 0.70));
                 $bg_style = 'background: rgba(16, 185, 129, ' . round($intensity, 2) . ');';
+              } elseif ($is_drop_cell) {
+                $bg_style = 'background: #fef2f2; border: 1px dashed #fca5a5;';
               }
               if ($is_col_sel && $c == 0) {
                 $bg_style = 'background: rgba(99, 102, 241, 0.05);';
@@ -759,18 +797,18 @@ $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
                      data-count="<?= $c; ?>"
                      onclick="openDrilldownModal(this);">
                   
-                  <div class="cell-count-num" style="color: <?= $c > 0 ? '#0f172a' : '#94a3b8'; ?>;">
-                    <?= $c > 0 ? $c : '-'; ?>
+                  <div class="cell-count-num" style="color: <?= ($c > 0) ? '#0f172a' : ($is_drop_cell ? '#dc2626' : ($show_zero ? '#0f172a' : '#94a3b8')); ?>;">
+                    <?= $c > 0 ? $c : ($show_zero ? '0' : '-'); ?>
                   </div>
 
-                  <?php if ($g === null): ?>
-                    <span class="cell-mom-badge cell-mom-none">—</span>
-                  <?php elseif ($g > 0): ?>
-                    <span class="cell-mom-badge cell-mom-up"><i class="fa fa-caret-up"></i> +<?= $g; ?>%</span>
-                  <?php elseif ($g < 0): ?>
-                    <span class="cell-mom-badge cell-mom-down"><i class="fa fa-caret-down"></i> <?= $g; ?>%</span>
-                  <?php else: ?>
-                    <span class="cell-mom-badge cell-mom-zero">— 0%</span>
+                  <?php if (($c > 0 || $show_zero) && $g !== null): ?>
+                    <?php if ($g > 0): ?>
+                      <span class="cell-mom-badge cell-mom-up"><i class="fa fa-caret-up"></i> +<?= $g; ?>%</span>
+                    <?php elseif ($g < 0): ?>
+                      <span class="cell-mom-badge cell-mom-down" style="color:#dc2626; font-weight:800;"><i class="fa fa-caret-down"></i> <?= $g; ?>%</span>
+                    <?php else: ?>
+                      <span class="cell-mom-badge cell-mom-zero">0%</span>
+                    <?php endif; ?>
                   <?php endif; ?>
 
                 </div>
@@ -786,21 +824,39 @@ $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
             <td style="background:#f8fafc;">
               <?php 
                 $tp = $row['trend_pct'];
-                if ($row['total_cust'] == 0): 
+                $tfv = $row['trend_first_val'] ?? 0;
+                $tlv = $row['trend_last_val'] ?? 0;
+                $tfym = $row['trend_first_ym'] ?? '';
+                $tlym = $row['trend_last_ym'] ?? '';
+                $lbl_first = $months[$tfym] ?? $tfym;
+                $lbl_last = $months[$tlym] ?? $tlym;
+
+                if ($tfym === $tlym && $tlv > 0) {
+                    $trend_title = "Segmen baru pada {$lbl_last}: {$tlv} pelanggan (+100%)";
+                } elseif ($tfv > 0 && $tlv == 0) {
+                    $trend_title = "Penurunan dari {$tfv} ({$lbl_first}) ke 0 ({$lbl_last}): {$tp}%";
+                } elseif ($tfv > 0 && $tlv > 0) {
+                    $trend_title = "Pertumbuhan dari {$tfv} ({$lbl_first}) ke {$tlv} ({$lbl_last}): " . ($tp >= 0 ? "+{$tp}%" : "{$tp}%");
+                } else {
+                    $trend_title = "Tidak ada pergerakan segmen pada periode ini";
+                }
+
+                $has_any_data = array_sum($row['counts']) > 0;
+                if (!$has_any_data): 
               ?>
-                <span class="badge" style="background:#e2e8f0; color:#64748b; font-weight:700; font-size:10.5px; padding:4px 8px; border-radius:4px;">
+                <span class="badge" title="<?= $trend_title; ?>" style="background:#e2e8f0; color:#64748b; font-weight:700; font-size:10.5px; padding:4px 8px; border-radius:4px; cursor:help;">
                   — 0%
                 </span>
               <?php elseif ($tp > 0): ?>
-                <span class="badge" style="background:#16a34a; color:#fff; font-weight:700; font-size:10.5px; padding:4px 8px; border-radius:4px;">
+                <span class="badge" title="<?= $trend_title; ?>" style="background:#16a34a; color:#fff; font-weight:700; font-size:10.5px; padding:4px 8px; border-radius:4px; cursor:help;">
                   <i class="fa fa-arrow-up"></i> +<?= $tp; ?>%
                 </span>
               <?php elseif ($tp < 0): ?>
-                <span class="badge" style="background:#ef4444; color:#fff; font-weight:700; font-size:10.5px; padding:4px 8px; border-radius:4px;">
+                <span class="badge" title="<?= $trend_title; ?>" style="background:#ef4444; color:#fff; font-weight:700; font-size:10.5px; padding:4px 8px; border-radius:4px; cursor:help;">
                   <i class="fa fa-arrow-down"></i> <?= $tp; ?>%
                 </span>
               <?php else: ?>
-                <span class="badge" style="background:#e2e8f0; color:#64748b; font-weight:700; font-size:10.5px; padding:4px 8px; border-radius:4px;">
+                <span class="badge" title="<?= $trend_title; ?>" style="background:#e2e8f0; color:#64748b; font-weight:700; font-size:10.5px; padding:4px 8px; border-radius:4px; cursor:help;">
                   — 0%
                 </span>
               <?php endif; ?>
@@ -808,24 +864,51 @@ $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
           </tr>
           <?php endforeach; ?>
 
-          <!-- ROW 1: TOTAL PEMBELI AKTIF -->
+          <!-- ROW 1: TOTAL PEMBELI AKTIF / BASIS PELANGGAN -->
           <tr class="row-total-produk">
-            <td title="Total pelanggan/pembeli unik yang bertransaksi pada bulan ini">
+            <td title="<?= $is_cumulative ? 'Total seluruh basis pelanggan unik yang telah tercatat hingga bulan tersebut' : 'Total pelanggan/pembeli unik yang bertransaksi pada bulan ini'; ?>" style="vertical-align:middle;">
               <i class="fa fa-users" style="color:#2563eb; margin-right:6px;"></i>
-              <strong>TOTAL PEMBELI AKTIF</strong>
+              <strong><?= $is_cumulative ? 'TOTAL BASIS PELANGGAN KUMULATIF' : 'TOTAL PEMBELI AKTIF'; ?></strong>
             </td>
             <?php foreach ($months as $ym => $label): 
               $t = $totals_row['counts'][$ym] ?? 0;
+              $tg = $mom_row['growth'][$ym] ?? null;
+              $show_zero_t = !empty($totals_row['display_zero'][$ym]);
               $is_col_sel = (!empty($sel_period) && $sel_period === $ym);
+              $is_drop_tot = ($t == 0 && $show_zero_t && $tg !== null && $tg < 0);
             ?>
-              <td class="<?= $is_col_sel ? 'col-period-highlight' : ''; ?>" style="color:#2563eb;">
-                <?= $t > 0 ? number_format($t) : '-'; ?>
+              <td class="<?= $is_col_sel ? 'col-period-highlight' : ''; ?>" style="color:#2563eb; vertical-align:middle; text-align:center;">
+                <?php if ($t > 0 || $show_zero_t): ?>
+                  <div class="matrix-cell-interactive" 
+                       style="<?= $is_drop_tot ? 'background: #fef2f2; color: #dc2626; border: 1px dashed #fca5a5;' : 'background: #eff6ff; color: #1d4ed8;'; ?> font-weight: 800; padding: 6px 4px;"
+                       data-product="<?= htmlspecialchars($sel_prod); ?>"
+                       data-category="<?= htmlspecialchars($sel_cat); ?>"
+                       data-segment="Total"
+                       data-period="<?= $ym; ?>"
+                       data-period-label="<?= $label; ?>"
+                       data-count="<?= $t; ?>"
+                       title="Klik untuk melihat seluruh <?= number_format($t); ?> pelanggan pada <?= $label; ?>"
+                       onclick="openDrilldownModal(this);">
+                    <div class="cell-count-num" style="color:<?= $is_drop_tot ? '#dc2626' : '#1d4ed8'; ?>; font-size:14px; font-weight:800;"><?= $t > 0 ? number_format($t) : ($show_zero_t ? '0' : '-'); ?></div>
+                    <?php if ($tg !== null): ?>
+                      <?php if ($tg > 0): ?>
+                        <span class="cell-mom-badge cell-mom-up" style="font-size:9.5px; font-weight:800; padding:2px 6px; border-radius:4px; display:inline-block; margin-top:3px;"><i class="fa fa-caret-up"></i> +<?= $tg; ?>%</span>
+                      <?php elseif ($tg < 0): ?>
+                        <span class="cell-mom-badge cell-mom-down" style="font-size:9.5px; font-weight:800; padding:2px 6px; border-radius:4px; display:inline-block; margin-top:3px; color:#dc2626;"><i class="fa fa-caret-down"></i> <?= $tg; ?>%</span>
+                      <?php else: ?>
+                        <span class="cell-mom-badge cell-mom-zero" style="font-size:9.5px; font-weight:700; padding:2px 6px; border-radius:4px; display:inline-block; margin-top:3px;">0%</span>
+                      <?php endif; ?>
+                    <?php endif; ?>
+                  </div>
+                <?php else: ?>
+                  <span style="color:#94a3b8;">-</span>
+                <?php endif; ?>
               </td>
             <?php endforeach; ?>
-            <td style="color:#2563eb; font-weight:800; font-size:15px; background:#eff6ff;">
+            <td style="color:#2563eb; font-weight:800; font-size:15px; background:#eff6ff; text-align:center; vertical-align:middle;">
               <?= number_format($totals_row['grand_total']); ?>
             </td>
-            <td style="background:#eff6ff;">
+            <td style="background:#eff6ff; text-align:center; vertical-align:middle;">
               <span class="badge" style="background:#2563eb; color:#fff; font-weight:700; font-size:10.5px; padding:4px 8px; border-radius:4px;">
                 <?= number_format($m_data['active_customers_count']); ?> Unik
               </span>
@@ -833,32 +916,32 @@ $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
           </tr>
 
           <!-- ROW 2: LAJU PERTUMBUHAN (MoM) -->
-          <tr class="row-mom-growth">
-            <td>
+          <tr class="row-mom-growth" style="background:#f8fafc;">
+            <td style="vertical-align:middle;">
               <i class="fa fa-line-chart" style="color:#059669; margin-right:6px;"></i>
-              <strong>Laju Pertumbuhan (MoM)</strong>
+              <strong style="color:#0f172a;">PERTUMBUHAN MoM (BULANAN %)</strong>
             </td>
             <?php foreach ($months as $ym => $label): 
               $mg = $mom_row['growth'][$ym] ?? null;
               $is_col_sel = (!empty($sel_period) && $sel_period === $ym);
             ?>
-              <td class="<?= $is_col_sel ? 'col-period-highlight' : ''; ?>">
+              <td class="<?= $is_col_sel ? 'col-period-highlight' : ''; ?>" style="vertical-align:middle; text-align:center; padding:10px 4px !important;">
                 <?php if ($mg === null): ?>
                   <span style="color:#94a3b8;">-</span>
                 <?php elseif ($mg > 0): ?>
-                  <span style="color:#15803d; font-weight:700;"><i class="fa fa-caret-up"></i> +<?= $mg; ?>%</span>
+                  <span style="background:#dcfce7; color:#15803d; font-weight:800; font-size:11px; padding:3px 7px; border-radius:6px; display:inline-flex; align-items:center; gap:3px; border:1px solid #bbf7d0;"><i class="fa fa-caret-up"></i> +<?= $mg; ?>%</span>
                 <?php elseif ($mg < 0): ?>
-                  <span style="color:#b91c1c; font-weight:700;"><i class="fa fa-caret-down"></i> <?= $mg; ?>%</span>
+                  <span style="background:#fee2e2; color:#b91c1c; font-weight:800; font-size:11px; padding:3px 7px; border-radius:6px; display:inline-flex; align-items:center; gap:3px; border:1px solid #fecaca;"><i class="fa fa-caret-down"></i> <?= $mg; ?>%</span>
                 <?php else: ?>
-                  <span style="color:#64748b;">0%</span>
+                  <span style="background:#f1f5f9; color:#475569; font-weight:700; font-size:10.5px; padding:3px 7px; border-radius:6px; display:inline-flex; align-items:center; gap:3px; border:1px solid #e2e8f0;">0%</span>
                 <?php endif; ?>
               </td>
             <?php endforeach; ?>
-            <td style="background:#f8fafc; font-size:11px; font-weight:700; color:#475569;">
+            <td style="background:#f8fafc; font-size:11.5px; font-weight:700; color:#475569; text-align:center; vertical-align:middle;">
               Net Pertumbuhan:
             </td>
-            <td style="background:#f8fafc;">
-              <span class="badge" style="background:<?= $mom_row['net_growth'] >= 0 ? '#16a34a' : '#ef4444'; ?>; color:#fff; font-size:10.5px; font-weight:700; padding:4px 8px; border-radius:4px;">
+            <td style="background:#f8fafc; text-align:center; vertical-align:middle;">
+              <span class="badge" style="background:<?= $mom_row['net_growth'] >= 0 ? '#16a34a' : '#ef4444'; ?>; color:#fff; font-size:11px; font-weight:800; padding:5px 9px; border-radius:5px; box-shadow:0 1px 3px rgba(0,0,0,0.1);">
                 <i class="fa fa-arrow-<?= $mom_row['net_growth'] >= 0 ? 'up' : 'down'; ?>"></i> <?= ($mom_row['net_growth'] >= 0 ? '+' : '') . $mom_row['net_growth']; ?>%
               </span>
             </td>
@@ -876,7 +959,7 @@ $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
         <span><span style="display:inline-block; width:12px; height:12px; background:rgba(16,185,129,0.75); border-radius:3px; vertical-align:middle;"></span> Tinggi</span>
       </div>
       <div style="font-size:11.5px; color:#64748b;">
-        <i class="fa fa-info-circle" style="color:#6366f1;"></i> Data otomatis sinkron dan terhitung dari transaksi <strong>Sales Order &amp; Penjualan Marketplace</strong> secara realtime.
+        <i class="fa fa-info-circle" style="color:#6366f1;"></i> Data otomatis sinkron dan terhitung dari transaksi <strong>Transaksi Penjualan &amp; Marketplace</strong> secara realtime.
       </div>
     </div>
   </div>
@@ -972,9 +1055,11 @@ function openDrilldownModal(el) {
   currentActiveCell = el;
 
   var prodLabel = product ? product : (category ? 'Semua Produk Kategori: ' + category : 'Semua Produk (Keseluruhan)');
+  var modeLabel = '<?= $is_cumulative ? "Basis Kumulatif" : "Aktivitas Bulanan"; ?>';
 
-  $('#drilldownTitleText').html('Pelanggan Segmen <strong>' + segment + '</strong> &bull; ' + periodLabel);
-  $('#drilldownSubtitleText').html('Target: <strong>' + prodLabel + '</strong> &bull; Jumlah: ' + count + ' Transaksi Tercatat');
+  var segTitle = (segment === 'Total') ? 'Seluruh Basis Pelanggan' : ('Pelanggan Segmen <strong>' + segment + '</strong>');
+  $('#drilldownTitleText').html(segTitle + ' &bull; ' + periodLabel + ' <span class="badge" style="background:#e0e7ff; color:#3730a3; font-size:11px; vertical-align:middle; margin-left:6px;">' + modeLabel + '</span>');
+  $('#drilldownSubtitleText').html('Target: <strong>' + prodLabel + '</strong> &bull; Jumlah: ' + count + ' Pelanggan');
 
   $('#drilldownLoading').show();
   $('#drilldownContent').hide();
@@ -990,7 +1075,8 @@ function openDrilldownModal(el) {
       product: product,
       category: category,
       segment: segment,
-      period: period
+      period: period,
+      mode: '<?= $sel_mode; ?>'
     },
     dataType: 'json',
     success: function(res) {
@@ -999,18 +1085,25 @@ function openDrilldownModal(el) {
       if (res && res.status === 'success' && res.customers && res.customers.length > 0) {
         var html = '';
         res.customers.forEach(function(c, idx) {
-          var spendFormatted = 'Rp ' + Number(c.total_spend).toLocaleString('id-ID');
+          var spendFormatted = 'Rp ' + Number(c.total_spend || 0).toLocaleString('id-ID');
           var cleanPhone = c.clean_phone || c.no_telepon || '';
           var waPhone = cleanPhone.replace(/^0/, '62');
           var waLink = 'https://wa.me/' + waPhone;
           var crmLink = '<?= site_url("administrator/crm/customer_summary"); ?>?phone=' + encodeURIComponent(cleanPhone);
+          var segBadge = c.rfm_segment ? '<span class="badge" style="background:#e0e7ff; color:#3730a3; font-size:10px; font-weight:700; margin-left:6px; vertical-align:middle;">' + c.rfm_segment + '</span>' : '';
           
+          var qtyNum = parseFloat(c.total_qty);
+          if (isNaN(qtyNum) || qtyNum <= 0) qtyNum = 1;
+          var qtyFormatted = (qtyNum % 1 === 0) ? qtyNum.toLocaleString('id-ID') : Number(qtyNum.toFixed(2)).toLocaleString('id-ID');
+
+          var custName = (c.customer_name && c.customer_name !== '-' && c.customer_name.trim() !== '') ? c.customer_name : ('Customer ' + (cleanPhone ? cleanPhone.slice(-4) : (idx + 1)));
+
           html += '<tr>' +
             '<td>' + (idx + 1) + '</td>' +
-            '<td><strong style="color:#0f172a;">' + (c.customer_name || 'Customer') + '</strong></td>' +
+            '<td><strong style="color:#0f172a;">' + custName + '</strong>' + segBadge + '</td>' +
             '<td><code style="background:#eef2ff; color:#3730a3; padding:2px 6px; border-radius:4px; font-weight:600;">' + (cleanPhone || '-') + '</code></td>' +
             '<td style="text-align:center;"><span class="badge" style="background:#e0e7ff; color:#3730a3; font-weight:700;">' + (c.total_orders || 1) + 'x</span></td>' +
-            '<td style="text-align:center; font-weight:600; color:#475569;">' + (c.total_qty || 1) + '</td>' +
+            '<td style="text-align:center; font-weight:600; color:#475569;">' + qtyFormatted + '</td>' +
             '<td style="text-align:right;"><strong style="color:#16a34a;">' + spendFormatted + '</strong></td>' +
             '<td style="text-align:center; white-space:nowrap;">' +
               (cleanPhone ? '<a href="' + waLink + '" target="_blank" class="btn btn-xs" style="background:#25d366; color:#fff; border-radius:6px; font-weight:700; margin-right:4px;" title="Chat WhatsApp"><i class="fa fa-whatsapp"></i> Chat</a>' : '') +

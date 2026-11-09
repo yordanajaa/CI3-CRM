@@ -20,10 +20,9 @@ class Model_utang_usaha extends MY_Model {
 
 	public function join_available()
 	{
-		$this->db->select('utang_usaha.*, supplier.nama_supplier, supplier.kode_supplier, penerimaan_barang.nomor_penerimaan, penerimaan_barang.nomor_surat_jalan, purchase_order.nomor_po');
+		$this->db->select('utang_usaha.*, supplier.nama_supplier, supplier.kode_supplier, purchase_order.nomor_po');
 		$this->db->join('supplier', 'supplier.id = utang_usaha.supplier_id', 'LEFT');
-		$this->db->join('penerimaan_barang', 'penerimaan_barang.id = utang_usaha.penerimaan_id', 'LEFT');
-		$this->db->join('purchase_order', 'purchase_order.id = penerimaan_barang.po_id', 'LEFT');
+		$this->db->join('purchase_order', 'purchase_order.id = utang_usaha.po_id', 'LEFT');
 		return $this;
 	}
 
@@ -65,7 +64,7 @@ class Model_utang_usaha extends MY_Model {
 			$this->db->group_start();
 			$this->db->like('utang_usaha.nomor_utang', $q);
 			$this->db->or_like('supplier.nama_supplier', $q);
-			$this->db->or_like('penerimaan_barang.nomor_penerimaan', $q);
+			$this->db->or_like('purchase_order.nomor_po', $q);
 			$this->db->group_end();
 		}
 	}

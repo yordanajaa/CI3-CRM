@@ -25,11 +25,13 @@
                      <i class="fa fa-plus"></i> Tambah Supplier Baru
                   </a>
                   <?php }); ?>
-                  <?php is_allowed('supplier_export', function(){ ?>
-                  <a href="<?= site_url('administrator/supplier/export'); ?>" class="btn btn-primary btn-sm btn-flat">
+                  <?php 
+                  $export_qs = !empty($_SERVER['QUERY_STRING']) ? ('?' . $_SERVER['QUERY_STRING']) : '';
+                  is_allowed('supplier_export', function() use ($export_qs){ ?>
+                  <a href="<?= site_url('administrator/supplier/export' . $export_qs); ?>" class="btn btn-primary btn-sm btn-flat">
                      <i class="fa fa-file-excel-o"></i> Export XLS
                   </a>
-                  <a href="<?= site_url('administrator/supplier/export_pdf'); ?>" class="btn btn-info btn-sm btn-flat">
+                  <a href="<?= site_url('administrator/supplier/export_pdf' . $export_qs); ?>" target="_blank" class="btn btn-info btn-sm btn-flat">
                      <i class="fa fa-file-pdf-o"></i> Export PDF
                   </a>
                   <?php }); ?>

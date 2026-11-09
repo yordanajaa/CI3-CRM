@@ -1,5 +1,5 @@
 <?php /* purchase_order_view.php */ 
-$status_color = ['draft'=>'default','submitted'=>'info','approved'=>'primary','rejected'=>'danger','received'=>'success','partial'=>'warning','cancelled'=>'danger'];
+$status_color = ['draft'=>'default','submitted'=>'info','approved'=>'primary','completed'=>'success','rejected'=>'danger','received'=>'success','partial'=>'warning','cancelled'=>'danger'];
 ?>
 <section class="content-header">
    <h1>Detail PO <small><?= _ent($po->nomor_po); ?></small></h1>
@@ -13,35 +13,20 @@ $status_color = ['draft'=>'default','submitted'=>'info','approved'=>'primary','r
    <div class="col-md-8">
       <div class="box box-primary">
          <div class="box-header with-border">
-            <h3 class="box-title"><?= _ent($po->nomor_po); ?> &nbsp;<span class="label label-<?= $status_color[$po->status]??'default'; ?>"><?= strtoupper($po->status); ?></span></h3>
+            <h3 class="box-title"><?= _ent($po->nomor_po); ?> &nbsp;<span class="label label-<?= $status_color[$po->status]??'default'; ?>"><?= $po->status == 'completed' ? 'SELESAI (MASUK STOK)' : strtoupper($po->status); ?></span></h3>
             <div class="box-tools pull-right"> <a href="<?= site_url('administrator/purchase_order/cetak/' . $po->id); ?>" target="_blank" class="btn btn-info btn-sm"><i class="fa fa-print"></i> Cetak PDF</a> 
-               <?php if($po->status=='submitted' && $this->aauth->is_admin()): ?>
-                  <a href="<?= site_url('administrator/purchase_order/approve/'.$po->id); ?>" class="btn btn-success btn-sm"><i class="fa fa-check"></i> Approve</a>
-                  <a href="<?= site_url('administrator/purchase_order/reject/'.$po->id); ?>" class="btn btn-danger btn-sm"><i class="fa fa-times"></i> Tolak</a>
+               <?php if($po->status=='draft' && is_allowed('purchase_order_update', false)): ?>
+                  <a href="<?= site_url('administrator/purchase_order/complete/'.$po->id); ?>" class="btn btn-success btn-sm"><i class="fa fa-check-circle"></i> Selesaikan &amp; Masuk Stok</a>
+                  <a href="<?= site_url('administrator/purchase_order/edit/'.$po->id); ?>" class="btn btn-warning btn-sm"><i class="fa fa-edit"></i> Edit</a>
                <?php endif; ?>
-               <?php if(in_array($po->status,['approved','partial'])): ?>
-                  <?php is_allowed('penerimaan_barang_add', function() use ($po, $draft_penerimaan){ ?>
-                     <?php if(!empty($draft_penerimaan)): ?>
-                        <a href="<?= site_url('administrator/penerimaan_barang/view/'.$draft_penerimaan->id); ?>" class="btn btn-warning btn-sm" title="Lanjutkan Draft GRN yang sudah ada"><i class="fa fa-edit"></i> Lanjutkan GRN Draft (<?= _ent($draft_penerimaan->nomor_penerimaan); ?>)</a>
-                     <?php else: ?>
-                        <a href="<?= site_url('administrator/penerimaan_barang/add?po_id='.$po->id); ?>" class="btn btn-warning btn-sm"><i class="fa fa-truck"></i> Terima Barang</a>
-                     <?php endif; ?>
-                  <?php }); ?>
-               <?php endif; ?>
+               
+               
+                  
                <a href="<?= base_url('administrator/purchase_order'); ?>" class="btn btn-default btn-sm"><i class="fa fa-arrow-left"></i> Kembali</a>
             </div>
          </div>
          <div class="box-body">
-             <?php 
-                $po_thresh = (float) get_option('po_approval_threshold', 50000000);
-                $po_tot = (float)$po->total * (float)($po->kurs ?: 1);
-                if ($po->status == 'submitted' && $po_tot >= $po_thresh):
-             ?>
-                <div class="alert alert-warning" style="border-left: 5px solid #f39c12; background: #fffcf5; color: #8a6d3b; margin-bottom: 20px; border-radius: 4px;">
-                   <h4 style="margin-top:0; font-weight:700;"><i class="icon fa fa-shield text-warning"></i> Perhatian: Approval Wewenang Direktur / Superadmin Required</h4>
-                   <p style="margin-bottom:0;">Nilai transaksi PO ini sebesar <strong>Rp <?= number_format($po_tot, 0, ',', '.'); ?></strong> (melebihi batas threshold approval Rp <?= number_format($po_thresh, 0, ',', '.'); ?>). Pengajuan ini memerlukan konfirmasi approval khusus dari Direktur / Superadmin.</p>
-                </div>
-             <?php endif; ?>
+             
             <div class="row">
                <div class="col-md-6">
                   <table class="table table-condensed">
@@ -51,6 +36,10 @@ $status_color = ['draft'=>'default','submitted'=>'info','approved'=>'primary','r
                      <tr><th>Est. Terima</th><td><?= $po->tanggal_estimasi ? date('d/m/Y',strtotime($po->tanggal_estimasi)) : '-'; ?></td></tr>
                      <tr><th>Mata Uang</th><td><?= $po->mata_uang; ?> (<?= $po->kurs; ?>)</td></tr>
                      <tr><th>Dibuat Oleh</th><td><?= _ent($po->created_by); ?></td></tr>
+                     <?php $linked_utg = $this->db->get_where('utang_usaha', ['po_id' => $po->id])->row(); ?>
+                     <?php if($linked_utg): ?>
+                     <tr><th>Tagihan Utang</th><td><a href="<?= site_url('administrator/utang_usaha?q=' . urlencode($linked_utg->nomor_utang)); ?>" class="label <?= $linked_utg->status == 'lunas' ? 'label-success' : 'label-warning'; ?>" style="font-size:12px; padding:3px 8px;"><i class="fa fa-money"></i> <?= _ent($linked_utg->nomor_utang); ?> (<?= strtoupper($linked_utg->status); ?> - Sisa Rp <?= number_format($linked_utg->sisa, 0, ',', '.'); ?>)</a></td></tr>
+                     <?php endif; ?>
                   </table>
                </div>
                <div class="col-md-6">
@@ -102,66 +91,29 @@ $status_color = ['draft'=>'default','submitted'=>'info','approved'=>'primary','r
                </table>
             </div>
 
-            <!-- Linked GRN Documents History -->
-            <hr style="margin-top:25px; margin-bottom:15px;">
-            <h4 style="font-weight:bold; color:#0369a1;"><i class="fa fa-truck text-info"></i> Dokumen Penerimaan Barang (GRN) Terkoneksi</h4>
-            <div class="table-responsive">
-               <table class="table table-bordered table-striped" style="font-size:12px;">
-                  <thead>
-                     <tr style="background:#e0f2fe; color:#0369a1;">
-                        <th>No. GRN</th>
-                        <th>Tgl Terima</th>
-                        <th>Gudang Tujuan</th>
-                        <th>Dibuat Oleh</th>
-                        <th class="text-center">Status GRN</th>
-                        <th class="text-center" width="160">Aksi GRN</th>
-                     </tr>
-                  </thead>
-                  <tbody>
-                     <?php if(!empty($penerimaans)): ?>
-                        <?php foreach($penerimaans as $pnr): ?>
-                           <tr>
-                              <td>
-                                 <strong class="text-primary">
-                                    <a href="<?= site_url('administrator/penerimaan_barang/view/' . $pnr->id); ?>"><?= _ent($pnr->nomor_penerimaan); ?></a>
-                                 </strong>
-                              </td>
-                              <td><i class="fa fa-calendar text-muted"></i> <?= date('d/m/Y', strtotime($pnr->tanggal_terima)); ?></td>
-                              <td><span class="label label-primary"><i class="fa fa-building"></i> <?= _ent($pnr->nama_gudang); ?></span></td>
-                              <td><small><?= _ent($pnr->created_by); ?></small></td>
-                              <td class="text-center">
-                                 <?php if($pnr->status == 'confirmed'): ?>
-                                    <span class="label label-success"><i class="fa fa-check-circle"></i> CONFIRMED</span>
-                                 <?php else: ?>
-                                    <span class="label label-warning"><i class="fa fa-clock-o"></i> DRAFT (Belum Konfirmasi)</span>
-                                 <?php endif; ?>
-                              </td>
-                              <td class="text-center">
-                                 <a href="<?= site_url('administrator/penerimaan_barang/view/' . $pnr->id); ?>" class="btn btn-xs btn-default"><i class="fa fa-eye"></i> Detail</a>
-                                 <?php if($pnr->status == 'draft'): ?>
-                                    <a href="<?= site_url('administrator/penerimaan_barang/edit/' . $pnr->id); ?>" class="btn btn-xs btn-warning"><i class="fa fa-edit"></i> Edit & Konfirmasi</a>
-                                 <?php endif; ?>
-                              </td>
-                           </tr>
-                        <?php endforeach; ?>
-                     <?php else: ?>
-                        <tr>
-                           <td colspan="6" class="text-center text-muted" style="padding:15px;">Belum ada dokumen Penerimaan Barang (GRN) yang terhubung dengan PO ini.</td>
-                        </tr>
-                     <?php endif; ?>
-                  </tbody>
-               </table>
             </div>
-
-         </div>
       </div>
    </div>
    <div class="col-md-4">
-      <div class="box box-info">
-         <div class="box-header with-border"><h3 class="box-title">Informasi Supplier</h3></div>
+      <div class="box box-info" style="border-radius:6px;">
+         <div class="box-header with-border"><h3 class="box-title"><i class="fa fa-truck text-info"></i> Informasi Supplier</h3></div>
          <div class="box-body">
-            <p><i class="fa fa-building-o"></i> <?= _ent($po->nama_supplier); ?></p>
-            <p><i class="fa fa-tag"></i> <?= _ent($po->kode_supplier); ?></p>
+            <p><i class="fa fa-building-o text-muted"></i> <strong><?= _ent($po->nama_supplier ?? '-'); ?></strong></p>
+            <p><i class="fa fa-tag text-muted"></i> Kode: <span class="label label-default"><?= _ent($po->kode_supplier ?? '-'); ?></span></p>
+            <?php if(!empty($po->kontak_person)): ?><p><i class="fa fa-user text-muted"></i> PIC: <?= _ent($po->kontak_person); ?></p><?php endif; ?>
+            <?php 
+               $alamat_supp = trim(($po->alamat ?? '') . (!empty($po->kota) ? ', ' . $po->kota : ''));
+               if (!empty($alamat_supp)):
+            ?>
+               <p><i class="fa fa-map-marker text-muted"></i> <?= nl2br(_ent($alamat_supp)); ?></p>
+            <?php endif; ?>
+            <?php 
+               $telp_supp = !empty($po->no_telp) ? $po->no_telp : (!empty($po->telepon) ? $po->telepon : '');
+               if (!empty($telp_supp)):
+            ?>
+               <p><i class="fa fa-phone text-muted"></i> <?= _ent($telp_supp); ?></p>
+            <?php endif; ?>
+            <?php if(!empty($po->email)): ?><p><i class="fa fa-envelope-o text-muted"></i> <?= _ent($po->email); ?></p><?php endif; ?>
          </div>
       </div>
    </div>

@@ -40,31 +40,26 @@ class Dashboard extends Admin
 
 	public function get_notifications()
 	{
-		$user_id = get_user_data('id');
-		$is_manager = $this->aauth->is_admin() 
-			|| $this->aauth->is_allowed('purchase_order_approve', false) 
-			|| $this->aauth->is_allowed('transfer_stok_approve', false);
-
+		$today = date('Y-m-d');
 		$items = [];
 		$total_count = 0;
 		$overdue_count = 0;
 
-		// 1. Peringatan Follow-Up Terlupakan (CRM Overdue Pending Reminders)
+		// Peringatan Follow-Up Pelanggan CRM (Jatuh Tempo Hari Ini & Terlewat)
 		if ($this->db->table_exists('crm_transaction_followup_labels')) {
-			$today = date('Y-m-d');
-
-			// Hitung total follow-up pending yang sudah jatuh tempo / terlewat
-			$overdue_row = $this->db->query("
-				SELECT COUNT(*) as cnt 
+			$crm_row = $this->db->query("
+				SELECT 
+					COUNT(*) as total_cnt,
+					SUM(CASE WHEN tanggal_label_muncul < '$today' THEN 1 ELSE 0 END) as overdue_cnt
 				FROM crm_transaction_followup_labels 
 				WHERE status_label = 'Pending' 
 				  AND is_cancelled = 0 
-				  AND tanggal_label_muncul < '$today'
+				  AND tanggal_label_muncul <= '$today'
 			")->row();
-			$overdue_count = $overdue_row ? (int)$overdue_row->cnt : 0;
+			$total_count = $crm_row ? (int)$crm_row->total_cnt : 0;
+			$overdue_count = $crm_row ? (int)$crm_row->overdue_cnt : 0;
 
-			// Ambil 10 data follow-up yang paling lama terlupakan (tanggal jadwal paling lampau)
-			$overdue_items = $this->db->query("
+			$crm_items = $this->db->query("
 				SELECT tfl.id, tfl.customer_nama, tfl.customer_phone, tfl.no_pesanan, tfl.order_source, 
 				       tfl.tanggal_pengiriman, tfl.tanggal_label_muncul, fc.nama_kategori,
 				       DATEDIFF('$today', tfl.tanggal_label_muncul) as terlambat_hari
@@ -72,36 +67,41 @@ class Dashboard extends Admin
 				LEFT JOIN crm_followup_categories fc ON tfl.followup_category_id = fc.id
 				WHERE tfl.status_label = 'Pending' 
 				  AND tfl.is_cancelled = 0 
-				  AND tfl.tanggal_label_muncul < '$today'
+				  AND tfl.tanggal_label_muncul <= '$today'
 				ORDER BY tfl.tanggal_label_muncul ASC, tfl.id ASC
 				LIMIT 10
 			")->result();
 
-			foreach ($overdue_items as $fup) {
+			foreach ($crm_items as $fup) {
 				$cust = !empty($fup->customer_nama) && $fup->customer_nama !== '-' ? $fup->customer_nama : ($fup->customer_phone ?: 'Pelanggan');
 				$days = (int)$fup->terlambat_hari;
 				$kat = !empty($fup->nama_kategori) ? $fup->nama_kategori : 'Follow-Up';
 				$order_info = !empty($fup->no_pesanan) ? $fup->no_pesanan : ($fup->order_source ?: 'Pesanan');
 				$source_badge = !empty($fup->order_source) ? ' (' . $fup->order_source . ')' : '';
 
+				if ($days > 0) {
+					$title = '⏰ Terlewat ' . $days . ' Hari: ' . $cust;
+					$icon_bg = 'text-yellow';
+				} else {
+					$title = '📅 Jadwal Hari Ini: ' . $cust;
+					$icon_bg = 'text-blue';
+				}
+
 				$items[] = [
 					'id' => (int)$fup->id,
-					'type' => 'overdue_followup',
-					'title' => '⏰ Terlewat ' . $days . ' Hari: ' . $cust,
+					'type' => 'crm_followup',
+					'title' => $title,
 					'subtitle' => $kat . ' • ' . $order_info . $source_badge,
 					'url' => site_url('administrator/crm/journal_followup?status_label=belum_direspon&q=' . urlencode($fup->no_pesanan ?: $cust)),
 					'icon' => 'fa-clock-o',
-					'icon_bg' => 'text-yellow',
+					'icon_bg' => $icon_bg,
 					'date' => date('d/m/Y', strtotime($fup->tanggal_label_muncul))
 				];
 			}
-
-			$total_count += $overdue_count;
 		}
 
-		// Header & Footer
 		if ($overdue_count > 0) {
-			$header_title = 'Peringatan Follow-Up';
+			$header_title = 'Peringatan Follow-Up (' . $overdue_count . ' Terlewat)';
 			$footer_url = site_url('administrator/crm/journal_followup?status_label=belum_direspon');
 			$footer_label = 'Lihat Follow-Up Terlewat';
 		} else {

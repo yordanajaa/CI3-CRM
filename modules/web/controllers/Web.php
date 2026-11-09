@@ -30,11 +30,12 @@ class Web extends Front
 
 	public function home() 
 	{
-        if (defined('IS_DEMO')) {
-          $this->template->build('home-demo');
-        } else {
-		  $this->template->build('home');
-        }
+		$this->load->view('landing_page');
+	}
+
+	public function landing()
+	{
+		$this->load->view('landing_page');
 	}
 
 	public function set_full_group_sql()

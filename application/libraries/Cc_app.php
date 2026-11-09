@@ -74,8 +74,49 @@ class Cc_App
 	{
 		$this->ci =& get_instance();
 		$this->ci->load->database();
+		$this->ci->load->helper('cookie');
+
+		// Immediately destroy oversized legacy cookie if present in browser
+		if (isset($_COOKIE['options'])) {
+			delete_cookie('options');
+			delete_cookie('options', '', '/');
+			unset($_COOKIE['options']);
+		}
 
 		$this->initialize($config);
+	}
+
+	/**
+	 * In-memory Options Cache
+	 *
+	 * @var array|null
+	 */
+	protected $options_cache = null;
+
+	/**
+	 * Load all options from database (cached in-memory for the current request)
+	 *
+	 * @return array
+	 */
+	protected function _getOptions()
+	{
+		if ($this->options_cache === null) {
+			if (isset($_COOKIE['options'])) {
+				delete_cookie('options');
+				delete_cookie('options', '', '/');
+				unset($_COOKIE['options']);
+			}
+
+			$this->options_cache = [];
+			$query = $this->ci->db->get('cc_options');
+			if ($query && $query->num_rows() > 0) {
+				foreach ($query->result() as $row) {
+					$this->options_cache[$row->option_name] = $row->option_value;
+				}
+			}
+		}
+
+		return $this->options_cache;
 	}
 
 	/**
@@ -128,14 +169,13 @@ class Cc_App
 	 */
 	public function addOption($option_name =  null, $option_value = null)
 	{
-		if ($this->optionExists($option_name, $option_value) === false) {
+		if ($this->optionExists($option_name) === false) {
 			$ret = $this->ci->db->insert('cc_options', [ 
 				'option_name' => $option_name,
 				'option_value' => $option_value 
 				]);
 
-			$options = $this->ci->db->get('cc_options')->result();
-			set_cookie('options', json_encode($options), 3600*24*1);
+			$this->options_cache = null;
 			return $ret;
 		}
 
@@ -152,15 +192,14 @@ class Cc_App
 	 */
 	public function setOption($option_name =  null, $option_value = null)
 	{
-		if ($this->optionExists($option_name, $option_value) === false) {
-			$this->addOption($option_name, $option_value);
+		if ($this->optionExists($option_name) === false) {
+			return $this->addOption($option_name, $option_value);
 		} else {
 			$ret = $this->ci->db
 						->where(['option_name' => $option_name])
 						->update('cc_options', [ 'option_value' => $option_value]);
 
-			$options = $this->ci->db->get('cc_options')->result();
-			set_cookie('options', json_encode($options), 3600*24*1);
+			$this->options_cache = null;
 			
 			return $ret;
 		}
@@ -175,9 +214,12 @@ class Cc_App
 	 */
 	public function deleteOption($option_name =  null)
 	{
-		return $this->ci->db
+		$ret = $this->ci->db
 					->where(['option_name' => $option_name])
 					->delete('cc_options');
+
+		$this->options_cache = null;
+		return $ret;
 	}
 
 	/**
@@ -189,19 +231,10 @@ class Cc_App
 	 */
 	public function optionExists($option_name =  null)
 	{
-		$options = json_decode(get_cookie('options'));
-		if (!$options) {
-			$options = $this->ci->db->get('cc_options')->result();
-			set_cookie('options', json_encode($options), 3600*24*1);
-		}
+		$options = $this->_getOptions();
 
-		$option = [];
-
-		foreach ($options as $row) {
-			$option[$row->option_name] = $row;
-		}
-		if (isset($option[$option_name])) {
-			return $option[$option_name]->option_value;
+		if (isset($options[$option_name])) {
+			return $options[$option_name];
 		}
 
 		return false;

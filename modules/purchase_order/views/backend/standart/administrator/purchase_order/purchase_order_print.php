@@ -46,24 +46,54 @@
    </div>
    <div>
       <div class="doc-title">PURCHASE ORDER</div>
-      <div class="text-right"><strong>No PO:</strong> <?= _ent($po->nomor_po ?? ''); ?></div>
-      <div class="text-right"><strong>Tanggal:</strong> <?= isset($po->tanggal_po) ? date('d/m/Y', strtotime($po->tanggal_po)) : '-'; ?></div>
+      <table align="right" style="border-collapse: collapse; font-size: 12px; margin-top: 4px;">
+         <tr>
+            <td style="text-align: right; padding: 1px 0;"><strong>No PO</strong></td>
+            <td style="width: 12px; text-align: center; padding: 1px 0;">:</td>
+            <td style="text-align: left; padding: 1px 0;"><strong><?= _ent($po->nomor_po ?? '-'); ?></strong></td>
+         </tr>
+         <tr>
+            <td style="text-align: right; padding: 1px 0; color: #475569;"><strong>Tanggal</strong></td>
+            <td style="text-align: center; padding: 1px 0; color: #475569;">:</td>
+            <td style="text-align: left; padding: 1px 0; color: #475569;"><?= isset($po->tanggal_po) ? date('d/m/Y', strtotime($po->tanggal_po)) : '-'; ?></td>
+         </tr>
+      </table>
    </div>
 </div>
 
 <table class="info-table">
    <tr>
-      <td width="50%">
-         <table style="width: 100%;">
-            <tr><td width="35%"><strong>Supplier:</strong></td><td><?= _ent($po->nama_supplier ?? '-'); ?></td></tr>
-            <tr><td width="35%"><strong>Alamat Supplier:</strong></td><td><?= _ent($po->alamat_supplier ?? '-'); ?></td></tr>
-            <tr><td width="35%"><strong>No Telp Supplier:</strong></td><td><?= _ent($po->telp_supplier ?? '-'); ?></td></tr>
+      <td width="50%" style="vertical-align: top; padding-right: 15px;">
+         <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+               <td width="35%" style="padding: 3px 0; color: #475569;"><strong>Supplier</strong></td>
+               <td width="4%" style="padding: 3px 0; text-align: center; color: #475569;">:</td>
+               <td width="61%" style="padding: 3px 0;"><strong><?= _ent($po->nama_supplier ?? '-'); ?></strong></td>
+            </tr>
+            <tr>
+               <td style="padding: 3px 0; color: #475569;"><strong>Alamat Supplier</strong></td>
+               <td style="padding: 3px 0; text-align: center; color: #475569;">:</td>
+               <td style="padding: 3px 0;"><?= _ent($po->alamat_supplier ?? '-'); ?></td>
+            </tr>
+            <tr>
+               <td style="padding: 3px 0; color: #475569;"><strong>No Telp Supplier</strong></td>
+               <td style="padding: 3px 0; text-align: center; color: #475569;">:</td>
+               <td style="padding: 3px 0;"><?= _ent($po->telp_supplier ?? '-'); ?></td>
+            </tr>
          </table>
       </td>
-      <td width="50%">
-         <table style="width: 100%;">
-            <tr><td width="40%"><strong>Tanggal Est. Terima:</strong></td><td><?= _ent($po->tanggal_estimasi ?? '-'); ?></td></tr>
-            <tr><td width="40%"><strong>Mata Uang / Kurs:</strong></td><td><?= _ent($po->mata_uang ?? '-'); ?></td></tr>
+      <td width="50%" style="vertical-align: top; padding-left: 15px;">
+         <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+               <td width="42%" style="padding: 3px 0; color: #475569;"><strong>Tanggal Est. Terima</strong></td>
+               <td width="4%" style="padding: 3px 0; text-align: center; color: #475569;">:</td>
+               <td width="54%" style="padding: 3px 0;"><?= _ent($po->tanggal_estimasi ?? '-'); ?></td>
+            </tr>
+            <tr>
+               <td style="padding: 3px 0; color: #475569;"><strong>Mata Uang / Kurs</strong></td>
+               <td style="padding: 3px 0; text-align: center; color: #475569;">:</td>
+               <td style="padding: 3px 0;"><?= _ent($po->mata_uang ?? 'IDR'); ?> (Kurs: <?= number_format((float)($po->kurs ?? 1), 0, ',', '.'); ?>)</td>
+            </tr>
          </table>
       </td>
    </tr>

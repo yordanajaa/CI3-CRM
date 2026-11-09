@@ -50,9 +50,19 @@ $kirim_c = [
             <div class="box-header with-border">
                <h3 class="box-title"><i class="fa fa-file-text-o"></i> Data Invoice Penjualan</h3>
                <div class="box-tools pull-right">
+                  <?php 
+                  $export_qs = !empty($_SERVER['QUERY_STRING']) ? ('?' . $_SERVER['QUERY_STRING']) : '';
+                  if (is_allowed('invoice_export', false)): ?>
+                     <a href="<?= site_url('administrator/invoice/export' . $export_qs); ?>" class="btn btn-primary btn-sm btn-flat" style="border-radius:4px; font-weight:600; margin-right:4px;">
+                        <i class="fa fa-file-excel-o"></i> Export XLS
+                     </a>
+                     <a href="<?= site_url('administrator/invoice/export_pdf' . $export_qs); ?>" target="_blank" class="btn btn-info btn-sm btn-flat" style="border-radius:4px; font-weight:600; margin-right:4px;">
+                        <i class="fa fa-file-pdf-o"></i> Export PDF
+                     </a>
+                  <?php endif; ?>
                   <?php if (is_allowed('invoice_add', false)): ?>
                      <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#modal_select_so" style="font-weight: bold; border-radius: 4px;">
-                        <i class="fa fa-plus-circle"></i> + Buat Invoice (via SO)
+                        <i class="fa fa-plus-circle"></i> + Buat Invoice (Penjualan)
                      </button>
                   <?php endif; ?>
                </div>
@@ -70,6 +80,19 @@ $kirim_c = [
                            </span>
                         </div>
                      </div>
+                     <div class="col-md-8 text-right">
+                        <div class="btn-group" role="group" style="box-shadow: 0 1px 3px rgba(0,0,0,0.06); border-radius: 4px; overflow: hidden;">
+                           <a href="<?= base_url('administrator/invoice'); ?>" class="btn btn-sm <?= empty($this->input->get('tipe')) ? 'btn-primary' : 'btn-default'; ?>" style="font-weight:600;">
+                              <i class="fa fa-list"></i> Semua Transaksi
+                           </a>
+                           <a href="<?= base_url('administrator/invoice?tipe=pos'); ?>" class="btn btn-sm <?= ($this->input->get('tipe') == 'pos') ? 'btn-success' : 'btn-default'; ?>" style="font-weight:700;">
+                              <i class="fa fa-bolt"></i> Kasir Cepat (POS)
+                           </a>
+                           <a href="<?= base_url('administrator/invoice?tipe=so'); ?>" class="btn btn-sm <?= ($this->input->get('tipe') == 'so') ? 'btn-info' : 'btn-default'; ?>" style="font-weight:700;">
+                              <i class="fa fa-list-alt"></i> Transaksi Penjualan
+                           </a>
+                        </div>
+                     </div>
                   </div>
 
                   <div class="table-responsive">
@@ -77,7 +100,8 @@ $kirim_c = [
                         <thead>
                            <tr>
                               <th>No Invoice</th>
-                              <th>No SO</th>
+                              <th class="text-center" style="white-space:nowrap;">Sumber Transaksi</th>
+                              <th>No. Transaksi Penjualan</th>
                               <th>Pelanggan</th>
                               <th>Tanggal Invoice</th>
                               <th>Jatuh Tempo</th>
@@ -92,6 +116,20 @@ $kirim_c = [
                               <?php foreach ($invoices as $inv): ?>
                                  <tr>
                                     <td><strong><?= _ent($inv->nomor_invoice); ?></strong></td>
+                                    <td class="text-center" style="vertical-align:middle; white-space:nowrap;">
+                                       <?php 
+                                       $is_pos = (!empty($inv->so_source) && $inv->so_source == 'pos') || (stripos($inv->catatan ?? '', 'POS Cepat') !== false);
+                                       if ($is_pos): 
+                                       ?>
+                                          <span class="label" style="background:#059669; color:#fff; font-size:11px; font-weight:700; padding:4px 8px; border-radius:4px; display:inline-block; box-shadow:0 1px 3px rgba(5,150,105,0.3);">
+                                             <i class="fa fa-bolt"></i> Kasir Cepat (POS)
+                                          </span>
+                                       <?php else: ?>
+                                          <span class="label" style="background:#2563eb; color:#fff; font-size:11px; font-weight:700; padding:4px 8px; border-radius:4px; display:inline-block; box-shadow:0 1px 3px rgba(37,99,235,0.3);">
+                                             <i class="fa fa-list-alt"></i> Transaksi Penjualan
+                                          </span>
+                                       <?php endif; ?>
+                                    </td>
                                     <td><?= _ent(isset($inv->nomor_so) ? $inv->nomor_so : '-'); ?></td>
                                     <td><?= _ent($inv->nama_pelanggan); ?></td>
                                     <td><?= date('d/m/Y', strtotime($inv->tanggal_invoice)); ?></td>
@@ -115,6 +153,11 @@ $kirim_c = [
                                           <?php if ($inv->status != 'paid'): ?>
                                            <a href="<?= site_url('administrator/piutang_usaha?q=' . urlencode($inv->nomor_invoice)); ?>" class="btn btn-xs btn-success" style="margin: 2px 1px; font-weight:700;" title="Terima Pembayaran di Piutang Usaha"><i class="fa fa-money"></i> Bayar</a>
                                         <?php endif; ?>
+                                        <?php if ($is_pos && !empty($inv->so_id)): ?>
+                                           <a href="<?= site_url('administrator/sales_order/cetak_struk/' . $inv->so_id . '?template=thermal'); ?>" class="btn btn-xs btn-success" style="margin: 2px 1px; font-weight:700; background:#059669; border-color:#047857;" target="_blank" title="Cetak Struk Thermal (POS Kasir 58mm/80mm)">
+                                              <i class="fa fa-print"></i> Thermal
+                                           </a>
+                                        <?php endif; ?>
                                         <a href="<?= site_url('administrator/invoice/print_invoice/' . $inv->id); ?>" class="btn btn-xs btn-default" style="margin: 2px 1px;" target="_blank" title="Cetak Invoice">
                                              <i class="fa fa-print"></i> Cetak
                                           </a>
@@ -137,7 +180,7 @@ $kirim_c = [
                               <?php endforeach; ?>
                            <?php else: ?>
                               <tr>
-                                 <td colspan="9" class="text-center text-muted">Belum ada data invoice.</td>
+                                 <td colspan="10" class="text-center text-muted">Belum ada data invoice.</td>
                               </tr>
                            <?php endif; ?>
                         </tbody>
@@ -167,18 +210,18 @@ $kirim_c = [
       <div class="modal-content" style="border-radius: 8px;">
          <div class="modal-header" style="background: #3b82f6; color: #fff; border-radius: 8px 8px 0 0;">
             <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color:#fff; opacity:0.9;"><span aria-hidden="true">&times;</span></button>
-            <h4 class="modal-title" style="font-weight: bold;"><i class="fa fa-shopping-bag"></i> Pilih Dokumen Sales Order untuk Dibuatkan Invoice</h4>
+            <h4 class="modal-title" style="font-weight: bold;"><i class="fa fa-shopping-bag"></i> Pilih Dokumen Transaksi Penjualan untuk Dibuatkan Invoice</h4>
          </div>
          <div class="modal-body" style="padding: 20px;">
             <?php if (!empty($sales_orders)): ?>
                <p class="text-muted" style="margin-bottom: 15px;">
-                  <i class="fa fa-info-circle text-info"></i> Silakan pilih dokumen <strong>Sales Order (SO)</strong> yang ingin diproses menjadi Invoice Penjualan:
+                  <i class="fa fa-info-circle text-info"></i> Silakan pilih dokumen <strong>Transaksi Penjualan</strong> yang ingin diproses menjadi Invoice Penjualan:
                </p>
                <div class="table-responsive">
                   <table class="table table-bordered table-hover">
                      <thead>
                         <tr class="active">
-                           <th>No Sales Order</th>
+                           <th>No. Transaksi Penjualan</th>
                            <th>Tanggal Penjualan</th>
                            <th>Pelanggan</th>
                            <th class="text-right">Grand Total</th>
@@ -211,12 +254,12 @@ $kirim_c = [
                </div>
             <?php else: ?>
                <div class="callout callout-warning">
-                  <h4><i class="fa fa-warning"></i> Belum Ada Sales Order!</h4>
-                  <p>Belum ada data Sales Order aktif yang tersedia di sistem. Silakan buat Sales Order baru terlebih dahulu.</p>
+                  <h4><i class="fa fa-warning"></i> Belum Ada Transaksi Penjualan!</h4>
+                  <p>Belum ada data Transaksi Penjualan aktif yang tersedia di sistem. Silakan buat Transaksi Penjualan baru terlebih dahulu.</p>
                </div>
                <div class="text-center" style="margin-top: 15px;">
                   <a href="<?= site_url('administrator/sales_order/add'); ?>" class="btn btn-primary btn-flat" style="border-radius: 4px;">
-                     <i class="fa fa-plus"></i> + Buat Sales Order Baru
+                     <i class="fa fa-plus"></i> + Buat Transaksi Penjualan Baru
                   </a>
                </div>
             <?php endif; ?>
@@ -224,7 +267,7 @@ $kirim_c = [
          <div class="modal-footer" style="background: #f8fafc; border-radius: 0 0 8px 8px;">
             <button type="button" class="btn btn-default pull-left" data-dismiss="modal" style="border-radius:4px;"><i class="fa fa-times"></i> Tutup</button>
             <a href="<?= site_url('administrator/sales_order/add'); ?>" class="btn btn-primary" style="border-radius:4px; font-weight:bold;">
-               <i class="fa fa-plus"></i> + Buat Sales Order Baru
+               <i class="fa fa-plus"></i> + Buat Transaksi Penjualan Baru
             </a>
          </div>
       </div>

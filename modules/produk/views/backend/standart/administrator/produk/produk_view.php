@@ -40,10 +40,15 @@
                   <tr><th width="35%">Kode Produk</th><td><span class="label label-default" style="font-size:12px;"><?= _ent($produk->kode_produk); ?></span></td></tr>
                   <tr><th>Nama Produk</th><td><strong><?= _ent($produk->nama_produk); ?></strong></td></tr>
                   <tr><th>Kategori</th><td><?= _ent($produk->nama_kategori ?? '-'); ?></td></tr>
-                  <tr><th>Satuan</th><td><span class="badge bg-blue"><?= _ent($produk->singkatan ?? 'PCS'); ?></span> <?= _ent($produk->nama_satuan ?? ''); ?></td></tr>
+                  <tr><th>Satuan</th><td><?php 
+                     $sat_singkat = trim((string)($produk->singkatan ?? ''));
+                     $sat_nama    = trim((string)($produk->nama_satuan ?? ''));
+                     $badge_txt   = !empty($sat_singkat) ? $sat_singkat : (!empty($sat_nama) ? $sat_nama : 'PCS');
+                     $extra_txt   = (!empty($sat_nama) && !empty($sat_singkat) && strcasecmp($sat_nama, $sat_singkat) !== 0) ? (' ' . _ent($sat_nama)) : '';
+                  ?><span class="badge bg-blue"><?= _ent($badge_txt); ?></span><?= $extra_txt; ?></td></tr>
                   <tr><th>Harga Beli</th><td>Rp <?= number_format($produk->harga_beli, 0, ',', '.'); ?></td></tr>
                   <tr><th>Harga Jual</th><td><strong class="text-success" style="font-size:14px;">Rp <?= number_format($produk->harga_jual, 0, ',', '.'); ?></strong></td></tr>
-                  <tr><th>Stok Minimum</th><td><?= $produk->stok_minimum; ?> unit</td></tr>
+                  <tr><th>Stok Minimum</th><td><?= $produk->stok_minimum; ?> <?= _ent($produk->singkatan ?? $produk->nama_satuan ?? 'unit'); ?></td></tr>
                   <tr><th>Metode Stok</th><td><span class="label label-info"><?= $produk->metode_stok; ?></span></td></tr>
                   <tr><th>Batch Tracking</th><td><?= $produk->batch_tracking ? '<span class="label label-success">Aktif</span>' : '-'; ?></td></tr>
                   <tr><th>Tracking Exp</th><td><?= $produk->tanggal_kadaluarsa ? '<span class="label label-warning">Aktif</span>' : '-'; ?></td></tr>
@@ -190,16 +195,23 @@
                               $no = 1;
                               $total = count($riwayat_harga);
                               foreach($riwayat_harga as $index => $r): 
-                                 $older_harga = ($index + 1 < $total) ? $riwayat_harga[$index + 1]->harga_beli : $r->harga_beli;
-                                 
-                                 $trend_icon = '<i class="fa fa-minus text-muted" title="Sama"></i>';
-                                 if ($r->harga_beli > $older_harga) {
-                                     $trend_icon = '<i class="fa fa-arrow-up text-danger" title="Naik"></i>';
-                                 } elseif ($r->harga_beli < $older_harga) {
-                                     $trend_icon = '<i class="fa fa-arrow-down text-success" title="Turun"></i>';
-                                 }
                                  $mata_uang = !empty($r->mata_uang) ? $r->mata_uang : 'IDR';
                                  $is_idr = ($mata_uang == 'IDR');
+                                 $rate = (!empty($r->kurs) && (float)$r->kurs > 0) ? (float)$r->kurs : 1.0;
+                                 $r_idr = $is_idr ? (float)$r->harga_beli : round((float)$r->harga_beli * $rate, 2);
+
+                                 $older = ($index + 1 < $total) ? $riwayat_harga[$index + 1] : null;
+                                 $trend_icon = '<i class="fa fa-minus text-muted" title="Sama"></i>';
+                                 if ($older) {
+                                     $older_is_idr = (empty($older->mata_uang) || $older->mata_uang === 'IDR');
+                                     $older_rate = (!empty($older->kurs) && (float)$older->kurs > 0) ? (float)$older->kurs : 1.0;
+                                     $older_idr = $older_is_idr ? (float)$older->harga_beli : round((float)$older->harga_beli * $older_rate, 2);
+                                     if ($r_idr > $older_idr) {
+                                         $trend_icon = '<i class="fa fa-arrow-up text-danger" title="Naik"></i>';
+                                     } elseif ($r_idr < $older_idr) {
+                                         $trend_icon = '<i class="fa fa-arrow-down text-success" title="Turun"></i>';
+                                     }
+                                 }
                               ?>
                               <tr>
                                  <td class="text-center"><?= $no++; ?></td>
@@ -212,6 +224,9 @@
                                     <strong class="<?= $is_idr ? 'text-danger' : 'text-primary' ?>">
                                        <?= $mata_uang ?> <?= number_format($r->harga_beli, ($is_idr ? 0 : 2), ',', '.'); ?>
                                     </strong>
+                                    <?php if (!$is_idr && $rate > 1): ?>
+                                       <br><small class="text-muted">(Rp <?= number_format($r_idr, 0, ',', '.'); ?>)</small>
+                                    <?php endif; ?>
                                  </td>
                                  <td class="text-center"><?= $trend_icon; ?></td>
                               </tr>

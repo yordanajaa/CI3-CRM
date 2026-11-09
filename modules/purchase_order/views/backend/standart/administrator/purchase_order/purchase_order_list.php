@@ -7,6 +7,7 @@ $status_color = [
     'draft'     => 'label-default',
     'submitted' => 'label-info',
     'approved'  => 'label-primary',
+    'completed' => 'label-success',
     'rejected'  => 'label-danger',
     'received'  => 'label-success',
     'partial'   => 'label-warning',
@@ -32,11 +33,20 @@ $status_color = [
             <div class="box-header with-border" style="padding: 15px 20px;">
                <h3 class="box-title" style="font-weight:600;"><i class="fa fa-shopping-cart text-primary"></i> Daftar Seluruh Pesanan Pembelian <span class="label label-warning" style="font-size:11px;"><?= $po_counts; ?> Data</span></h3>
                 <div class="box-tools pull-right">
-                   <?php if (is_allowed('purchase_order_update', false)): ?>
-                      <button type="button" class="btn btn-warning btn-sm btn-flat" data-toggle="modal" data-target="#modal_setting_po" style="border-radius:4px; font-weight:600; margin-right:5px;">
-                         <i class="fa fa-cog"></i> Pengaturan Threshold PO
-                      </button>
+                   <?php 
+                   $export_qs = !empty($_SERVER['QUERY_STRING']) ? ('?' . $_SERVER['QUERY_STRING']) : '';
+                   if (is_allowed('purchase_order_export', false)): ?>
+                      <a href="<?= site_url('administrator/purchase_order/export' . $export_qs); ?>" class="btn btn-primary btn-sm btn-flat" style="border-radius:4px; font-weight:600; margin-right:4px;">
+                         <i class="fa fa-file-excel-o"></i> Export XLS
+                      </a>
+                      <a href="<?= site_url('administrator/purchase_order/export_csv' . $export_qs); ?>" class="btn btn-success btn-sm btn-flat" style="border-radius:4px; font-weight:600; margin-right:4px;">
+                         <i class="fa fa-file-text-o"></i> Export CSV
+                      </a>
+                      <a href="<?= site_url('administrator/purchase_order/export_pdf' . $export_qs); ?>" target="_blank" class="btn btn-info btn-sm btn-flat" style="border-radius:4px; font-weight:600; margin-right:4px;">
+                         <i class="fa fa-file-pdf-o"></i> Export PDF
+                      </a>
                    <?php endif; ?>
+                   
                    <?php if (is_allowed('purchase_order_add', false)): ?>
                       <a href="<?= site_url('administrator/purchase_order/add'); ?>" class="btn btn-success btn-sm btn-flat" style="border-radius:4px; font-weight:600;">
                          <i class="fa fa-plus-circle"></i> Buat Purchase Order
@@ -92,36 +102,23 @@ $status_color = [
                                  </td>
                                  <td class="text-center">
                                     <span class="label <?= isset($status_color[$po->status]) ? $status_color[$po->status] : 'label-default'; ?>" style="font-size:11px; padding:4px 8px;">
-                                       <?= strtoupper($po->status); ?>
+                                       <?= $po->status == 'completed' ? 'SELESAI (MASUK STOK)' : strtoupper($po->status); ?>
                                     </span>
-                                    <?php 
-                                       $po_thresh = (float) get_option('po_approval_threshold', 50000000);
-                                       $po_total_idr = (float)$po->total * (float)($po->kurs ?: 1);
-                                       if ($po->status == 'submitted' && $po_total_idr >= $po_thresh):
-                                    ?>
-                                       <br><span class="label label-danger" style="font-size:9px; margin-top:3px; display:inline-block;" title="Perlu Approval Manajer"><i class="fa fa-shield"></i> HIGH VALUE</span>
-                                    <?php endif; ?>
+                                    
                                  </td>
                                  <td class="text-center">
                                     <!-- Inline Buttons -->
                                     <a href="<?= site_url('administrator/purchase_order/view/' . $po->id); ?>" class="btn btn-default btn-xs" title="Detail"><i class="fa fa-eye"></i></a>
                                     <a href="<?= site_url('administrator/purchase_order/cetak/' . $po->id); ?>" target="_blank" class="btn btn-info btn-xs" title="Cetak PDF"><i class="fa fa-print"></i></a>
 
+                                    <?php if ($po->status == 'completed'): ?>
+                                    <a href="<?= site_url('administrator/utang_usaha?q=' . urlencode($po->nomor_po)); ?>" class="btn btn-success btn-xs" title="Lihat Tagihan Utang Usaha"><i class="fa fa-money"></i> Utang</a>
+                                    <?php endif; ?>
+
                                     <?php if ($po->status == 'draft' && is_allowed('purchase_order_update', false)): ?>
                                     <a href="<?= site_url('administrator/purchase_order/edit/'.$po->id); ?>" class="btn btn-warning btn-xs" title="Edit PO"><i class="fa fa-edit"></i></a>
-                                    <a href="<?= site_url('administrator/purchase_order/submit/' . $po->id); ?>" class="btn btn-primary btn-xs" title="Submit Approval"><i class="fa fa-paper-plane"></i></a>
-                                    <?php endif; ?>
-
-                                    <?php if ($po->status == 'submitted' && is_allowed('purchase_order_approve', false)): ?>
-                                    <a href="<?= site_url('administrator/purchase_order/approve/' . $po->id); ?>" class="btn btn-success btn-xs" title="Setujui PO (Approve)"><i class="fa fa-check"></i> Approve</a>
-                                    <?php endif; ?>
-
-                                    <?php if (in_array($po->status, ['approved', 'partial']) && is_allowed('penerimaan_barang_add', false)): ?>
-                                       <?php if (isset($draft_grn_map[$po->id])): ?>
-                                       <a href="<?= site_url('administrator/penerimaan_barang/view/' . $draft_grn_map[$po->id]->id); ?>" class="btn btn-warning btn-xs" title="Lanjutkan GRN Draft (<?= _ent($draft_grn_map[$po->id]->nomor_penerimaan); ?>)"><i class="fa fa-edit"></i> GRN</a>
-                                       <?php else: ?>
-                                       <a href="<?= site_url('administrator/penerimaan_barang/add?po_id=' . $po->id); ?>" class="btn bg-purple btn-xs" title="Terima Barang (GRN Baru)"><i class="fa fa-arrow-down"></i> GRN</a>
-                                       <?php endif; ?>
+                                    <a href="<?= site_url('administrator/purchase_order/complete/' . $po->id); ?>" class="btn btn-success btn-xs" title="Selesaikan & Masuk Stok" onclick="return confirm('Selesaikan PO ini sekarang? Stok barang akan langsung bertambah dan otomatis dibuatkan Utang Usaha ke Supplier.');"><i class="fa fa-check-circle"></i> Selesai</a>
+                                    
                                     <?php endif; ?>
 
                                     <?php if (is_allowed('purchase_order_delete', false) && $po->status == 'draft'): ?>

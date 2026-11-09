@@ -30,10 +30,34 @@
   <link rel="stylesheet" href="<?= BASE_ASSET; ?>datetimepicker/jquery.datetimepicker.css"/>
   <link rel="stylesheet" href="<?= BASE_ASSET; ?>js-scroll/style/jquery.jscrollpane.css" rel="stylesheet" media="all" />
   <link rel="stylesheet" href="<?= BASE_ASSET; ?>flag-icon/css/flag-icon.css" rel="stylesheet" media="all" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700,300italic,400italic,600italic">
   
-  <!-- Smooth Sidebar & Page Navigation Transition Animations -->
+  <!-- Smooth Sidebar & Page Navigation Transition Animations & MetaforaCRM Clean Elegant Style -->
   <style>
+    /* MetaforaCRM Clean & Elegant Typography */
+    body, h1, h2, h3, h4, h5, h6, .content-header, .box-title, .form-control, .btn, label, table, th, td, .select2, input, textarea, select {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    }
+
+    /* Soft modern clean background */
+    .content-wrapper, .right-side, body {
+      background-color: #F8FAFC !important;
+    }
+
+    /* Modern clean & elegant cards */
+    .box, .form-card {
+      border-radius: 14px !important;
+      border: 1px solid #E2E8F0 !important;
+      box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.03) !important;
+      background: #FFFFFF !important;
+    }
+    .box-header {
+      border-bottom: 1px solid #F1F5F9 !important;
+    }
+
     /* Global Bulletproof Modal Stacking Fix */
     .modal-backdrop { pointer-events: none !important; }
     .modal { pointer-events: auto !important; }
@@ -54,44 +78,464 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Sidebar Menu Styling & Hover Transitions */
+    /* ==========================================================================
+       SIDEBAR LAYOUT ALIGNMENT & RESPONSIVENESS (PRESERVES EXACT SKIN-BLACK UI/UX)
+       ========================================================================== */
+    /* 1. Eliminate top gaps: Header is 50px, so sidebar starts directly below it */
+    .main-sidebar, .left-side {
+      top: 0 !important;
+      padding-top: 50px !important;
+    }
+    .sidebar {
+      padding-top: 0 !important;
+      margin-top: 0 !important;
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+    }
+    .sidebar-menu {
+      margin-top: 0 !important;
+      padding-top: 0 !important;
+      list-style: none;
+    }
+
+    /* 2. Menu items layout, typography & flex alignment */
     .sidebar-menu li a {
-      transition: all 0.25s ease-in-out !important;
+      transition: all 0.2s ease !important;
       position: relative;
+      display: flex !important;
+      align-items: center !important;
+      padding: 12px 16px !important;
+      line-height: 1.4 !important;
+      white-space: normal !important;
+      font-size: 15.5px !important;
+      font-weight: 600 !important;
+      color: #dce5ec !important;
+      letter-spacing: 0.15px;
     }
-    .sidebar-menu li a:hover {
-      background: rgba(255, 255, 255, 0.08) !important;
-      padding-left: 20px !important;
+    .sidebar-menu > li > a {
+      font-size: 15.5px !important;
+      font-weight: 600 !important;
+      color: #e2e8f0 !important;
     }
-    .sidebar-menu li a i.fa,
-    .sidebar-menu li a i.glyphicon {
+    .sidebar-menu > li:hover > a,
+    .sidebar-menu > li.active > a,
+    .sidebar-menu > li.menu-open > a {
       color: #ffffff !important;
-      transition: transform 0.25s ease !important;
+      background-color: rgba(255, 255, 255, 0.08) !important;
+      font-weight: 600 !important;
+    }
+    .sidebar-menu li a > span:not(.pull-right-container) {
+      flex: 1 1 auto;
+      white-space: normal !important;
+      word-break: normal;
+      overflow-wrap: break-word;
+      line-height: 1.4 !important;
+    }
+    /* Only style the leading menu icon, not the arrow in pull-right-container */
+    .sidebar-menu li a > i.fa,
+    .sidebar-menu li a > i.glyphicon {
+      width: 24px !important;
+      min-width: 24px !important;
+      text-align: center !important;
+      margin-right: 12px !important;
+      font-size: 17px !important;
+      flex-shrink: 0;
+      color: #b0c4d4 !important;
+      transition: color 0.2s ease;
+    }
+    .sidebar-menu > li:hover > a > i.fa,
+    .sidebar-menu > li.active > a > i.fa,
+    .sidebar-menu > li.menu-open > a > i.fa {
+      color: #ffffff !important;
+    }
+    .sidebar-menu li a > .pull-right-container {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    /* Default state when closed: Point LEFT (<) */
+    .sidebar-menu li.treeview > a > .pull-right-container .fa-angle-left,
+    .sidebar-menu li.treeview > a > .fa-angle-left {
+      font-size: 14px !important;
+      color: #94a8ba !important;
+      width: auto !important;
+      min-width: auto !important;
+      margin-right: 0 !important;
+      display: inline-block !important;
+      -webkit-transition: -webkit-transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), color 0.2s ease !important;
+      transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), color 0.2s ease !important;
+      -webkit-transform: rotate(0deg) !important;
+      transform: rotate(0deg) !important;
+    }
+    /* Synchronized open state: Rotate -90deg to point DOWN (v) */
+    .sidebar-menu li.treeview.menu-open > a > .pull-right-container .fa-angle-left,
+    .sidebar-menu li.treeview.menu-open > a > .fa-angle-left {
+      -webkit-transform: rotate(-90deg) !important;
+      -ms-transform: rotate(-90deg) !important;
+      transform: rotate(-90deg) !important;
+      color: #ffffff !important;
+    }
+
+    /* 3. Submenu Items & Layout Hierarchy Indentation */
+    .sidebar-menu .treeview-menu > li > a {
+      padding: 10px 16px 10px 34px !important;
+      display: flex !important;
+      align-items: center !important;
+      line-height: 1.4 !important;
+      white-space: normal !important;
+      font-size: 14px !important;
+      font-weight: 500 !important;
+      color: #b8c9d6 !important;
+    }
+    .sidebar-menu .treeview-menu > li:hover > a,
+    .sidebar-menu .treeview-menu > li.active > a {
+      color: #ffffff !important;
+      font-weight: 600 !important;
+      background-color: rgba(255, 255, 255, 0.07) !important;
+    }
+    .sidebar-menu .treeview-menu > li > a > span:not(.pull-right-container) {
+      flex: 1 1 auto;
+      white-space: normal !important;
+      word-break: normal;
+      overflow-wrap: break-word;
     }
     .sidebar-menu .treeview-menu > li > a i.fa,
     .sidebar-menu .treeview-menu > li > a i.glyphicon {
+      width: 18px !important;
+      min-width: 18px !important;
+      font-size: 12px !important;
+      margin-right: 10px !important;
+      text-align: center !important;
+      flex-shrink: 0;
+      color: #8da4b6 !important;
+    }
+    .sidebar-menu .treeview-menu > li.active > a i.fa {
       color: #ffffff !important;
     }
-    .sidebar-menu li a:hover i.fa,
-    .sidebar-menu li a:hover i.glyphicon {
-      transform: scale(1.2);
-      color: #ffffff !important;
-    }
-    .sidebar-menu .treeview-menu {
-      background: rgba(0, 0, 0, 0.25) !important;
-    }
-    .sidebar-menu .treeview-menu > li > a {
-      padding-left: 20px !important;
-      color: #94a3b8 !important;
-      transition: all 0.2s ease !important;
-    }
-    .sidebar-menu .treeview-menu > li > a:hover {
-      padding-left: 26px !important;
-      color: #ffffff !important;
-    }
-    .sidebar-menu .treeview-menu > li.active > a {
+
+    /* Section Header */
+    .sidebar-menu li.header {
+      font-size: 12.5px !important;
       font-weight: 700 !important;
-      color: #38bdf8 !important;
+      letter-spacing: 0.8px !important;
+      text-transform: uppercase !important;
+      padding: 14px 16px 6px 16px !important;
+      color: #7b94a8 !important;
+    }
+
+    /* 4. Smooth sidebar scrollbar */
+    .sidebar::-webkit-scrollbar {
+      width: 5px;
+    }
+    .sidebar::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.1);
+    }
+    .sidebar::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+    }
+
+    /* 5. Comprehensive Universal Mobile Layout & Responsiveness */
+    @media (max-width: 767px) {
+      /* Prevent horizontal scroll on mobile across all pages */
+      html, body {
+        overflow-x: hidden !important;
+        max-width: 100vw !important;
+      }
+      .wrapper, .content-wrapper {
+        overflow-x: hidden !important;
+        max-width: 100vw !important;
+      }
+      body.fixed .content-wrapper,
+      .fixed .content-wrapper,
+      .fixed .right-side {
+        padding-top: 50px !important;
+      }
+      .content {
+        padding: 10px 8px 30px 8px !important;
+        box-sizing: border-box !important;
+      }
+
+      /* Compact fixed header */
+      .main-header {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 50px !important;
+        z-index: 1000 !important;
+      }
+      .main-header .logo {
+        width: auto !important;
+        height: 50px !important;
+        line-height: 50px !important;
+        float: left !important;
+        padding: 0 6px !important;
+        display: flex !important;
+        align-items: center !important;
+      }
+      .main-header .logo .logo-mini {
+        display: block !important;
+      }
+      .main-header .logo .logo-lg {
+        display: none !important;
+      }
+      .main-header .sidebar-toggle {
+        padding: 15px 12px !important;
+        float: left !important;
+      }
+      .main-header .navbar {
+        margin: 0 !important;
+        padding: 0 !important;
+        float: none !important;
+        height: 50px !important;
+      }
+      .navbar-custom-menu {
+        float: right !important;
+      }
+      .navbar-custom-menu > .navbar-nav {
+        display: flex !important;
+        align-items: center !important;
+        margin: 0 !important;
+        float: right !important;
+      }
+      .navbar-custom-menu > .navbar-nav > li {
+        display: inline-block !important;
+        float: none !important;
+      }
+      .navbar-custom-menu > .navbar-nav > li > a {
+        padding: 15px 8px !important;
+      }
+      .navbar-custom-menu .dropdown-menu {
+        position: absolute !important;
+        right: 4px !important;
+        left: auto !important;
+        width: auto !important;
+        min-width: 280px !important;
+        max-width: calc(100vw - 8px) !important;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.18) !important;
+        border-radius: 8px !important;
+        border: 1px solid #e2e8f0 !important;
+      }
+
+      /* Compact content header & breadcrumb on mobile */
+      .content-header {
+        padding: 12px 10px 6px 10px !important;
+      }
+      .content-header > h1 {
+        font-size: 18px !important;
+        margin: 0 !important;
+        line-height: 1.35 !important;
+        word-break: break-word;
+      }
+      .content-header > h1 > small {
+        display: block !important;
+        font-size: 11.5px !important;
+        margin-top: 2px !important;
+      }
+      .content-header > .breadcrumb {
+        position: static !important;
+        float: none !important;
+        padding: 4px 0 6px 0 !important;
+        margin-top: 4px !important;
+        font-size: 11px !important;
+        background: transparent !important;
+      }
+
+      /* Boxes and cards mobile styling */
+      .box {
+        border-radius: 10px !important;
+        margin-bottom: 14px !important;
+        border: 1px solid #e2e8f0 !important;
+      }
+      .box-header {
+        padding: 12px 14px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 8px !important;
+      }
+      .box-header > .box-title {
+        font-size: 15px !important;
+        line-height: 1.35 !important;
+        margin: 0 !important;
+        word-break: break-word;
+      }
+      .box-header .box-tools,
+      .box-header .pull-right {
+        position: static !important;
+        float: none !important;
+        margin-top: 4px !important;
+        width: 100% !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+      }
+      .box-header .box-tools .btn,
+      .box-header .pull-right .btn {
+        flex: 1 1 auto !important;
+        text-align: center !important;
+        font-size: 12px !important;
+        padding: 8px 10px !important;
+        white-space: nowrap !important;
+        border-radius: 6px !important;
+      }
+      .box-body {
+        padding: 12px 10px !important;
+      }
+      .box-footer {
+        padding: 10px 12px !important;
+        text-align: center !important;
+      }
+      .box-footer .pagination {
+        display: inline-flex !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+        margin: 0 !important;
+      }
+
+      /* Forms and inputs touch optimization */
+      .form-group {
+        margin-bottom: 12px !important;
+      }
+      .form-control {
+        font-size: 14px !important; /* Prevents auto-zoom in iOS Safari */
+        border-radius: 6px !important;
+        height: 38px !important;
+      }
+      .input-group {
+        width: 100% !important;
+      }
+      .select2-container, .chosen-container {
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+
+      /* Tables smooth touch scroll & prominent mobile scrollbar */
+      .table-responsive {
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 8px !important;
+        margin-bottom: 10px !important;
+        width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+      }
+      .table-responsive > .table {
+        margin-bottom: 0 !important;
+        min-width: 580px;
+      }
+      .table-responsive th,
+      .table-responsive td {
+        padding: 8px 6px !important;
+        font-size: 11.5px !important;
+      }
+      .table-responsive::-webkit-scrollbar {
+        height: 5px !important;
+      }
+      .table-responsive::-webkit-scrollbar-thumb {
+        background: #94a3b8 !important;
+        border-radius: 4px !important;
+      }
+
+      /* Universal Horizontal Scrollable Tab/Pill Bars on Mobile */
+      .cat-pill-scroll-container,
+      .nav-tabs-bar,
+      .crm-tab-bar,
+      .rfm-tab-bar {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: none !important;
+        padding-bottom: 6px !important;
+        gap: 6px !important;
+        width: 100% !important;
+      }
+      .cat-pill-scroll-container::-webkit-scrollbar,
+      .nav-tabs-bar::-webkit-scrollbar {
+        display: none !important;
+      }
+      .cat-pill,
+      .nav-tab-btn {
+        flex-shrink: 0 !important;
+        white-space: nowrap !important;
+        font-size: 11.5px !important;
+        padding: 7px 12px !important;
+      }
+
+      /* Buttons & Modal responsiveness */
+      .btn {
+        touch-action: manipulation;
+      }
+      .modal-dialog {
+        margin: 10px auto !important;
+        width: auto !important;
+        max-width: calc(100vw - 20px) !important;
+      }
+      .modal-content {
+        border-radius: 12px !important;
+        overflow: hidden !important;
+      }
+      .modal-header {
+        padding: 12px 14px !important;
+      }
+      .modal-title {
+        font-size: 15px !important;
+      }
+      .modal-body {
+        padding: 14px !important;
+        max-height: calc(100vh - 130px) !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+      }
+      .modal-footer {
+        padding: 10px 14px !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+      }
+      .modal-footer .btn {
+        flex: 1 1 auto !important;
+        margin: 0 !important;
+      }
+
+      /* Sidebar Offcanvas Smooth Touch Interaction */
+      .main-sidebar, .left-side {
+        position: fixed !important;
+        top: 0 !important;
+        bottom: 0 !important;
+        padding-top: 50px !important; /* Starts right below the 50px header */
+        height: 100% !important;
+        min-height: 100vh !important;
+        z-index: 850 !important;
+      }
+      .sidebar {
+        height: 100% !important;
+        min-height: calc(100vh - 50px) !important;
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+        padding-bottom: 70px !important;
+      }
+      .sidebar-menu {
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+      }
+      .sidebar-open .content-wrapper::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.45);
+        z-index: 800;
+        backdrop-filter: blur(2px);
+      }
     }
   </style>
   <?= $this->cc_html->getCssFileTop(); ?>
@@ -137,6 +581,43 @@
       show_alert(message, type);
     }
 
+    /* Universal Clipboard Copy Helper */
+    window.copyToClipboard = function(text, label) {
+      if (!text || text === '-') return;
+      label = label || 'Data';
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(function() {
+          show_alert(label + ' berhasil disalin: ' + text, 'success');
+        }).catch(function() {
+          window.fallbackCopyText(text, label);
+        });
+      } else {
+        window.fallbackCopyText(text, label);
+      }
+    };
+
+    window.fallbackCopyText = function(text, label) {
+      var textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-999999px";
+      textArea.style.top = "-999999px";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        show_alert(label + ' berhasil disalin: ' + text, 'success');
+      } catch (err) {
+        console.error('Fallback copy error', err);
+      }
+      document.body.removeChild(textArea);
+    };
+
+    window.showCopyNotice = function(msg) {
+      show_alert(msg, 'success');
+    };
+
     $(document).ready(function(){
 
       // Inject CSRF token into every AJAX POST request automatically
@@ -151,18 +632,26 @@
       });
 
       toastr.options = {
-        "positionClass": "toast-top-center",
-      }
+        "closeButton": true,
+        "debug": false,
+        "newestOnTop": true,
+        "progressBar": true,
+        "positionClass": "toast-top-right",
+        "preventDuplicates": false,
+        "showDuration": "300",
+        "hideDuration": "1000",
+        "timeOut": "7000",
+        "extendedTimeOut": "3000",
+        "showEasing": "swing",
+        "hideEasing": "linear",
+        "showMethod": "fadeIn",
+        "hideMethod": "fadeOut"
+      };
 
-      var f_message = '<?= str_replace("'", "\'", $this->session->flashdata('f_message') ?? ''); ?>';
-      var f_type = '<?= $this->session->flashdata('f_type') ?: 'info'; ?>';
-      <?php 
-      // Force clear flashdata to prevent it from persisting across pages due to session race conditions
-      $this->session->unset_userdata('f_message'); 
-      $this->session->unset_userdata('f_type'); 
-      ?>
+      var f_message = <?= json_encode($this->session->flashdata('f_message') ?: ''); ?>;
+      var f_type = <?= json_encode($this->session->flashdata('f_type') ?: 'info'); ?>;
 
-      if (f_message.length > 0) {
+      if (f_message && f_message.length > 0) {
         if (typeof toastr !== 'undefined' && typeof toastr[f_type] === 'function') {
           toastr[f_type](f_message);
         } else if (typeof toastr !== 'undefined' && typeof toastr.info === 'function') {
@@ -259,7 +748,7 @@
           </li>
           <li class="dropdown ">
              <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="true">
-             <span class="flag-icon <?= get_current_initial_lang(); ?>"></span> <?= get_current_lang(); ?> </a>
+             <span class="flag-icon <?= get_current_initial_lang(); ?>"></span><span class="hidden-xs"> <?= get_current_lang(); ?></span> <i class="fa fa-angle-down hidden-xs" style="font-size: 11px;"></i></a>
              <ul class="dropdown-menu" role="menu">
              <?php foreach (get_langs() as $lang): ?>
                 <li><a href="<?= site_url('web/switch_lang/'.$lang['folder_name']); ?>"><span class="flag-icon <?= $lang['icon_name']; ?>"></span> <?= $lang['name']; ?></a></li>
@@ -274,9 +763,8 @@
   </header>
   <aside class="main-sidebar">
 
-    <section class="sidebar" style="padding-top:0% !important">
-      <ul class="sidebar-menu sidebar-admin tree" data-widget="tree" style="padding-bottom: 80px !important;">
-        
+    <section class="sidebar">
+      <ul class="sidebar-menu sidebar-admin tree" data-widget="tree">
         <?= display_menu_admin(0, 1); ?>
       </ul>
     </section>
@@ -384,6 +872,11 @@ $(document).ready(function(){
       loadApprovalNotifications();
       setInterval(loadApprovalNotifications, 5000);
 
+      // Trigger instant refresh whenever user clicks the bell icon
+      $('#notif-approval-menu > a').on('click', function() {
+         loadApprovalNotifications();
+      });
+
       // Click handler: navigate to target URL directly
       $(document).on('click', '.notif-link', function(e) {
          e.preventDefault();
@@ -432,22 +925,72 @@ $(document).ready(function(){
 <script src="<?= BASE_ASSET; ?>admin-lte/plugins/fastclick/fastclick.js"></script>
 <script src="<?= BASE_ASSET; ?>admin-lte/dist/js/app.min.js"></script>
 <script src="<?= BASE_ASSET; ?>js-scroll/script/jquery.jscrollpane.min.js"></script>
-<script src="<?= BASE_ASSET; ?>js/custom.js?v=<?= VERSION ?>"></script>
+<script src="<?= BASE_ASSET; ?>js/custom.js?v=<?= VERSION; ?>.<?= is_file(FCPATH.'asset/js/custom.js') ? filemtime(FCPATH.'asset/js/custom.js') : '1'; ?>"></script>
 <script>
-  /* Global Modal Backdrop Fix: Append modal to body to prevent z-index blocking in some browsers */
+  /* Sidebar Treeview Menu Arrow & Open State Synchronization */
   $(document).ready(function() {
-      $(document).on('show.bs.modal', '.modal', function () {
-          if (!$(this).parent().is('body')) {
-              $(this).appendTo('body');
-          }
-      });
-      /* Fallback: If a modal is already open and stuck behind backdrop */
-      $('.modal:visible').each(function() {
-          if (!$(this).parent().is('body')) {
-              $(this).appendTo('body');
-          }
-      });
+    // 1. Initial State Sync: Ensure menu-open matches visibility on page load
+    $('.sidebar-menu li.treeview').each(function() {
+      var $li = $(this);
+      var $menu = $li.children('.treeview-menu');
+      if ($li.hasClass('active') || $li.hasClass('menu-open') || $menu.is(':visible')) {
+        $li.addClass('menu-open active');
+        $menu.show();
+      } else {
+        $li.removeClass('menu-open');
+        $menu.hide();
+      }
+    });
+
+    // 2. Click Handler Sync: Smoothly toggle menu-open and arrow rotation
+    $(document).on('click', '.sidebar-menu li.treeview > a', function(e) {
+      var $a = $(this);
+      var $li = $a.parent('li.treeview');
+      var $menu = $li.children('.treeview-menu');
+
+      if ($menu.length > 0) {
+        var willOpen = !$li.hasClass('menu-open');
+
+        if (willOpen) {
+          // Close sibling open menus and reset their arrow to point left
+          $li.siblings('li.treeview.menu-open').each(function() {
+            var $sib = $(this);
+            $sib.removeClass('menu-open active');
+            $sib.children('.treeview-menu').slideUp(250);
+          });
+
+          // Open this menu and rotate arrow down
+          $li.addClass('menu-open active');
+          $menu.slideDown(250);
+        } else {
+          // Close this menu and rotate arrow left
+          $li.removeClass('menu-open');
+          $menu.slideUp(250);
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    });
+
+    /* Global Modal Backdrop Fix: Append modal to body to prevent z-index blocking in some browsers */
+    $(document).on('show.bs.modal', '.modal', function () {
+        if (!$(this).parent().is('body')) {
+            $(this).appendTo('body');
+        }
+    });
+    /* Fallback: If a modal is already open and stuck behind backdrop */
+    $('.modal:visible').each(function() {
+        if (!$(this).parent().is('body')) {
+            $(this).appendTo('body');
+        }
+    });
   });
 </script>
+<?php 
+// Clear flashdata at the end of the page rendering so it doesn't leak into subsequent pages
+$this->session->unset_userdata('f_message'); 
+$this->session->unset_userdata('f_type'); 
+?>
 </body>
 </html>

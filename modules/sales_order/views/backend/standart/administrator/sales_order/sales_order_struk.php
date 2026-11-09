@@ -622,11 +622,16 @@
       <button type="button" class="btn-action btn-action-primary" id="btn_print_lebar" style="<?= $current_tpl === 'lebar' ? '' : 'display:none;'; ?>" onclick="doPrint()" title="Cetak Faktur Lebar Resmi ke Printer A4 / Continuous Form">
          🖨️ CETAK FAKTUR LEBAR (A4 / CONTINUOUS)
       </button>
-      <a href="<?= site_url('administrator/sales_order/cetak/' . ($so->id ?? '')); ?>" class="btn-action btn-action-pdf" id="btn_pdf_download" title="Unduh Faktur format PDF A4">
+      <?php 
+         $pdf_download_url = !empty($inv->id) 
+            ? site_url('administrator/invoice/print_invoice/' . $inv->id) 
+            : site_url('administrator/sales_order/cetak/' . ($so->id ?? '')); 
+      ?>
+      <a href="<?= $pdf_download_url; ?>" target="_blank" class="btn-action btn-action-pdf" id="btn_pdf_download" title="Unduh Dokumen format PDF">
          📄 SIMPAN PDF
       </a>
 
-      <button type="button" class="btn-action btn-action-close" onclick="if(window.opener && window.history.length <= 1){ window.close(); } else { window.location.href='<?= site_url('administrator/sales_order/cepat'); ?>'; }" title="Kembali ke Kasir POS">
+      <button type="button" class="btn-action btn-action-close" onclick="closeOrReturn()" title="Tutup / Kembali">
          ✖ TUTUP / KEMBALI KE POS
       </button>
    </div>
@@ -664,8 +669,17 @@
    }
 
    $total_qty = 0;
+   $gross_item_total = 0;
+   $item_disc_total = 0;
    foreach ($items as $it) {
-      $total_qty += (float) ($it->qty ?? 0);
+      $q = (float) ($it->qty ?? 0);
+      $h = (float) ($it->harga_satuan ?? 0);
+      $d = (float) ($it->diskon_persen ?? 0);
+      $g = $q * $h;
+      $dis = $g * ($d / 100);
+      $total_qty += $q;
+      $gross_item_total += $g;
+      $item_disc_total += $dis;
    }
    $grand_total = (float) ($so->total ?? 0);
    $terbilang_txt = function_exists('terbilang') ? ucwords(trim(terbilang($grand_total))) : '';
@@ -678,7 +692,7 @@
    <!-- Header Toko -->
    <div class="text-center">
       <div class="store-name">IDMETAFORA STORE</div>
-      <div class="store-sub">SISTEM KASIR &amp; RETAIL TERPADU</div>
+      <div class="store-sub">SISTEM KASIR &amp; PENJUALAN TERPADU</div>
       <div class="store-sub">Jl. Imogiri Timur KM 7, Banguntapan, Bantul, DIY</div>
       <div class="store-sub">Telp/WA: 0812-3456-7890</div>
    </div>
@@ -720,10 +734,7 @@
          <td>Pelanggan</td>
          <td>:</td>
          <td class="fw-bold">
-            <?= _ent($so->nama_pelanggan ?: ($so->nama_penerima ?: 'Umum')); ?>
-            <?php if (!empty($so->tipe_pelanggan)): ?>
-               [<?= strtoupper(_ent($so->tipe_pelanggan)); ?>]
-            <?php endif; ?>
+            <?= _ent($so->nama_pelanggan ?: ($so->nama_penerima ?: 'Pelanggan Umum')); ?>
          </td>
       </tr>
       <?php if (!empty($so->no_telepon ?: $so->telp_pelanggan)): ?>
@@ -768,10 +779,21 @@
 
    <!-- Ringkasan Perhitungan -->
    <table class="total-table">
+      <?php if ($item_disc_total > 0): ?>
+      <tr>
+         <td>Subtotal Belanja (<?= $total_qty; ?> pcs)</td>
+         <td class="text-right">Rp <?= number_format($gross_item_total, 0, ',', '.'); ?></td>
+      </tr>
+      <tr>
+         <td>Diskon Item</td>
+         <td class="text-right" style="color:#d9534f;">- Rp <?= number_format($item_disc_total, 0, ',', '.'); ?></td>
+      </tr>
+      <?php else: ?>
       <tr>
          <td>Total Item (<?= $total_qty; ?> pcs)</td>
          <td class="text-right">Rp <?= number_format((float)$so->subtotal, 0, ',', '.'); ?></td>
       </tr>
+      <?php endif; ?>
       <?php if ((float)$so->diskon_total > 0): ?>
       <tr>
          <td>Diskon Global (<?= (float)$so->diskon; ?>%)</td>
@@ -829,7 +851,7 @@
       <tr>
          <td style="width: 58%; vertical-align: top;">
             <div class="inv-kop-title">IDMETAFORA STORE / PT. IDMETAFORA INDONESIA</div>
-            <div class="inv-kop-sub">SISTEM INTEGRASI KASIR, GROSIR &amp; DISTRIBUSI TERPADU</div>
+            <div class="inv-kop-sub">SISTEM INTEGRASI KASIR &amp; PENJUALAN TERPADU</div>
             <div class="inv-kop-sub">Jl. Imogiri Timur KM 7, Banguntapan, Bantul, D.I. Yogyakarta 55198</div>
             <div class="inv-kop-sub">Telp / WA: (0274) 123456 / 0812-3456-7890 | Email: billing@idmetafora.com</div>
             <div class="inv-kop-sub">NPWP: 01.234.567.8-543.000</div>
@@ -843,7 +865,7 @@
                   <td style="font-weight: 800; font-size: 13px; color: #0f172a;"><?= _ent($inv->nomor_invoice ?? ($so->nomor_so ?? '-')); ?></td>
                </tr>
                <tr>
-                  <td style="font-weight: bold;">No. Sales Order</td>
+                  <td style="font-weight: bold;">No. Transaksi Penjualan</td>
                   <td>:</td>
                   <td><?= _ent($so->nomor_so ?? '-'); ?></td>
                </tr>
@@ -882,11 +904,6 @@
                   <td style="width: 4%;">:</td>
                   <td style="font-weight: 800; font-size: 12px; color: #0284c7;">
                      <?= _ent($so->nama_pelanggan ?: ($so->nama_penerima ?: 'Pelanggan Umum')); ?>
-                     <?php if (!empty($so->tipe_pelanggan)): ?>
-                        <span style="font-size: 10px; background: #e0f2fe; color: #0369a1; padding: 1px 6px; border-radius: 4px; font-weight: 700; margin-left: 4px;">
-                           <?= strtoupper(_ent($so->tipe_pelanggan)); ?>
-                        </span>
-                     <?php endif; ?>
                   </td>
                </tr>
                <tr>
@@ -911,9 +928,9 @@
             <div class="inv-info-title">Pengiriman &amp; Syarat Pembayaran:</div>
             <table class="inv-info-content-table">
                <tr>
-                  <td style="width: 32%; font-weight: 700;">Gudang Sumber</td>
+                  <td style="width: 32%; font-weight: 700;">Lokasi Sumber</td>
                   <td style="width: 4%;">:</td>
-                  <td style="font-weight: 700;"><?= _ent($so->nama_gudang ?: 'Gudang Pusat / Kasir Utama'); ?></td>
+                  <td style="font-weight: 700;"><?= 'Pusat / Kasir Utama'; ?></td>
                </tr>
                <tr>
                   <td style="font-weight: 700;">Metode Bayar</td>
@@ -994,7 +1011,7 @@
          <td style="width: 56%; vertical-align: top;">
             <div class="inv-terbilang-box">
                <span style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase;">Terbilang:</span><br>
-               <strong style="font-style: italic; color: #0369a1; font-size: 11.5px;"># <?= $terbilang_txt; ?> Rupiah #</strong>
+               <strong style="font-style: italic; color: #0369a1; font-size: 11.5px;"><?= $terbilang_txt; ?> Rupiah</strong>
             </div>
 
             <div class="inv-terms-box">
@@ -1014,10 +1031,21 @@
 
          <td style="width: 40%; vertical-align: top;">
             <table class="inv-totals-box-table">
+               <?php if ($item_disc_total > 0): ?>
+               <tr>
+                  <td>Subtotal Belanja</td>
+                  <td style="text-align: right; font-weight: 600;">Rp <?= number_format($gross_item_total, 0, ',', '.'); ?></td>
+               </tr>
+               <tr>
+                  <td style="color: #dc2626;">Diskon Item</td>
+                  <td style="text-align: right; color: #dc2626; font-weight: 600;">- Rp <?= number_format($item_disc_total, 0, ',', '.'); ?></td>
+               </tr>
+               <?php else: ?>
                <tr>
                   <td>Subtotal Penjualan</td>
                   <td style="text-align: right; font-weight: 600;">Rp <?= number_format((float)$so->subtotal, 0, ',', '.'); ?></td>
                </tr>
+               <?php endif; ?>
                <?php if ((float)$so->diskon_total > 0): ?>
                <tr>
                   <td style="color: #dc2626;">Diskon Nota (<?= (float)$so->diskon; ?>%)</td>
@@ -1065,7 +1093,7 @@
             <div class="inv-sig-name">( ....................... )</div>
          </td>
          <td>
-            <div>Bagian Gudang,</div>
+            <div>Bagian Logistik,</div>
             <div class="inv-sig-space"></div>
             <div class="inv-sig-name">( ....................... )</div>
          </td>
@@ -1078,7 +1106,7 @@
    </table>
 
    <div class="inv-rangkap-note">
-      * Lembar 1: Putih (Asli Pelanggan) &nbsp;|&nbsp; Lembar 2: Merah (Keuangan / Akuntansi) &nbsp;|&nbsp; Lembar 3: Kuning (Gudang / Ekspedisi)
+      * Lembar 1: Putih (Asli Pelanggan) &nbsp;|&nbsp; Lembar 2: Merah (Keuangan / Akuntansi) &nbsp;|&nbsp; Lembar 3: Kuning (Logistik / Ekspedisi)
    </div>
 
 </div>
@@ -1086,10 +1114,6 @@
 <!-- JAVASCRIPT LOGIC & BLUETOOTH DRIVER -->
 <script src="<?= base_url('asset/js/thermal-bluetooth-printer.js'); ?>"></script>
 <script>
-// Auto-upgrade ke HTTPS agar fitur Web Bluetooth langsung aktif di Opera GX & Chrome
-if (window.location.protocol === 'http:' && window.location.hostname === 'ci3_metafora.test') {
-   window.location.replace('https://ci3_metafora.test' + window.location.pathname + window.location.search);
-}
    const receiptData = {
       nomor_so: <?= json_encode($so->nomor_so ?? 'SO'); ?>,
       nomor_inv: <?= json_encode($inv->nomor_invoice ?? ''); ?>,
@@ -1182,6 +1206,16 @@ if (window.location.protocol === 'http:' && window.location.hostname === 'ci3_me
 
    function doPrint() {
       window.print();
+   }
+
+   function closeOrReturn() {
+      if (window.opener && !window.opener.closed) {
+         window.close();
+      } else if (document.referrer && document.referrer.indexOf(window.location.host) !== -1) {
+         window.location.href = document.referrer;
+      } else {
+         window.location.href = '<?= site_url('administrator/sales_order/cepat'); ?>';
+      }
    }
 
    function handleInsecureBluetoothStruk() {

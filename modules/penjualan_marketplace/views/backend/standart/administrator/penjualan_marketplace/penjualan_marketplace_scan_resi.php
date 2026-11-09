@@ -15,6 +15,8 @@
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 <!-- Include Tesseract.js Library for OCR Text Extraction of Scanned/Image Thermal Labels -->
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<!-- Include Native Pure JS Code 128 Barcode Decoder (Converted from barcode128_decoder.py) -->
+<script src="<?= BASE_ASSET; ?>js/barcode128_decoder.js?v=<?= time(); ?>"></script>
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
@@ -487,6 +489,13 @@ tbody#tbody_bulk_summary tr.active-scanned-row {
                      <i class="fa fa-files-o"></i> 📁 Buka File PDF / Foto Resi (Pilih Banyak Sekaligus)
                   </label>
                   <input type="file" id="file_pdf_input" accept=".pdf,image/*" multiple style="display:none;">
+
+                  <div style="display:flex; justify-content:center; align-items:center; gap:10px; margin-top:14px; font-size:12px; color:#475569;">
+                      <span style="font-weight:600; display:inline-flex; align-items:center; gap:8px; background:#f0fdf4; border:1px solid #bbf7d0; color:#15803d; padding:6px 16px; border-radius:20px; box-shadow:0 1px 4px rgba(0,0,0,0.03);">
+                         <i class="fa fa-check-circle text-success" style="font-size:14px;"></i>
+                         <span><strong>OCR Otomatis Multi-Bahasa Aktif:</strong> Mendukung Aksara Latin, Bahasa Indonesia, &amp; Arab / Kitab (<code>eng+ind+ara</code>)</span>
+                      </span>
+                   </div>
                </div>
                   
                <!-- Batch Bulk Progress & Auto-Input Summary Box -->
@@ -579,11 +588,11 @@ tbody#tbody_bulk_summary tr.active-scanned-row {
             <div role="tabpanel" class="tab-pane" id="tab_kamera_scan">
                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:20px; text-align:center;">
                   <div id="https_camera_warning" class="alert alert-warning text-left" style="display:none; border-radius:8px; font-size:12px; margin-bottom:15px; background:#fffbeb; border-color:#fde68a; color:#92400e;">
-                     <i class="fa fa-shield text-warning"></i> <strong>Pemberitahuan Keamanan Browser (Akses Kamera Web):</strong><br>
-                     Browser memblokir kamera langsung jika diakses melalui koneksi non-HTTPS pada domain custom (<code>http://ci3_metafora.test:8080</code>).<br>
-                     <strong>Solusi Cepat:</strong><br>
-                     1. Gunakan koneksi aman HTTPS: <a href="https://ci3_metafora.test:8443/administrator/penjualan_marketplace/scan_resi" class="alert-link" style="text-decoration:underline; font-weight:700;">https://ci3_metafora.test:8443/administrator/penjualan_marketplace/scan_resi</a><br>
-                     2. Atau klik tombol <strong>"📸 Ambil Foto Barcode via Kamera HP"</strong> di bawah untuk memotret barcode langsung.
+                     <i class="fa fa-shield text-warning"></i> <strong>Pemberitahuan Keamanan Browser (Akses Kamera Langsung):</strong><br>
+                     Browser memblokir streaming video kamera web jika diakses melalui protokol non-HTTPS (HTTP biasa).<br>
+                     <strong>Solusi:</strong><br>
+                     1. Pastikan mengakses sistem melalui protokol aman <strong>HTTPS (SSL)</strong> di hosting Anda.<br>
+                     2. Atau klik tombol <strong>"📸 Ambil Foto Barcode via Kamera HP"</strong> di bawah untuk memotret resi langsung tanpa batasan HTTPS.
                   </div>
 
                   <div class="row" style="margin-bottom:12px;">
@@ -911,34 +920,68 @@ $(document).ready(function(){
          if (callback) callback([]);
          return;
       }
-      Tesseract.recognize(
-         imageSource,
-         'eng',
-         {
-            logger: function(m) {
-               if (m.status === 'recognizing text') {
-                  var pct = Math.round((m.progress || 0) * 100);
-                  $('#bulk_progress_title').html('<i class="fa fa-eye text-info"></i> Membaca OCR Tesseract Label Thermal... ' + pct + '%');
+
+      // Multi-Bahasa: Latin (English + Angka) & Bahasa Indonesia (Optimal & Bersih tanpa glitch)
+      var langCode = 'eng+ind';
+      var tessDataPath = '<?= rtrim(BASE_ASSET, "/"); ?>/tessdata';
+
+      // Auto-Enhance & Upscale Canvas jika resolusi gambar kecil (< 1200px)
+      var processedSource = imageSource;
+      try {
+         if (imageSource && imageSource.width && imageSource.width < 1200 && imageSource.height > 300) {
+            var scale = Math.min(3, Math.max(1.8, 1400 / imageSource.width));
+            var upCanvas = document.createElement('canvas');
+            upCanvas.width = Math.round(imageSource.width * scale);
+            upCanvas.height = Math.round(imageSource.height * scale);
+            var uCtx = upCanvas.getContext('2d');
+            uCtx.imageSmoothingEnabled = true;
+            uCtx.imageSmoothingQuality = 'high';
+            uCtx.drawImage(imageSource, 0, 0, upCanvas.width, upCanvas.height);
+            processedSource = upCanvas;
+         }
+      } catch(e) {}
+
+      function executeRecognize(pathUrl, isFallback) {
+         Tesseract.recognize(
+            processedSource,
+            langCode,
+            {
+               langPath: pathUrl,
+               cacheMethod: 'refresh',
+               logger: function(m) {
+                  if (m.status === 'recognizing text') {
+                     var pct = Math.round((m.progress || 0) * 100);
+                     $('#bulk_progress_title').html('<i class="fa fa-eye text-info"></i> Membaca OCR Multi-Bahasa (Latin, Indo, Arab)... ' + pct + '%');
+                  } else if (m.status === 'loading language traineddata' || m.status === 'loading tesseract core') {
+                     $('#bulk_progress_title').html('<i class="fa fa-download text-warning"></i> Memuat kamus bahasa OCR (Latin, Indo &amp; Arab)...');
+                  }
                }
             }
-         }
-      ).then(function(result) {
-         var lines = [];
-         if (result && result.data && result.data.text) {
-            var rawLines = result.data.text.split(/\r?\n/);
-            rawLines.forEach(function(l) {
-               var trimmed = l.trim();
-               if (trimmed.length > 0) {
-                  lines.push({ str: trimmed });
-               }
-            });
-         }
-         console.log('Tesseract OCR extracted ' + lines.length + ' lines');
-         if (callback) callback(lines);
-      }).catch(function(err) {
-         console.error('Tesseract OCR error:', err);
-         if (callback) callback([]);
-      });
+         ).then(function(result) {
+            var lines = [];
+            if (result && result.data && result.data.text) {
+               var rawLines = result.data.text.split(/\r?\n/);
+               rawLines.forEach(function(l) {
+                  var trimmed = l.trim();
+                  if (trimmed.length > 0) {
+                     lines.push({ str: trimmed });
+                  }
+               });
+            }
+            console.log('Tesseract OCR extracted ' + lines.length + ' lines with language: ' + langCode + ' from ' + pathUrl);
+            if (callback) callback(lines);
+         }).catch(function(err) {
+            console.error('Tesseract OCR error with langPath ' + pathUrl + ':', err);
+            if (!isFallback) {
+               console.warn('Retrying Tesseract OCR with fallback CDN fast...');
+               executeRecognize('https://tessdata.projectnaptha.com/4.0.0_fast', true);
+            } else {
+               if (callback) callback([]);
+            }
+         });
+      }
+
+      executeRecognize(tessDataPath, false);
    }
 
    function processMultiPagePDF(file, pagesData, totalPages) {
@@ -970,43 +1013,104 @@ $(document).ready(function(){
 
          $('#bulk_progress_title').html('<i class="fa fa-eye text-info"></i> OCR Membaca Label Resi Halaman ' + pageNum + ' / ' + totalPages + '...');
 
-         // Render PDF page to offscreen canvas for OCR
          if (currentPdfDocument) {
             currentPdfDocument.getPage(pageNum).then(function(page) {
-               var viewport = page.getViewport({ scale: 2.0 });
-               var offCanvas = document.createElement('canvas');
-               offCanvas.width = viewport.width;
-               offCanvas.height = viewport.height;
-               var offCtx = offCanvas.getContext('2d');
-               offCtx.fillStyle = '#ffffff';
-               offCtx.fillRect(0, 0, offCanvas.width, offCanvas.height);
-
-               page.render({ canvasContext: offCtx, viewport: viewport }).promise.then(function() {
-                  // Pre-scan canvas for barcode if supported by browser
-                  var detectBarcodePromise = Promise.resolve([]);
-                  if ('BarcodeDetector' in window) {
-                     try {
-                        var detector = new BarcodeDetector({ formats: ['code_128', 'code_39', 'qr_code', 'ean_13'] });
-                        detectBarcodePromise = detector.detect(offCanvas).catch(function(){ return []; });
-                     } catch(e) {}
+               page.getTextContent().then(function(textContent) {
+                  var textItems = [];
+                  if (textContent && textContent.items && textContent.items.length > 0) {
+                     textContent.items.forEach(function(item) {
+                        if (item && item.str && item.str.trim()) {
+                           textItems.push({ str: item.str.trim() });
+                        }
+                     });
                   }
 
-                  detectBarcodePromise.then(function(barcodes){
+                  if (textItems.length >= 2) {
+                     doSendPage(labelName, textItems, index, pageNum);
+                     return;
+                  }
+
+                  // Fallback for Scanned Bitmaps: Render Offscreen Canvas for Barcode & OCR
+                  var viewport = page.getViewport({ scale: 2.0 });
+                  var offCanvas = document.createElement('canvas');
+                  offCanvas.width = viewport.width;
+                  offCanvas.height = viewport.height;
+                  var offCtx = offCanvas.getContext('2d');
+                  offCtx.fillStyle = '#ffffff';
+                  offCtx.fillRect(0, 0, offCanvas.width, offCanvas.height);
+
+                  page.render({ canvasContext: offCtx, viewport: viewport }).promise.then(function() {
                      var barcodeItems = [];
-                     if (barcodes && barcodes.length > 0) {
-                        barcodes.forEach(function(b){
-                           if (b.rawValue && b.rawValue.length >= 6) {
-                              barcodeItems.push({ str: 'BARCODE: ' + b.rawValue });
-                              barcodeItems.push({ str: b.rawValue });
+                     var codBoxPromise = Promise.resolve(null);
+                     if (typeof Barcode128Decoder !== 'undefined') {
+                        try {
+                           var jsDecoded = Barcode128Decoder.decodeCanvas(offCanvas);
+                           if (jsDecoded && jsDecoded.length > 0) {
+                              jsDecoded.forEach(function(code) {
+                                 barcodeItems.push({ str: 'BARCODE: ' + code });
+                                 barcodeItems.push({ str: code });
+                              });
                            }
-                        });
+                        } catch(e) {}
+                        if (Barcode128Decoder.detectCOD) {
+                           try {
+                              var codRes = Barcode128Decoder.detectCOD(offCanvas);
+                              console.log('[Scan PDF] Barcode128Decoder.detectCOD:', codRes);
+                              if (codRes && codRes.is_cod) {
+                                 if (codRes.cod_nominal > 0) {
+                                    barcodeItems.push({ str: 'IS_COD: YES' });
+                                    barcodeItems.push({ str: 'COD : ' + codRes.cod_nominal });
+                                 } else if (codRes.box) {
+                                    codBoxPromise = new Promise(function(resolve){
+                                       var safeTimer = setTimeout(function(){ resolve(null); }, 10000);
+                                       ocrCodBox(offCanvas, codRes.box, function(num){
+                                          clearTimeout(safeTimer);
+                                          if (num) {
+                                             var numInt = parseInt(num, 10);
+                                             if (!isNaN(numInt) && numInt > 0) {
+                                                barcodeItems.push({ str: 'IS_COD: YES' });
+                                                barcodeItems.push({ str: 'COD : ' + num });
+                                                barcodeItems.push({ str: 'COD : ' + numInt.toLocaleString('id-ID') });
+                                                barcodeItems.push({ str: 'COD: Rp ' + numInt.toLocaleString('id-ID') });
+                                             }
+                                          }
+                                          resolve(num);
+                                       });
+                                    });
+                                 }
+                              }
+                           } catch(e) {
+                              console.warn('[Scan PDF] detectCOD error:', e);
+                           }
+                        }
                      }
 
-                     // Run Tesseract.js OCR on rendered canvas
-                     runTesseractOCR(offCanvas, function(ocrItems) {
-                        var extractedItems = barcodeItems.concat(ocrItems || []);
-                        doSendPage(labelName, extractedItems, index, pageNum);
+                     var detectBarcodePromise = Promise.resolve([]);
+                     if ('BarcodeDetector' in window) {
+                        try {
+                           var detector = new BarcodeDetector({ formats: ['code_128', 'code_39', 'qr_code', 'ean_13'] });
+                           detectBarcodePromise = detector.detect(offCanvas).catch(function(){ return []; });
+                        } catch(e) {}
+                     }
+
+                     Promise.all([detectBarcodePromise, codBoxPromise]).then(function(results){
+                        var barcodes = results[0] || [];
+                        if (barcodes && barcodes.length > 0) {
+                           barcodes.forEach(function(b){
+                              if (b.rawValue && b.rawValue.length >= 6) {
+                                 barcodeItems.push({ str: 'BARCODE: ' + b.rawValue });
+                                 barcodeItems.push({ str: b.rawValue });
+                              }
+                           });
+                        }
+
+                        runTesseractOCR(offCanvas, function(ocrItems) {
+                           var combinedItems = barcodeItems.concat(ocrItems || []);
+                           doSendPage(labelName, combinedItems, index, pageNum);
+                        });
                      });
+                  }).catch(function() {
+                     doSendPage(labelName, [], index, pageNum);
                   });
                }).catch(function() {
                   doSendPage(labelName, [], index, pageNum);
@@ -1015,12 +1119,9 @@ $(document).ready(function(){
                doSendPage(labelName, [], index, pageNum);
             });
          } else {
-            // No PDF document reference (timeout fallback)
             doSendPage(labelName, [], index, pageNum);
          }
       }
-
-      window.currentLoadedPdfFile = file;
 
       function doSendPage(labelName, extractedItems, index, pageNum) {
          sendScanAndSaveAJAXPayload(labelName, extractedItems, file, index, index, function(resData){
@@ -1047,6 +1148,98 @@ $(document).ready(function(){
       }
 
       ocrPageAndSend(0);
+   }
+
+   function ocrCodBox(sourceCanvas, box, onDone) {
+      if (!box || !sourceCanvas || typeof Tesseract === 'undefined') {
+         if (onDone) onDone(null);
+         return;
+      }
+      try {
+         // Inset cleanly from black borders
+         // Horizontal table borders: top/bottom borders are at ~6-10% height
+         // Vertical table borders: left border is at ~5-7% width
+         var insetXLeft = Math.max(30, Math.round(box.width * 0.08));
+         var insetXRight = Math.max(15, Math.round(box.width * 0.04));
+         var insetYTop = Math.max(7, Math.round(box.height * 0.16));
+         var insetYBot = Math.max(7, Math.round(box.height * 0.16));
+
+         var srcX = Math.max(0, box.x + insetXLeft);
+         var srcY = Math.max(0, box.y + insetYTop);
+         var srcW = Math.max(10, box.width - insetXLeft - insetXRight);
+         var srcH = Math.max(10, box.height - insetYTop - insetYBot);
+
+         // Scale up so text height is around 45-55px for optimal OCR
+         var scale = Math.max(2.0, 50.0 / srcH);
+         var cropCanvas = document.createElement('canvas');
+         var pad = 40; // 40px clean white margin around text
+         cropCanvas.width = Math.round(srcW * scale) + (pad * 2);
+         cropCanvas.height = Math.round(srcH * scale) + (pad * 2);
+
+         var cCtx = cropCanvas.getContext('2d');
+         cCtx.fillStyle = '#ffffff';
+         cCtx.fillRect(0, 0, cropCanvas.width, cropCanvas.height);
+         cCtx.imageSmoothingEnabled = true;
+         cCtx.imageSmoothingQuality = 'high';
+         cCtx.drawImage(sourceCanvas, srcX, srcY, srcW, srcH, pad, pad, Math.round(srcW * scale), Math.round(srcH * scale));
+
+         // High-contrast binarization: make text pure black and background pure white
+         try {
+            var imgData = cCtx.getImageData(0, 0, cropCanvas.width, cropCanvas.height);
+            var d = imgData.data;
+            for (var i = 0; i < d.length; i += 4) {
+               if (d[i+3] < 128) {
+                  d[i] = 255; d[i+1] = 255; d[i+2] = 255; d[i+3] = 255;
+               } else {
+                  var lum = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
+                  var val = (lum < 140) ? 0 : 255;
+                  d[i] = val; d[i+1] = val; d[i+2] = val;
+               }
+            }
+            cCtx.putImageData(imgData, 0, 0);
+         } catch(eBin) {}
+
+         runTesseractOCR(cropCanvas, function(lines) {
+            var fullTxt = (lines || []).map(function(l){ return l.str || ''; }).join(' ').trim();
+            console.log('[ocrCodBox] Raw OCR text from COD box:', fullTxt);
+
+            // Pattern 1: Explicit "COD : 129.376", "C0D: 129.376", "COP 129376", "COD : 35.500"
+            var m = fullTxt.match(/(?:C[O0DP][DDP0]?|C\s*O\s*D)\s*[:\/ ]\s*(?:Rp\.?\s*)?([0-9\., ]+)/i);
+            if (m) {
+               var cleanNom = m[1].replace(/[^0-9]/g, '');
+               if (cleanNom.length >= 4 && cleanNom.length <= 8) {
+                  console.log('[ocrCodBox] Successfully parsed COD nominal (Pattern 1):', cleanNom);
+                  if (onDone) onDone(cleanNom);
+                  return;
+               }
+            }
+
+            // Pattern 2: Standard Indonesian currency with dot or comma, e.g. 129.376, 35.500, 51.500, 51.050
+            var numM = fullTxt.match(/([0-9]{1,3}[\.,][0-9]{3})/);
+            if (numM) {
+               var cleanNom = numM[1].replace(/[^0-9]/g, '');
+               if (cleanNom.length >= 4 && cleanNom.length <= 8) {
+                  console.log('[ocrCodBox] Successfully parsed COD nominal (Pattern 2):', cleanNom);
+                  if (onDone) onDone(cleanNom);
+                  return;
+               }
+            }
+
+            // Pattern 3: Standalone 4 to 8 digits
+            var rawDigits = fullTxt.match(/\b([1-9][0-9]{3,7})\b/);
+            if (rawDigits) {
+               console.log('[ocrCodBox] Successfully parsed COD nominal (Pattern 3):', rawDigits[1]);
+               if (onDone) onDone(rawDigits[1]);
+               return;
+            }
+
+            console.warn('[ocrCodBox] Could not parse numeric nominal from COD box:', fullTxt);
+            if (onDone) onDone(null);
+         });
+      } catch(e) {
+         console.warn('[ocrCodBox] Exception:', e);
+         if (onDone) onDone(null);
+      }
    }
 
    function processBatchFiles(files) {
@@ -1085,14 +1278,15 @@ $(document).ready(function(){
                   var pSubIdx = 0;
                   function processPdfSubPage(pIdx) {
                      if (pIdx >= totalPages) {
-                        processedCount++;
-                        updateProgressText(processedCount, totalFiles, 'File');
                         setTimeout(function(){ runQueueIndex(index + 1); }, 60);
                         return;
                      }
                      var subLabel = file.name + ' [Hal ' + (pIdx + 1) + ']';
-                     sendScanAndSaveAJAXPayload(subLabel, [], file, index, pIdx, function(resData){
+                     var subItems = pagesData[pIdx] || [];
+                     sendScanAndSaveAJAXPayload(subLabel, subItems, file, index + pIdx, pIdx, function(resData){
+                        processedCount++;
                         successCount++;
+                        updateProgressText(processedCount, totalFiles, 'File');
                         $('#stat_total_success').text(successCount);
                         $('#stat_total_failed').text(processedCount - successCount);
                         appendSuccessRow(index + pIdx, subLabel, resData);
@@ -1104,13 +1298,16 @@ $(document).ready(function(){
                         setTimeout(function(){ processPdfSubPage(pIdx + 1); }, 60);
                      }, function(errMsg){
                         appendFailedRow(index + pIdx, subLabel, errMsg);
+                        processedCount++;
+                        updateProgressText(processedCount, totalFiles, 'File');
                         $('#stat_total_failed').text(processedCount - successCount);
                         setTimeout(function(){ processPdfSubPage(pIdx + 1); }, 60);
                      });
                   }
                   processPdfSubPage(0);
                } else {
-                  sendScanAndSaveAJAXPayload(labelName, [], file, index, 0, function(resData){
+                  var singleItems = pagesData[0] || [];
+                  sendScanAndSaveAJAXPayload(labelName, singleItems, file, index, 0, function(resData){
                      processedCount++;
                      successCount++;
                      updateProgressText(processedCount, totalFiles, 'File');
@@ -1133,32 +1330,123 @@ $(document).ready(function(){
                }
             });
          } else {
-            // Image file (.jpg, .png, .webp): Run Tesseract OCR on receipt image
-            runTesseractOCR(file, function(ocrItems){
-               if (!ocrItems || ocrItems.length === 0) {
-                  ocrItems = [{ str: file.name }];
-               }
-               sendScanAndSaveAJAXPayload(labelName, ocrItems, file, index, 0, function(resData){
-                  processedCount++;
-                  successCount++;
-                  updateProgressText(processedCount, totalFiles, 'File');
-                  $('#stat_total_success').text(successCount);
-                  $('#stat_total_failed').text(processedCount - successCount);
-                  appendSuccessRow(index, labelName, resData);
-                  if (index === 0) {
-                     renderResults(resData);
-                     renderLiveThermalLabel(resData);
-                     $('#tbody_bulk_summary tr:first').addClass('active-scanned-row');
+            // Image file (.jpg, .png, .webp): Upscale & Decode Barcode via Canvas + Run Tesseract OCR
+            var imgReader = new FileReader();
+            imgReader.onload = function(ev) {
+               var img = new Image();
+               img.onload = function() {
+                  var targetWidth = Math.max(img.width, 1200);
+                  var scale = targetWidth / img.width;
+                  var canvas = document.createElement('canvas');
+                  canvas.width = Math.round(img.width * scale);
+                  canvas.height = Math.round(img.height * scale);
+                  var ctx = canvas.getContext('2d');
+                  ctx.fillStyle = '#ffffff';
+                  ctx.fillRect(0, 0, canvas.width, canvas.height);
+                  ctx.imageSmoothingEnabled = true;
+                  ctx.imageSmoothingQuality = 'high';
+                  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                  var barcodeItems = [];
+                  var codBoxPromise = Promise.resolve(null);
+                  // 1. Pure JS Barcode 128 Decoder
+                  if (typeof Barcode128Decoder !== 'undefined') {
+                     try {
+                        var jsDecoded = Barcode128Decoder.decodeCanvas(canvas);
+                        if (jsDecoded && jsDecoded.length > 0) {
+                           jsDecoded.forEach(function(code) {
+                              barcodeItems.push({ str: 'BARCODE: ' + code });
+                              barcodeItems.push({ str: code });
+                           });
+                        }
+                     } catch(e) {
+                        console.error('Barcode128Decoder error:', e);
+                     }
+                     if (Barcode128Decoder.detectCOD) {
+                        try {
+                           var codRes = Barcode128Decoder.detectCOD(canvas);
+                           console.log('[Scan File] Barcode128Decoder.detectCOD:', codRes);
+                           if (codRes && codRes.is_cod) {
+                              if (codRes.cod_nominal > 0) {
+                                 barcodeItems.push({ str: 'IS_COD: YES' });
+                                 barcodeItems.push({ str: 'COD : ' + codRes.cod_nominal });
+                              } else if (codRes.box) {
+                                 codBoxPromise = new Promise(function(resolve){
+                                    var safeTimer = setTimeout(function(){ resolve(null); }, 10000);
+                                    ocrCodBox(canvas, codRes.box, function(num){
+                                       clearTimeout(safeTimer);
+                                       if (num) {
+                                          var numInt = parseInt(num, 10);
+                                          if (!isNaN(numInt) && numInt > 0) {
+                                             barcodeItems.push({ str: 'IS_COD: YES' });
+                                             barcodeItems.push({ str: 'COD : ' + numInt });
+                                             barcodeItems.push({ str: 'COD : ' + numInt.toLocaleString('id-ID') });
+                                             barcodeItems.push({ str: 'COD: Rp ' + numInt.toLocaleString('id-ID') });
+                                          }
+                                       }
+                                       resolve(num);
+                                    });
+                                 });
+                              }
+                           }
+                        } catch(e) {
+                           console.warn('[Scan File] detectCOD error:', e);
+                        }
+                     }
                   }
-                  setTimeout(function(){ runQueueIndex(index + 1); }, 60);
-               }, function(errMsg){
-                  appendFailedRow(index, labelName, errMsg);
-                  processedCount++;
-                  updateProgressText(processedCount, totalFiles, 'File');
-                  $('#stat_total_failed').text(processedCount - successCount);
-                  setTimeout(function(){ runQueueIndex(index + 1); }, 60);
-               });
-            });
+
+                  // 2. BarcodeDetector API if available
+                  var detectBarcodePromise = Promise.resolve([]);
+                  if ('BarcodeDetector' in window) {
+                     try {
+                        var detector = new BarcodeDetector({ formats: ['code_128', 'code_39', 'qr_code', 'ean_13'] });
+                        detectBarcodePromise = detector.detect(canvas).catch(function(){ return []; });
+                     } catch(e) {}
+                  }
+
+                  Promise.all([detectBarcodePromise, codBoxPromise]).then(function(results){
+                     var barcodes = results[0] || [];
+                     if (barcodes && barcodes.length > 0) {
+                        barcodes.forEach(function(b){
+                           if (b.rawValue && b.rawValue.length >= 6) {
+                              barcodeItems.push({ str: 'BARCODE: ' + b.rawValue });
+                              barcodeItems.push({ str: b.rawValue });
+                           }
+                        });
+                     }
+
+                     // 3. Tesseract OCR for text details (Customer, Address, Products, COD)
+                     runTesseractOCR(canvas, function(ocrItems){
+                        var combinedItems = barcodeItems.concat(ocrItems || []);
+                        if (combinedItems.length === 0) {
+                           combinedItems = [{ str: file.name }];
+                        }
+                        sendScanAndSaveAJAXPayload(labelName, combinedItems, file, index, 0, function(resData){
+                           processedCount++;
+                           successCount++;
+                           updateProgressText(processedCount, totalFiles, 'File');
+                           $('#stat_total_success').text(successCount);
+                           $('#stat_total_failed').text(processedCount - successCount);
+                           appendSuccessRow(index, labelName, resData);
+                           if (index === 0) {
+                              renderResults(resData);
+                              renderLiveThermalLabel(resData);
+                              $('#tbody_bulk_summary tr:first').addClass('active-scanned-row');
+                           }
+                           setTimeout(function(){ runQueueIndex(index + 1); }, 60);
+                        }, function(errMsg){
+                           appendFailedRow(index, labelName, errMsg);
+                           processedCount++;
+                           updateProgressText(processedCount, totalFiles, 'File');
+                           $('#stat_total_failed').text(processedCount - successCount);
+                           setTimeout(function(){ runQueueIndex(index + 1); }, 60);
+                        });
+                     });
+                  });
+               };
+               img.src = ev.target.result;
+            };
+            imgReader.readAsDataURL(file);
          }
       }
 
@@ -1173,7 +1461,18 @@ $(document).ready(function(){
 
    function cleanRecipientName(name) {
       if (!name) return '-';
-      return name.replace(/\s+(No\s*Hp|No\s*Telp|Notelp|Telp|Telepon|Phone)$/i, '').trim();
+      var cleaned = (name + '').trim();
+      cleaned = cleaned.replace(/^(?:Penerima|Nama\s*Penerima|Nama|Kepada\s*Yth|Kepada|\bTo\b|\bRecipient\b)\s*[:\/\-]\s*/i, '');
+      cleaned = cleaned.replace(/\s*(?:~~|Pengirim|Sender|From|Dari|Shipper|Seller)\s*[:\/\-].*$/i, '');
+      cleaned = cleaned.replace(/\s*(?:\(\+?62\)\s*|\+?62\s*|\(0\d+\)\s*|0)?8.*$/i, '');
+      cleaned = cleaned.replace(/\s*\([0-9\*\s\-+?]{3,}\)/g, '');
+      cleaned = cleaned.replace(/\s*[\(\[].*$/, '');
+      cleaned = cleaned.replace(/\s+(?:HOME|OFFICE|MOBILE|WORK|KANTOR|RUMAH)\s*$/i, '');
+      cleaned = cleaned.replace(/[“”‘’"\'`´ʹʺʻʼ\u201C\u201D\u2018\u2019\u00B0\u00BA\uFFFD\*\?\#\^]+/g, '');
+      cleaned = cleaned.replace(/[\s\d]+$/, '');
+      cleaned = cleaned.replace(/[\s\-_=~|\.:;,\/]+$/, '');
+      cleaned = cleaned.trim();
+      return cleaned || '-';
    }
 
    function sendScanAndSaveAJAXPayload(resiLabelName, extractedItems, fileObj, index, pageIndex, onSuccess, onError, retryCount) {
@@ -1249,12 +1548,16 @@ $(document).ready(function(){
             var itemQty = parseInt(item.qty) || 1;
             var itemPrice = parseFloat(item.harga) || (parseFloat(item.subtotal) / itemQty) || 0;
             var itemSubtotal = parseFloat(item.subtotal) || (itemPrice * itemQty) || 0;
+            var itemProdName = item.nama_produk || item.master_product_name || item.catatan || '-';
+            var rawSku = (item.sku && item.sku !== '-') ? item.sku : (item.sku_induk || '');
+            var itemSku = (rawSku && rawSku !== '-') ? rawSku : (item.kode_produk || '-');
+            var itemVar = (item.variasi && item.variasi !== '-') ? item.variasi : (item.nama_variasi || item.opsi_variasi || '-');
             
             itemsHtml += '<tr style="transition:background 0.15s ease;">' +
                '<td class="text-center"><strong>' + (i + 1) + '</strong></td>' +
-               '<td><strong style="color:#0f172a; font-size:12.5px;">' + (item.nama_produk || '-') + '</strong></td>' +
-               '<td class="text-center"><span class="label label-default" style="font-family:monospace; font-size:11px; background:#f1f5f9; color:#334155; border:1px solid #cbd5e1;">' + (item.sku_induk || item.sku || '-') + '</span></td>' +
-               '<td class="text-center"><span class="label label-info" style="font-size:11px; background:#e0f2fe; color:#0369a1; border-radius:10px;">' + (item.variasi || item.opsi_variasi || '-') + '</span></td>' +
+               '<td><strong style="color:#0f172a; font-size:12.5px;">' + itemProdName + '</strong></td>' +
+               '<td class="text-center"><span class="label label-default" style="font-family:monospace; font-size:11px; background:#f1f5f9; color:#334155; border:1px solid #cbd5e1;"><i class="fa fa-barcode"></i> ' + itemSku + '</span></td>' +
+               '<td class="text-center"><span class="label label-info" style="font-size:11px; background:#e0f2fe; color:#0369a1; border-radius:10px;"><i class="fa fa-tag"></i> ' + itemVar + '</span></td>' +
                '<td class="text-right" style="font-family:monospace;">Rp ' + new Intl.NumberFormat('id-ID').format(itemPrice) + '</td>' +
                '<td class="text-center"><span class="label label-primary" style="font-size:11.5px; font-weight:700; background:#0f172a;">' + itemQty + '</span></td>' +
                '<td class="text-right"><strong style="color:#059669; font-family:monospace;">Rp ' + new Intl.NumberFormat('id-ID').format(itemSubtotal) + '</strong></td>' +
@@ -1608,6 +1911,18 @@ $(document).ready(function(){
    });
 
    function scanBarcodeFromCanvas(canvas, callback) {
+      // 1. Try pure JS Code 128 Decoder first (instant & universal)
+      if (typeof Barcode128Decoder !== 'undefined') {
+         try {
+            var jsCodes = Barcode128Decoder.decodeCanvas(canvas);
+            if (jsCodes && jsCodes.length > 0) {
+               var foundJs = jsCodes.map(function(c) { return { str: c }; });
+               callback(foundJs);
+               return;
+            }
+         } catch(e) {}
+      }
+
       if ('BarcodeDetector' in window) {
          try {
             var detector = new BarcodeDetector({ formats: ['code_128', 'code_39', 'qr_code', 'ean_13'] });
@@ -1713,7 +2028,7 @@ $(document).ready(function(){
    $('#btn_search_manual').click(function(){
       var resi = $('#manual_resi_input').val().trim();
       if (!resi) return;
-      sendScanAJAX(resi, []);
+      sendScanAJAX(resi, [{ str: resi }]);
    });
 
    $('#manual_resi_input').keypress(function(e){
@@ -1787,11 +2102,10 @@ $(document).ready(function(){
       if (data.items && data.items.length > 0) {
          $('#breakdown_count_label').text('Total ' + data.items.length + ' varian produk terdaftar');
          data.items.forEach(function(item, idx){
-            var skuBadge = item.sku && item.sku !== '-' 
-               ? '<span class="sku-chip"><i class="fa fa-tag text-muted"></i> ' + item.sku + '</span>'
-               : '<span class="sku-chip" style="opacity:0.6;">-</span>';
+            var rawBadgeSku = (item.sku && item.sku !== '-') ? item.sku : (item.kode_produk || item.sku_induk || '');
+            var skuBadge = rawBadgeSku ? '<span class="sku-chip"><i class="fa fa-tag text-muted"></i> ' + rawBadgeSku + '</span>' : '<span class="sku-chip" style="opacity:0.6;">-</span>';
 
-            var variasiPill = '<span class="variasi-pill">' + (item.variasi || 'Default') + '</span>';
+            var variasiPill = (item.variasi && item.variasi !== '-') ? '<span class="variasi-pill">' + item.variasi + '</span>' : '<span style="color:#94a3b8; font-size:11px;">-</span>';
 
             var row = '<tr style="transition:background 0.15s ease;">' +
                '<td class="text-center" style="font-weight:700; color:#64748b;">' + (idx + 1) + '</td>' +

@@ -52,6 +52,16 @@ jQuery(document).ready(domo);
                   <!-- Add the bg color to the header using any of the bg-* classes -->
                   <div class="widget-user-header ">
                      <div class="row pull-right">
+                        <a class="btn btn-flat btn-warning" title="Approval Calon Customer" href="<?= site_url('administrator/user/approval'); ?>" style="font-weight: 600;">
+                          <i class="fa fa-user-plus"></i> Approval Calon Customer 
+                          <?php 
+                            $ci =& get_instance();
+                            $pend = $ci->db->where('approval_status', 'pending')->count_all_results('aauth_users');
+                            if ($pend > 0): 
+                          ?>
+                            <span class="label label-danger" style="margin-left: 4px;"><?= $pend; ?></span>
+                          <?php endif; ?>
+                        </a>
                         <?php is_allowed('user_add', function(){?>
                         <a class="btn btn-flat btn-success btn_add_new" id="btn_add_new" title="<?= cclang('add_new_button', cclang('user')); ?> (Ctrl+a)" href="<?= site_url('administrator/user/add'); ?>"><i class="fa fa-plus-square-o" ></i> <?= cclang('add_new_button', cclang('user')); ?></a>
                         <?php }) ?>

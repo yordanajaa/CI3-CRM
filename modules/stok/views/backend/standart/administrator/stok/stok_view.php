@@ -95,7 +95,7 @@ $stok_min = (float)($stok->stok_minimum ?? 0);
             </div>
             <div class="box-footer" style="padding:15px 22px; background:#fafafa; border-radius:0 0 8px 8px;">
                <?php if (!empty($stok->produk_id)): ?>
-                  <a href="<?= site_url('administrator/stok/kartu/' . $stok->produk_id . ($stok->gudang_id ? '?gudang_id=' . $stok->gudang_id : '')); ?>" class="btn btn-primary" style="font-weight:600;">
+                  <a href="<?= site_url('administrator/stok/kartu/' . $stok->produk_id); ?>" class="btn btn-primary" style="font-weight:600;">
                      <i class="fa fa-list-alt"></i> Lihat Riwayat Kartu Stok
                   </a>
                <?php endif; ?>

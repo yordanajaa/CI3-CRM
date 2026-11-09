@@ -103,6 +103,110 @@
    color: #0f172a;
    margin-top: 4px;
 }
+
+@media (max-width: 767px) {
+   .workstation-container {
+      padding: 10px 12px !important;
+   }
+   .content-header {
+      padding: 12px 14px 6px !important;
+   }
+   .content-header h3 {
+      font-size: 18px !important;
+      line-height: 1.3 !important;
+   }
+   .content-header h3 small {
+      display: block !important;
+      margin-left: 0 !important;
+      margin-top: 4px !important;
+   }
+   .content-header .breadcrumb {
+      display: none !important;
+   }
+   .ws-card-header {
+      flex-direction: column !important;
+      align-items: stretch !important;
+      gap: 12px !important;
+      padding: 14px 16px !important;
+   }
+   .ws-card-header > div:last-child {
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      width: 100% !important;
+   }
+   .box-body {
+      padding: 14px 12px !important;
+   }
+   .ws-nav-tabs {
+      flex-direction: column !important;
+      gap: 6px !important;
+      margin-bottom: 14px !important;
+   }
+   .ws-nav-tabs > li {
+      width: 100% !important;
+   }
+   .ws-nav-tabs > li > a {
+      display: block !important;
+      text-align: left !important;
+      padding: 10px 14px !important;
+      font-size: 13px !important;
+   }
+   #tab_scanner_fisik .input-group,
+   #tab_kamera_hp .input-group {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 8px !important;
+   }
+   #input_scan_fisik {
+      border-radius: 8px !important;
+      width: 100% !important;
+      height: 42px !important;
+   }
+   #tab_scanner_fisik .input-group-btn,
+   #tab_kamera_hp .input-group-btn {
+      width: 100% !important;
+      display: block !important;
+   }
+   #btn_submit_scan_fisik {
+      border-radius: 8px !important;
+      width: 100% !important;
+      height: 42px !important;
+   }
+   #camera_select {
+      border-radius: 8px !important;
+      width: 100% !important;
+      height: 40px !important;
+   }
+   #btn_start_camera,
+   #btn_stop_camera {
+      border-radius: 8px !important;
+      width: 100% !important;
+      height: 40px !important;
+   }
+   #btn_process_bulk {
+      width: 100% !important;
+      height: 42px !important;
+      font-size: 13.5px !important;
+   }
+   .ws-stat-card {
+      padding: 12px 14px !important;
+      margin-bottom: 10px !important;
+      border-radius: 12px !important;
+   }
+   .ws-stat-num {
+      font-size: 20px !important;
+   }
+   .table-responsive {
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 8px !important;
+      -webkit-overflow-scrolling: touch !important;
+      margin-bottom: 12px !important;
+   }
+   #table_scan_history {
+      min-width: 650px !important;
+   }
+}
 </style>
 
 <section class="content-header" style="padding-top:15px; padding-bottom:10px;">
@@ -258,6 +362,9 @@
                <button type="button" id="btn_clear_history" class="btn btn-default btn-xs" style="border-radius:4px;"><i class="fa fa-trash text-danger"></i> Bersihkan Riwayat Sesi</button>
             </div>
 
+            <div class="visible-xs pm-mobile-swipe-hint" style="background:#f8fafc; border:1px dashed #cbd5e1; border-radius:8px; padding:7px 12px; font-size:11.5px; font-weight:600; color:#64748b; margin-bottom:10px; text-align:center;">
+               <i class="fa fa-hand-o-right text-primary"></i> Geser tabel ke kanan untuk melihat rincian resi &amp; aksi
+            </div>
             <div class="table-responsive" style="border:1px solid #e2e8f0; border-radius:10px;">
                <table class="table table-hover table-striped" id="table_scan_history" style="font-size:12px; margin-bottom:0; background:#fff;">
                   <thead>

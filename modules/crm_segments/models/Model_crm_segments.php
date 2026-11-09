@@ -20,8 +20,12 @@ class Model_crm_segments extends CI_Model
 		$sql = "
 			SELECT DISTINCT kp.id, kp.nama_kategori
 			FROM kategori_produk kp
-			JOIN produk p ON p.kategori_id = kp.id
 			WHERE kp.nama_kategori IS NOT NULL AND TRIM(kp.nama_kategori) != ''
+			  AND (
+				EXISTS (SELECT 1 FROM produk p WHERE p.kategori_id = kp.id)
+				OR kp.nama_kategori LIKE '%Resi%'
+				OR kp.nama_kategori LIKE '%Marketplace%'
+			  )
 			ORDER BY kp.nama_kategori ASC
 		";
 		$query = $this->db->query($sql);
@@ -49,42 +53,62 @@ class Model_crm_segments extends CI_Model
 	}
 
 	/**
-	 * Get distinct transaction months directly from database
+	 * Get distinct transaction months directly from database or all 12 calendar months for the year
 	 */
 	public function get_distinct_months_list($year = null)
 	{
-		$where_clause = "";
+		$indo_months = [
+			'01' => 'Januari', '02' => 'Februari', '03' => 'Maret',
+			'04' => 'April',   '05' => 'Mei',      '06' => 'Juni',
+			'07' => 'Juli',    '08' => 'Agustus',  '09' => 'September',
+			'10' => 'Oktober', '11' => 'November', '12' => 'Desember'
+		];
+
 		if (!empty($year) && $year !== 'all') {
-			$y_esc = (int)$year;
-			$where_clause = " WHERE YEAR(tanggal_so) = {$y_esc} ";
+			$y_int = (int)$year;
+			$res = [];
+			for ($m = 1; $m <= 12; $m++) {
+				$m_pad = str_pad($m, 2, '0', STR_PAD_LEFT);
+				$ym_val = "{$y_int}-{$m_pad}";
+				$ym_label = ($indo_months[$m_pad] ?? $m_pad) . " " . $y_int;
+				$res[] = (object)[
+					'ym_val'   => $ym_val,
+					'ym_label' => $ym_label
+				];
+			}
+			return $res;
 		}
+
+		// If 'all' years, get distinct years from transactions and return all 12 months for each year
 		$sql = "
-			SELECT DISTINCT DATE_FORMAT(tanggal_so, '%Y-%m') as ym_val,
-			       DATE_FORMAT(tanggal_so, '%M %Y') as ym_label
+			SELECT DISTINCT YEAR(tanggal_so) as yr
 			FROM (
 				SELECT tanggal_so FROM sales_order WHERE tanggal_so > '1970-01-01'
 				UNION ALL
 				SELECT tanggal_so FROM penjualan_marketplace WHERE tanggal_so > '1970-01-01'
 			) t
-			{$where_clause}
-			ORDER BY ym_val DESC
+			WHERE tanggal_so IS NOT NULL
+			ORDER BY yr DESC
 		";
-		$rows = $this->db->query($sql)->result();
-		$indo_months = [
-			'January' => 'Januari', 'February' => 'Februari', 'March' => 'Maret',
-			'April' => 'April', 'May' => 'Mei', 'June' => 'Juni',
-			'July' => 'Juli', 'August' => 'Agustus', 'September' => 'September',
-			'October' => 'Oktober', 'November' => 'November', 'December' => 'Desember'
-		];
-		foreach ($rows as $r) {
-			foreach ($indo_months as $en => $id) {
-				if (strpos($r->ym_label, $en) !== false) {
-					$r->ym_label = str_replace($en, $id, $r->ym_label);
-					break;
-				}
+		$years_rows = $this->db->query($sql)->result();
+		if (empty($years_rows)) {
+			$years_rows = [(object)['yr' => 2026]];
+		}
+
+		$res = [];
+		foreach ($years_rows as $yr_item) {
+			$y_int = (int)$yr_item->yr;
+			for ($m = 1; $m <= 12; $m++) {
+				$m_pad = str_pad($m, 2, '0', STR_PAD_LEFT);
+				$ym_val = "{$y_int}-{$m_pad}";
+				$ym_label = ($indo_months[$m_pad] ?? $m_pad) . " " . $y_int;
+				$res[] = (object)[
+					'ym_val'   => $ym_val,
+					'ym_label' => $ym_label
+				];
 			}
 		}
-		return $rows;
+		return $res;
 	}
 
 	/**
@@ -102,6 +126,11 @@ class Model_crm_segments extends CI_Model
 			FROM produk p 
 			LEFT JOIN kategori_produk kp ON p.kategori_id = kp.id
 			WHERE p.nama_produk IS NOT NULL AND TRIM(p.nama_produk) != ''
+			  AND (
+				(p.created_by != 'import_resi' AND p.kode_produk NOT LIKE 'MP-%')
+				OR EXISTS (SELECT 1 FROM penjualan_marketplace_item pmi WHERE pmi.produk_id = p.id)
+				OR EXISTS (SELECT 1 FROM sales_order_item soi WHERE soi.produk_id = p.id)
+			  )
 			{$cat_where}
 			ORDER BY kp.nama_kategori ASC, p.nama_produk ASC
 		";
@@ -117,21 +146,49 @@ class Model_crm_segments extends CI_Model
 	{
 		$prod_row = null;
 		if (!empty($product_identifier) && $product_identifier !== 'all') {
+			$clean_name = trim(preg_replace('/\s*\([^)]*\)$/', '', $product_identifier));
 			// 1. Try by ID if numeric
 			if (is_numeric($product_identifier)) {
 				$prod_row = $this->db->get_where('produk', ['id' => (int)$product_identifier])->row();
 			}
-			// 2. Try by exact nama_produk
+			// 2. Try by exact nama_produk (clean name)
 			if (!$prod_row) {
+				$prod_row = $this->db->get_where('produk', ['nama_produk' => $clean_name])->row();
+			}
+			// 3. Try by raw product_identifier
+			if (!$prod_row && $clean_name !== $product_identifier) {
 				$prod_row = $this->db->get_where('produk', ['nama_produk' => $product_identifier])->row();
 			}
-			// 3. Try by kode_produk
+			// 4. Try by kode_produk
 			if (!$prod_row) {
 				$prod_row = $this->db->get_where('produk', ['kode_produk' => $product_identifier])->row();
 			}
-			// 4. Try by like nama_produk
+			// 5. Try by like nama_produk
 			if (!$prod_row) {
-				$prod_row = $this->db->like('nama_produk', $product_identifier)->get('produk')->row();
+				$prod_row = $this->db->like('nama_produk', $clean_name)->get('produk')->row();
+			}
+			// 6. Marketplace items fallback (e.g. unmapped skincare products)
+			if (!$prod_row) {
+				$clean_esc = $this->db->escape($clean_name);
+				$check_pm = $this->db->query("
+					SELECT pmi.catatan, kp.nama_kategori, kp.id as kategori_id
+					FROM penjualan_marketplace_item pmi
+					LEFT JOIN produk p ON pmi.produk_id = p.id
+					LEFT JOIN kategori_produk kp ON p.kategori_id = kp.id
+					WHERE TRIM(REGEXP_REPLACE(pmi.catatan, '\\\\s*\\\\([^)]*\\\\)$', '')) = {$clean_esc}
+					   OR pmi.catatan = " . $this->db->escape($product_identifier) . "
+					LIMIT 1
+				")->row();
+
+				if ($check_pm) {
+					$prod_row = (object)[
+						'id'            => 0,
+						'kode_produk'   => '-',
+						'nama_produk'   => $clean_name,
+						'kategori_id'   => $check_pm->kategori_id ?? 0,
+						'nama_kategori' => $check_pm->nama_kategori ?? 'Produk Marketplace'
+					];
+				}
 			}
 		}
 
@@ -160,7 +217,7 @@ class Model_crm_segments extends CI_Model
 	/**
 	 * Compute the Product RFM Matrix across months from real database records
 	 */
-	public function get_product_rfm_matrix($product = null, $year = null, $period = null, $category = null)
+	public function get_product_rfm_matrix($product = null, $year = null, $period = null, $category = null, $mode = 'cumulative')
 	{
 		$prod_row = null;
 		if (!empty($product) && $product !== 'all') {
@@ -175,36 +232,16 @@ class Model_crm_segments extends CI_Model
 			'09' => 'SEP', '10' => 'OKT', '11' => 'NOV', '12' => 'DES'
 		];
 
-		// Build dynamic months from database transactions
+		// Build dynamic months: generate all 12 calendar months for selected year (or all years if year=all)
 		$months = [];
 		if (!empty($year) && $year !== 'all') {
 			$y_int = (int)$year;
-			$ym_rows = $this->db->query("
-				SELECT DISTINCT DATE_FORMAT(tanggal_so, '%Y-%m') as ym
-				FROM (
-					SELECT tanggal_so FROM sales_order WHERE YEAR(tanggal_so) = {$y_int} AND tanggal_so > '1970-01-01'
-					UNION ALL
-					SELECT tanggal_so FROM penjualan_marketplace WHERE YEAR(tanggal_so) = {$y_int} AND tanggal_so > '1970-01-01'
-				) t
-				ORDER BY ym ASC
-			")->result();
-
-			if (!empty($ym_rows)) {
-				foreach ($ym_rows as $yr_row) {
-					$ym = $yr_row->ym;
-					$m_num = substr($ym, 5, 2);
-					$y_short = substr($ym, 2, 2);
-					$label = ($indo_short[$m_num] ?? $m_num) . " '" . $y_short;
-					$months[$ym] = $label;
-				}
-			} else {
-				for ($m = 1; $m <= 12; $m++) {
-					$m_pad = str_pad($m, 2, '0', STR_PAD_LEFT);
-					$ym = "{$y_int}-{$m_pad}";
-					$y_short = substr((string)$y_int, 2, 2);
-					$label = ($indo_short[$m_pad] ?? $m_pad) . " '" . $y_short;
-					$months[$ym] = $label;
-				}
+			for ($m = 1; $m <= 12; $m++) {
+				$m_pad = str_pad($m, 2, '0', STR_PAD_LEFT);
+				$ym = "{$y_int}-{$m_pad}";
+				$y_short = substr((string)$y_int, 2, 2);
+				$label = ($indo_short[$m_pad] ?? $m_pad) . " '" . $y_short;
+				$months[$ym] = $label;
 			}
 		} elseif ($year === 'all') {
 			$ym_rows = $this->db->query("
@@ -216,30 +253,32 @@ class Model_crm_segments extends CI_Model
 				) t
 				ORDER BY ym ASC
 			")->result();
-			foreach ($ym_rows as $yr_row) {
-				$ym = $yr_row->ym;
-				$m_num = substr($ym, 5, 2);
-				$y_short = substr($ym, 2, 2);
-				$label = ($indo_short[$m_num] ?? $m_num) . " '" . $y_short;
-				$months[$ym] = $label;
+			if (!empty($ym_rows)) {
+				foreach ($ym_rows as $yr_row) {
+					$ym = $yr_row->ym;
+					$m_num = substr($ym, 5, 2);
+					$y_short = substr($ym, 2, 2);
+					$label = ($indo_short[$m_num] ?? $m_num) . " '" . $y_short;
+					$months[$ym] = $label;
+				}
+			} else {
+				$y_int = 2026;
+				for ($m = 1; $m <= 12; $m++) {
+					$m_pad = str_pad($m, 2, '0', STR_PAD_LEFT);
+					$ym = "{$y_int}-{$m_pad}";
+					$y_short = substr((string)$y_int, 2, 2);
+					$label = ($indo_short[$m_pad] ?? $m_pad) . " '" . $y_short;
+					$months[$ym] = $label;
+				}
 			}
 		} else {
-			// Default: Year 2026 (or latest year)
+			// Default: Year 2026 all 12 calendar months
 			$y_int = 2026;
-			$ym_rows = $this->db->query("
-				SELECT DISTINCT DATE_FORMAT(tanggal_so, '%Y-%m') as ym
-				FROM (
-					SELECT tanggal_so FROM sales_order WHERE YEAR(tanggal_so) = {$y_int} AND tanggal_so > '1970-01-01'
-					UNION ALL
-					SELECT tanggal_so FROM penjualan_marketplace WHERE YEAR(tanggal_so) = {$y_int} AND tanggal_so > '1970-01-01'
-				) t
-				ORDER BY ym ASC
-			")->result();
-			foreach ($ym_rows as $yr_row) {
-				$ym = $yr_row->ym;
-				$m_num = substr($ym, 5, 2);
-				$y_short = substr($ym, 2, 2);
-				$label = ($indo_short[$m_num] ?? $m_num) . " '" . $y_short;
+			for ($m = 1; $m <= 12; $m++) {
+				$m_pad = str_pad($m, 2, '0', STR_PAD_LEFT);
+				$ym = "{$y_int}-{$m_pad}";
+				$y_short = substr((string)$y_int, 2, 2);
+				$label = ($indo_short[$m_pad] ?? $m_pad) . " '" . $y_short;
 				$months[$ym] = $label;
 			}
 		}
@@ -253,13 +292,13 @@ class Model_crm_segments extends CI_Model
 			];
 		}
 
-		return $this->_calculate_dynamic_matrix($prod_row, $months, $standard_segments, $period, $category);
+		return $this->_calculate_dynamic_matrix($prod_row, $months, $standard_segments, $period, $category, $mode);
 	}
 
 	/**
 	 * Compute dynamic matrix from real database records for the resolved master product
 	 */
-	private function _calculate_dynamic_matrix($prod_row, $default_months, $standard_segments, $period_filter = null, $category = null)
+	private function _calculate_dynamic_matrix($prod_row, $default_months, $standard_segments, $period_filter = null, $category = null, $mode = 'cumulative')
 	{
 		$cat_join_so = "";
 		$cat_join_pm = "";
@@ -268,9 +307,15 @@ class Model_crm_segments extends CI_Model
 
 		if ($prod_row) {
 			$pid = (int)$prod_row->id;
-			$p_name_esc = $this->db->escape($prod_row->nama_produk);
-			$item_filter_so = "AND (soi.produk_id = {$pid} OR p.id = {$pid} OR p.nama_produk = {$p_name_esc} OR soi.catatan = {$p_name_esc})";
-			$item_filter_pm = "AND (pmi.produk_id = {$pid} OR p.id = {$pid} OR p.nama_produk = {$p_name_esc} OR pmi.catatan = {$p_name_esc})";
+			$clean_pname = trim(preg_replace('/\s*\([^)]*\)$/', '', $prod_row->nama_produk));
+			$clean_pname_esc = $this->db->escape($clean_pname);
+			$like_pname = $this->db->escape_like_str($clean_pname);
+
+			$id_match_so = ($pid > 1) ? "(p.id > 1 AND p.nama_produk = {$clean_pname_esc}) OR soi.produk_id = {$pid} OR " : "";
+			$id_match_pm = ($pid > 1) ? "(p.id > 1 AND p.nama_produk = {$clean_pname_esc}) OR pmi.produk_id = {$pid} OR " : "";
+
+			$item_filter_so = "AND ({$id_match_so} TRIM(REGEXP_REPLACE(soi.catatan, '\\\\s*\\\\([^)]*\\\\)$', '')) = {$clean_pname_esc} OR soi.catatan LIKE '{$like_pname}%')";
+			$item_filter_pm = "AND ({$id_match_pm} TRIM(REGEXP_REPLACE(pmi.catatan, '\\\\s*\\\\([^)]*\\\\)$', '')) = {$clean_pname_esc} OR pmi.catatan LIKE '{$like_pname}%')";
 		} elseif (!empty($category)) {
 			$c_esc = $this->db->escape(trim($category));
 			$cat_join_so = "LEFT JOIN kategori_produk kp ON p.kategori_id = kp.id";
@@ -297,6 +342,7 @@ class Model_crm_segments extends CI_Model
 				LEFT JOIN produk p ON soi.produk_id = p.id
 				{$cat_join_so}
 				WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
+				  AND (so.source = 'excel_import' OR (so.source NOT IN ('shopee', 'tokopedia', 'tiktok', 'tiktokshop', 'lazada', 'marketplace') AND (so.no_pesanan IS NULL OR so.no_pesanan = '' OR so.no_pesanan = so.nomor_so)))
 				  AND so.tanggal_so IS NOT NULL AND CAST(so.tanggal_so AS CHAR) NOT LIKE '0000%'
 				  AND (so.status_pesanan IS NULL OR (LOWER(so.status_pesanan) NOT LIKE '%batal%' AND LOWER(so.status_pesanan) NOT LIKE '%cancel%'))
 				  {$item_filter_so}
@@ -317,6 +363,7 @@ class Model_crm_segments extends CI_Model
 				  AND (pm.status_pesanan IS NULL OR (LOWER(pm.status_pesanan) NOT LIKE '%batal%' AND LOWER(pm.status_pesanan) NOT LIKE '%cancel%'))
 				  {$item_filter_pm}
 			) t
+			ORDER BY t.tanggal_so ASC
 		";
 
 		$transactions = $this->db->query($sql)->result();
@@ -351,9 +398,21 @@ class Model_crm_segments extends CI_Model
 			}
 		}
 
-		// Calculate RFM Matrix threshold using enterprise percentile logic
+		// Calculate 80th percentile spend threshold for product/category
 		$prod_name = $prod_row ? $prod_row->nama_produk : '';
 		$thresholds = $this->model_crm->get_rfm_percentile_thresholds($prod_name, '', $category);
+		$p80_spend = $thresholds['m'][80] ?? 1000000;
+
+		// Retrieve all chronological months in database for lifecycle index calculation
+		$all_months_query = $this->db->query("
+			SELECT DISTINCT DATE_FORMAT(tanggal_so, '%Y-%m') as ym
+			FROM (
+				SELECT tanggal_so FROM sales_order WHERE tanggal_so > '1970-01-01'
+				UNION ALL
+				SELECT tanggal_so FROM penjualan_marketplace WHERE tanggal_so > '1970-01-01'
+			) t ORDER BY ym ASC
+		")->result();
+		$all_system_months = !empty($all_months_query) ? array_column($all_months_query, 'ym') : array_keys($months);
 
 		// Initialize matrix counts
 		$matrix = [];
@@ -376,47 +435,82 @@ class Model_crm_segments extends CI_Model
 		// Cumulative running stats per customer across months
 		$running_stats = [];
 
-		// Assign customers to segments per month
+		// Assign customers to segments per month using dynamic customer lifecycle RFM
 		foreach ($months as $ym => $label) {
-			if (!isset($customer_monthly_stats[$ym])) continue;
+			// Skip months if no customer history yet and no transaction in this month
+			if (!isset($customer_monthly_stats[$ym]) && empty($running_stats)) {
+				continue;
+			}
 
-			$ref_date = date('Y-m-t 23:59:59', strtotime($ym . '-01'));
-			if ($ref_date > date('Y-m-d H:i:s')) {
-				$ref_date = date('Y-m-d H:i:s');
+			// For future months beyond the current system date, leave as 0 (rendered as -)
+			if ($ym > date('Y-m')) {
+				continue;
 			}
 
 			// Accumulate history up to this month
-			foreach ($customer_monthly_stats[$ym] as $phone => $m_stat) {
-				if (!isset($running_stats[$phone])) {
-					$running_stats[$phone] = [
-						'orders' => [],
-						'spend' => 0.0,
-						'last_date' => $m_stat['last_date']
-					];
-				}
-				foreach ($m_stat['orders'] as $oid => $val) {
-					$running_stats[$phone]['orders'][$oid] = true;
-				}
-				$running_stats[$phone]['spend'] += $m_stat['spend'];
-				if ($m_stat['last_date'] > $running_stats[$phone]['last_date']) {
-					$running_stats[$phone]['last_date'] = $m_stat['last_date'];
+			if (isset($customer_monthly_stats[$ym])) {
+				foreach ($customer_monthly_stats[$ym] as $phone => $m_stat) {
+					if (!isset($running_stats[$phone])) {
+						$running_stats[$phone] = [
+							'first_ym'  => $ym,
+							'orders'    => [],
+							'spend'     => 0.0,
+							'last_date' => $m_stat['last_date'],
+							'last_ym'   => $ym,
+						];
+					}
+					foreach ($m_stat['orders'] as $oid => $val) {
+						$running_stats[$phone]['orders'][$oid] = true;
+					}
+					$running_stats[$phone]['spend'] += $m_stat['spend'];
+					$running_stats[$phone]['last_ym'] = $ym;
+					if ($m_stat['last_date'] > $running_stats[$phone]['last_date']) {
+						$running_stats[$phone]['last_date'] = $m_stat['last_date'];
+					}
 				}
 			}
 
-			// Evaluate each customer ACTIVE in this month
-			foreach ($customer_monthly_stats[$ym] as $phone => $m_stat) {
+			// In cumulative mode: evaluate entire cumulative customer base up to this month
+			// In monthly mode: evaluate only customers active in this specific month
+			$eval_pool = ($mode === 'monthly') ? ($customer_monthly_stats[$ym] ?? []) : $running_stats;
+
+			foreach ($eval_pool as $phone => $stat_item) {
 				$c_stat = $running_stats[$phone];
 				$order_count = count($c_stat['orders']);
-				$rfm = $this->model_crm->calculate_rfm($c_stat['last_date'], $order_count, $c_stat['spend'], $thresholds, $ref_date);
-				$seg = $rfm['segment'] ?? 'Need Attention';
+				$total_spend = $c_stat['spend'];
+				$is_active_now = isset($customer_monthly_stats[$ym][$phone]);
 
-				// Fallback to match exact segment keys
-				if (!isset($matrix[$seg])) {
-					foreach ($standard_segments as $k => $v) {
-						if (stripos($k, $seg) !== false || stripos($seg, $k) !== false) {
-							$seg = $k;
-							break;
+				if ($is_active_now) {
+					// Active in this month
+					if ($c_stat['first_ym'] === $ym && $order_count === 1) {
+						// First time customer for this product
+						$seg = ($total_spend >= $p80_spend) ? 'Big Spenders' : 'New Customers';
+					} else {
+						// Repeat buyer (bought across months or multiple orders)
+						if ($order_count >= 3 && $total_spend >= $p80_spend) {
+							$seg = 'Champions';
+						} elseif ($total_spend >= $p80_spend) {
+							$seg = 'Big Spenders';
+						} elseif ($order_count >= 2) {
+							$seg = 'Loyal Customers';
+						} else {
+							$seg = 'Potential Loyalist';
 						}
+					}
+				} else {
+					// Inactive this month (bought in previous months)
+					$y_curr = (int)substr($ym, 0, 4);
+					$m_curr = (int)substr($ym, 5, 2);
+					$y_last = (int)substr($c_stat['last_ym'], 0, 4);
+					$m_last = (int)substr($c_stat['last_ym'], 5, 2);
+					$idle_months = ($y_curr - $y_last) * 12 + ($m_curr - $m_last);
+
+					if ($idle_months <= 1) {
+						$seg = 'Need Attention'; // 1 month idle (Belum Beli Lagi)
+					} elseif ($idle_months == 2) {
+						$seg = ($total_spend >= $p80_spend) ? "Can't Lose Them" : 'At Risk Customers';
+					} else {
+						$seg = 'Hibernating'; // 3+ months idle
 					}
 				}
 
@@ -430,15 +524,24 @@ class Model_crm_segments extends CI_Model
 			}
 		}
 
+		// Identify active transaction window
+		$active_keys = array_keys(array_filter($totals_per_month, function($v) { return $v > 0; }));
+		$first_active_ym = !empty($active_keys) ? reset($active_keys) : null;
+		$latest_active_ym = !empty($active_keys) ? end($active_keys) : (!empty($months) ? end(array_keys($months)) : null);
+
 		// Calculate MoM growth for each segment
 		foreach ($standard_segments as $seg_name => $meta) {
 			$prev_c = null;
+			$last_non_zero_c = null;
 			$first_val = null;
 			$last_val = 0;
 
 			foreach ($months as $ym => $label) {
 				$c = $matrix[$seg_name]['counts'][$ym];
-				$matrix[$seg_name]['total_cust'] += $c;
+				
+				if ($mode === 'monthly') {
+					$matrix[$seg_name]['total_cust'] += $c;
+				}
 
 				if ($first_val === null && $c > 0) {
 					$first_val = $c;
@@ -447,47 +550,120 @@ class Model_crm_segments extends CI_Model
 					$last_val = $c;
 				}
 
-				if ($prev_c === null) {
-					$matrix[$seg_name]['growth'][$ym] = null;
-				} else {
-					if ($prev_c > 0) {
-						$g = round((($c - $prev_c) / $prev_c) * 100, 1);
-						$matrix[$seg_name]['growth'][$ym] = $g;
-					} elseif ($c > 0) {
-						$matrix[$seg_name]['growth'][$ym] = 100.0;
+				$g = null;
+				$display_zero = false;
+
+				// Calculate progression within active transaction window
+				if ($first_active_ym && $latest_active_ym && $ym >= $first_active_ym && $ym <= $latest_active_ym) {
+					if ($c > 0) {
+						if ($last_non_zero_c === null) {
+							// First time this segment appears: 100% baseline
+							$g = 100.0;
+						} elseif ($prev_c > 0) {
+							$g = round((($c - $prev_c) / $prev_c) * 100, 1);
+						} else {
+							// Grew back from 0, compare with last active count
+							$g = round((($c - $last_non_zero_c) / $last_non_zero_c) * 100, 1);
+						}
+						$last_non_zero_c = $c;
 					} else {
-						$matrix[$seg_name]['growth'][$ym] = 0.0;
+						// c == 0 in active operational period
+						if ($last_non_zero_c !== null) {
+							// Previously had customers, now 0: drop by 100% (-100%)
+							$display_zero = true;
+							if ($prev_c > 0) {
+								$g = -100.0;
+							} else {
+								$g = 0.0;
+							}
+						}
 					}
 				}
+
+				$matrix[$seg_name]['growth'][$ym] = $g;
+				$matrix[$seg_name]['display_zero'][$ym] = $display_zero;
 				$prev_c = $c;
 			}
 
-			// Trend percentage: compare last active vs first active
-			if ($matrix[$seg_name]['total_cust'] > 0 && $first_val > 0) {
-				$matrix[$seg_name]['trend_pct'] = round((($last_val - $first_val) / $first_val) * 100, 1);
+			if ($mode !== 'monthly') {
+				// In cumulative mode, total_cust is the latest cumulative count
+				$matrix[$seg_name]['total_cust'] = $latest_active_ym ? ($matrix[$seg_name]['counts'][$latest_active_ym] ?? 0) : 0;
+			}
+
+			// Trend percentage: compare last active vs first active month in matrix
+			$first_ym = !empty($active_keys) ? $active_keys[0] : null;
+			$last_ym = $latest_active_ym;
+			$first_month_c = ($first_ym && isset($matrix[$seg_name]['counts'][$first_ym])) ? $matrix[$seg_name]['counts'][$first_ym] : 0;
+			$last_month_c = ($last_ym && isset($matrix[$seg_name]['counts'][$last_ym])) ? $matrix[$seg_name]['counts'][$last_ym] : 0;
+
+			if ($first_month_c == 0) {
+				foreach ($months as $ym => $l) {
+					if ($matrix[$seg_name]['counts'][$ym] > 0) {
+						$first_month_c = $matrix[$seg_name]['counts'][$ym];
+						$first_ym = $ym;
+						break;
+					}
+				}
+			}
+
+			if ($first_ym && $first_ym === $last_ym) {
+				// The segment only has data in the latest active month (newly emerged)
+				if ($last_month_c > 0) {
+					$matrix[$seg_name]['trend_pct'] = 100.0;
+				} else {
+					$matrix[$seg_name]['trend_pct'] = 0.0;
+				}
+			} elseif ($first_month_c > 0) {
+				$matrix[$seg_name]['trend_pct'] = round((($last_month_c - $first_month_c) / $first_month_c) * 100, 1);
+			} elseif ($last_month_c > 0) {
+				$matrix[$seg_name]['trend_pct'] = 100.0;
 			} else {
 				$matrix[$seg_name]['trend_pct'] = 0.0;
 			}
+			$matrix[$seg_name]['trend_first_val'] = $first_month_c;
+			$matrix[$seg_name]['trend_last_val'] = $last_month_c;
+			$matrix[$seg_name]['trend_first_ym'] = $first_ym;
+			$matrix[$seg_name]['trend_last_ym'] = $last_ym;
 		}
 
 		// Calculate MoM growth for Totals row
 		$totals_growth = [];
+		$totals_display_zero = [];
 		$prev_total = null;
-		$grand_total = array_sum($totals_per_month);
+		$last_non_zero_t = null;
+		$grand_total = ($mode === 'monthly') 
+			? array_sum($totals_per_month) 
+			: ($latest_active_ym ? ($totals_per_month[$latest_active_ym] ?? count($unique_phones)) : count($unique_phones));
 
 		foreach ($months as $ym => $label) {
 			$t = $totals_per_month[$ym];
-			if ($prev_total === null) {
-				$totals_growth[$ym] = null;
-			} else {
-				if ($prev_total > 0) {
-					$totals_growth[$ym] = round((($t - $prev_total) / $prev_total) * 100, 1);
-				} elseif ($t > 0) {
-					$totals_growth[$ym] = 100.0;
+			$g = null;
+			$display_zero_t = false;
+
+			if ($first_active_ym && $latest_active_ym && $ym >= $first_active_ym && $ym <= $latest_active_ym) {
+				if ($t > 0) {
+					if ($last_non_zero_t === null) {
+						$g = 100.0; // Basis awal 100%
+					} elseif ($prev_total > 0) {
+						$g = round((($t - $prev_total) / $prev_total) * 100, 1);
+					} else {
+						$g = round((($t - $last_non_zero_t) / $last_non_zero_t) * 100, 1);
+					}
+					$last_non_zero_t = $t;
 				} else {
-					$totals_growth[$ym] = null;
+					if ($last_non_zero_t !== null) {
+						$display_zero_t = true;
+						if ($prev_total > 0) {
+							$g = -100.0;
+						} else {
+							$g = 0.0;
+						}
+					}
 				}
 			}
+
+			$totals_growth[$ym] = $g;
+			$totals_display_zero[$ym] = $display_zero_t;
 			$prev_total = $t;
 		}
 
@@ -562,16 +738,17 @@ class Model_crm_segments extends CI_Model
 			'period_mom_growth'     => $period_mom_growth,
 			'months'                => $months,
 			'matrix'                => $matrix,
-			'totals_row'            => ['counts' => $totals_per_month, 'grand_total' => $grand_total],
+			'totals_row'            => ['counts' => $totals_per_month, 'grand_total' => $grand_total, 'display_zero' => $totals_display_zero],
 			'mom_row'               => ['growth' => $totals_growth, 'net_growth' => $net_growth_pct],
 			'max_cell_val'          => $max_cell_val,
+			'mode'                  => $mode,
 		];
 	}
 
 	/**
 	 * Drilldown Customers for a specific Product, Segment, and Month from real database records
 	 */
-	public function get_drilldown_customers($product, $segment, $period, $category = null)
+	public function get_drilldown_customers($product, $segment, $period, $category = null, $mode = 'cumulative')
 	{
 		$prod_row = null;
 		if (!empty($product) && $product !== 'all') {
@@ -591,9 +768,15 @@ class Model_crm_segments extends CI_Model
 
 		if ($prod_row) {
 			$pid = (int)$prod_row->id;
-			$p_name_esc = $this->db->escape($prod_row->nama_produk);
-			$item_filter_so = "AND (soi.produk_id = {$pid} OR p.id = {$pid} OR p.nama_produk = {$p_name_esc} OR soi.catatan = {$p_name_esc})";
-			$item_filter_pm = "AND (pmi.produk_id = {$pid} OR p.id = {$pid} OR p.nama_produk = {$p_name_esc} OR pmi.catatan = {$p_name_esc})";
+			$clean_pname = trim(preg_replace('/\s*\([^)]*\)$/', '', $prod_row->nama_produk));
+			$clean_pname_esc = $this->db->escape($clean_pname);
+			$like_pname = $this->db->escape_like_str($clean_pname);
+
+			$id_match_so = ($pid > 1) ? "(p.id > 1 AND p.nama_produk = {$clean_pname_esc}) OR soi.produk_id = {$pid} OR " : "";
+			$id_match_pm = ($pid > 1) ? "(p.id > 1 AND p.nama_produk = {$clean_pname_esc}) OR pmi.produk_id = {$pid} OR " : "";
+
+			$item_filter_so = "AND ({$id_match_so} TRIM(REGEXP_REPLACE(soi.catatan, '\\\\s*\\\\([^)]*\\\\)$', '')) = {$clean_pname_esc} OR soi.catatan LIKE '{$like_pname}%')";
+			$item_filter_pm = "AND ({$id_match_pm} TRIM(REGEXP_REPLACE(pmi.catatan, '\\\\s*\\\\([^)]*\\\\)$', '')) = {$clean_pname_esc} OR pmi.catatan LIKE '{$like_pname}%')";
 		} elseif (!empty($category)) {
 			$c_esc = $this->db->escape(trim($category));
 			$cat_join_so = "LEFT JOIN kategori_produk kp ON p.kategori_id = kp.id";
@@ -602,12 +785,17 @@ class Model_crm_segments extends CI_Model
 			$item_filter_pm = "AND (kp.nama_kategori = {$c_esc} OR kp.id = {$c_esc} OR p.kategori_id = {$c_esc})";
 		}
 
+		$having_clause = ($mode === 'monthly') ? "HAVING period_orders > 0" : "HAVING total_orders > 0";
+		$order_clause = ($mode === 'monthly') ? "ORDER BY period_spend DESC, total_spend DESC" : "ORDER BY total_spend DESC, period_spend DESC";
+
 		$sql = "
 			SELECT 
 				RIGHT(REPLACE(REPLACE(REPLACE(REPLACE(t.no_telepon, ' ', ''), '-', ''), '+', ''), '628', '08'), 10) as clean_phone,
 				MAX(t.no_telepon) as no_telepon,
 				MAX(t.customer_name) as customer_name,
 				MAX(t.tanggal_so) as last_order_date,
+				MIN(DATE_FORMAT(t.tanggal_so, '%Y-%m')) as first_ym,
+				MAX(DATE_FORMAT(t.tanggal_so, '%Y-%m')) as last_ym,
 				COUNT(DISTINCT t.order_id) as total_orders,
 				SUM(t.qty) as total_qty,
 				SUM(t.subtotal) as total_spend,
@@ -627,6 +815,7 @@ class Model_crm_segments extends CI_Model
 				LEFT JOIN produk p ON soi.produk_id = p.id
 				{$cat_join_so}
 				WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
+				  AND (so.source = 'excel_import' OR (so.source NOT IN ('shopee', 'tokopedia', 'tiktok', 'tiktokshop', 'lazada', 'marketplace') AND (so.no_pesanan IS NULL OR so.no_pesanan = '' OR so.no_pesanan = so.nomor_so)))
 				  AND DATE_FORMAT(so.tanggal_so, '%Y-%m') <= '{$ym_esc}'
 				  AND so.tanggal_so > '1970-01-01'
 				  AND (so.status_pesanan IS NULL OR (LOWER(so.status_pesanan) NOT LIKE '%batal%' AND LOWER(so.status_pesanan) NOT LIKE '%cancel%'))
@@ -653,18 +842,64 @@ class Model_crm_segments extends CI_Model
 				  {$item_filter_pm}
 			) t
 			GROUP BY clean_phone
-			HAVING period_orders > 0
-			ORDER BY period_spend DESC, total_spend DESC
+			{$having_clause}
+			{$order_clause}
 		";
 
 		$customers = $this->db->query($sql)->result();
+
+		// Retrieve all chronological months in database for lifecycle index calculation
+		$all_months_query = $this->db->query("
+			SELECT DISTINCT DATE_FORMAT(tanggal_so, '%Y-%m') as ym
+			FROM (
+				SELECT tanggal_so FROM sales_order WHERE tanggal_so > '1970-01-01'
+				UNION ALL
+				SELECT tanggal_so FROM penjualan_marketplace WHERE tanggal_so > '1970-01-01'
+			) t ORDER BY ym ASC
+		")->result();
+		$all_system_months = !empty($all_months_query) ? array_column($all_months_query, 'ym') : [$period];
+		$period_idx = array_search($period, $all_system_months);
+		if ($period_idx === false) $period_idx = 0;
+
 		$prod_name = $prod_row ? $prod_row->nama_produk : '';
 		$thresholds = $this->model_crm->get_rfm_percentile_thresholds($prod_name, '', $category);
+		$p80_spend = $thresholds['m'][80] ?? 1000000;
 
 		$filtered_customers = [];
 		foreach ($customers as $c) {
-			$rfm = $this->model_crm->calculate_rfm($c->last_order_date, $c->total_orders, $c->total_spend, $thresholds, $ref_date);
-			$c->rfm_segment = $rfm['segment'] ?? 'Need Attention';
+			$is_active_now = ((int)$c->period_orders > 0);
+			$order_count = (int)$c->total_orders;
+			$total_spend = (float)$c->total_spend;
+
+			if ($is_active_now) {
+				if ($c->first_ym === $period && $order_count === 1) {
+					$c->rfm_segment = ($total_spend >= $p80_spend) ? 'Big Spenders' : 'New Customers';
+				} else {
+					if ($order_count >= 3 && $total_spend >= $p80_spend) {
+						$c->rfm_segment = 'Champions';
+					} elseif ($total_spend >= $p80_spend) {
+						$c->rfm_segment = 'Big Spenders';
+					} elseif ($order_count >= 2) {
+						$c->rfm_segment = 'Loyal Customers';
+					} else {
+						$c->rfm_segment = 'Potential Loyalist';
+					}
+				}
+			} else {
+				$y_curr = (int)substr($period, 0, 4);
+				$m_curr = (int)substr($period, 5, 2);
+				$y_last = (int)substr($c->last_ym, 0, 4);
+				$m_last = (int)substr($c->last_ym, 5, 2);
+				$idle_months = ($y_curr - $y_last) * 12 + ($m_curr - $m_last);
+
+				if ($idle_months <= 1) {
+					$c->rfm_segment = 'Need Attention';
+				} elseif ($idle_months == 2) {
+					$c->rfm_segment = ($total_spend >= $p80_spend) ? "Can't Lose Them" : 'At Risk Customers';
+				} else {
+					$c->rfm_segment = 'Hibernating';
+				}
+			}
 
 			// If specific segment requested (and not 'Total' / 'All'), filter by segment
 			if (!empty($segment) && strtolower($segment) !== 'total' && strtolower($segment) !== 'all') {
@@ -688,6 +923,8 @@ class Model_crm_segments extends CI_Model
 			$c->wa_link = "https://wa.me/{$wa_phone}?text={$msg}";
 			$c->crm_link = site_url('administrator/crm/customer_detail?phone=' . urlencode($raw_phone));
 			$c->recency_days = max(0, (int)round((strtotime($ref_date) - strtotime($c->last_order_date)) / 86400));
+			$c->total_qty = (float)$c->total_qty;
+			$c->total_spend = (float)$c->total_spend;
 
 			$filtered_customers[] = $c;
 		}

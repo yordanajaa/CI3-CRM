@@ -110,6 +110,55 @@ class Model_supplier extends MY_Model {
 		return $this->db->get()->result();
 	}
 
+	/**
+	 * Cascade delete menyeluruh ketika data supplier di Master Data dihapus
+	 * Menghapus seluruh relasi di Purchase Order, Utang Usaha, Kas Keluar, Retur Pembelian, & Riwayat Harga
+	 */
+	public function remove($id = NULL)
+	{
+		if ($id) {
+			$this->db->trans_start();
+
+			// 1. Modul Purchase Order & Item
+			$po_list = $this->db->select('id')->where('supplier_id', $id)->get('purchase_order')->result();
+			if (!empty($po_list)) {
+				$po_ids = array_map(function($p) { return $p->id; }, $po_list);
+				$this->db->where_in('po_id', $po_ids)->delete('purchase_order_item');
+				$this->db->where_in('id', $po_ids)->delete('purchase_order');
+			}
+
+			// 2. Modul Utang Usaha & Pembayaran Kas Keluar
+			$utang_list = $this->db->select('id')->where('supplier_id', $id)->get('utang_usaha')->result();
+			if (!empty($utang_list)) {
+				$utang_ids = array_map(function($u) { return $u->id; }, $utang_list);
+				$this->db->where_in('utang_id', $utang_ids)->delete('pembayaran_utang');
+				$this->db->where_in('id', $utang_ids)->delete('utang_usaha');
+			}
+			$this->db->delete('pembayaran_utang', ['supplier_id' => $id]);
+
+			// 3. Modul Retur Pembelian & Item
+			$retur_list = $this->db->select('id')->where('supplier_id', $id)->get('retur_pembelian')->result();
+			if (!empty($retur_list)) {
+				$retur_ids = array_map(function($r) { return $r->id; }, $retur_list);
+				$this->db->where_in('retur_pembelian_id', $retur_ids)->delete('retur_pembelian_item');
+				$this->db->where_in('id', $retur_ids)->delete('retur_pembelian');
+			}
+
+			// 4. Modul Riwayat Harga & Log
+			$this->db->delete('riwayat_harga_beli', ['supplier_id' => $id]);
+			$this->db->delete('produk_harga_log', ['supplier_id' => $id]);
+
+			// 5. Hapus data utama master supplier
+			$ret = parent::remove($id);
+
+			$this->db->trans_complete();
+
+			return ($this->db->trans_status() !== FALSE) && $ret;
+		}
+
+		return false;
+	}
+
 }
 
 /* End of file Model_supplier.php */

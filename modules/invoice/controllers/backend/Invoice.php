@@ -29,10 +29,8 @@ class Invoice extends Admin
 		$this->data['pagination'] = $this->pagination($config);
 
 		$this->data['produks'] = $this->db->where('status', 'aktif')->get('produk')->result();
-		$this->data['sales_orders'] = $this->db->select('sales_order.*, pelanggan.nama_pelanggan, gudang.nama_gudang')
+		$this->data['sales_orders'] = $this->db->select('sales_order.*, pelanggan.nama_pelanggan')
 			->join('pelanggan', 'pelanggan.id = sales_order.pelanggan_id', 'LEFT')
-			->join('gudang', 'gudang.id = sales_order.gudang_id', 'LEFT')
-			->order_by('sales_order.id', 'DESC')
 			->get('sales_order')->result();
 
 		$this->template->title('Invoice');
@@ -54,7 +52,7 @@ class Invoice extends Admin
 			return;
 		}
 
-		set_message('Belum ada Sales Order. Silakan buat Sales Order terlebih dahulu.', 'warning');
+		set_message('Belum ada Transaksi Penjualan. Silakan buat Transaksi Penjualan terlebih dahulu.', 'warning');
 		redirect('administrator/sales_order/add');
 	}
 
@@ -65,9 +63,8 @@ class Invoice extends Admin
 		$this->data['so']         = $this->model_sales_order->find_with_detail($so_id);
 		$this->data['so_items']   = $this->model_sales_order->get_items($so_id);
 		$this->data['nomor_baru'] = $this->model_invoice->generate_nomor();
-		$this->data['gudangs']    = $this->db->where('status', 'aktif')->get('gudang')->result();
 		$this->data['produks']    = $this->db->where('status', 'aktif')->get('produk')->result();
-		$this->template->title('Buat Invoice dari SO');
+		$this->template->title('Buat Invoice Penjualan');
 		$this->render('backend/standart/administrator/invoice/invoice_add', $this->data);
 	}
 
@@ -82,23 +79,11 @@ class Invoice extends Admin
 
 		if ($this->form_validation->run()) {
 				$so_id = $this->input->post('so_id') ?: null;
-				$gudang_id = $this->input->post('gudang_id') ?: null;
-				if (empty($gudang_id) && !empty($so_id)) {
-					$so_rec = $this->db->get_where('sales_order', ['id' => $so_id])->row();
-					if ($so_rec && !empty($so_rec->gudang_id)) {
-						$gudang_id = $so_rec->gudang_id;
-					}
-				}
-				if (empty($gudang_id)) {
-					$first_g = $this->db->get('gudang')->row();
-					$gudang_id = $first_g ? $first_g->id : 1;
-				}
 
 				$data = [
 					'nomor_invoice'     => $this->model_invoice->generate_nomor(),
 					'so_id'             => $so_id,
 					'pelanggan_id'      => $this->input->post('pelanggan_id'),
-					'gudang_id'         => $gudang_id,
 					'tanggal_invoice'   => $this->input->post('tanggal_invoice'),
 				'tanggal_jatuh_tempo' => $this->input->post('tanggal_jatuh_tempo') ?: null,
 				'nomor_resi'        => $this->input->post('nomor_resi'),
@@ -340,7 +325,7 @@ class Invoice extends Admin
 		
 		$this->load->library('HtmlPdf');
 		$this->htmlpdf->initialize(['orientation' => 'P', 'format' => 'A4', 'marges' => [5, 5, 5, 5]]);
-		$content = $this->load->view('backend/standart/administrator/invoice/invoice_pdf', $this->data, true);
+		$content = $this->load->view('invoice/backend/standart/administrator/invoice/invoice_pdf', $this->data, true);
 		
 		$this->htmlpdf->writeHTML($content);
 		$invoice = $this->data['invoice'];
@@ -355,10 +340,33 @@ class Invoice extends Admin
 		$this->cetak($id);
 	}
 
+	public function cetak_struk($id)
+	{
+		$this->cetak_thermal($id);
+	}
+
+	public function cetak_thermal($id)
+	{
+		$this->is_allowed('invoice_view');
+		$inv = $this->model_invoice->find($id);
+		if (!$inv) {
+			show_404();
+			return;
+		}
+
+		$template = $this->input->get('template') ?: 'thermal';
+		if (!empty($inv->so_id)) {
+			redirect('administrator/sales_order/cetak_struk/' . $inv->so_id . '?template=' . $template);
+			return;
+		}
+
+		// Fallback ke PDF invoice biasa jika tidak ada rujukan SO POS
+		redirect('administrator/invoice/print_invoice/' . $id);
+	}
+
 	public function export_pdf()
 	{
 		$this->is_allowed('invoice_export');
 		$this->model_invoice->pdf('invoice', 'invoice');
 	}
-
 }

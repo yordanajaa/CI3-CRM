@@ -7,7 +7,7 @@ $query_builder = TRUE;
 // Auto detect database credentials (Localhost vs Hostinger)
 $raw_host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : (isset($_SERVER['SERVER_NAME']) ? $_SERVER['SERVER_NAME'] : 'localhost');
 $server_name = explode(':', $raw_host)[0];
-$local_hosts = array('localhost', '127.0.0.1', 'ci3_metafora.test', 'host.docker.internal');
+$local_hosts = array('localhost', '127.0.0.1', 'crm.test', 'ci3_metafora.test', 'host.docker.internal');
 $is_local = in_array($server_name, $local_hosts) 
     || (substr($server_name, -5) === '.test') 
     || (substr($server_name, -6) === '.local')
@@ -16,17 +16,20 @@ $is_local = in_array($server_name, $local_hosts)
 $is_online = !$is_local;
 
 if ($is_online) {
-    // Pengaturan Database Hostinger (Sesuaikan dengan data MySQL cPanel Hostinger)
+    // =========================================================================
+    // PENGATURAN DATABASE HOSTING / CPANEL
+    // =========================================================================
+    // PENTING: Sebelum/sesudah upload ke cPanel, sesuaikan 3 variabel di bawah ini:
     $hostname = 'localhost';
-    $username = 'u103077770_metafora';  // Ganti dengan Username Database Hostinger
-    $password = 'PasswordHostingerAnda'; // Ganti dengan Password Database Hostinger
-    $database = 'u103077770_metafora';  // Ganti dengan Nama Database Hostinger
+    $username = 'u103077770_crm';       // Ganti dengan Username MySQL di cPanel Anda
+    $password = 'PasswordMySQLHosting'; // Ganti dengan Password user MySQL cPanel Anda
+    $database = 'u103077770_crm';       // Ganti dengan Nama Database di cPanel Anda
 } else {
     // Pengaturan Database Localhost (Laragon / XAMPP)
     $hostname = 'localhost';
     $username = 'root';
     $password = '';
-    $database = 'metafora';
+    $database = 'crm';
 }
 
 $db['default'] = array(
@@ -38,7 +41,7 @@ $db['default'] = array(
 	'dbdriver' => 'mysqli',
 	'dbprefix' => '',
 	'pconnect' => FALSE,
-	'db_debug' => (ENVIRONMENT !== 'production'),
+	'db_debug' => TRUE, // Ditampilkan TRUE agar jika ada kendala koneksi di hosting muncul keterangan jelas (bukan HTTP 500 blank)
 	'cache_on' => FALSE,
 	'cachedir' => '',
 	'char_set' => 'utf8mb4',

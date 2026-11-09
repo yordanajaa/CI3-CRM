@@ -61,12 +61,12 @@
                             ]); ?>
                          
                                                 <div class="form-group ">
-                            <label for="id" class="col-sm-2 control-label">Id 
+                            <label for="kode_kategori" class="col-sm-2 control-label">Kode Kategori 
                             </label>
                             <div class="col-sm-8">
-                                <input type="number" class="form-control" name="id" id="id" placeholder="Id" value="<?= set_value('id'); ?>">
+                                <input type="text" class="form-control" name="kode_kategori" id="kode_kategori" placeholder="Contoh: KAT-FNB (Otomatis dibuat jika dikosongkan)" value="<?= set_value('kode_kategori'); ?>">
                                 <small class="info help-block">
-                                </small>
+                                <b>Kode Kategori</b> (Boleh dikosongkan, sistem akan mengenerate otomatis).</small>
                             </div>
                         </div>
                                                  
@@ -93,12 +93,11 @@
                         </div>
                                                  
                                                 <div class="form-group ">
-                            <label for="created_at" class="col-sm-2 control-label">Created At 
-                            <i class="required">*</i>
+                            <label for="created_at" class="col-sm-2 control-label">Tanggal Dibuat 
                             </label>
                             <div class="col-sm-6">
                             <div class="input-group date col-sm-8">
-                              <input type="text" class="form-control pull-right datetimepicker" name="created_at"  id="created_at">
+                              <input type="text" class="form-control pull-right datetimepicker" name="created_at" id="created_at" value="<?= set_value('created_at', date('Y-m-d H:i:s')); ?>">
                             </div>
                             <small class="info help-block">
                             </small>

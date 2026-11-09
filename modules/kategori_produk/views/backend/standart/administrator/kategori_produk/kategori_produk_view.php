@@ -57,10 +57,10 @@ jQuery(document).ready(domo);
                   <div class="form-horizontal" name="form_kategori_produk" id="form_kategori_produk" >
                    
                     <div class="form-group ">
-                        <label for="content" class="col-sm-2 control-label">Id </label>
+                        <label for="content" class="col-sm-2 control-label">Kode Kategori </label>
 
                         <div class="col-sm-8">
-                           <?= _ent($kategori_produk->id); ?>
+                           <span class="label label-primary" style="font-size:12px;"><?= _ent(!empty($kategori_produk->kode_kategori) ? $kategori_produk->kode_kategori : ('KAT-' . strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $kategori_produk->nama_kategori), 0, 6)))); ?></span>
                         </div>
                     </div>
                                          

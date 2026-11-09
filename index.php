@@ -56,7 +56,7 @@
  */
 // Auto detect environment (development on localhost, production on hosting)
 $server_name = isset($_SERVER['SERVER_NAME']) ? $_SERVER['SERVER_NAME'] : (isset($_SERVER['HTTP_HOST']) ? explode(':', $_SERVER['HTTP_HOST'])[0] : 'localhost');
-$local_hosts = array('localhost', '127.0.0.1', 'ci3_metafora.test', 'host.docker.internal');
+$local_hosts = array('localhost', '127.0.0.1', 'crm.test', 'ci3_metafora.test', 'host.docker.internal');
 $is_localhost = in_array($server_name, $local_hosts) 
     || (substr($server_name, -5) === '.test') 
     || (substr($server_name, -6) === '.local')
@@ -107,6 +107,14 @@ switch (ENVIRONMENT) {
         ini_set('display_errors', 0);
         error_reporting(0);
         break;
+}
+
+// Fitur diagnostik darurat saat baru upload ke cPanel hosting:
+// Tambahkan ?debug_metafora=1 pada URL browser jika ingin melihat detail error asli
+if (isset($_GET['debug_metafora']) && $_GET['debug_metafora'] === '1') {
+    ini_set('display_errors', 1);
+    ini_set('display_startup_errors', 1);
+    error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED & ~E_NOTICE);
 }
 
 /*

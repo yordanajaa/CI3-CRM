@@ -368,9 +368,6 @@
       <a href="<?= site_url('administrator/crm/followup_setting'); ?>" class="nav-tab-btn">
         <i class="fa fa-cogs"></i> 6. Kelompok Follow-Up
       </a>
-      <a href="<?= site_url('administrator/crm/automations'); ?>" class="nav-tab-btn">
-        <i class="fa fa-bolt"></i> 7. Otomasi CRM
-      </a>
     </div>
   </div>
 

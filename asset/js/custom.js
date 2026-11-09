@@ -350,3 +350,48 @@ $(document).on('show.bs.modal', '.modal', function () {
         $(this).appendTo('body');
     }
 });
+
+/* Global Auto-Hide Datepicker on Scroll to prevent hanging/floating popup bug */
+(function() {
+    function autoHideDatepickers(e) {
+        if (e && e.target && (e.target.id === 'ui-datepicker-div' || (window.jQuery && window.jQuery(e.target).closest('#ui-datepicker-div, .datepicker-dropdown').length))) {
+            return;
+        }
+        if (window.jQuery) {
+            var $ = window.jQuery;
+            if ($.datepicker && typeof $.datepicker._hideDatepicker === 'function') {
+                try { $.datepicker._hideDatepicker(); } catch(err){}
+            }
+        }
+        var uiDiv = document.getElementById('ui-datepicker-div');
+        if (uiDiv) { uiDiv.style.display = 'none'; }
+        var bsPickers = document.querySelectorAll('.datepicker-dropdown');
+        bsPickers.forEach(function(el) { el.style.display = 'none'; });
+    }
+
+    window.addEventListener('scroll', autoHideDatepickers, true);
+
+    // AdminLTE fixed layout: .content-wrapper is the scrolling container, bind directly
+    document.addEventListener('DOMContentLoaded', function() {
+        var cw = document.querySelector('.content-wrapper');
+        if (cw) { cw.addEventListener('scroll', autoHideDatepickers, false); }
+    });
+})();
+
+    /* Global jQuery UI Datepicker Indonesian Localization & Format Defaults (dd/mm/yy) */
+    if (window.jQuery && window.jQuery.datepicker) {
+        window.jQuery.datepicker.setDefaults({
+            dateFormat: 'dd/mm/yy',
+            firstDay: 1,
+            isRTL: false,
+            showMonthAfterYear: false,
+            yearSuffix: '',
+            monthNames: ['Januari','Februari','Maret','April','Mei','Juni',
+            'Juli','Agustus','September','Oktober','November','Desember'],
+            monthNamesShort: ['Jan','Feb','Mar','Apr','Mei','Jun',
+            'Jul','Agu','Sep','Okt','Nov','Des'],
+            dayNames: ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'],
+            dayNamesShort: ['Min','Sen','Sel','Rab','Kam','Jum','Sab'],
+            dayNamesMin: ['Mg','Sn','Sl','Rb','Km','Jm','Sb']
+        });
+    }

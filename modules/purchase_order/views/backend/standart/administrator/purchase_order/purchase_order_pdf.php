@@ -6,31 +6,56 @@
             <span style="font-size: 11px; color: #555;">Sistem Penjualan, Pembelian &amp; Inventory</span><br>
             <span style="font-size: 10px; color: #666;">Telp: (0274) 123456 | Email: info@idmetafora.com</span>
          </td>
-         <td style="width: 45%; text-align: right;">
+         <td style="width: 45%; text-align: right; vertical-align: top;">
             <strong style="font-size: 16px; color: #0056b3;">PURCHASE ORDER</strong><br>
-            <span style="font-size: 11px;"><strong>No PO:</strong> <?= _ent($po->nomor_po ?? ''); ?></span><br>
-            <span style="font-size: 11px;"><strong>Tanggal:</strong> <?= isset($po->tanggal_po) ? date('d/m/Y', strtotime($po->tanggal_po)) : '-'; ?></span>
+            <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 3px;">
+               <tr>
+                  <td style="width: 50%; text-align: right; padding: 1px 0; color: #1e293b;"><strong>No PO</strong></td>
+                  <td style="width: 5%; text-align: center; padding: 1px 0; color: #1e293b;">:</td>
+                  <td style="width: 45%; text-align: left; padding: 1px 0; color: #1e293b;"><strong><?= _ent($po->nomor_po ?? '-'); ?></strong></td>
+               </tr>
+               <tr>
+                  <td style="text-align: right; padding: 1px 0; color: #475569;"><strong>Tanggal</strong></td>
+                  <td style="text-align: center; padding: 1px 0; color: #475569;">:</td>
+                  <td style="text-align: left; padding: 1px 0; color: #475569;"><?= isset($po->tanggal_po) ? date('d/m/Y', strtotime($po->tanggal_po)) : '-'; ?></td>
+               </tr>
+            </table>
          </td>
       </tr>
    </table>
 
    <br>
 
-   <table style="width: 100%; font-size: 11px;">
+   <?php 
+      $alamat_full = trim(($po->alamat_supplier ?? $po->alamat ?? '') . (!empty($po->kota) ? ', ' . $po->kota : ''));
+      $alamat_disp = !empty($alamat_full) ? $alamat_full : '-';
+      $telp_disp   = !empty($po->telp_supplier) ? $po->telp_supplier : (!empty($po->no_telp) ? $po->no_telp : (!empty($po->telepon) ? $po->telepon : '-'));
+      $tgl_est     = (!empty($po->tanggal_estimasi) && $po->tanggal_estimasi != '0000-00-00') ? date('d/m/Y', strtotime($po->tanggal_estimasi)) : '-';
+   ?>
+   <table style="width: 100%; font-size: 11px; border-collapse: collapse; table-layout: fixed;">
       <tr>
-         <td style="width: 50%; vertical-align: top;">
-            <table style="width: 100%;">
-               <tr><td style="width: 35%;"><strong>Supplier:</strong></td><td><?= _ent($po->nama_supplier ?? '-'); ?></td></tr>
-               <tr><td style="width: 35%;"><strong>Alamat:</strong></td><td><?= _ent($po->alamat_supplier ?? '-'); ?></td></tr>
-               <tr><td style="width: 35%;"><strong>No Telp:</strong></td><td><?= _ent($po->telp_supplier ?? '-'); ?></td></tr>
-            </table>
-         </td>
-         <td style="width: 50%; vertical-align: top;">
-            <table style="width: 100%;">
-               <tr><td style="width: 40%;"><strong>Est. Terima:</strong></td><td><?= _ent($po->tanggal_estimasi ?? '-'); ?></td></tr>
-               <tr><td style="width: 40%;"><strong>Mata Uang:</strong></td><td><?= _ent($po->mata_uang ?? 'IDR'); ?> (Kurs: <?= number_format((float)$po->kurs ?? 1, 0, ',', '.'); ?>)</td></tr>
-            </table>
-         </td>
+         <td style="width: 13%; padding: 3px 0; color: #475569; vertical-align: top;"><strong>Supplier</strong></td>
+         <td style="width: 2%; padding: 3px 0; text-align: center; color: #475569; vertical-align: top;">:</td>
+         <td style="width: 34%; padding: 3px 12px 3px 0; vertical-align: top; word-wrap: break-word;"><strong><?= _ent($po->nama_supplier ?? '-'); ?></strong></td>
+         <td style="width: 15%; padding: 3px 0; color: #475569; vertical-align: top;"><strong>Est. Terima</strong></td>
+         <td style="width: 2%; padding: 3px 0; text-align: center; color: #475569; vertical-align: top;">:</td>
+         <td style="width: 34%; padding: 3px 0; vertical-align: top;"><?= _ent($tgl_est); ?></td>
+      </tr>
+      <tr>
+         <td style="width: 13%; padding: 3px 0; color: #475569; vertical-align: top;"><strong>Alamat</strong></td>
+         <td style="width: 2%; padding: 3px 0; text-align: center; color: #475569; vertical-align: top;">:</td>
+         <td style="width: 34%; padding: 3px 12px 3px 0; vertical-align: top; line-height: 1.35; word-wrap: break-word;"><?= nl2br(_ent($alamat_disp)); ?></td>
+         <td style="width: 15%; padding: 3px 0; color: #475569; vertical-align: top;"><strong>Mata Uang</strong></td>
+         <td style="width: 2%; padding: 3px 0; text-align: center; color: #475569; vertical-align: top;">:</td>
+         <td style="width: 34%; padding: 3px 0; vertical-align: top;"><?= _ent($po->mata_uang ?? 'IDR'); ?> (Kurs: <?= number_format((float)($po->kurs ?? 1), 0, ',', '.'); ?>)</td>
+      </tr>
+      <tr>
+         <td style="width: 13%; padding: 3px 0; color: #475569; vertical-align: top;"><strong>No Telp</strong></td>
+         <td style="width: 2%; padding: 3px 0; text-align: center; color: #475569; vertical-align: top;">:</td>
+         <td style="width: 34%; padding: 3px 12px 3px 0; vertical-align: top; word-wrap: break-word;"><?= _ent($telp_disp); ?></td>
+         <td style="width: 15%; padding: 3px 0; color: #475569; vertical-align: top;"><strong>Petugas</strong></td>
+         <td style="width: 2%; padding: 3px 0; text-align: center; color: #475569; vertical-align: top;">:</td>
+         <td style="width: 34%; padding: 3px 0; vertical-align: top;"><?= _ent($po->created_by ?? '-'); ?></td>
       </tr>
    </table>
 

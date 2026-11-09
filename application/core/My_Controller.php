@@ -462,7 +462,45 @@ class Admin extends MY_Controller
         
         if (!installation_complete()) {
             redirect('');
-        }      
+        }
+
+        // Strict Authentication Gate: Wajib login, tidak bisa bypass halaman administrator
+        $controller = strtolower($this->router->fetch_class());
+        $method     = strtolower($this->router->fetch_method());
+
+        // Whitelist metode publik di controller Auth
+        $public_auth = [
+            'auth' => ['login', 'register', 'forgot_password', 'reset_password', 'logout']
+        ];
+
+        $is_public = isset($public_auth[$controller]) && in_array($method, $public_auth[$controller]);
+
+        if (!$is_public) {
+            if (!$this->aauth->is_loggedin()) {
+                if ($this->input->is_ajax_request()) {
+                    $this->output
+                        ->set_status_header(401)
+                        ->set_content_type('application/json')
+                        ->set_output(json_encode([
+                            'status'   => false,
+                            'message'  => 'Sesi login telah berakhir. Anda wajib login terlebih dahulu.',
+                            'redirect' => site_url('administrator/login')
+                        ]))
+                        ->_display();
+                    exit;
+                }
+
+                // Simpan URL yang dituju agar setelah login pengguna kembali ke halaman yang diinginkan
+                $target_url = current_url();
+                if ($this->input->server('QUERY_STRING')) {
+                    $target_url .= '?' . $this->input->server('QUERY_STRING');
+                }
+                $this->session->set_userdata('redirect', $target_url);
+
+                redirect('administrator/login', 'refresh');
+                exit;
+            }
+        }
     }
 
 
@@ -531,6 +569,8 @@ class Admin extends MY_Controller
                     $this->session->set_flashdata('f_type', 'warning');
                     if ($this->uri->segment(2) !== 'dashboard' && $this->aauth->is_allowed('dashboard')) {
                         redirect('administrator/dashboard','refresh');
+                    } else {
+                        redirect('administrator/login','refresh');
                     }
                 }
                 return false;

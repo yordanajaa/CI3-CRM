@@ -187,8 +187,8 @@
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
-/* Gudang & Tanggal form controls */
-#gudang_id, #tanggal_so {
+/* Tanggal form controls */
+#tanggal_so {
   height: 36px !important;
   border-radius: 6px !important;
   border: 1px solid #cbd5e1 !important;
@@ -197,7 +197,7 @@
   padding-right: 24px !important;
   transition: all .15s ease !important;
 }
-#gudang_id:focus, #tanggal_so:focus {
+#tanggal_so:focus {
   border-color: #3b82f6 !important;
   box-shadow: 0 0 0 3px rgba(59,130,246,0.12) !important;
 }
@@ -349,6 +349,16 @@
 }
 
 @media (max-width: 991px) {
+  .checkout-options-col {
+    border-right: none !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    padding-right: 15px !important;
+    padding-bottom: 20px !important;
+    margin-bottom: 20px !important;
+  }
+  .checkout-pay-col {
+    padding-left: 15px !important;
+  }
   .sticky-checkout {
     position: static !important;
     margin-top: 16px !important;
@@ -821,9 +831,19 @@
    CARDS GRID VIEW
    ========================================================== */
 .pos-history-cards-grid {
-  display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(225px, 1fr)) !important;
-  gap: 12px !important;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
+  gap: 12px;
+}
+#wrapper_cards_rekap[style*="display: none"],
+#wrapper_cards_rekap.is-hidden,
+.pos-history-cards-grid[style*="display: none"],
+.pos-history-cards-grid.is-hidden {
+  display: none !important;
+}
+#wrapper_tabel_rekap[style*="display: none"],
+#wrapper_tabel_rekap.is-hidden {
+  display: none !important;
 }
 .pos-trx-card {
   background: #ffffff !important;
@@ -1122,14 +1142,14 @@
 
   /* Horizontal swipeable cards reel on mobile */
   .pos-history-cards-grid {
-    display: flex !important;
-    flex-direction: row !important;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-    scroll-snap-type: x mandatory !important;
-    gap: 10px !important;
-    padding-bottom: 8px !important;
-    margin-bottom: 2px !important;
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    gap: 10px;
+    padding-bottom: 8px;
+    margin-bottom: 2px;
   }
   .pos-history-cards-grid::-webkit-scrollbar {
     height: 4px !important;
@@ -1220,7 +1240,7 @@
       </span>
       <div class="pos-top-features hidden-xs">
          <span class="pos-feat-item" title="Faktur Penjualan diterbitkan otomatis"><i class="fa fa-check-circle"></i> Auto-Faktur</span>
-         <span class="pos-feat-item" title="Stok gudang otomatis terpotong (FIFO/FEFO)"><i class="fa fa-check-circle"></i> Potong Stok</span>
+         <span class="pos-feat-item" title="Stok otomatis terpotong (FIFO/FEFO)"><i class="fa fa-check-circle"></i> Potong Stok</span>
          <span class="pos-feat-item" title="Bukti Kas Masuk (BKM) otomatis dicatat"><i class="fa fa-check-circle"></i> Kas BKM</span>
       </div>
    </div>
@@ -1230,14 +1250,14 @@
          <span class="hidden-xs" id="top_bt_label">Thermal BT</span>
          <span class="badge" id="top_bt_badge" style="background:#94a3b8; font-size:9px; padding:2px 6px; font-weight:700;">Belum Konek</span>
       </button>
-      <button type="button" class="btn-pos-history active" id="btn_toggle_riwayat" title="Tampilkan / Sembunyikan 5 Transaksi Terakhir">
+      <button type="button" class="btn-pos-history" id="btn_toggle_riwayat" title="Tampilkan / Sembunyikan Riwayat Transaksi Kasir">
          <i class="fa fa-history text-primary"></i>
-         <span class="hidden-xs">5 Transaksi Terakhir</span><span class="visible-xs-inline">Riwayat</span>
+         <span class="hidden-xs">Riwayat Transaksi Kasir</span><span class="visible-xs-inline">Riwayat</span>
          <span class="badge-history-count" id="badge_count_rekap"><?= !empty($last_transactions) ? count($last_transactions) : 0; ?></span>
          <i class="fa fa-chevron-down chevron-history" id="icon_toggle_rekap"></i>
       </button>
-      <a href="<?= site_url('administrator/sales_order/add'); ?>" class="btn-pos-nav-link" title="Beralih ke Formulir Penjualan Regular / Tempo">
-         <i class="fa fa-file-text-o text-primary"></i> <span class="hidden-xs">Penjualan Regular &rarr;</span><span class="visible-xs-inline">Regular</span>
+      <a href="<?= site_url('administrator/sales_order/add'); ?>" class="btn-pos-nav-link" title="Beralih ke Formulir Transaksi Offline / Tempo">
+         <i class="fa fa-file-text-o text-primary"></i> <span class="hidden-xs">Transaksi Offline &rarr;</span><span class="visible-xs-inline">Offline</span>
       </a>
       <a href="<?= site_url('administrator/sales_order'); ?>" class="btn-pos-nav-link" title="Buka Daftar Semua Penjualan">
          <i class="fa fa-list text-muted"></i> <span class="hidden-xs">Daftar Penjualan</span><span class="visible-xs-inline">Daftar</span>
@@ -1245,12 +1265,12 @@
    </div>
 </div>
 
-<!-- Modern Collapsible History Panel -->
-<div id="panel_riwayat_transaksi" class="pos-history-panel">
+<!-- Modern Collapsible History Panel (Hidden by default to focus on cashier input) -->
+<div id="panel_riwayat_transaksi" class="pos-history-panel" style="display:none;">
    <div class="pos-history-header">
       <div class="pos-history-title-group">
          <span class="pos-history-title">
-            <i class="fa fa-clock-o"></i> 5 Transaksi Terakhir (Kasir POS)
+            <i class="fa fa-clock-o"></i> Riwayat Transaksi Kasir POS
          </span>
          <span class="pos-history-live-pill">
             <span class="pos-history-live-dot"></span> Live POS
@@ -1292,8 +1312,8 @@
                   <i class="fa fa-user"></i>
                </div>
                <div class="pos-trx-cust-info">
-                  <div class="pos-trx-cust-name" title="<?= htmlspecialchars($lt->nama_pelanggan ?: 'Umum / Retail'); ?>">
-                     <?= _ent($lt->nama_pelanggan ?: 'Umum / Retail'); ?>
+                  <div class="pos-trx-cust-name" title="<?= htmlspecialchars($lt->nama_pelanggan ?: 'Pelanggan Umum'); ?>">
+                     <?= _ent($lt->nama_pelanggan ?: 'Pelanggan Umum'); ?>
                   </div>
                   <div class="pos-trx-cust-date"><?= date('d/m/Y', strtotime($lt->created_at)); ?></div>
                </div>
@@ -1325,7 +1345,7 @@
       <table class="pos-history-table">
          <thead>
             <tr>
-               <th>No. SO</th>
+               <th>No. Transaksi Penjualan</th>
                <th>Tanggal &amp; Waktu</th>
                <th>Pelanggan</th>
                <th style="text-align:right;">Total Bayar</th>
@@ -1340,7 +1360,7 @@
                      <span class="pos-trx-so-badge"><?= $lt->nomor_so; ?></span>
                   </td>
                   <td><i class="fa fa-clock-o text-muted"></i> <?= date('d/m/Y H:i', strtotime($lt->created_at)); ?></td>
-                  <td style="font-weight:600; color:#0f172a;"><i class="fa fa-user-circle text-muted" style="margin-right:4px;"></i> <?= _ent($lt->nama_pelanggan ?: 'Umum / Retail'); ?></td>
+                  <td style="font-weight:600; color:#0f172a;"><i class="fa fa-user-circle text-muted" style="margin-right:4px;"></i> <?= _ent($lt->nama_pelanggan ?: 'Pelanggan Umum'); ?></td>
                   <td style="text-align:right; font-weight:700; color:#059669;">Rp <?= number_format((float)$lt->grand_total, 0, ',', '.'); ?></td>
                   <td style="text-align:center; white-space:nowrap;">
                      <a href="<?= site_url('administrator/sales_order/cetak_struk/' . $lt->id); ?>" class="btn-trx-print" style="padding:4px 8px; font-size:10.5px;" title="Cetak Struk">
@@ -1365,23 +1385,23 @@
 <form id="form_so_cepat">
 <div class="row">
 
-   <!-- KOLOM KIRI: PRODUK & KERANJANG BELANJA (col-md-8 col-lg-8) -->
-   <div class="col-md-8 col-lg-8">
+   <!-- 1. KARTU ATAS: PELANGGAN & INFORMASI TRANSAKSI (col-md-12) -->
+   <div class="col-md-12">
 
       <!-- Header & Konfigurasi Singkat -->
-      <div class="box pos-card" style="border-top: 3px solid #10b981;">
+      <div class="box pos-card" style="border-top: 3px solid #10b981; margin-bottom: 16px;">
          <div class="box-header with-border" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; padding: 12px 18px; background: #fafcff;">
             <h3 class="box-title" style="font-weight: 700; color: #047857; font-size: 13.5px; margin:0; display:flex; align-items:center; gap:6px;">
                <i class="fa fa-user-circle text-success"></i> Pelanggan &amp; Tanggal Transaksi
             </h3>
             <span class="text-muted" style="font-size: 12px; font-weight: 600;">
-               No. SO Baru: <strong class="text-primary" id="display_nomor_so"><?= _ent($nomor_baru); ?></strong>
+               No. Transaksi Baru: <strong class="text-primary" id="display_nomor_so"><?= _ent($nomor_baru); ?></strong>
             </span>
          </div>
          <div class="box-body" style="padding: 14px 18px;">
             <div class="row">
-               <div class="col-md-8 col-sm-8 col-xs-12 col-pelanggan-wrap">
-                  <div class="form-group" style="margin-bottom: 10px;">
+               <div class="col-md-5 col-sm-6 col-xs-12 col-pelanggan-wrap">
+                  <div class="form-group" style="margin-bottom: 8px;">
                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; flex-wrap:wrap; gap:4px;">
                         <label style="margin:0; font-size:12px; font-weight:700;"><i class="fa fa-user text-primary"></i> Pelanggan <span class="text-danger">*</span></label>
                         <div>
@@ -1397,7 +1417,6 @@
                         <option value="">-- Ketik Nama Manual / Pilih Pelanggan --</option>
                         <?php foreach($pelanggans as $p): ?>
                            <?php 
-                              $tipe = strtoupper($p->tipe_pelanggan ?? 'RETAIL');
                               $telp = $p->no_telp ?: $p->telepon;
                            ?>
                            <option value="<?= $p->id; ?>" 
@@ -1407,7 +1426,7 @@
                                    data-telp="<?= _ent($telp); ?>"
                                    data-alamat="<?= _ent($p->alamat); ?>"
                                    data-kota="<?= _ent($p->kota); ?>">
-                              <?= _ent($p->nama_pelanggan); ?> [<?= $tipe; ?>] <?= !empty($telp) ? '('.$telp.')' : ''; ?>
+                              <?= _ent($p->nama_pelanggan); ?><?= !empty($telp) ? ' ('.$telp.')' : ''; ?>
                            </option>
                         <?php endforeach; ?>
                      </select>
@@ -1419,22 +1438,30 @@
                   </div>
                </div>
 
-               <?php $default_gudang_id = isset($gudangs[0]) ? $gudangs[0]->id : (isset($default_gudang->id) ? $default_gudang->id : 1); ?>
-                <input type="hidden" name="gudang_id" id="gudang_id" value="<?= $default_gudang_id; ?>">
-                <div class="col-xs-12 col-sm-4 col-md-4">
-                  <div class="form-group" style="margin-bottom: 10px;">
+               <div class="col-md-3 col-sm-6 col-xs-12">
+                  <div class="form-group" style="margin-bottom: 8px;">
                      <label style="font-size:12px; font-weight:700; margin-bottom:4px; display:block;"><i class="fa fa-calendar text-primary"></i> Tanggal Penjualan</label>
-                     <input type="date" class="form-control" name="tanggal_so" id="tanggal_so" value="<?= date('Y-m-d'); ?>" required style="height:36px; border-radius:6px;">
+                     <input type="date" class="form-control" name="tanggal_so" id="tanggal_so" value="<?= date('Y-m-d'); ?>" required style="height:36px; border-radius:6px; font-weight:600;">
+                  </div>
+               </div>
+
+               <div class="col-md-4 col-sm-12 col-xs-12">
+                  <div class="form-group" style="margin-bottom: 8px;">
+                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <label style="font-size: 12px; font-weight: 700; color: #334155; margin:0;"><i class="fa fa-ticket text-primary"></i> No. Ref / Slip Transaksi</label>
+                        <span class="label label-success" style="font-size:9.5px; font-weight:600; border-radius:4px;"><i class="fa fa-check"></i> Otomatis Urut</span>
+                     </div>
+                     <input type="text" class="form-control" name="nomor_referensi" id="nomor_referensi" value="<?= _ent($nomor_ref_baru ?? ''); ?>" style="font-weight:700; color:#1e40af; background:#f0fdf4; border:1px solid #86efac; border-radius:6px; height:36px;">
                   </div>
                </div>
             </div>
 
             <!-- Customer preview chip with quick edit / complete data -->
-            <div id="customer_info_chip" style="display:none; background:#f0f9ff; border:1px solid #bae6fd; border-radius:6px; padding:8px 14px; font-size:12px; color:#0369a1; margin-top:6px;">
+            <div id="customer_info_chip" style="display:none; background:#f0f9ff; border:1px solid #bae6fd; border-radius:6px; padding:8px 14px; font-size:12px; color:#0369a1; margin-top:8px;">
                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                   <div>
                      <i class="fa fa-id-card-o text-primary"></i> <strong id="chip_cust_nama" style="font-size:13px; color:#0c4a6e;">-</strong> 
-                     &middot; <span id="chip_cust_tipe" class="label" style="background:#0284c7; font-size:9.5px; padding:2px 6px; border-radius:3px;">RETAIL</span> 
+                     <span id="chip_cust_tipe" style="display:none;"></span>
                      &middot; <i class="fa fa-phone text-success"></i> <span id="chip_cust_telp" style="font-weight:600;">-</span>
                      <span id="chip_cust_alamat_wrapper" style="display:none;">
                         &middot; <i class="fa fa-map-marker text-danger"></i> <span id="chip_cust_alamat" style="color:#475569;">-</span>
@@ -1449,6 +1476,10 @@
             </div>
          </div>
       </div>
+   </div>
+
+   <!-- 2. KARTU TENGAH: KERANJANG ITEM PESANAN FULL WIDTH (col-md-12) -->
+   <div class="col-md-12">
 
       <!-- Item Keranjang Penjualan -->
       <div class="box pos-card" style="border-top: 3px solid #3b82f6;">
@@ -1531,21 +1562,27 @@
                   </tbody>
                   <tfoot>
                      <tr style="background: #f8fafc; border-top: 2px solid #cbd5e1;">
-                        <td colspan="4" style="padding: 11px 14px; vertical-align: middle; background: #f8fafc !important; border-top: 2px solid #cbd5e1 !important;">
-                           <div style="display: flex; align-items: center; gap: 8px;">
-                              <span style="font-size: 12px; font-weight: 700; color: #475569; display: flex; align-items: center; gap: 5px;">
-                                 <i class="fa fa-shopping-basket text-primary" style="font-size: 13px;"></i> Total Ringkasan:
+                        <td colspan="3" style="padding: 12px 16px; vertical-align: middle; background: #f8fafc !important; border-top: 2px solid #cbd5e1 !important;">
+                           <div style="display: flex; align-items: center; gap: 10px;">
+                              <span style="font-size: 13px; font-weight: 700; color: #475569; display: flex; align-items: center; gap: 6px;">
+                                 <i class="fa fa-shopping-basket text-primary" style="font-size: 14px;"></i> Total Ringkasan:
                               </span>
-                              <strong id="count_items_label" class="label label-primary" style="font-size: 11px; padding: 4px 10px; border-radius: 12px; font-weight: 700; background: #0284c7; box-shadow: 0 1px 3px rgba(2,132,199,0.2);">0 Item (0 pcs)</strong>
+                              <strong id="count_items_label" class="label label-primary" style="font-size: 12px; padding: 5px 12px; border-radius: 12px; font-weight: 700; background: #0284c7; box-shadow: 0 1px 3px rgba(2,132,199,0.2);">0 Item (0 pcs)</strong>
                               <span id="count_items" style="display:none;">0</span>
                            </div>
                         </td>
-                        <td colspan="4" class="text-right" style="padding: 8px 14px; vertical-align: middle; background: #f8fafc !important; border-top: 2px solid #cbd5e1 !important;">
-                           <div style="display: inline-flex; align-items: center; justify-content: flex-end; gap: 10px;">
-                              <span style="font-size: 12.5px; font-weight: 700; color: #334155; white-space: nowrap;">
+                        <td colspan="5" class="text-right" style="padding: 10px 16px; vertical-align: middle; background: #f8fafc !important; border-top: 2px solid #cbd5e1 !important;">
+                           <div style="display: inline-flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: nowrap;">
+                              <span id="footer_gross_wrap" style="display:none; font-size: 12px; font-weight: 600; color: #64748b; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 10px; white-space: nowrap;">
+                                 Total Bruto: <b id="footer_gross_val" style="color:#334155;">Rp 0</b>
+                              </span>
+                              <span id="footer_item_disc_wrap" style="display:none; font-size: 12px; font-weight: 700; color: #dc2626; background: #fee2e2; border: 1px solid #fecaca; border-radius: 6px; padding: 6px 10px; white-space: nowrap;">
+                                 <i class="fa fa-tag"></i> Diskon Item: <b id="footer_item_disc_val">Rp 0</b>
+                              </span>
+                              <span style="font-size: 13px; font-weight: 700; color: #334155; white-space: nowrap;">
                                  Subtotal Keranjang:
                               </span>
-                              <div style="background: #ecfdf5; border: 1.5px solid #86efac; border-radius: 8px; padding: 6px 14px; font-weight: 800; font-size: 14px; color: #059669; text-align: right; white-space: nowrap; box-shadow: 0 1px 4px rgba(5,150,105,0.12); min-width: 130px;">
+                              <div style="background: #ecfdf5; border: 1.5px solid #86efac; border-radius: 8px; padding: 6px 18px; font-weight: 800; font-size: 15px; color: #059669; text-align: right; white-space: nowrap; box-shadow: 0 1px 4px rgba(5,150,105,0.12); min-width: 140px;">
                                  <span id="display_subtotal_items">Rp 0</span>
                               </div>
                            </div>
@@ -1556,141 +1593,156 @@
             </div>
          </div>
       </div>
-
    </div>
 
-   <!-- KOLOM KANAN: PANEL PEMBAYARAN KASIR (col-md-4 col-lg-4) -->
-   <div class="col-md-4 col-lg-4" id="terminal_kasir">
-      <div class="box pos-card sticky-checkout" style="border-top: 3px solid #059669; background: #ffffff;">
-         <div class="box-header with-border" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; background: linear-gradient(135deg, #059669, #10b981); color: #ffffff; padding: 14px 18px;">
-            <h3 class="box-title" style="font-weight: 700; color: #ffffff; font-size: 15px; margin:0; display:flex; align-items:center; gap:6px;">
-               <i class="fa fa-money"></i> Terminal Pembayaran Kasir
+   <!-- 3. KARTU BAWAH: TERMINAL PEMBAYARAN KASIR (col-md-12) -->
+   <div class="col-md-12" id="terminal_kasir">
+      <div class="box pos-card" style="border-top: 3px solid #059669; background: #ffffff; border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,0.06);">
+         <div class="box-header with-border" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; background: linear-gradient(135deg, #059669, #10b981); color: #ffffff; padding: 14px 20px; border-radius: 6px 6px 0 0;">
+            <h3 class="box-title" style="font-weight: 700; color: #ffffff; font-size: 15px; margin:0; display:flex; align-items:center; gap:8px;">
+               <i class="fa fa-money"></i> Terminal Pembayaran &amp; Checkout Kasir
             </h3>
-            <div style="display:flex; align-items:center; gap:6px;">
+            <div style="display:flex; align-items:center; gap:8px;">
                <button type="button" id="btn_cetak_ulang_last" class="btn btn-xs btn-default" style="display:none; font-weight:700; border-radius:4px; color:#047857; background:#ffffff; border-color:#ffffff;" title="Cetak ulang struk transaksi kasir terakhir">
                   <i class="fa fa-print"></i> Nota Terakhir
                </button>
-               <span class="label" style="background:rgba(255,255,255,0.25); color:#fff; font-size:10px; border-radius:10px;">LUNAS DIRECT</span>
+               <span class="label" style="background:rgba(255,255,255,0.25); color:#fff; font-size:11px; padding: 4px 10px; border-radius:12px;">LUNAS DIRECT</span>
             </div>
          </div>
          
-         <div class="box-body" style="padding: 18px;">
+         <div class="box-body" style="padding: 22px;">
+            <div class="row">
+               <!-- Sub-Kolom Kiri: Diskon Global, Pajak, Metode Pembayaran & Catatan -->
+               <div class="col-md-6 col-lg-6 checkout-options-col" style="border-right: 1px solid #e2e8f0; padding-right: 24px;">
+                  <h4 style="font-size: 13.5px; font-weight: 700; color: #047857; margin-top: 0; margin-bottom: 16px; display: flex; align-items: center; gap: 6px;">
+                     <i class="fa fa-sliders text-success"></i> Opsi Pembayaran &amp; Catatan
+                  </h4>
 
-            <!-- Big Total Tagihan Card -->
-            <div style="background: #f0fdf4; border: 1.5px dashed #86efac; border-radius: 10px; padding: 14px; text-align: center; margin-bottom: 18px;">
-               <span style="font-size: 11.5px; font-weight: 700; color: #166534; text-transform: uppercase; letter-spacing: 0.5px;">TOTAL YANG HARUS DIBAYAR:</span>
-               <div id="display_grand_total_big" style="font-size: 32px; font-weight: 900; color: #059669; line-height: 1.1; margin-top: 4px;">
-                  Rp 0
-               </div>
-               <div style="font-size: 11px; color: #475569; margin-top: 6px; display:flex; justify-content:space-around;">
-                  <span>Subtotal: <b id="text_subtotal_mini">Rp 0</b></span>
-                  <span>Disc: <b id="text_disc_mini" class="text-danger">0%</b></span>
-                  <span>Pajak: <b id="text_pajak_mini">0%</b></span>
-               </div>
-            </div>
-
-            <!-- Discount & Tax Row (Compact) -->
-            <div class="row" style="margin-bottom: 12px;">
-               <div class="col-xs-6">
-                  <div class="form-group" style="margin-bottom:0;">
-                     <label style="font-size:11px; font-weight:700; color:#475569;">Diskon Global (%)</label>
-                     <input type="number" step="0.5" min="0" max="100" class="form-control input-sm" name="diskon_persen_total" id="diskon_persen_total" value="0">
-                     <input type="hidden" name="diskon_total" id="diskon_total" value="0">
+                  <!-- Discount & Tax Row -->
+                  <div class="row" style="margin-bottom: 14px;">
+                     <div class="col-xs-6">
+                        <div class="form-group" style="margin-bottom:0;">
+                           <label style="font-size:12px; font-weight:700; color:#475569; margin-bottom:4px; display:block;">
+                              <i class="fa fa-percent text-danger"></i> Diskon Tambahan Nota (%)
+                           </label>
+                           <input type="number" step="0.5" min="0" max="100" class="form-control" name="diskon_persen_total" id="diskon_persen_total" value="0" style="height:38px; border-radius:6px; font-weight:700;">
+                           <input type="hidden" name="diskon_total" id="diskon_total" value="0">
+                           <div style="margin-top:4px;">
+                              <button type="button" id="btn_apply_disc_to_all" class="btn btn-xs btn-default" style="font-size:10.5px; border-radius:4px; color:#2563eb; border-color:#bfdbfe; font-weight:600; padding:2px 8px; background:#eff6ff;" title="Salin persen diskon ini ke seluruh item produk di tabel">
+                                 <i class="fa fa-share"></i> Terapkan ke Semua Produk
+                              </button>
+                           </div>
+                        </div>
+                     </div>
+                     <div class="col-xs-6">
+                        <div class="form-group" style="margin-bottom:0;">
+                           <label style="font-size:12px; font-weight:700; color:#475569; margin-bottom:4px; display:block;"><i class="fa fa-calculator text-primary"></i> Pajak PPN (%)</label>
+                           <input type="number" step="1" min="0" class="form-control" name="pajak_persen" id="pajak_persen" value="0" style="height:38px; border-radius:6px; font-weight:700;">
+                        </div>
+                     </div>
                   </div>
-               </div>
-               <div class="col-xs-6">
-                  <div class="form-group" style="margin-bottom:0;">
-                     <label style="font-size:11px; font-weight:700; color:#475569;">Pajak PPN (%)</label>
-                     <input type="number" step="1" min="0" class="form-control input-sm" name="pajak_persen" id="pajak_persen" value="0">
+
+                  <!-- Payment Method & Account -->
+                  <div class="row" style="margin-bottom: 14px;">
+                     <div class="col-xs-6">
+                        <div class="form-group" style="margin-bottom:0;">
+                           <label style="font-size: 12px; font-weight: 700; color: #334155;">
+                              Metode Pembayaran <span class="text-danger">*</span>
+                           </label>
+                           <select class="form-control" name="metode_pembayaran" id="metode_pembayaran" style="font-weight: 700; height: 40px; border-radius:6px;">
+                              <option value="tunai" selected>💵 Tunai (Cash Kasir)</option>
+                              <option value="transfer_bank">🏦 Transfer Bank BCA</option>
+                              <option value="transfer_mandiri">🏦 Transfer Bank Mandiri</option>
+                              <option value="transfer_bri">🏦 Transfer Bank BRI / Lainnya</option>
+                              <option value="qris">📱 QRIS / E-Wallet</option>
+                              <option value="debit">💳 Kartu Debit / EDC</option>
+                           </select>
+                        </div>
+                     </div>
+                     <div class="col-xs-6">
+                        <div class="form-group" style="margin-bottom:0;">
+                           <label style="font-size: 12px; font-weight: 700; color: #334155;">
+                              Akun Kas / Bank <span class="text-danger">*</span>
+                           </label>
+                           <select class="form-control" name="akun_kas_bank" id="akun_kas_bank" style="font-weight: 600; height: 40px; border-radius:6px;">
+                              <option value="Cash" selected>Cash</option>
+                              <option value="Transfer Bank">Transfer Bank</option>
+                           </select>
+                        </div>
+                     </div>
                   </div>
-               </div>
-            </div>
 
-            <!-- Payment Method & Account -->
-            <div class="form-group" style="margin-bottom: 12px;">
-               <label style="font-size: 12px; font-weight: 700; color: #334155;">
-                  Metode Pembayaran <span class="text-danger">*</span>
-               </label>
-               <select class="form-control" name="metode_pembayaran" id="metode_pembayaran" style="font-weight: 700; height: 38px;">
-                  <option value="tunai" selected>💵 Tunai (Cash Kasir)</option>
-                  <option value="transfer_bank">🏦 Transfer Bank BCA</option>
-                  <option value="transfer_mandiri">🏦 Transfer Bank Mandiri</option>
-                  <option value="transfer_bri">🏦 Transfer Bank BRI / Lainnya</option>
-                  <option value="qris">📱 QRIS / E-Wallet</option>
-                  <option value="debit">💳 Kartu Debit / EDC</option>
-               </select>
-            </div>
-
-            <div class="form-group" style="margin-bottom: 14px;">
-               <label style="font-size: 12px; font-weight: 700; color: #334155;">
-                  Akun Kas / Bank Penerima <span class="text-danger">*</span>
-               </label>
-               <select class="form-control" name="akun_kas_bank" id="akun_kas_bank" style="font-weight: 600; height: 36px;">
-                  <option value="Kas Tunai Kasir" selected>Kas Tunai Kasir</option>
-                  <option value="Kas Utama">Kas Utama</option>
-                  <option value="Bank BCA">Bank BCA</option>
-                  <option value="Bank Mandiri">Bank Mandiri</option>
-                  <option value="Bank BRI">Bank BRI</option>
-               </select>
-            </div>
-
-            <!-- Bagian Tunai: Uang Diterima & Kembalian -->
-            <div id="section_uang_tunai">
-               <div class="form-group" style="margin-bottom: 12px;">
-                  <label style="font-size: 12px; font-weight: 700; color: #334155;">
-                     Nominal Uang Diterima (Rp) <span class="text-danger">*</span>
-                  </label>
-                  <div class="input-group">
-                     <span class="input-group-addon" style="font-weight: 700; background: #f8fafc; font-size:14px; border-radius:6px 0 0 6px;">Rp</span>
-                     <input type="text" class="form-control" name="uang_diterima" id="uang_diterima" placeholder="0" style="font-size: 20px; font-weight: 800; color: #1e293b; height: 44px; border-radius:0 6px 6px 0;">
-                  </div>
-                  <!-- Quick Cash Preset Buttons -->
-                  <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;">
-                     <button type="button" class="btn btn-xs btn-quick-cash" data-cash="pas" style="border-radius:6px; font-weight:700; font-size:11px; padding:4px 10px; background:#f0fdf4; color:#059669; border:1px solid #86efac; cursor:pointer;" title="Bayar sesuai total pas">
-                        <i class="fa fa-check"></i> Uang Pas
-                     </button>
-                     <button type="button" class="btn btn-xs btn-quick-cash" data-cash="50000" style="border-radius:6px; font-weight:700; font-size:11px; padding:4px 10px; background:#f8fafc; color:#334155; border:1px solid #cbd5e1; cursor:pointer;">
-                        50.000
-                     </button>
-                     <button type="button" class="btn btn-xs btn-quick-cash" data-cash="100000" style="border-radius:6px; font-weight:700; font-size:11px; padding:4px 10px; background:#f8fafc; color:#334155; border:1px solid #cbd5e1; cursor:pointer;">
-                        100.000
-                     </button>
-                     <button type="button" class="btn btn-xs btn-quick-cash" data-cash="clear" style="border-radius:6px; font-weight:700; font-size:11px; padding:4px 8px; background:#fef2f2; color:#ef4444; border:1px solid #fecaca; cursor:pointer;" title="Kosongkan nominal uang diterima">
-                        <i class="fa fa-eraser"></i> Clear
-                     </button>
+                  <!-- Catatan Kasir -->
+                  <div class="form-group" style="margin-bottom: 12px;">
+                     <label style="font-size: 12px; font-weight: 700; color: #475569;"><i class="fa fa-commenting-o text-muted"></i> Catatan Transaksi (Opsional)</label>
+                     <input type="text" class="form-control" name="catatan" id="catatan" placeholder="Catatan transaksi penjualan cepat..." style="height:38px; border-radius:6px;">
                   </div>
                </div>
 
-               <!-- Box Kembalian -->
-               <div id="box_kembalian" style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
-                  <span style="font-size: 13px; font-weight: 700; color: #475569;"><i class="fa fa-calculator text-success"></i> Kembalian:</span>
-                  <strong id="text_kembalian" style="font-size: 20px; color: #059669; font-weight: 800;">Rp 0</strong>
+               <!-- Sub-Kolom Kanan: Total Pembayaran, Tunai & Tombol Checkout -->
+               <div class="col-md-6 col-lg-6 checkout-pay-col" style="padding-left: 24px;">
+                  <!-- Big Total Tagihan Card -->
+                  <div style="background: #f0fdf4; border: 2px dashed #86efac; border-radius: 10px; padding: 14px 18px; text-align: center; margin-bottom: 16px;">
+                     <span style="font-size: 12px; font-weight: 700; color: #166534; text-transform: uppercase; letter-spacing: 0.5px;">TOTAL YANG HARUS DIBAYAR:</span>
+                     <div id="display_grand_total_big" style="font-size: 36px; font-weight: 900; color: #059669; line-height: 1.1; margin: 4px 0 6px 0;">
+                        Rp 0
+                     </div>
+                     <div style="font-size: 12px; color: #475569; display:flex; justify-content:space-around; flex-wrap:wrap; gap:8px;">
+                        <span>Subtotal Keranjang: <b id="text_subtotal_mini">Rp 0</b></span>
+                        <span>Diskon Nota: <b id="text_disc_mini" class="text-muted">0%</b></span>
+                        <span>Pajak: <b id="text_pajak_mini">0%</b></span>
+                     </div>
+                     <div id="text_item_disc_info" style="display:none; font-size:11.5px; color:#15803d; font-weight:600; margin-top:6px; padding-top:6px; border-top:1px dashed #bbf7d0;">
+                        <i class="fa fa-check-circle"></i> Sudah termasuk hemat diskon item: <span id="text_item_disc_info_val" class="text-danger" style="font-weight:700;">-Rp 0</span>
+                     </div>
+                  </div>
+
+                  <!-- Bagian Tunai: Uang Diterima & Kembalian -->
+                  <div id="section_uang_tunai">
+                     <div class="form-group" style="margin-bottom: 12px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                           <label style="font-size: 12px; font-weight: 700; color: #334155; margin:0;">
+                              Nominal Uang Diterima (Rp) <span class="text-danger">*</span>
+                           </label>
+                           <!-- Quick Cash Preset Buttons -->
+                           <div style="display:flex; gap:6px;">
+                              <button type="button" class="btn btn-xs btn-quick-cash" data-cash="pas" style="border-radius:6px; font-weight:700; font-size:11px; padding:3px 8px; background:#f0fdf4; color:#059669; border:1px solid #86efac; cursor:pointer;" title="Bayar sesuai total pas">
+                                 <i class="fa fa-check"></i> Uang Pas
+                              </button>
+                              <button type="button" class="btn btn-xs btn-quick-cash" data-cash="50000" style="border-radius:6px; font-weight:700; font-size:11px; padding:3px 8px; background:#f8fafc; color:#334155; border:1px solid #cbd5e1; cursor:pointer;">
+                                 50.000
+                              </button>
+                              <button type="button" class="btn btn-xs btn-quick-cash" data-cash="100000" style="border-radius:6px; font-weight:700; font-size:11px; padding:3px 8px; background:#f8fafc; color:#334155; border:1px solid #cbd5e1; cursor:pointer;">
+                                 100.000
+                              </button>
+                              <button type="button" class="btn btn-xs btn-quick-cash" data-cash="clear" style="border-radius:6px; font-weight:700; font-size:11px; padding:3px 8px; background:#fef2f2; color:#ef4444; border:1px solid #fecaca; cursor:pointer;" title="Kosongkan nominal uang diterima">
+                                 <i class="fa fa-eraser"></i> Clear
+                              </button>
+                           </div>
+                        </div>
+                        <div class="input-group">
+                           <span class="input-group-addon" style="font-weight: 700; background: #f8fafc; font-size:15px; border-radius:6px 0 0 6px;">Rp</span>
+                           <input type="text" class="form-control" name="uang_diterima" id="uang_diterima" placeholder="0" style="font-size: 20px; font-weight: 800; color: #1e293b; height: 44px; border-radius:0 6px 6px 0;">
+                        </div>
+                     </div>
+
+                     <!-- Box Kembalian -->
+                     <div id="box_kembalian" style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 13px; font-weight: 700; color: #475569;"><i class="fa fa-calculator text-success"></i> Kembalian:</span>
+                        <strong id="text_kembalian" style="font-size: 20px; color: #059669; font-weight: 800;">Rp 0</strong>
+                     </div>
+                  </div>
+
+                  <!-- Tombol Selesaikan & Bayar Lunas -->
+                  <button type="button" id="btn_submit_cepat" class="btn btn-success btn-block btn-lg" style="font-weight: 800; font-size: 15px; padding: 12px; background: #059669; border-color: #047857; border-radius: 8px; box-shadow: 0 4px 15px rgba(5,150,105,0.35); text-transform: uppercase; letter-spacing: 0.3px;">
+                     <i class="fa fa-bolt"></i> ⚡ SELESAIKAN &amp; BAYAR LUNAS
+                  </button>
+
+                  <a href="<?= base_url('administrator/sales_order'); ?>" class="btn btn-default btn-block btn-sm" style="margin-top: 10px; border-radius: 6px; font-weight: 600; color: #64748b;">
+                     <i class="fa fa-arrow-left"></i> Kembali ke Daftar Penjualan
+                  </a>
                </div>
             </div>
-
-            <!-- Referensi & Catatan -->
-            <div class="form-group" style="margin-bottom: 8px;">
-               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                  <label style="font-size: 11px; font-weight: 700; color: #334155; margin:0;"><i class="fa fa-ticket text-primary"></i> No. Ref / Slip Transaksi</label>
-                  <span class="label label-success" style="font-size:9.5px; font-weight:600; border-radius:4px;"><i class="fa fa-check"></i> Otomatis Urut</span>
-               </div>
-               <input type="text" class="form-control input-sm" name="nomor_referensi" id="nomor_referensi" value="<?= _ent($nomor_ref_baru ?? ''); ?>" style="font-weight:700; color:#1e40af; background:#f0fdf4; border:1px solid #86efac; border-radius:6px; height:34px;">
-            </div>
-
-            <div class="form-group" style="margin-bottom: 16px;">
-               <label style="font-size: 11px; font-weight: 600; color: #64748b;">Catatan Kasir (Opsional)</label>
-               <input type="text" class="form-control input-sm" name="catatan" id="catatan" placeholder="Catatan transaksi penjualan cepat...">
-            </div>
-
-            <!-- Tombol Selesaikan & Bayar Lunas -->
-            <button type="button" id="btn_submit_cepat" class="btn btn-success btn-block btn-lg" style="font-weight: 800; font-size: 15px; padding: 12px; background: #059669; border-color: #047857; border-radius: 8px; box-shadow: 0 4px 15px rgba(5,150,105,0.35); text-transform: uppercase; letter-spacing: 0.3px;">
-               <i class="fa fa-bolt"></i> ⚡ SELESAIKAN &amp; BAYAR LUNAS
-            </button>
-
-            <a href="<?= base_url('administrator/sales_order'); ?>" class="btn btn-default btn-block btn-sm" style="margin-top: 10px; border-radius: 6px; font-weight: 600; color: #64748b;">
-               <i class="fa fa-arrow-left"></i> Kembali ke Daftar Penjualan
-            </a>
-
          </div>
       </div>
    </div>
@@ -1734,24 +1786,14 @@
             </div>
 
             <div class="row">
-               <div class="col-xs-12 col-sm-6">
+               <div class="col-xs-12">
                   <div class="form-group" style="margin-bottom: 12px;">
                      <label style="font-size: 12px; font-weight: 700; color: #334155;"><i class="fa fa-phone text-success"></i> No. Telp / WhatsApp <span class="text-danger">*</span></label>
                      <input type="text" class="form-control" name="telepon" id="modal_cust_telp" placeholder="08xxxxxxxxxx" required style="border-radius: 6px; font-weight: 600; height: 38px;">
                      <small class="text-muted" style="font-size: 10.5px;">Untuk kirim nota WA &amp; data CRM.</small>
                   </div>
                </div>
-               <div class="col-xs-12 col-sm-6">
-                  <div class="form-group" style="margin-bottom: 12px;">
-                     <label style="font-size: 12px; font-weight: 700; color: #334155;">Tipe Pelanggan</label>
-                     <select class="form-control" name="tipe_pelanggan" id="modal_cust_tipe" style="border-radius: 6px; font-weight: 600; height: 38px;">
-                        <option value="retail" selected>Retail / Eceran (Umum)</option>
-                        <option value="grosir">Grosir</option>
-                        <option value="distributor">Distributor</option>
-                        <option value="vip">VIP / Member</option>
-                     </select>
-                  </div>
-               </div>
+               <input type="hidden" name="tipe_pelanggan" id="modal_cust_tipe" value="retail">
             </div>
 
             <div class="form-group" style="margin-bottom: 12px;">
@@ -1797,7 +1839,7 @@
                <small style="color: #ecfdf5; font-size: 11px;">Struk Pembayaran Kasir Siap Dicetak</small>
             </div>
             <div style="display:flex; align-items:center; gap:8px;">
-               <span class="label" id="modal_nota_badge_so" style="background: rgba(255,255,255,0.25); font-size: 11px; padding: 4px 8px; border-radius: 6px;">SO</span>
+               <span class="label" id="modal_nota_badge_so" style="background: rgba(255,255,255,0.25); font-size: 11px; padding: 4px 8px; border-radius: 6px;">TRX</span>
                <button type="button" class="close btn-close-modal-nota" id="btn_close_modal_header" data-dismiss="modal" aria-label="Tutup" style="color: #ffffff; opacity: 1; font-size: 22px; font-weight: bold; text-shadow: none; line-height: 1; outline: none; margin: 0; padding: 0; width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(0,0,0,0.2); border: none; cursor: pointer; transition: background 0.2s; position: relative; z-index: 1060;" title="Tutup / Keluar (Esc)">
                   <span aria-hidden="true" style="margin-top:-2px;">&times;</span>
                </button>
@@ -2001,7 +2043,7 @@ function update_all_product_dropdowns() {
       $sel.html(opts);
       if (currVal && $sel.find('option[value="' + currVal + '"]').length > 0) {
          $sel.val(currVal);
-         cek_stok(currVal, $('#gudang_id').val(), $(this).find('.stok-display'));
+         cek_stok(currVal, $(this).find('.stok-display'));
       } else {
          $sel.val('');
       }
@@ -2009,31 +2051,6 @@ function update_all_product_dropdowns() {
    init_produk_select2();
 }
 
-function load_produk_by_gudang(gudang_id) {
-   if (!gudang_id) {
-      available_produks = [];
-      update_all_product_dropdowns();
-      return;
-   }
-   $.ajax({
-      url: '<?= base_url("administrator/sales_order/get_produk_by_gudang"); ?>',
-      data: {gudang_id: gudang_id},
-      dataType: 'json',
-      cache: false,
-      success: function(res) {
-         if (res && res.success && res.data) {
-            available_produks = res.data;
-         } else {
-            available_produks = [];
-         }
-         update_all_product_dropdowns();
-      },
-      error: function() {
-         available_produks = [];
-         update_all_product_dropdowns();
-      }
-   });
-}
 
 function format_rp(n) {
    return 'Rp ' + parseInt(n || 0).toLocaleString('id-ID');
@@ -2056,7 +2073,7 @@ function render_receipt_preview_html(rc) {
    var html = '';
    html += '<div style="text-align:center; margin-bottom:8px;">';
    html += '  <div style="font-size:15px; font-weight:900; letter-spacing:0.5px;">IDMETAFORA STORE</div>';
-   html += '  <div style="font-size:10px; color:#475569;">SISTEM KASIR &amp; RETAIL TERPADU</div>';
+   html += '  <div style="font-size:10px; color:#475569;">SISTEM KASIR &amp; PENJUALAN TERPADU</div>';
    html += '  <div style="font-size:10px; color:#475569;">Jl. Imogiri Timur KM 7, Banguntapan, Bantul, DIY</div>';
    html += '  <div style="font-size:10px; color:#475569;">Telp/WA: 0812-3456-7890</div>';
    html += '</div>';
@@ -2084,6 +2101,8 @@ function render_receipt_preview_html(rc) {
    // Items list
    html += '<table style="width:100%; font-size:11px; line-height:1.35; word-break:break-word;">';
    var total_qty = 0;
+   var gross_item_total = 0;
+   var item_disc_total = 0;
    if (rc.items && rc.items.length > 0) {
       rc.items.forEach(function(it){
          var q = parseFloat(it.qty) || 0;
@@ -2091,6 +2110,11 @@ function render_receipt_preview_html(rc) {
          var h = parseFloat(it.harga !== undefined ? it.harga : (it.harga_satuan !== undefined ? it.harga_satuan : 0)) || 0;
          var d = parseFloat(it.diskon !== undefined ? it.diskon : (it.diskon_persen !== undefined ? it.diskon_persen : 0)) || 0;
          var sub = parseFloat(it.subtotal) || 0;
+         var line_gross = q * h;
+         var line_disc = line_gross * (d / 100);
+         gross_item_total += line_gross;
+         item_disc_total += line_disc;
+
          var nama = it.nama || it.nama_produk || '-';
          html += '<tr>';
          html += '  <td colspan="2" style="font-weight:700; padding-top:3px;">' + nama + '</td>';
@@ -2112,7 +2136,12 @@ function render_receipt_preview_html(rc) {
 
    // Totals
    html += '<table style="width:100%; font-size:11px; line-height:1.4;">';
-   html += '  <tr><td>Total Item (' + total_qty + ' pcs)</td><td style="text-align:right;">Rp ' + format_num_id(rc.subtotal) + '</td></tr>';
+   if (item_disc_total > 0) {
+      html += '  <tr><td>Subtotal Belanja (' + total_qty + ' pcs)</td><td style="text-align:right;">Rp ' + format_num_id(gross_item_total) + '</td></tr>';
+      html += '  <tr><td>Diskon Item</td><td style="text-align:right; color:#dc2626;">- Rp ' + format_num_id(item_disc_total) + '</td></tr>';
+   } else {
+      html += '  <tr><td>Total Item (' + total_qty + ' pcs)</td><td style="text-align:right;">Rp ' + format_num_id(rc.subtotal) + '</td></tr>';
+   }
    if (rc.diskon_total > 0) {
       html += '  <tr><td>Diskon Global</td><td style="text-align:right; color:#dc2626;">- Rp ' + format_num_id(rc.diskon_total) + '</td></tr>';
    }
@@ -2168,7 +2197,7 @@ function render_receipt_lebar_preview_html(rc) {
    html += '    <tr>';
    html += '      <td style="width:58%; vertical-align:top;">';
    html += '        <div style="font-size:16px; font-weight:900; color:#0f172a; letter-spacing:0.3px;">IDMETAFORA STORE / PT. IDMETAFORA INDONESIA</div>';
-   html += '        <div style="font-size:10px; color:#475569; margin-top:2px;">SISTEM KASIR, GROSIR &amp; DISTRIBUSI TERPADU</div>';
+   html += '        <div style="font-size:10px; color:#475569; margin-top:2px;">SISTEM KASIR &amp; PENJUALAN TERPADU</div>';
    html += '        <div style="font-size:10px; color:#475569;">Jl. Imogiri Timur KM 7, Banguntapan, Bantul, DIY | Telp: (0274) 123456 / 0812-3456-7890</div>';
    html += '        <div style="font-size:10px; color:#64748b;">NPWP: 01.234.567.8-543.000</div>';
    html += '      </td>';
@@ -2176,7 +2205,7 @@ function render_receipt_lebar_preview_html(rc) {
    html += '        <div style="text-align:right; font-size:15px; font-weight:800; color:#0284c7; text-transform:uppercase; margin-bottom:4px;">FAKTUR PENJUALAN</div>';
    html += '        <table style="width:100%; font-size:10.5px; border-collapse:collapse; margin-left:auto;">';
    html += '          <tr><td style="width:40%; font-weight:700;">No. Faktur</td><td style="width:4%;">:</td><td style="font-weight:800; color:#0f172a;">' + (rc.nomor_inv || rc.nomor_so || '-') + '</td></tr>';
-   html += '          <tr><td style="font-weight:700;">No. Order (SO)</td><td>:</td><td>' + (rc.nomor_so || '-') + '</td></tr>';
+   html += '          <tr><td style="font-weight:700;">No. Transaksi Penjualan</td><td>:</td><td>' + (rc.nomor_so || '-') + '</td></tr>';
    if (rc.nomor_bkm) {
       html += '          <tr><td style="font-weight:700;">No. Kas/BKM</td><td>:</td><td>' + rc.nomor_bkm + '</td></tr>';
    }
@@ -2233,6 +2262,8 @@ function render_receipt_lebar_preview_html(rc) {
    html += '  <tbody>';
 
    var totalQty = 0;
+   var totalGross = 0;
+   var totalItemDisc = 0;
    if (rc.items && rc.items.length > 0) {
       rc.items.forEach(function(it, idx){
          var q = parseFloat(it.qty) || 0;
@@ -2240,6 +2271,10 @@ function render_receipt_lebar_preview_html(rc) {
          var h = parseFloat(it.harga !== undefined ? it.harga : (it.harga_satuan !== undefined ? it.harga_satuan : 0)) || 0;
          var d = parseFloat(it.diskon !== undefined ? it.diskon : (it.diskon_persen !== undefined ? it.diskon_persen : 0)) || 0;
          var sub = parseFloat(it.subtotal) || 0;
+         var line_gross = q * h;
+         var line_disc = line_gross * (d / 100);
+         totalGross += line_gross;
+         totalItemDisc += line_disc;
          var nm = it.nama || it.nama_produk || '-';
 
          html += '  <tr style="border-bottom:1px solid #e2e8f0;">';
@@ -2271,7 +2306,7 @@ function render_receipt_lebar_preview_html(rc) {
    html += '    <td style="width:56%; vertical-align:top;">';
    html += '      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px; font-size:10.5px; margin-bottom:6px;">';
    html += '        <span style="font-size:9.5px; color:#64748b; font-weight:700; text-transform:uppercase;">Terbilang:</span><br>';
-   html += '        <strong style="font-style:italic; color:#0369a1;"># ' + terbilangTxt + ' Rupiah #</strong>';
+   html += '        <strong style="font-style:italic; color:#0369a1;">' + terbilangTxt + ' Rupiah</strong>';
    html += '      </div>';
    html += '      <div style="font-size:9.5px; color:#475569; line-height:1.4;">';
    html += '        <strong>Syarat &amp; Ketentuan:</strong>';
@@ -2285,7 +2320,12 @@ function render_receipt_lebar_preview_html(rc) {
    html += '    <td style="width:4%;"></td>';
    html += '    <td style="width:40%; vertical-align:top;">';
    html += '      <table style="width:100%; font-size:10.5px; border-collapse:collapse;">';
-   html += '        <tr><td>Subtotal Produk</td><td style="text-align:right; font-weight:600;">Rp ' + format_num_id(rc.subtotal) + '</td></tr>';
+   if (totalItemDisc > 0) {
+      html += '        <tr><td>Subtotal Belanja</td><td style="text-align:right; font-weight:600;">Rp ' + format_num_id(totalGross) + '</td></tr>';
+      html += '        <tr><td style="color:#dc2626;">Diskon Item</td><td style="text-align:right; color:#dc2626; font-weight:600;">- Rp ' + format_num_id(totalItemDisc) + '</td></tr>';
+   } else {
+      html += '        <tr><td>Subtotal Produk</td><td style="text-align:right; font-weight:600;">Rp ' + format_num_id(rc.subtotal) + '</td></tr>';
+   }
    if (parseFloat(rc.diskon_total) > 0) {
       html += '        <tr><td style="color:#dc2626;">Diskon Nota</td><td style="text-align:right; color:#dc2626; font-weight:600;">- Rp ' + format_num_id(rc.diskon_total) + '</td></tr>';
    }
@@ -2307,7 +2347,7 @@ function render_receipt_lebar_preview_html(rc) {
    html += '  <tr>';
    html += '    <td style="width:25%;"><div>Tanda Terima / Customer,</div><div style="height:36px;"></div><div style="border-top:1px solid #334155; padding-top:2px; font-weight:700;">( ' + (rc.pelanggan || 'Pelanggan') + ' )</div></td>';
    html += '    <td style="width:25%;"><div>Pengemudi / Ekspedisi,</div><div style="height:36px;"></div><div style="border-top:1px solid #334155; padding-top:2px; font-weight:700;">( .................... )</div></td>';
-   html += '    <td style="width:25%;"><div>Petugas Gudang,</div><div style="height:36px;"></div><div style="border-top:1px solid #334155; padding-top:2px; font-weight:700;">( .................... )</div></td>';
+   html += '    <td style="width:25%;"><div>Petugas Logistik,</div><div style="height:36px;"></div><div style="border-top:1px solid #334155; padding-top:2px; font-weight:700;">( .................... )</div></td>';
    html += '    <td style="width:25%;"><div>Hormat Kami / Kasir,</div><div style="height:36px;"></div><div style="border-top:1px solid #334155; padding-top:2px; font-weight:700;">( ' + (rc.kasir || 'Kasir POS') + ' )</div></td>';
    html += '  </tr>';
    html += '</table>';
@@ -2407,7 +2447,7 @@ function show_receipt_modal(rc) {
       var printLebarUrl   = rc.print_nota_lebar_url || ('<?= site_url("administrator/sales_order/cetak_struk"); ?>/' + (rc.so_id || '') + '?template=lebar');
       var printPdfUrl     = rc.print_pdf_url || ('<?= site_url("administrator/sales_order/cetak"); ?>/' + (rc.so_id || ''));
 
-      $('#modal_nota_badge_so').text(rc.nomor_so || 'SO');
+      $('#modal_nota_badge_so').text(rc.nomor_so || 'TRX');
       $('#receipt_preview_paper').html(render_receipt_preview_html(rc));
       $('#receipt_preview_lebar').html(render_receipt_lebar_preview_html(rc));
 
@@ -2491,10 +2531,6 @@ function reset_pos_cart(next_so, next_ref) {
 
    $('#btn_modal_print_bluetooth').prop('disabled', false).html('<i class="fa fa-bluetooth"></i> Cetak Menggunakan BT');
    $('#modal_nota_kasir').modal('hide');
-   var currGudang = $('#gudang_id').val();
-   if (currGudang) {
-      load_produk_by_gudang(currGudang);
-   }
 }
 
 function recalc_row($row) {
@@ -2534,6 +2570,8 @@ function get_current_grand_total() {
 }
 
 function recalc_total() {
+   var gross_sub = 0;
+   var item_disc_nom = 0;
    var sub = 0;
    var count_items = 0;
    var total_qty = 0;
@@ -2548,7 +2586,15 @@ function recalc_total() {
          s = parseFloat(txt.replace(/[^0-9]/g, '')) || 0;
       }
       var q = parseFloat($(this).find('.qty-input').val()) || 0;
+      var raw_harga = String($(this).find('.harga-input').val() || '').replace(/[^0-9]/g, '');
+      var h = parseFloat(raw_harga) || 0;
+      var disc = parseFloat($(this).find('.disc-input').val()) || 0;
+
       if (pid) {
+         var line_gross = q * h;
+         var line_disc = line_gross * (disc / 100);
+         gross_sub += line_gross;
+         item_disc_nom += line_disc;
          sub += s;
          count_items++;
          total_qty += q;
@@ -2558,6 +2604,8 @@ function recalc_total() {
    var disc_pct = parseFloat($('#diskon_persen_total').val()) || 0;
    var dis_nominal = sub * (disc_pct / 100);
    $('#diskon_total').val(dis_nominal.toFixed(0));
+
+   var total_all_disc = item_disc_nom + dis_nominal;
    
    var pjk_pct = parseFloat($('#pajak_persen').val()) || 0;
    var after_disc = Math.max(0, sub - dis_nominal);
@@ -2565,12 +2613,31 @@ function recalc_total() {
    var total = Math.round(after_disc + pjk_nominal);
    
    $('#display_grand_total_big').text(format_rp(total));
-   $('#text_subtotal_mini').text(format_rp(sub));
-   $('#text_disc_mini').text(disc_pct + '%');
-   $('#text_pajak_mini').text(pjk_pct + '%');
 
-   // Update Table Footer
+   // Breakdown Mini Card: Selaras & Sinkron 100% dengan Subtotal Keranjang & Diskon Nota
+   $('#text_subtotal_mini').text(format_rp(sub));
+   if (disc_pct > 0) {
+      $('#text_disc_mini').html('-' + format_rp(dis_nominal) + ' <small style="font-size:10px;">(' + disc_pct + '%)</small>').removeClass('text-muted').addClass('text-danger');
+   } else {
+      $('#text_disc_mini').text('0%').removeClass('text-danger').addClass('text-muted');
+   }
+   $('#text_pajak_mini').text(pjk_pct > 0 ? ('+' + format_rp(pjk_nominal) + ' (' + pjk_pct + '%)') : '0%');
+
+   // Update Table Footer & Info Hemat Diskon
    $('#display_subtotal_items').text(format_rp(sub));
+   if (item_disc_nom > 0) {
+      $('#text_item_disc_info_val').text('-' + format_rp(item_disc_nom));
+      $('#text_item_disc_info').show();
+      $('#footer_gross_val').text(format_rp(gross_sub));
+      $('#footer_gross_wrap').show();
+      $('#footer_item_disc_val').text('-' + format_rp(item_disc_nom));
+      $('#footer_item_disc_wrap').show();
+   } else {
+      $('#text_item_disc_info').hide();
+      $('#footer_gross_wrap').hide();
+      $('#footer_item_disc_wrap').hide();
+   }
+
    var countText = count_items > 0 ? (count_items + ' Jenis Item (' + total_qty + ' pcs)') : '0 Item (0 pcs)';
    $('#count_items').text(countText);
    $('#count_items_label').text(countText);
@@ -2626,8 +2693,8 @@ function validate_row_qty($row) {
    }
 }
 
-function cek_stok(produk_id, gudang_id, $span) {
-   if(!produk_id || !gudang_id) {
+function cek_stok(produk_id, $span) {
+   if(!produk_id) {
       $span.text('-').removeClass('bg-green bg-red').addClass('bg-gray');
       return;
    }
@@ -2664,7 +2731,7 @@ function cek_stok(produk_id, gudang_id, $span) {
    }
 
    // 2. Sinkronkan via AJAX di latar belakang
-   $.get(get_same_origin_url('<?= site_url("administrator/produk/cek_stok"); ?>'), {produk_id: produk_id, gudang_id: gudang_id}, function(r){
+   $.get(get_same_origin_url('<?= site_url("administrator/produk/cek_stok"); ?>'), {produk_id: produk_id}, function(r){
       if (r && r.success && r.stok !== undefined) {
          var stok_num = parseFloat(r.stok) || 0;
          $row.find('.qty-input').data('stok-max', stok_num).attr('max', stok_num);
@@ -2729,17 +2796,13 @@ $(document).ready(function(){
       init_produk_select2();
    }
 
-   var initGudang = $('#gudang_id').val();
-   if (initGudang) {
-      load_produk_by_gudang(initGudang);
-   }
 
    $('#btn_add_item').click(function(){
       var idx = item_count++;
       $('#item_rows').append(generate_item_row_html(idx));
       var $new_row = $('#item_rows tr:last');
       init_produk_select2($new_row);
-      cek_stok($new_row.find('.produk-select').val(), $('#gudang_id').val(), $new_row.find('.stok-display'));
+      cek_stok($new_row.find('.produk-select').val(), $new_row.find('.stok-display'));
    });
 
    $(document).on('change', '.produk-select', function(){
@@ -2762,7 +2825,7 @@ $(document).ready(function(){
       $row.find('input[name*="[satuan]"]').val(satuan);
       $row.find('.satuan-badge').text(satuan);
       recalc_row($row);
-      cek_stok(pid, $('#gudang_id').val(), $row.find('.stok-display'));
+      cek_stok(pid, $row.find('.stok-display'));
    });
 
    $(document).on('input keyup change', '.qty-input', function(){
@@ -2802,10 +2865,37 @@ $(document).ready(function(){
    $('#diskon_persen_total, #pajak_persen').on('input change', function(){
       recalc_total();
    });
-   
-   $('#gudang_id').on('change', function(){
-      load_produk_by_gudang($(this).val());
+
+   // Terapkan diskon tambahan ke seluruh baris produk di tabel
+   $('#btn_apply_disc_to_all').click(function(){
+      var discVal = parseFloat($('#diskon_persen_total').val()) || 0;
+      if (discVal <= 0) {
+         if (typeof swal !== 'undefined') {
+            swal("Diskon Kosong", "Isi nilai Diskon Tambahan Nota (%) terlebih dahulu.", "warning");
+         } else {
+            alert("Isi nilai Diskon Tambahan Nota (%) terlebih dahulu!");
+         }
+         return;
+      }
+      var countApplied = 0;
+      $('.item-row').each(function(){
+         var pid = $(this).find('.produk-select').val();
+         if (pid) {
+            $(this).find('.disc-input').val(discVal);
+            recalc_row($(this));
+            countApplied++;
+         }
+      });
+      // Reset diskon nota ke 0 agar tidak terpotong ganda
+      $('#diskon_persen_total').val(0);
+      recalc_total();
+      if (typeof toastr !== 'undefined') {
+         toastr.success("Diskon " + discVal + "% berhasil disinkronkan ke " + countApplied + " item produk!");
+      } else if (typeof swal !== 'undefined') {
+         swal("Berhasil Sinkron!", "Diskon " + discVal + "% telah diterapkan ke " + countApplied + " item produk di keranjang.", "success");
+      }
    });
+   
 
    function render_customer_chip() {
       var val = $('#pelanggan_id').val();
@@ -2835,7 +2925,6 @@ $(document).ready(function(){
       $('#cust_input_tipe').val(tipe);
 
       $('#chip_cust_nama').text(nama);
-      $('#chip_cust_tipe').text(tipe.toUpperCase());
       $('#chip_cust_telp').text(telp ? telp : '(No HP belum diisi)');
       
       if (alamat || kota) {
@@ -2868,18 +2957,10 @@ $(document).ready(function(){
    $('#metode_pembayaran').on('change', function(){
       var m = $(this).val();
       if (m === 'tunai') {
-         $('#akun_kas_bank').val('Kas Tunai Kasir');
+         $('#akun_kas_bank').val('Cash');
          $('#section_uang_tunai').slideDown(150);
       } else {
-         if (m === 'transfer_bank') {
-            $('#akun_kas_bank').val('Bank BCA');
-         } else if (m === 'transfer_mandiri') {
-            $('#akun_kas_bank').val('Bank Mandiri');
-         } else if (m === 'transfer_bri') {
-            $('#akun_kas_bank').val('Bank BRI');
-         } else if (m === 'qris' || m === 'debit') {
-            $('#akun_kas_bank').val('Bank BCA');
-         }
+         $('#akun_kas_bank').val('Transfer Bank');
          $('#section_uang_tunai').slideUp(150);
       }
    });
@@ -2917,10 +2998,6 @@ $(document).ready(function(){
          show_alert('Pilih atau ketik nama Pelanggan terlebih dahulu!', 'warning');
          return;
       }
-      if (!$('#gudang_id').val()) {
-         show_alert('Pilih Gudang Sumber Stok terlebih dahulu!', 'warning');
-         return;
-      }
 
       var hasItems = false;
       var is_valid = true;
@@ -2947,7 +3024,7 @@ $(document).ready(function(){
             }
             if (qty > stok) {
                is_valid = false;
-               err_msg = 'Qty pesanan untuk (' + prod_nama + ') sejumlah ' + qty + ' melebihi Stok Gudang yang tersedia (' + stok + ')!';
+               err_msg = 'Qty pesanan untuk (' + prod_nama + ') sejumlah ' + qty + ' melebihi Stok yang tersedia (' + stok + ')!';
                return false;
             }
          }
@@ -2979,7 +3056,7 @@ $(document).ready(function(){
       }
 
       var kembalian = Math.max(0, uang - total);
-      var catatan_bayar = 'Pembayaran Lunas POS SO ' + '<?= $nomor_baru; ?>';
+      var catatan_bayar = 'Pembayaran Lunas POS ' + '<?= $nomor_baru; ?>';
       if (metode === 'tunai') {
          catatan_bayar += ' [Uang Diterima: Rp ' + format_num_id(uang) + ', Kembalian: Rp ' + format_num_id(kembalian) + ']';
       }
@@ -3056,11 +3133,10 @@ $(document).ready(function(){
             var currVal = $('#pelanggan_id').val();
             var html = '<option value="">-- Ketik / Cari Nama / Telp Pelanggan --</option>';
             $.each(res.data, function(i, p){
-               var t_badge = (p.tipe_pelanggan || 'RETAIL').toUpperCase();
                var telp = p.no_telp || p.telepon || '';
                var telp_fmt = telp ? ' (' + telp + ')' : '';
                var sel = (currVal == p.id) ? ' selected' : '';
-               html += '<option value="' + p.id + '" data-kode="' + (p.kode_pelanggan||'') + '" data-nama="' + (p.nama_pelanggan||'') + '" data-tipe="' + (p.tipe_pelanggan||'') + '" data-telp="' + telp + '"' + sel + '>' + (p.kode_pelanggan||'') + ' - ' + (p.nama_pelanggan||'') + ' [' + t_badge + ']' + telp_fmt + '</option>';
+               html += '<option value="' + p.id + '" data-kode="' + (p.kode_pelanggan||'') + '" data-nama="' + (p.nama_pelanggan||'') + '" data-tipe="' + (p.tipe_pelanggan||'') + '" data-telp="' + telp + '"' + sel + '>' + (p.nama_pelanggan||'') + telp_fmt + '</option>';
             });
             $('#pelanggan_id').html(html).trigger('change');
             show_alert('Daftar pelanggan berhasil diperbarui!', 'success');
@@ -3174,7 +3250,7 @@ $(document).ready(function(){
             if (res && res.success && res.data) {
                var p = res.data;
                var telpFmt = p.telp ? ' (' + p.telp + ')' : '';
-               var optionText = p.nama + ' [' + p.tipe.toUpperCase() + ']' + telpFmt;
+               var optionText = p.nama + telpFmt;
                
                // Tambahkan ke dropdown select2 dan pilih
                var newOption = new Option(optionText, p.id, true, true);
@@ -3469,10 +3545,6 @@ $(document).ready(function(){
             $('#nomor_referensi').val(nextRefNumber);
          }
       }
-      var currGudang = $('#gudang_id').val();
-      if (currGudang) {
-         load_produk_by_gudang(currGudang);
-      }
       setTimeout(function(){
          $('.modal-backdrop').remove();
          $('body').removeClass('modal-open').css('padding-right', '');
@@ -3530,38 +3602,44 @@ $(document).ready(function(){
       toggle_pos_history_panel(false);
    });
 
+   function set_pos_history_view(mode) {
+      if (mode === 'table') {
+         $('#btn_toggle_view_table').addClass('active');
+         $('#btn_toggle_view_cards').removeClass('active');
+         $('#wrapper_cards_rekap').hide().addClass('is-hidden');
+         $('#wrapper_tabel_rekap').show().removeClass('is-hidden');
+         localStorage.setItem('pos_history_view', 'table');
+      } else {
+         $('#btn_toggle_view_cards').addClass('active');
+         $('#btn_toggle_view_table').removeClass('active');
+         $('#wrapper_cards_rekap').show().removeClass('is-hidden');
+         $('#wrapper_tabel_rekap').hide().addClass('is-hidden');
+         localStorage.setItem('pos_history_view', 'cards');
+      }
+   }
+
    $('#btn_toggle_view_cards').click(function(e){
       e.preventDefault();
-      $(this).addClass('active');
-      $('#btn_toggle_view_table').removeClass('active');
-      $('#wrapper_cards_rekap').show();
-      $('#wrapper_tabel_rekap').hide();
-      localStorage.setItem('pos_history_view', 'cards');
+      set_pos_history_view('cards');
    });
 
    $('#btn_toggle_view_table').click(function(e){
       e.preventDefault();
-      $(this).addClass('active');
-      $('#btn_toggle_view_cards').removeClass('active');
-      $('#wrapper_cards_rekap').hide();
-      $('#wrapper_tabel_rekap').show();
-      localStorage.setItem('pos_history_view', 'table');
+      set_pos_history_view('table');
    });
 
-   // Restore panel visibility & view preference
+   // Restore panel visibility & view preference (Default: Tertutup / Collapsed agar kasir langsung fokus transaksi)
    var isHistoryCollapsed = localStorage.getItem('pos_history_collapsed');
-   if (isHistoryCollapsed === '1') {
-      $('#panel_riwayat_transaksi').hide();
-      $('#btn_toggle_riwayat').removeClass('active');
-   } else {
+   if (isHistoryCollapsed === '0') {
       $('#panel_riwayat_transaksi').show();
       $('#btn_toggle_riwayat').addClass('active');
+   } else {
+      $('#panel_riwayat_transaksi').hide();
+      $('#btn_toggle_riwayat').removeClass('active');
    }
 
-   var savedView = localStorage.getItem('pos_history_view');
-   if (savedView === 'table') {
-      $('#btn_toggle_view_table').click();
-   }
+   var savedView = localStorage.getItem('pos_history_view') || 'cards';
+   set_pos_history_view(savedView);
 
    // Dynamic Add to History function
    window.add_transaction_to_history = function(receipt) {
@@ -3574,7 +3652,7 @@ $(document).ready(function(){
       var nowTime = new Date();
       var timeStr = ('0' + nowTime.getHours()).slice(-2) + ':' + ('0' + nowTime.getMinutes()).slice(-2);
       var dateStr = ('0' + nowTime.getDate()).slice(-2) + '/' + ('0' + (nowTime.getMonth() + 1)).slice(-2) + '/' + nowTime.getFullYear();
-      var custName = receipt.pelanggan || 'Umum / Retail';
+      var custName = receipt.pelanggan || 'Pelanggan Umum';
       var soId = receipt.so_id || '';
       var cetakUrl = '<?= site_url("administrator/sales_order/cetak_struk/"); ?>' + '/' + soId;
       var viewUrl = '<?= site_url("administrator/sales_order/view/"); ?>' + '/' + soId;

@@ -3,16 +3,228 @@
  * View: Edit Semua Stok Produk (Massal)
  * File: stok_edit_massal.php
  */
+$cnt_total = count($items ?? []);
+$cnt_empty = 0;
+$cnt_low = 0;
+if (!empty($items)) {
+   foreach ($items as $it) {
+      $stok_val = (float)$it->total_stok;
+      if ($stok_val <= 0) {
+         $cnt_empty++;
+      } elseif ($stok_val <= 5) {
+         $cnt_low++;
+      }
+   }
+}
 ?>
 <style>
 .bulk-card { border-radius: 10px; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px rgba(0,0,0,0.06); background: #fff; margin-bottom: 25px; }
-.bulk-card .box-header { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; background: #f8fafc; border-radius: 10px 10px 0 0; }
-.table-bulk-stok th { background: #f1f5f9; color: #1e293b; font-weight: 700; font-size: 12px; vertical-align: middle !important; border-bottom: 2px solid #cbd5e1 !important; text-transform: uppercase; letter-spacing: 0.3px; }
+.bulk-card .box-header { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; background: #ffffff; border-radius: 10px 10px 0 0; }
+
+/* Header & Toolbar Unified (Satu Garis Rapi) */
+.bulk-header-bar {
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+   flex-wrap: wrap;
+   gap: 12px;
+}
+.bulk-header-title-box {
+   display: flex;
+   align-items: center;
+   gap: 12px;
+}
+.bulk-header-icon {
+   width: 42px;
+   height: 42px;
+   border-radius: 8px;
+   background: #eff6ff;
+   color: #2563eb;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   font-size: 19px;
+   flex-shrink: 0;
+   border: 1px solid #dbeafe;
+}
+.bulk-header-title {
+   margin: 0;
+   font-weight: 800;
+   color: #0f172a;
+   font-size: 16.5px;
+   line-height: 1.2;
+}
+.bulk-header-subtitle {
+   font-size: 12px;
+   color: #64748b;
+   margin-top: 3px;
+}
+.bulk-header-actions {
+   display: flex;
+   align-items: center;
+   gap: 8px;
+   flex-wrap: wrap;
+}
+
+/* Toolbar Baris Terpadu */
+.bulk-toolbar-bar {
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+   flex-wrap: wrap;
+   gap: 12px;
+   padding: 12px 16px;
+   background: #f8fafc;
+   border: 1px solid #e2e8f0;
+   border-radius: 8px;
+   margin-bottom: 18px;
+}
+.bulk-toolbar-left {
+   display: flex;
+   align-items: center;
+   gap: 12px;
+   flex-wrap: wrap;
+   flex: 1;
+}
+.bulk-search-box {
+   position: relative;
+   width: 290px;
+   max-width: 100%;
+}
+.bulk-search-box input {
+   width: 100%;
+   height: 38px;
+   padding-left: 36px;
+   padding-right: 32px;
+   border-radius: 6px;
+   border: 1.5px solid #cbd5e1;
+   font-size: 13px;
+   transition: all .2s;
+   background: #ffffff;
+   color: #1e293b;
+}
+.bulk-search-box input:focus {
+   border-color: #2563eb;
+   box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+   outline: none;
+}
+.bulk-search-box .search-icon {
+   position: absolute;
+   left: 12px;
+   top: 50%;
+   transform: translateY(-50%);
+   color: #94a3b8;
+   pointer-events: none;
+   font-size: 13.5px;
+}
+.bulk-search-box .clear-btn {
+   position: absolute;
+   right: 10px;
+   top: 50%;
+   transform: translateY(-50%);
+   color: #94a3b8;
+   border: none;
+   background: transparent;
+   cursor: pointer;
+   font-size: 14px;
+   display: none;
+   padding: 0;
+   line-height: 1;
+}
+.bulk-search-box .clear-btn:hover {
+   color: #ef4444;
+}
+
+/* Pill Tabs */
+.bulk-pill-tabs {
+   display: inline-flex;
+   align-items: center;
+   background: #e2e8f0;
+   padding: 3px;
+   border-radius: 8px;
+   gap: 2px;
+   overflow-x: auto;
+   max-width: 100%;
+}
+.bulk-pill-btn {
+   border: none;
+   background: transparent;
+   padding: 6px 13px;
+   border-radius: 6px;
+   font-size: 12.5px;
+   font-weight: 600;
+   color: #475569;
+   cursor: pointer;
+   transition: all .2s;
+   white-space: nowrap;
+   display: inline-flex;
+   align-items: center;
+   gap: 6px;
+   line-height: 1.3;
+}
+.bulk-pill-btn:hover {
+   background: rgba(255,255,255,0.7);
+   color: #0f172a;
+}
+.bulk-pill-btn.active {
+   background: #ffffff;
+   color: #2563eb;
+   box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+   font-weight: 700;
+}
+.bulk-pill-btn .badge-pill-count {
+   padding: 1px 7px;
+   border-radius: 10px;
+   font-size: 11px;
+   font-weight: 700;
+   background: #cbd5e1;
+   color: #334155;
+   transition: all .2s;
+}
+.bulk-pill-btn.active .badge-pill-count {
+   background: #dbeafe;
+   color: #1d4ed8;
+}
+.bulk-pill-btn[data-filter="empty"].active .badge-pill-count {
+   background: #fee2e2;
+   color: #b91c1c;
+}
+.bulk-pill-btn[data-filter="changed"].active .badge-pill-count {
+   background: #dcfce7;
+   color: #15803d;
+}
+
+.bulk-toolbar-right {
+   display: flex;
+   align-items: center;
+   gap: 10px;
+   flex-shrink: 0;
+}
+.bulk-showing-text {
+   font-size: 12.5px;
+   color: #64748b;
+}
+
+/* Tabel */
+.table-bulk-stok th {
+   background: #f1f5f9;
+   color: #1e293b;
+   font-weight: 700;
+   font-size: 12px;
+   vertical-align: middle !important;
+   border-bottom: 2px solid #cbd5e1 !important;
+   text-transform: uppercase;
+   letter-spacing: 0.3px;
+   position: sticky;
+   top: 0;
+   z-index: 5;
+}
 .table-bulk-stok td { vertical-align: middle !important; font-size: 13px; }
 .input-qty-bulk { font-size: 15px; font-weight: 800; text-align: center; border-radius: 6px; border: 1.5px solid #cbd5e1; transition: all .2s; min-width: 80px; }
 .input-qty-bulk:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.2); background: #eff6ff; }
 .input-qty-bulk.changed { border-color: #10b981 !important; background: #ecfdf5 !important; color: #065f46 !important; font-weight: 900; }
 .row-changed { background-color: #f0fdf4 !important; }
+
 .sticky-save-bar {
    position: sticky;
    bottom: 12px;
@@ -34,7 +246,44 @@
    align-items: center;
    gap: 8px;
 }
+
 @media (max-width: 767px) {
+   .bulk-header-bar {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+   }
+   .bulk-header-actions {
+      width: 100%;
+   }
+   .bulk-header-actions .btn {
+      flex: 1;
+      text-align: center;
+      justify-content: center;
+   }
+   .bulk-toolbar-bar {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+      padding: 12px;
+   }
+   .bulk-toolbar-left {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+   }
+   .bulk-search-box {
+      width: 100%;
+      max-width: 100%;
+   }
+   .bulk-pill-tabs {
+      width: 100%;
+      justify-content: flex-start;
+   }
+   .bulk-toolbar-right {
+      justify-content: space-between;
+      width: 100%;
+   }
    .sticky-save-bar {
       flex-direction: column;
       align-items: stretch;
@@ -52,32 +301,6 @@
    }
    .bulk-action-buttons #btn_save_all_stok {
       flex: 2;
-   }
-   .bulk-card .box-header .row {
-      flex-direction: column;
-      align-items: stretch !important;
-      gap: 10px;
-   }
-   .bulk-card .box-header .text-right {
-      text-align: left !important;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-   }
-   .bulk-card .box-header form {
-      margin-right: 0 !important;
-      width: 100%;
-      display: flex;
-   }
-   .bulk-card .box-header form .form-group {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-   }
-   .bulk-card .box-header form select {
-      flex: 1;
-      width: 100%;
    }
    .content {
       padding-bottom: 90px !important;
@@ -100,21 +323,29 @@
 <section class="content">
 
    <div class="box bulk-card">
+      <!-- HEADER ATAS (SATU GARIS RAPI) -->
       <div class="box-header with-border">
-         <div class="row" style="display:flex; align-items:center; flex-wrap:wrap;">
-            <div class="col-md-5 col-sm-6">
-               <h3 class="box-title" style="font-weight:800; color:#0f172a;">
-                  <i class="fa fa-list-ol text-primary"></i> Daftar Seluruh Produk &amp; Stok Fisik
-               </h3>
-               <div style="font-size:12px; color:#64748b; margin-top:2px;">
-                  Total <strong id="lbl_total_baris"><?= count($items); ?></strong> item produk tercatat
+         <div class="bulk-header-bar">
+            <div class="bulk-header-title-box">
+               <div class="bulk-header-icon">
+                  <i class="fa fa-list-ol"></i>
+               </div>
+               <div>
+                  <h3 class="bulk-header-title">Daftar Seluruh Produk &amp; Stok Fisik</h3>
+                  <div class="bulk-header-subtitle">
+                     Total <strong id="lbl_total_baris"><?= $cnt_total; ?></strong> item produk tercatat
+                  </div>
                </div>
             </div>
             
-            <div class="col-md-7 col-sm-6 text-right">
+            <div class="bulk-header-actions">
+               <!-- Tombol Reset Input -->
+               <button type="button" id="btn_reset_all" class="btn btn-default btn-sm" style="font-weight:600; border-radius:6px; display:inline-flex; align-items:center; gap:6px;" disabled title="Kembalikan semua angka input ke stok awal">
+                  <i class="fa fa-undo text-muted"></i> <span>Reset Input</span>
+               </button>
                <!-- Tombol Kembali -->
-               <a href="<?= site_url('administrator/stok'); ?>" class="btn btn-default btn-sm" style="font-weight:600;">
-                  <i class="fa fa-arrow-left"></i> Kembali ke Dashboard
+               <a href="<?= site_url('administrator/stok'); ?>" class="btn btn-default btn-sm" style="font-weight:600; border-radius:6px; display:inline-flex; align-items:center; gap:6px;">
+                  <i class="fa fa-arrow-left"></i> <span>Kembali ke Stok</span>
                </a>
             </div>
          </div>
@@ -122,32 +353,56 @@
 
       <div class="box-body" style="padding: 20px;">
 
-         <!-- Quick Search & Helper Controls -->
-         <div class="row" style="margin-bottom: 16px;">
-            <div class="col-md-6 col-sm-8">
-               <div class="input-group">
-                  <span class="input-group-addon" style="background:#f8fafc;"><i class="fa fa-search text-muted"></i></span>
-                  <input type="text" id="filter_produk_input" class="form-control" placeholder="Cari kode atau nama produk di tabel ini..." autofocus>
+         <!-- TOOLBAR TERPADU (SEARCH + PILL TABS + LIVE COUNTER) -->
+         <div class="bulk-toolbar-bar">
+            <div class="bulk-toolbar-left">
+               <!-- Search Box with Clear Button -->
+               <div class="bulk-search-box">
+                  <i class="fa fa-search search-icon"></i>
+                  <input type="text" id="filter_produk_input" placeholder="Cari kode atau nama produk..." autofocus autocomplete="off">
+                  <button type="button" class="clear-btn" id="btn_clear_search" title="Hapus pencarian">
+                     <i class="fa fa-times-circle"></i>
+                  </button>
+               </div>
+
+               <!-- Filter Pill Tabs -->
+               <div class="bulk-pill-tabs">
+                  <button type="button" class="bulk-pill-btn active" data-filter="all">
+                     <i class="fa fa-th-list"></i> Semua <span class="badge-pill-count count-semua"><?= $cnt_total; ?></span>
+                  </button>
+                  <button type="button" class="bulk-pill-btn" data-filter="changed">
+                     <i class="fa fa-pencil"></i> Diubah <span class="badge-pill-count count-diubah" id="pill_count_changed">0</span>
+                  </button>
+                  <button type="button" class="bulk-pill-btn" data-filter="empty">
+                     <i class="fa fa-exclamation-circle text-danger"></i> Stok Habis <span class="badge-pill-count count-habis"><?= $cnt_empty; ?></span>
+                  </button>
+                  <button type="button" class="bulk-pill-btn" data-filter="low">
+                     <i class="fa fa-warning text-warning"></i> Menipis (&le; 5) <span class="badge-pill-count count-menipis"><?= $cnt_low; ?></span>
+                  </button>
                </div>
             </div>
-            <div class="col-md-6 col-sm-4 text-right" style="padding-top: 6px;">
-               <span class="badge bg-green" id="badge_changed_count" style="font-size:12px; padding:6px 12px; border-radius:12px; display:none;">
+
+            <!-- Toolbar Kanan: Live Info -->
+            <div class="bulk-toolbar-right">
+               <span class="badge bg-green" id="badge_changed_count" style="font-size:12px; padding:6px 14px; border-radius:20px; font-weight:700; display:none; box-shadow:0 2px 6px rgba(16,185,129,0.3);">
                   <i class="fa fa-pencil"></i> <span id="num_changed">0</span> produk diubah
+               </span>
+               <span class="bulk-showing-text">
+                  Menampilkan <strong id="lbl_showing_count" style="color:#0f172a;"><?= $cnt_total; ?></strong> item
                </span>
             </div>
          </div>
 
          <!-- FORM TABEL MASSAL -->
          <form id="form_bulk_stok" method="POST" action="<?= site_url('administrator/stok/edit_massal_save'); ?>">
-            <input type="hidden" name="gudang_id" value="<?= _ent($gudang_sel); ?>">
-            <div class="table-responsive" style="max-height: 650px; overflow-y: auto;">
-               <table class="table table-bordered table-striped table-hover table-bulk-stok" id="table_bulk_editor">
+            <div class="table-responsive" style="max-height: 650px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+               <table class="table table-bordered table-striped table-hover table-bulk-stok" id="table_bulk_editor" style="margin-bottom:0;">
                   <thead>
                      <tr>
                         <th width="40" class="text-center">#</th>
-                        <th width="120">Kode Produk</th>
+                        <th width="110">Kode Produk</th>
                         <th>Nama Produk &amp; Kategori</th>
-                        <th width="80" class="text-center">Satuan</th>
+                        <th width="75" class="text-center">Satuan</th>
                         <th width="120" class="text-center" style="background:#f1f5f9; color:#475569;">Stok Saat Ini</th>
                         <th width="150" class="text-center" style="background:#ecfdf5; color:#065f46;">Stok Baru *</th>
                         <th width="100" class="text-center">Selisih</th>
@@ -156,10 +411,18 @@
                   <tbody>
                      <?php if(!empty($items)): ?>
                         <?php $no = 1; foreach($items as $it): 
-                           $cur_qty = (float)$it->qty;
-                                                      $sat = !empty($it->singkatan) ? $it->singkatan : 'Pcs';
+                           $cur_qty = (float)$it->total_stok;
+                           $sat = !empty($it->singkatan) ? $it->singkatan : 'Pcs';
+                           $is_empty = ($cur_qty <= 0) ? '1' : '0';
+                           $is_low = ($cur_qty > 0 && $cur_qty <= 5) ? '1' : '0';
                         ?>
-                        <tr class="row-item" id="row_<?= $it->id; ?>" data-id="<?= $it->id; ?>" data-kode="<?= strtolower($it->kode_produk); ?>" data-nama="<?= strtolower($it->nama_produk); ?>">
+                        <tr class="row-item" id="row_<?= $it->id; ?>" 
+                            data-id="<?= $it->id; ?>" 
+                            data-kode="<?= strtolower($it->kode_produk); ?>" 
+                            data-nama="<?= strtolower($it->nama_produk); ?>"
+                            data-stok="<?= $cur_qty; ?>"
+                            data-empty="<?= $is_empty; ?>"
+                            data-low="<?= $is_low; ?>">
                            <td class="text-center text-muted"><?= $no++; ?></td>
                            <td>
                               <span class="label label-primary" style="font-size:11px;"><?= _ent($it->kode_produk); ?></span>
@@ -196,6 +459,14 @@
                            </td>
                         </tr>
                         <?php endforeach; ?>
+                        
+                        <!-- BARIS KOSONG JIKA TIDAK ADA HASIL FILTER -->
+                        <tr id="row_no_filter_match" style="display:none;">
+                           <td colspan="7" class="text-center text-muted" style="padding:40px;">
+                              <i class="fa fa-search fa-2x text-muted" style="margin-bottom:8px; display:block;"></i>
+                              <span style="font-size:14px; font-weight:600; color:#64748b;">Tidak ada produk yang cocok dengan filter atau kata kunci pencarian.</span>
+                           </td>
+                        </tr>
                      <?php else: ?>
                         <tr>
                            <td colspan="7" class="text-center text-muted" style="padding:40px;">
@@ -237,7 +508,7 @@
 
 <script>
 $(document).ready(function(){
-   var changedCount = 0;
+   var currentFilter = 'all';
 
    function updateRowDiff($row) {
       var origVal = parseFloat($row.find('.orig-qty').val()) || 0;
@@ -264,13 +535,57 @@ $(document).ready(function(){
 
       // Hitung total perubahan
       var totalChanged = $('.row-changed').length;
+      $('#pill_count_changed').text(totalChanged);
+
       if (totalChanged > 0) {
          $('#badge_changed_count').show();
          $('#num_changed').text(totalChanged);
+         $('#btn_reset_all').prop('disabled', false).find('i').removeClass('text-muted').addClass('text-warning');
          $('#footer_changed_text').html('<strong style="color:#4ade80;">' + totalChanged + ' produk telah diubah.</strong> Klik tombol simpan untuk memperbarui database.');
       } else {
          $('#badge_changed_count').hide();
+         $('#btn_reset_all').prop('disabled', true).find('i').addClass('text-muted').removeClass('text-warning');
          $('#footer_changed_text').text('Belum ada stok yang diubah. Ubah angka pada kolom Stok Baru di atas.');
+      }
+
+      if (currentFilter === 'changed') {
+         applyTableFilter();
+      }
+   }
+
+   // Fungsi Filter Gabungan (Pencarian Text + Pill Tabs)
+   function applyTableFilter() {
+      var q = $('#filter_produk_input').val().toLowerCase().trim();
+      var visibleCount = 0;
+
+      $('.row-item').each(function(){
+         var $row = $(this);
+         var kode = $row.data('kode') || '';
+         var nama = $row.data('nama') || '';
+         var matchSearch = (!q) || (kode.indexOf(q) !== -1 || nama.indexOf(q) !== -1);
+
+         var matchPill = true;
+         if (currentFilter === 'changed') {
+            matchPill = $row.hasClass('row-changed');
+         } else if (currentFilter === 'empty') {
+            matchPill = ($row.data('empty') == '1');
+         } else if (currentFilter === 'low') {
+            matchPill = ($row.data('low') == '1');
+         }
+
+         if (matchSearch && matchPill) {
+            $row.show();
+            visibleCount++;
+         } else {
+            $row.hide();
+         }
+      });
+
+      $('#lbl_showing_count').text(visibleCount);
+      if (visibleCount === 0) {
+         $('#row_no_filter_match').show();
+      } else {
+         $('#row_no_filter_match').hide();
       }
    }
 
@@ -281,21 +596,68 @@ $(document).ready(function(){
    });
 
    // Filter live pencarian nama/kode produk di tabel
-   $('#filter_produk_input').on('keyup', function(){
-      var q = $(this).val().toLowerCase().trim();
-      if (!q) {
-         $('.row-item').show();
-         return;
+   $('#filter_produk_input').on('keyup input', function(){
+      var q = $(this).val().trim();
+      if (q.length > 0) {
+         $('#btn_clear_search').show();
+      } else {
+         $('#btn_clear_search').hide();
       }
-      $('.row-item').each(function(){
-         var kode = $(this).data('kode') || '';
-         var nama = $(this).data('nama') || '';
-         if (kode.indexOf(q) !== -1 || nama.indexOf(q) !== -1) {
-            $(this).show();
-         } else {
-            $(this).hide();
+      applyTableFilter();
+   });
+
+   // Tombol Clear Search
+   $('#btn_clear_search').on('click', function(){
+      $('#filter_produk_input').val('').focus();
+      $(this).hide();
+      applyTableFilter();
+   });
+
+   // Klik Tab Pill Filter
+   $('.bulk-pill-btn').on('click', function(e){
+      e.preventDefault();
+      $('.bulk-pill-btn').removeClass('active');
+      $(this).addClass('active');
+      currentFilter = $(this).data('filter');
+      applyTableFilter();
+   });
+
+   // Tombol Reset Input ke Stok Awal
+   $('#btn_reset_all').on('click', function(e){
+      e.preventDefault();
+      var totalChanged = $('.row-changed').length;
+      if (totalChanged === 0) return;
+
+      var executeReset = function() {
+         $('.row-changed').each(function(){
+            var $row = $(this);
+            var orig = $row.find('.orig-qty').val();
+            $row.find('.input-qty-baru').val(orig);
+            updateRowDiff($row);
+         });
+         applyTableFilter();
+      };
+
+      if (typeof swal === 'function') {
+         swal({
+            title: "Reset Semua Perubahan?",
+            text: "Seluruh angka input stok (" + totalChanged + " produk) akan dikembalikan ke stok semula.",
+            type: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#f59e0b",
+            confirmButtonText: "Ya, Kembalikan!",
+            cancelButtonText: "Batal",
+            closeOnConfirm: true
+         }, function(isConfirm){
+            if (isConfirm) {
+               executeReset();
+            }
+         });
+      } else {
+         if (confirm("Kembalikan seluruh input (" + totalChanged + " produk) ke angka stok awal?")) {
+            executeReset();
          }
-      });
+      }
    });
 
    // Submit form edit massal via AJAX
@@ -305,6 +667,8 @@ $(document).ready(function(){
       if (totalChanged === 0) {
          if (typeof show_alert === 'function') {
             show_alert('Anda belum mengubah angka stok pada produk manapun.', 'info');
+         } else if (typeof swal === 'function') {
+            swal('Info', 'Anda belum mengubah angka stok pada produk manapun.', 'info');
          } else {
             alert('Anda belum mengubah angka stok pada produk manapun.');
          }

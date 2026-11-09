@@ -144,7 +144,7 @@ class Utang_usaha extends Admin
 
 		$this->load->library('HtmlPdf');
 		$this->htmlpdf->initialize(['orientation' => 'P', 'format' => 'A4', 'marges' => [5, 5, 5, 5]]);
-		$content = $this->load->view('backend/standart/administrator/utang_usaha/bkk_pdf', $this->data, true);
+		$content = $this->load->view('utang_usaha/backend/standart/administrator/utang_usaha/bkk_pdf', $this->data, true);
 
 		$this->htmlpdf->writeHTML($content);
 		$filename = 'Voucher_BKK_' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $this->data['bkk']->nomor_bkk) . '.pdf';

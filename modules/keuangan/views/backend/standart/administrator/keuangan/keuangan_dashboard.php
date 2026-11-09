@@ -65,24 +65,29 @@
 
    <!-- Navigation Quick Buttons -->
    <div class="row" style="margin-bottom:15px;">
-      <div class="col-md-3">
-         <a href="<?= site_url('administrator/keuangan/utang'); ?>" class="btn btn-primary btn-block btn-flat" style="padding:12px; font-weight:600; border-radius:4px;">
-            <i class="fa fa-book"></i> Utang Usaha (AP)
+      <div class="col-md-2 col-sm-4" style="margin-bottom:10px;">
+         <a href="<?= site_url('administrator/keuangan/utang'); ?>" class="btn btn-primary btn-block btn-flat" style="padding:10px 8px; font-weight:600; border-radius:6px; font-size:12px;">
+            <i class="fa fa-book"></i> Utang (AP)
          </a>
       </div>
-      <div class="col-md-3">
-         <a href="<?= site_url('administrator/keuangan/kas_keluar'); ?>" class="btn btn-danger btn-block btn-flat" style="padding:12px; font-weight:600; border-radius:4px;">
-            <i class="fa fa-upload"></i> Pengeluaran Kas (BKK)
+      <div class="col-md-2 col-sm-4" style="margin-bottom:10px;">
+         <a href="<?= site_url('administrator/keuangan/kas_keluar'); ?>" class="btn btn-danger btn-block btn-flat" style="padding:10px 8px; font-weight:600; border-radius:6px; font-size:12px;">
+            <i class="fa fa-upload"></i> Kas Keluar (BKK)
          </a>
       </div>
-      <div class="col-md-3">
-         <a href="<?= site_url('administrator/keuangan/piutang'); ?>" class="btn btn-warning btn-block btn-flat" style="padding:12px; font-weight:600; border-radius:4px;">
-            <i class="fa fa-file-text"></i> Piutang Usaha (AR)
+      <div class="col-md-2 col-sm-4" style="margin-bottom:10px;">
+         <a href="<?= site_url('administrator/keuangan/piutang'); ?>" class="btn btn-warning btn-block btn-flat" style="padding:10px 8px; font-weight:600; border-radius:6px; font-size:12px;">
+            <i class="fa fa-file-text"></i> Piutang (AR)
          </a>
       </div>
-      <div class="col-md-3">
-         <a href="<?= site_url('administrator/keuangan/kas_masuk'); ?>" class="btn btn-success btn-block btn-flat" style="padding:12px; font-weight:600; border-radius:4px;">
-            <i class="fa fa-download"></i> Penerimaan Kas (BKM)
+      <div class="col-md-3 col-sm-6" style="margin-bottom:10px;">
+         <a href="<?= site_url('administrator/keuangan/kas_masuk'); ?>" class="btn btn-success btn-block btn-flat" style="padding:10px 8px; font-weight:600; border-radius:6px; font-size:12px;">
+            <i class="fa fa-download"></i> Kas Masuk (BKM)
+         </a>
+      </div>
+      <div class="col-md-3 col-sm-6" style="margin-bottom:10px;">
+         <a href="<?= site_url('administrator/buku_besar'); ?>" class="btn btn-info btn-block btn-flat" style="background:#4f46e5; border-color:#4338ca; padding:10px 8px; font-weight:700; border-radius:6px; font-size:12px;">
+            <i class="fa fa-book"></i> Buku Besar (Ledger)
          </a>
       </div>
    </div>

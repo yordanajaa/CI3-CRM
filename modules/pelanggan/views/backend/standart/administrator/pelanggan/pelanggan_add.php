@@ -49,9 +49,9 @@ textarea.form-control { height: auto; }
                <h3 class="box-title"><i class="fa fa-id-card-o text-primary"></i> Informasi &amp; Profil Pelanggan</h3>
             </div>
             <div class="box-body">
-               <!-- Row 1: Kode, Nama, Tipe -->
+               <!-- Row 1: Kode & Nama Pelanggan -->
                <div class="row">
-                  <div class="col-md-3">
+                  <div class="col-md-4">
                      <div class="form-group">
                         <label>Kode Pelanggan <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" name="kode_pelanggan"
@@ -59,22 +59,12 @@ textarea.form-control { height: auto; }
                            <?= $is_edit ? 'readonly' : ''; ?> required>
                      </div>
                   </div>
-                  <div class="col-md-6">
+                  <div class="col-md-8">
                      <div class="form-group">
                         <label>Nama Pelanggan / Perusahaan <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" name="nama_pelanggan"
                            placeholder="Masukkan nama lengkap / nama toko..."
                            value="<?= $is_edit ? _ent($pelanggan->nama_pelanggan) : ''; ?>" required>
-                     </div>
-                  </div>
-                  <div class="col-md-3">
-                     <div class="form-group">
-                        <label>Tipe Pelanggan <span class="text-danger">*</span></label>
-                        <select class="form-control" name="tipe_pelanggan">
-                           <?php foreach(['retail' => 'Retail (Eceran)', 'grosir' => 'Grosir', 'distributor' => 'Distributor'] as $val => $label): ?>
-                              <option <?= ($is_edit && $pelanggan->tipe_pelanggan == $val) ? 'selected' : (!$is_edit && $val=='retail' ? 'selected' : ''); ?> value="<?= $val; ?>"><?= $label; ?></option>
-                           <?php endforeach; ?>
-                        </select>
                      </div>
                   </div>
                </div>
@@ -103,19 +93,32 @@ textarea.form-control { height: auto; }
 
                <!-- Row 3: NPWP, Kota, Status -->
                <div class="row">
-                  <div class="col-md-4">
+                  <div class="col-md-3">
                      <div class="form-group">
                         <label>Nomor NPWP</label>
                         <input type="text" class="form-control" name="npwp" placeholder="00.000.000.0-000.000" value="<?= $is_edit ? _ent($pelanggan->npwp) : ''; ?>">
                      </div>
                   </div>
-                  <div class="col-md-4">
+                  <div class="col-md-3">
                      <div class="form-group">
                         <label>Kota / Wilayah</label>
                         <input type="text" class="form-control" name="kota" placeholder="Nama Kota / Kabupaten" value="<?= $is_edit ? _ent($pelanggan->kota) : ''; ?>">
                      </div>
                   </div>
-                  <div class="col-md-4">
+                  <div class="col-md-3">
+                     <div class="form-group">
+                        <label>Kategori Pelanggan <span class="text-danger">*</span></label>
+                        <?php $cur_src = strtolower($pelanggan->source ?? 'manual'); ?>
+                        <select class="form-control" name="source">
+                           <option <?= ($is_edit && in_array($cur_src, ['manual', 'toko', 'offline'])) || !$is_edit ? 'selected' : ''; ?> value="manual">Toko / Regular / Offline</option>
+                           <option <?= ($is_edit && in_array($cur_src, ['resi', 'scan_resi'])) ? 'selected' : ''; ?> value="resi">Resi</option>
+                           <option <?= ($is_edit && in_array($cur_src, ['tiktok', 'tiktokshop', 'tiktok_shop', 'tiktok shop'])) ? 'selected' : ''; ?> value="tiktok">TikTok Shop</option>
+                           <option <?= ($is_edit && $cur_src == 'shopee') ? 'selected' : ''; ?> value="shopee">Shopee</option>
+                           <option <?= ($is_edit && $cur_src == 'tokopedia') ? 'selected' : ''; ?> value="tokopedia">Tokopedia</option>
+                        </select>
+                     </div>
+                  </div>
+                  <div class="col-md-3">
                      <div class="form-group">
                         <label>Status Pelanggan <span class="text-danger">*</span></label>
                         <select class="form-control" name="status">
@@ -159,7 +162,7 @@ textarea.form-control { height: auto; }
                <div class="pull-right">
                    <?php if (!$is_edit): ?>
                    <button type="button" id="btn_save_and_so" class="btn btn-success btn-flat" style="border-radius:6px; font-weight:700; padding:8px 20px; font-size:14px; margin-right:8px;">
-                      <i class="fa fa-shopping-cart"></i> Simpan &amp; Buat Sales Order
+                      <i class="fa fa-shopping-cart"></i> Simpan &amp; Buat Transaksi Penjualan
                    </button>
                    <?php endif; ?>
                    <button type="button" id="btn_save" class="btn btn-primary btn-flat" style="border-radius:6px; font-weight:700; padding:8px 24px; font-size:14px;">
@@ -225,7 +228,7 @@ $(document).ready(function(){
                 } 
              } else { 
                 show_alert(res.message || 'Gagal menyimpan data.', 'error'); 
-                btn.prop('disabled', false).html('<i class="fa fa-shopping-cart"></i> Simpan &amp; Buat Sales Order'); 
+                btn.prop('disabled', false).html('<i class="fa fa-shopping-cart"></i> Simpan &amp; Buat Transaksi Penjualan'); 
              }
           }, 
           error: function(xhr){ 
@@ -235,7 +238,7 @@ $(document).ready(function(){
                 if (r && r.message) errMsg = r.message;
              } catch(e){}
              show_alert(errMsg, 'error');
-             btn.prop('disabled', false).html('<i class="fa fa-shopping-cart"></i> Simpan &amp; Buat Sales Order'); 
+             btn.prop('disabled', false).html('<i class="fa fa-shopping-cart"></i> Simpan &amp; Buat Transaksi Penjualan'); 
           }
        });
     });

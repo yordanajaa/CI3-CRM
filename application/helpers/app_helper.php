@@ -316,10 +316,17 @@ if(!function_exists('display_menu_admin')) {
 							}
 						}
 					}
+					if (strpos($active, 'treeview') === false) {
+						$active = trim('treeview ' . $active);
+					}
 				}
 
 		   		$parsed_link = !empty($row->link) ? parse_nav_url($row->link) : '#';
-		   		$link = filter_var($parsed_link, FILTER_VALIDATE_URL) ? $parsed_link : base_url($parsed_link);
+		   		if ($row->Count > 0 && (empty($row->link) || $row->link == '#' || $parsed_link == '#')) {
+		   			$link = '#';
+		   		} else {
+		   			$link = filter_var($parsed_link, FILTER_VALIDATE_URL) ? $parsed_link : base_url($parsed_link);
+		   		}
 		   		if ($row->type == 'label') {
 		   			if ($ci->aauth->is_allowed($perms)) {
 		        		$ret .= '<li class="header treeview">'._ent($row->label).'</li>';
@@ -1323,3 +1330,138 @@ if(!function_exists('get_user_first_group')) {
 		return (object)['name' => 'User', 'id' => 0, 'definition' => 'User'];
 	}
 }
+
+if (!function_exists('sync_calon_customer_to_pelanggan')) {
+	/**
+	 * Calon customer / user register akun demo sengaja TIDAK dimasukkan ke master pelanggan.
+	 * Master data pelanggan dikhususkan untuk pembeli transaksi riil.
+	 *
+	 * @param int|object|array $user_id_or_object
+	 * @param string $status 'aktif' or 'nonaktif'
+	 * @return false
+	 */
+	function sync_calon_customer_to_pelanggan($user_id_or_object, $status = 'aktif') {
+		return false;
+	}
+}
+
+if (!function_exists('clean_customer_name')) {
+	/**
+	 * Membersihkan nama penerima / customer dari noise OCR, prefix label, quotes, asterisks, dan no telp / unclosed parens
+	 */
+	function clean_customer_name($name) {
+		if (empty($name)) return '';
+		$s = trim((string)$name);
+
+		// 1. Strip leading label prefixes
+		$s = preg_replace('/^(?:Penerima|Nama\s*Penerima|Nama|Kepada\s*Yth|Kepada|\bTo\b|\bRecipient\b)\s*[:\/\-]\s*/iu', '', $s);
+
+		// 2. Strip sender / shipper bleeding
+		$s = preg_replace('/\s+(?:Pengirim|Sender|From|Dari|Shipper|Seller)\s*[:\/\-].*$/iu', '', $s);
+
+		// 3. Strip phone / masked phone at end (including (+62)8..., +62 8..., 08..., 8..., or parens with phone)
+		$s = preg_replace('/\s*(?:\(\+?62\)\s*|\+?62\s*|\(0\d+\)\s*|0)?8.*$/u', '', $s);
+		$s = preg_replace('/\s*\([0-9\*\s\-+?]{3,}\)/u', '', $s);
+
+		// 4. Strip unclosed parenthesis / brackets with phone/numbers/noise at end
+		$s = preg_replace('/\s*[\(\[].*$/u', '', $s);
+
+		// 5. Strip destination tags at end
+		$s = preg_replace('/\s+(?:HOME|OFFICE|MOBILE|WORK|KANTOR|RUMAH)\s*$/iu', '', $s);
+
+		// 6. Strip quotes, asterisks, degrees, curly quotes, backticks, noise characters
+		$s = preg_replace('/[“”‘’"\'`´ʹʺʻʼ\x{201C}\x{201D}\x{2018}\x{2019}\x{00B0}\x{00BA}\x{FFFD}\*\?\#\^]+/u', '', $s);
+
+		// 7. Strip trailing numbers / digits (names don't end in phone fragment digits like 85, 82, 081)
+		$s = preg_replace('/[\s\d]+$/u', '', $s);
+
+		// 8. Strip trailing punctuation / noise dividers
+		$s = preg_replace('/[\s\p{Pd}\-_=~|\.:;,\/]+$/u', '', $s);
+
+		// 9. Clean multiple whitespace
+		$s = trim(preg_replace('/\s+/u', ' ', $s));
+		$s = trim($s, " \t\n\r\0\x0B,.-:;\"'_~|/=()[]{}*");
+
+		// 10. Check for unclosed parenthesis
+		$opens = substr_count($s, '(');
+		$closes = substr_count($s, ')');
+		if ($opens > $closes) {
+			$s = preg_replace('/\s*\([^\)]*$/', '', $s);
+			$s = trim($s, " \t\n\r\0\x0B,.-:;\"'_");
+		}
+
+		// 11. Capitalize properly if all lowercase
+		if (!empty($s) && $s !== '-') {
+			if (ctype_lower(str_replace([' ', '_'], '', $s))) {
+				$s = ucwords($s);
+			}
+		}
+
+		if (in_array(strtolower($s), ['', '-', 'penerima', 'customer', 'buyer', 'user', 'nama', 'null', 'undefined'])) {
+			return '';
+		}
+
+		return $s;
+	}
+}
+
+if (!function_exists('clean_customer_username')) {
+	/**
+	 * Membersihkan username marketplace dan sembunyikan jika dummy, kosong, atau redundan dengan nama
+	 */
+	function clean_customer_username($username, $customer_name = '') {
+		if (empty($username)) return '';
+		$u = trim((string)$username);
+		$u = ltrim($u, '@');
+		$u = preg_replace('/[\?\*#~=\|\{\}\[\]\(\)]+/', '', $u);
+		$u = preg_replace('/_[0-9\*\s\-+?]*$/', '', $u);
+		$u = trim($u, " \t\n\r\0\x0B,.-:;\"'_");
+
+		if (in_array(strtolower($u), ['', '-', '_', 'buyer', 'pelanggan', 'customer', 'user', 'default', 'null', 'undefined'])) {
+			return '';
+		}
+
+		// Jika username sama persis dengan nama customer, sembunyikan agar tidak redundan
+		if (!empty($customer_name)) {
+			$norm_u = preg_replace('/[^a-z0-9]/', '', strtolower($u));
+			$norm_c = preg_replace('/[^a-z0-9]/', '', strtolower($customer_name));
+			if (!empty($norm_u) && $norm_u === $norm_c) {
+				return '';
+			}
+		}
+
+		return $u;
+	}
+}
+
+if (!function_exists('clean_customer_phone')) {
+	/**
+	 * Membersihkan dan memvalidasi nomor telepon pelanggan, sembunyikan jika kosong/dash '-'
+	 */
+	function clean_customer_phone($phone) {
+		if (empty($phone)) return '';
+		$raw = trim((string)$phone);
+		if (in_array(strtolower($raw), ['', '-', '_', 'null', 'undefined', 'none'])) return '';
+
+		// Retain masked phone numbers from marketplace shipping labels (e.g. 081****238, ********7555)
+		if (strpos($raw, '*') !== false) {
+			return $raw;
+		}
+
+		$digits = preg_replace('/[^0-9]/', '', $raw);
+		if (strlen($digits) < 8) {
+			return '';
+		}
+
+		if (substr($digits, 0, 2) === '62') {
+			$clean = '0' . substr($digits, 2);
+		} elseif (substr($digits, 0, 1) === '0') {
+			$clean = $digits;
+		} else {
+			$clean = '0' . $digits;
+		}
+
+		return $clean;
+	}
+}
+

@@ -22,9 +22,8 @@ class Model_keuangan extends MY_Model {
 	// ------------------------------------------------------------------------
 	public function get_utang($filter = '', $field = '', $limit = 0, $offset = 0)
 	{
-		$this->db->select('utang_usaha.*, supplier.nama_supplier, supplier.kode_supplier, penerimaan_barang.nomor_penerimaan, purchase_order.nomor_po');
+		$this->db->select('utang_usaha.*, supplier.nama_supplier, supplier.kode_supplier, purchase_order.nomor_po');
 		$this->db->join('supplier', 'supplier.id = utang_usaha.supplier_id', 'LEFT');
-		$this->db->join('penerimaan_barang', 'penerimaan_barang.id = utang_usaha.penerimaan_id', 'LEFT');
 		$this->db->join('purchase_order', 'purchase_order.id = utang_usaha.po_id', 'LEFT');
 
 		if ($this->input->get('supplier_id')) {

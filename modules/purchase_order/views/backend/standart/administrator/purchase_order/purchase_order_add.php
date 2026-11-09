@@ -41,7 +41,13 @@ $action_url = $is_edit
          <div class="box-body">
             <div class="row">
                <div class="col-md-6">
-                  <div class="form-group"><label>Supplier <span class="text-danger">*</span></label>
+                  <div class="form-group">
+                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                        <label style="margin-bottom:0;">Supplier <span class="text-danger">*</span></label>
+                        <button type="button" class="btn btn-xs btn-primary btn-flat" id="btn_open_quick_supplier" style="border-radius:4px; font-weight:600;">
+                           <i class="fa fa-plus-circle"></i> + Tambah Supplier Baru
+                        </button>
+                     </div>
                      <select class="form-control chosen" name="supplier_id" id="supplier_id" required>
                         <option value="">-- Pilih Supplier --</option>
                         <?php foreach($suppliers as $s): ?>
@@ -52,16 +58,14 @@ $action_url = $is_edit
                      </select>
                   </div>
                </div>
-               <?php $default_gudang_id = isset($gudangs[0]) ? $gudangs[0]->id : 1; ?>
-               <input type="hidden" name="gudang_id" value="<?= $default_gudang_id; ?>">
                <div class="col-md-3">
                   <div class="form-group"><label>Tanggal PO <span class="text-danger">*</span></label>
-                     <input type="date" class="form-control" name="tanggal_po" value="<?= date('Y-m-d'); ?>" required>
+                     <input type="date" class="form-control" name="tanggal_po" value="<?= $is_edit ? $po->tanggal_po : date('Y-m-d'); ?>" required>
                   </div>
                </div>
                <div class="col-md-3">
                   <div class="form-group"><label>Est. Tanggal Terima</label>
-                     <input type="date" class="form-control" name="tanggal_estimasi">
+                     <input type="date" class="form-control" name="tanggal_estimasi" value="<?= $is_edit ? ($po->tanggal_estimasi ?? '') : ''; ?>">
                   </div>
                </div>
             </div>
@@ -70,37 +74,38 @@ $action_url = $is_edit
                <div class="col-md-3">
                   <div class="form-group"><label>Mata Uang (Otomatis)</label>
                      <select class="form-control" name="mata_uang" id="mata_uang">
-                        <option value="IDR">IDR - Rupiah Indonesia</option>
-                        <option value="USD">USD - US Dollar</option>
-                        <option value="EUR">EUR - Euro</option>
-                        <option value="SGD">SGD - Singapore Dollar</option>
-                        <option value="JPY">JPY - Japanese Yen</option>
-                        <option value="CNY">CNY - Chinese Yuan</option>
-                        <option value="GBP">GBP - British Pound</option>
-                        <option value="AUD">AUD - Australian Dollar</option>
+                        <?php $curr_selected = $is_edit ? ($po->mata_uang ?? 'IDR') : 'IDR'; ?>
+                        <option value="IDR" <?= $curr_selected == 'IDR' ? 'selected' : ''; ?>>IDR - Rupiah Indonesia</option>
+                        <option value="USD" <?= $curr_selected == 'USD' ? 'selected' : ''; ?>>USD - US Dollar</option>
+                        <option value="EUR" <?= $curr_selected == 'EUR' ? 'selected' : ''; ?>>EUR - Euro</option>
+                        <option value="SGD" <?= $curr_selected == 'SGD' ? 'selected' : ''; ?>>SGD - Singapore Dollar</option>
+                        <option value="JPY" <?= $curr_selected == 'JPY' ? 'selected' : ''; ?>>JPY - Japanese Yen</option>
+                        <option value="CNY" <?= $curr_selected == 'CNY' ? 'selected' : ''; ?>>CNY - Chinese Yuan</option>
+                        <option value="GBP" <?= $curr_selected == 'GBP' ? 'selected' : ''; ?>>GBP - British Pound</option>
+                        <option value="AUD" <?= $curr_selected == 'AUD' ? 'selected' : ''; ?>>AUD - Australian Dollar</option>
                      </select>
                   </div>
                </div>
                <div class="col-md-3">
                   <div class="form-group"><label>Kurs to RP (vs IDR)</label>
-                     <input type="number" step="1" min="1" class="form-control" name="kurs" id="kurs" value="1">
+                     <input type="number" step="0.01" min="1" class="form-control" name="kurs" id="kurs" value="<?= $is_edit ? (float)($po->kurs ?? 1) : 1; ?>">
                      <small class="text-muted" id="kurs_update_label" style="font-size:10px;"><i class="fa fa-globe"></i> API open.er-api.com</small>
                   </div>
                </div>
                <div class="col-md-3">
                   <div class="form-group"><label>Diskon Keseluruhan (%)</label>
-                     <input type="number" step="0.01" min="0" max="100" class="form-control" name="diskon" id="diskon" value="0">
+                     <input type="number" step="0.01" min="0" max="100" class="form-control" name="diskon" id="diskon" value="<?= $is_edit ? (float)($po->diskon ?? 0) : 0; ?>">
                   </div>
                </div>
                <div class="col-md-3">
                   <div class="form-group"><label>Pajak (%)</label>
-                     <input type="number" step="1" min="1" class="form-control" name="pajak_persen" id="pajak_persen" value="0">
+                     <input type="number" step="1" min="0" class="form-control" name="pajak_persen" id="pajak_persen" value="<?= $is_edit ? (int)($po->pajak_persen ?? 0) : 0; ?>">
                   </div>
                </div>
             </div>
 
             <div class="form-group" style="margin-bottom:0;"><label>Catatan PO</label>
-               <textarea class="form-control" name="catatan" rows="2" placeholder="Catatan instruksi ke supplier..."></textarea>
+               <textarea class="form-control" name="catatan" rows="2" placeholder="Catatan instruksi ke supplier..."><?= $is_edit ? _ent($po->catatan ?? '') : ''; ?></textarea>
             </div>
          </div>
       </div>
@@ -128,15 +133,29 @@ $action_url = $is_edit
                      </tr>
                   </thead>
                   <tbody id="item_rows">
-                     <tr id="item_row_0" class="item-row">
-                        <td><select class="form-control produk-select" style="width:100%;" name="items[0][produk_id]"><option value="">-- Pilih Produk --</option><?php foreach($produks as $p): ?><option value="<?= $p->id; ?>" data-harga-idr="<?= $p->harga_beli; ?>" data-satuan="<?= _ent($p->singkatan ?? $p->nama_satuan ?? 'unit'); ?>"><?= _ent($p->kode_produk.' - '.$p->nama_produk); ?></option><?php endforeach; ?></select></td>
-                        <td><input type="number" step="1" min="1" class="form-control qty-input" name="items[0][qty]" value="1" min="1" step="1"></td>
-                        <td><input type="text" class="form-control satuan-input" name="items[0][satuan]" readonly placeholder="Unit"></td>
-                        <td><input type="text" class="form-control harga-input rupiah" name="items[0][harga_satuan]" value="0"></td>
-                        <td><input type="text" class="form-control disc-input" name="items[0][diskon_persen]" value="0"></td>
-                        <td><input type="text" class="form-control subtotal-display" name="items[0][subtotal_display]" value="0" readonly></td>
-                        <td><button type="button" class="btn btn-xs btn-danger remove-row"><i class="fa fa-times"></i></button></td>
-                     </tr>
+                     <?php if ($is_edit && !empty($items)): ?>
+                        <?php foreach($items as $idx => $it): ?>
+                        <tr id="item_row_<?= $idx; ?>" class="item-row">
+                           <td><select class="form-control produk-select" style="width:100%;" name="items[<?= $idx; ?>][produk_id]"><option value="">-- Pilih Produk --</option><?php foreach($produks as $p): ?><option value="<?= $p->id; ?>" <?= $p->id == $it->produk_id ? 'selected' : ''; ?> data-harga-idr="<?= $p->harga_beli; ?>" data-satuan="<?= _ent($p->singkatan ?? $p->nama_satuan ?? 'unit'); ?>"><?= _ent($p->kode_produk.' - '.$p->nama_produk); ?></option><?php endforeach; ?></select></td>
+                           <td><input type="number" step="1" min="1" class="form-control qty-input" name="items[<?= $idx; ?>][qty]" value="<?= (int) round($it->qty_pesan); ?>" min="1" step="1"></td>
+                           <td><input type="text" class="form-control satuan-input" name="items[<?= $idx; ?>][satuan]" readonly placeholder="Unit" value="<?= _ent($it->satuan ?? ''); ?>"></td>
+                           <td><input type="text" class="form-control harga-input <?= ($curr_selected ?? 'IDR') === 'IDR' ? 'rupiah' : ''; ?>" name="items[<?= $idx; ?>][harga_satuan]" value="<?= ($curr_selected ?? 'IDR') === 'IDR' ? number_format($it->harga_satuan, 0, ',', '.') : number_format($it->harga_satuan, 2, '.', ''); ?>"></td>
+                           <td><input type="text" class="form-control disc-input" name="items[<?= $idx; ?>][diskon_persen]" value="<?= (float)$it->diskon_persen; ?>"></td>
+                           <td><input type="text" class="form-control subtotal-display" name="items[<?= $idx; ?>][subtotal_display]" value="<?= ($curr_selected ?? 'IDR') === 'IDR' ? number_format($it->subtotal, 0, ',', '.') : number_format($it->subtotal, 2, '.', ''); ?>" readonly></td>
+                           <td><button type="button" class="btn btn-xs btn-danger remove-row"><i class="fa fa-times"></i></button></td>
+                        </tr>
+                        <?php endforeach; ?>
+                     <?php else: ?>
+                        <tr id="item_row_0" class="item-row">
+                           <td><select class="form-control produk-select" style="width:100%;" name="items[0][produk_id]"><option value="">-- Pilih Produk --</option><?php foreach($produks as $p): ?><option value="<?= $p->id; ?>" data-harga-idr="<?= $p->harga_beli; ?>" data-satuan="<?= _ent($p->singkatan ?? $p->nama_satuan ?? 'unit'); ?>"><?= _ent($p->kode_produk.' - '.$p->nama_produk); ?></option><?php endforeach; ?></select></td>
+                           <td><input type="number" step="1" min="1" class="form-control qty-input" name="items[0][qty]" value="1" min="1" step="1"></td>
+                           <td><input type="text" class="form-control satuan-input" name="items[0][satuan]" readonly placeholder="Unit"></td>
+                           <td><input type="text" class="form-control harga-input rupiah" name="items[0][harga_satuan]" value="0"></td>
+                           <td><input type="text" class="form-control disc-input" name="items[0][diskon_persen]" value="0"></td>
+                           <td><input type="text" class="form-control subtotal-display" name="items[0][subtotal_display]" value="0" readonly></td>
+                           <td><button type="button" class="btn btn-xs btn-danger remove-row"><i class="fa fa-times"></i></button></td>
+                        </tr>
+                     <?php endif; ?>
                   </tbody>
                   <tfoot>
                      <tr><td colspan="5" class="text-right"><strong>Subtotal (<span class="lbl-currency">IDR</span>):</strong></td><td colspan="2"><strong id="display_subtotal">0</strong></td></tr>
@@ -149,11 +168,7 @@ $action_url = $is_edit
             </div>
          </div>
 
-         <!-- High Value PO Approval Live Alert -->
-         <div id="high_value_po_alert" class="alert alert-warning" style="display:none; margin: 15px 20px 0 20px; border-left: 5px solid #f39c12; background: #fffcf5; color: #8a6d3b; border-radius: 4px;">
-            <i class="fa fa-shield text-warning margin-r-5" style="font-size: 16px;"></i> 
-            <strong>Perhatian Approval Wewenang Direktur:</strong> Total transaksi PO ini sebesar <strong id="alert_total_idr">Rp 0</strong> melebihi batas threshold approval (<strong id="alert_threshold_idr">Rp 50.000.000</strong>). Setelah disubmit, PO ini memerlukan persetujuan dari Direktur / Superadmin.
-         </div>
+         
 
          <!-- Card Footer: Action Buttons at the Bottom! -->
          <div class="box-footer" style="padding:15px 20px; background:#f8fafc; border-top:1px solid #f1f5f9; border-radius: 0 0 8px 8px;">
@@ -163,8 +178,12 @@ $action_url = $is_edit
                </a>
             </div>
             <div class="pull-right">
-               <button type="button" id="btn_save" class="btn btn-primary btn-flat" style="border-radius:6px; font-weight:700; padding:8px 24px; font-size:14px;">
-                  <i class="fa fa-save"></i> <?= $is_edit ? 'Update Purchase Order' : 'Simpan Purchase Order'; ?>
+               <input type="hidden" name="action_type" id="action_type" value="direct">
+               <button type="button" id="btn_save_draft" class="btn btn-default btn-flat" style="border-radius:6px; font-weight:600; padding:8px 18px; font-size:14px; margin-right:8px;">
+                  <i class="fa fa-file-o"></i> Simpan Draft
+               </button>
+               <button type="button" id="btn_save" class="btn btn-success btn-flat" style="border-radius:6px; font-weight:700; padding:8px 24px; font-size:14px;">
+                  <i class="fa fa-check-circle"></i> <?= $is_edit ? 'Update Purchase Order' : 'Simpan &amp; Masuk Stok (Direct Purchase)'; ?>
                </button>
             </div>
          </div>
@@ -172,10 +191,47 @@ $action_url = $is_edit
    </div>
 </div>
 </form>
+
+<!-- Modal Quick Add Supplier -->
+<div class="modal fade" id="modal_quick_supplier" tabindex="-1" role="dialog">
+   <div class="modal-dialog" role="document" style="max-width: 480px;">
+      <div class="modal-content" style="border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+         <div class="modal-header" style="background:#3b82f6; color:#fff; border-radius: 8px 8px 0 0; padding: 12px 18px;">
+            <button type="button" class="close" data-dismiss="modal" style="color:#fff; opacity:0.8;">&times;</button>
+            <h4 class="modal-title" style="font-weight:700; font-size: 16px;"><i class="fa fa-truck"></i> Tambah Mitra Supplier Baru</h4>
+         </div>
+         <div class="modal-body" style="padding: 20px;">
+            <div class="form-group">
+               <label>Nama Supplier / Toko <span class="text-danger">*</span></label>
+               <input type="text" id="quick_nama_supplier" class="form-control" placeholder="Contoh: PT Sumber Rejeki Abadi" required>
+            </div>
+            <div class="form-group">
+               <label>Kontak Person / PIC</label>
+               <input type="text" id="quick_kontak_person" class="form-control" placeholder="Nama sales / kontak">
+            </div>
+            <div class="form-group">
+               <label>No. Telepon / WhatsApp</label>
+               <input type="text" id="quick_telepon" class="form-control" placeholder="Contoh: 08123456789">
+            </div>
+            <div class="form-group">
+               <label>Alamat / Kota</label>
+               <textarea id="quick_alamat" class="form-control" rows="2" placeholder="Alamat supplier..."></textarea>
+            </div>
+         </div>
+         <div class="modal-footer" style="background:#f8fafc; border-radius: 0 0 8px 8px; padding: 12px 18px;">
+            <button type="button" class="btn btn-default btn-flat" data-dismiss="modal">Batal</button>
+            <button type="button" id="btn_submit_quick_supplier" class="btn btn-primary btn-flat" style="font-weight:600;">
+               <i class="fa fa-save"></i> Simpan Supplier
+            </button>
+         </div>
+      </div>
+   </div>
+</div>
 </section>
 
 <script>
-var item_count = 1;
+var is_edit = <?= $is_edit ? 'true' : 'false'; ?>;
+var item_count = <?= ($is_edit && !empty($items)) ? count($items) : 1; ?>;
 var produks_data = <?= json_encode(array_map(function($p){ return ['id'=>$p->id,'nama'=>$p->kode_produk.' - '.$p->nama_produk,'harga_beli'=>$p->harga_beli,'satuan'=>$p->singkatan ?? $p->nama_satuan ?? 'pcs']; }, $produks)); ?>;
 
 var live_kurs_map = {
@@ -225,11 +281,31 @@ function parseMoneyVal(val) {
    if (val === null || val === undefined || val === '') return 0;
    if (typeof val === 'number') return val;
    var str = String(val).trim();
-   if (str.indexOf(',') !== -1) {
+   var curr = $('#mata_uang').val() || 'IDR';
+
+   if (curr === 'IDR') {
+      // In IDR, dots are thousands separators (18.000 = 18000)
       str = str.replace(/\./g, '').replace(',', '.');
-   } else {
+      return parseFloat(str) || 0;
+   }
+
+   // For Foreign Currencies (USD, EUR, SGD, etc.)
+   if (str.indexOf(',') !== -1 && str.indexOf('.') !== -1) {
+      if (str.lastIndexOf(',') > str.lastIndexOf('.')) {
+         str = str.replace(/\./g, '').replace(',', '.');
+      } else {
+         str = str.replace(/,/g, '');
+      }
+   } else if (str.indexOf(',') !== -1) {
+      var parts = str.split(',');
+      if (parts.length > 2 || (parts.length === 2 && parts[1].length === 3)) {
+         str = str.replace(/,/g, '');
+      } else {
+         str = str.replace(',', '.');
+      }
+   } else if (str.indexOf('.') !== -1) {
       var parts = str.split('.');
-      if (parts.length > 2) {
+      if (parts.length > 2 || (parts.length === 2 && parts[1].length === 3)) {
          str = str.replace(/\./g, '');
       }
    }
@@ -286,16 +362,9 @@ function recalc_total(){
    $('#display_total').text(curr + ' ' + fmt(total));
 
    var total_idr = total * kurs;
-   $('#display_total_idr').text('Rp ' + Math.round(total_idr).toLocaleString('id-ID'));
+   $('#display_total_idr').html('Rp ' + Math.round(total_idr).toLocaleString('id-ID') + (curr !== 'IDR' ? ' <small class="text-muted" style="font-size:11px; font-weight:normal;">(Hasil konversi ' + curr + ' @ kurs ' + Math.round(kurs).toLocaleString('id-ID') + ')</small>' : ''));
 
-   var po_thresh = <?= (float) get_option('po_approval_threshold', 50000000); ?>;
-   if (total_idr >= po_thresh) {
-      $('#alert_total_idr').text('Rp ' + Math.round(total_idr).toLocaleString('id-ID'));
-      $('#alert_threshold_idr').text('Rp ' + Math.round(po_thresh).toLocaleString('id-ID'));
-      $('#high_value_po_alert').slideDown();
-   } else {
-      $('#high_value_po_alert').slideUp();
-   }
+   
 }
 
 function add_item_row(){
@@ -310,9 +379,13 @@ function add_item_row(){
 }
 
 $(document).ready(function(){
-   fetch_live_rates_api(true);
-   if ($('#supplier_id').val()) { $('#supplier_id').trigger('change'); }
-   update_currency_labels();
+   if (!is_edit) {
+      fetch_live_rates_api(true);
+      if ($('#supplier_id').val()) { $('#supplier_id').trigger('change'); }
+   } else {
+      update_currency_labels();
+      recalc_total();
+   }
 
    if ($('#mata_uang').val() !== 'IDR') {
       $('.harga-input').removeClass('rupiah');
@@ -410,6 +483,58 @@ $(document).ready(function(){
       var val = $(this).val();
       $('.disc-input').val(val);
       $('.item-row').each(function(){ recalc_row($(this)); });
+   });
+
+   $('#btn_save_draft').click(function(){
+      $('#action_type').val('draft');
+      $('#btn_save').trigger('click');
+   });
+
+   $('#btn_open_quick_supplier').click(function(){
+      $('#modal_quick_supplier').modal('show');
+   });
+
+   $('#btn_submit_quick_supplier').click(function(){
+      var nama = $.trim($('#quick_nama_supplier').val());
+      if(!nama){
+         swal('Perhatian', 'Nama Supplier wajib diisi!', 'warning');
+         return;
+      }
+      var btn = $(this);
+      btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Menyimpan...');
+      $.ajax({
+         url: '<?= site_url("administrator/purchase_order/quick_add_supplier"); ?>',
+         method: 'POST',
+         dataType: 'json',
+         data: {
+            nama_supplier: nama,
+            kontak_person: $('#quick_kontak_person').val(),
+            telepon: $('#quick_telepon').val(),
+            alamat: $('#quick_alamat').val()
+         },
+         success: function(res){
+            btn.prop('disabled', false).html('<i class="fa fa-save"></i> Simpan Supplier');
+            if(res.success){
+               var opt = new Option(res.kode_supplier + ' - ' + res.nama_supplier + ' (' + res.mata_uang + ')', res.supplier_id, true, true);
+               $('#supplier_id').append(opt).val(res.supplier_id).trigger('change');
+               if ($('#supplier_id').hasClass('chosen')) {
+                  $('#supplier_id').trigger('chosen:updated');
+               }
+               $('#modal_quick_supplier').modal('hide');
+               $('#quick_nama_supplier').val('');
+               $('#quick_kontak_person').val('');
+               $('#quick_telepon').val('');
+               $('#quick_alamat').val('');
+               swal('Berhasil!', 'Supplier baru berhasil ditambahkan dan dipilih.', 'success');
+            } else {
+               swal('Gagal', res.message || 'Gagal menambahkan supplier.', 'error');
+            }
+         },
+         error: function(){
+            btn.prop('disabled', false).html('<i class="fa fa-save"></i> Simpan Supplier');
+            swal('Error', 'Terjadi kesalahan koneksi.', 'error');
+         }
+      });
    });
 
    $('#btn_save').click(function(){

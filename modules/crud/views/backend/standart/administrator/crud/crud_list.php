@@ -6,24 +6,23 @@
 function domo(){
  
    // Binding keys
-   $('*').bind('keydown', 'Ctrl+a', function assets() {
+   jQuery('*').bind('keydown', 'Ctrl+a', function assets() {
        window.location.href = BASE_URL + '/administrator/Crud/add';
        return false;
    });
 
-   $('*').bind('keydown', 'Ctrl+f', function assets() {
-       $('#sbtn').trigger('click');
+   jQuery('*').bind('keydown', 'Ctrl+f', function assets() {
+       jQuery('#sbtn').trigger('click');
        return false;
    });
 
-   $('*').bind('keydown', 'Ctrl+x', function assets() {
-       $('#reset').trigger('click');
+   jQuery('*').bind('keydown', 'Ctrl+x', function assets() {
+       jQuery('#reset').trigger('click');
        return false;
    });
 
-   $('*').bind('keydown', 'Ctrl+b', function assets() {
-
-       $('#reset').trigger('click');
+   jQuery('*').bind('keydown', 'Ctrl+b', function assets() {
+       jQuery('#reset').trigger('click');
        return false;
    });
 }

@@ -169,8 +169,13 @@ class Piutang_usaha extends Admin
 
 	public function cetak_bkm($id)
 	{
-		$this->is_allowed('piutang_usaha_list');
-		$this->data['bkm'] = $this->db->select('pembayaran_piutang.*, pelanggan.nama_pelanggan, pelanggan.kode_pelanggan, pelanggan.alamat, piutang_usaha.nomor_piutang')
+		// Allow if user has piutang_usaha_list or utang_usaha_list or admin
+		if (!$this->aauth->is_allowed('piutang_usaha_list') && !$this->aauth->is_allowed('utang_usaha_list') && !$this->aauth->is_admin()) {
+			$this->is_allowed('piutang_usaha_list');
+			return;
+		}
+
+		$this->data['bkm'] = $this->db->select('pembayaran_piutang.*, pelanggan.nama_pelanggan, pelanggan.kode_pelanggan, pelanggan.alamat, pelanggan.no_telp, pelanggan.telepon, piutang_usaha.nomor_piutang')
 			->join('pelanggan', 'pelanggan.id = pembayaran_piutang.pelanggan_id', 'LEFT')
 			->join('piutang_usaha', 'piutang_usaha.id = pembayaran_piutang.piutang_id', 'LEFT')
 			->get_where('pembayaran_piutang', ['pembayaran_piutang.id' => $id])->row();
@@ -179,15 +184,23 @@ class Piutang_usaha extends Admin
 			show_404(); return;
 		}
 
-		$this->load->library('HtmlPdf');
-		$this->htmlpdf->initialize(['orientation' => 'P', 'format' => 'A4', 'marges' => [10, 10, 10, 10]]);
-		$content = $this->load->view('backend/standart/administrator/piutang_usaha/bkm_pdf', $this->data, true);
-		
-		$this->htmlpdf->writeHTML($content);
-		$doc_num = preg_replace('/[^a-zA-Z0-9_-]/', '_', $this->data['bkm']->nomor_bkm ?? $id);
-		$filename = 'bkm_' . $doc_num . '.pdf';
-		if (ob_get_length()) { ob_clean(); }
-		$this->htmlpdf->Output($filename, 'D');
+		$mode = $this->input->get('mode');
+		if ($mode === 'pdf' || $mode === 'download') {
+			$this->load->library('HtmlPdf');
+			$this->htmlpdf->initialize(['orientation' => 'P', 'format' => 'A4', 'marges' => [10, 10, 10, 10]]);
+			$content = $this->load->view('piutang_usaha/backend/standart/administrator/piutang_usaha/bkm_pdf', $this->data, true);
+			
+			$this->htmlpdf->writeHTML($content);
+			$doc_num = preg_replace('/[^a-zA-Z0-9_-]/', '_', $this->data['bkm']->nomor_bkm ?? $id);
+			$filename = 'Voucher_BKM_' . $doc_num . '.pdf';
+			if (ob_get_length()) { ob_clean(); }
+			$output_mode = ($mode === 'download') ? 'D' : 'I';
+			$this->htmlpdf->Output($filename, $output_mode);
+			return;
+		}
+
+		// Default: Direct Printable HTML View with auto-print & PDF download option
+		$this->load->view('piutang_usaha/backend/standart/administrator/piutang_usaha/bkm_print', $this->data);
 	}
 
 	public function export()

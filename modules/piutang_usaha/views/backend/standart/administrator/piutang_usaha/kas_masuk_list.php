@@ -70,9 +70,12 @@
                      </td>
                      <td class="text-right"><strong style="color:#10b981; font-size:14px;">Rp <?= number_format($row->nominal, 0, ',', '.'); ?></strong></td>
                      <td><?= _ent($row->created_by ?? 'system'); ?></td>
-                     <td class="text-center">
-                        <a href="<?= site_url('administrator/piutang_usaha/cetak_bkm/' . $row->id); ?>" class="btn btn-info btn-xs btn-flat" title="Cetak Voucher BKM" style="border-radius:3px;">
+                     <td class="text-center" style="white-space:nowrap;">
+                        <a href="<?= site_url('administrator/piutang_usaha/cetak_bkm/' . $row->id); ?>" target="_blank" class="btn btn-info btn-xs btn-flat" title="Cetak Voucher BKM (Print)" style="border-radius:3px;">
                            <i class="fa fa-print"></i> Cetak
+                        </a>
+                        <a href="<?= site_url('administrator/piutang_usaha/cetak_bkm/' . $row->id . '?mode=pdf'); ?>" target="_blank" class="btn btn-default btn-xs btn-flat" title="Unduh File PDF" style="border-radius:3px; margin-left:3px;">
+                           <i class="fa fa-file-pdf-o"></i> PDF
                         </a>
                      </td>
                   </tr>

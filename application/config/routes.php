@@ -8,19 +8,14 @@ $route_path = APPPATH . 'routes/';
 // require_once $route_path . 'routes_landing.php';
 
 
-$route['default_controller'] = 'auth/backend/auth/login';
+$route['default_controller'] = 'web';
+$route['landing'] = 'web/landing';
+$route['beranda'] = 'web/landing';
 $route['404_override'] = 'not_found';
 $route['translate_uri_dashes'] = FALSE;
 
-// Public Webhook Routes (no auth required — for Fonnte/WA Gateway callbacks)
-$route['webhook'] = 'webhook/index';
-$route['webhook/fonnte'] = 'webhook/fonnte';
-$route['webhook/wa'] = 'webhook/wa';
-$route['webhook/waha'] = 'webhook/waha';
-$route['webhook/test'] = 'webhook/test';
-// Backward compat: old webhook URL still works
-$route['administrator/crm/fonnte_webhook'] = 'webhook/fonnte';
-
+// Administrator Routes
+$route['administrator'] = 'dashboard/backend/dashboard';
 $route['administrator/login'] = 'auth/backend/auth/login';
 $route['administrator/register'] = 'auth/backend/auth/register';
 $route['administrator/forgot-password'] = 'auth/backend/auth/forgot_password';
@@ -40,7 +35,12 @@ $route[ADMIN_NAMESPACE_URL.'/crm_segments'] = 'crm_segments/backend/crm_segments
 $route[ADMIN_NAMESPACE_URL.'/crm_segments/product_rfm'] = 'crm_segments/backend/crm_segments/product_rfm';
 $route[ADMIN_NAMESPACE_URL.'/crm_segments/product_rfm_drilldown_ajax'] = 'crm_segments/backend/crm_segments/product_rfm_drilldown_ajax';
 $route[ADMIN_NAMESPACE_URL.'/crm_segments/(:any)'] = 'crm_segments/backend/crm_segments/$1';
-$route[ADMIN_NAMESPACE_URL.'/crm_segments/(:any)/(:any)'] = 'crm_segments/backend/crm_segments/$1/$2';
+$route[ADMIN_NAMESPACE_URL.'/utang_usaha'] = 'utang_usaha/backend/utang_usaha';
+$route[ADMIN_NAMESPACE_URL.'/utang_usaha/(:any)'] = 'utang_usaha/backend/utang_usaha/$1';
+$route[ADMIN_NAMESPACE_URL.'/utang_usaha/(:any)/(:any)'] = 'utang_usaha/backend/utang_usaha/$1/$2';
+
+$route[ADMIN_NAMESPACE_URL.'/pembayaran_utang'] = 'utang_usaha/backend/utang_usaha/kas_keluar';
+$route[ADMIN_NAMESPACE_URL.'/pembayaran_utang/(:any)'] = 'utang_usaha/backend/utang_usaha/kas_keluar/$1';
 
 $route[ADMIN_NAMESPACE_URL.'/(:any)'] = '$1/backend/$1';
 $route[ADMIN_NAMESPACE_URL.'/(:any)/(:any)'] = '$1/backend/$1/$2';
@@ -55,21 +55,11 @@ $route[ADMIN_NAMESPACE_URL.'/tb_marketplace_orders'] = 'penjualan_marketplace/ba
 $route[ADMIN_NAMESPACE_URL.'/tb_marketplace_orders/(:any)'] = 'penjualan_marketplace/backend/penjualan_marketplace/$1';
 $route[ADMIN_NAMESPACE_URL.'/tb_marketplace_orders/(:any)/(:any)'] = 'penjualan_marketplace/backend/penjualan_marketplace/$1/$2';
 
-$route[ADMIN_NAMESPACE_URL.'/tb_debts'] = 'utang_usaha/backend/utang_usaha';
-$route[ADMIN_NAMESPACE_URL.'/tb_debts/(:any)'] = 'utang_usaha/backend/utang_usaha/$1';
-$route[ADMIN_NAMESPACE_URL.'/tb_debts/(:any)/(:any)'] = 'utang_usaha/backend/utang_usaha/$1/$2';
-
-$route[ADMIN_NAMESPACE_URL.'/tb_debt_payments'] = 'utang_usaha/backend/utang_usaha/kas_keluar';
-$route[ADMIN_NAMESPACE_URL.'/tb_debt_payments/(:any)'] = 'utang_usaha/backend/utang_usaha/kas_keluar/$1';
-
 $route[ADMIN_NAMESPACE_URL.'/tb_receivables'] = 'piutang_usaha/backend/piutang_usaha';
 $route[ADMIN_NAMESPACE_URL.'/tb_receivables/(:any)'] = 'piutang_usaha/backend/piutang_usaha/$1';
 
 $route[ADMIN_NAMESPACE_URL.'/tb_receivable_payments'] = 'piutang_usaha/backend/piutang_usaha/kas_masuk';
 $route[ADMIN_NAMESPACE_URL.'/tb_receivable_payments/(:any)'] = 'piutang_usaha/backend/piutang_usaha/kas_masuk/$1';
-
-$route[ADMIN_NAMESPACE_URL.'/pembayaran_utang'] = 'utang_usaha/backend/utang_usaha/kas_keluar';
-$route[ADMIN_NAMESPACE_URL.'/pembayaran_utang/(:any)'] = 'utang_usaha/backend/utang_usaha/kas_keluar/$1';
 
 $route[ADMIN_NAMESPACE_URL.'/pembayaran_piutang'] = 'piutang_usaha/backend/piutang_usaha/kas_masuk';
 $route[ADMIN_NAMESPACE_URL.'/pembayaran_piutang/(:any)'] = 'piutang_usaha/backend/piutang_usaha/kas_masuk/$1';

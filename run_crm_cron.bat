@@ -5,7 +5,7 @@ echo   EXECUTING CRM AUTOMATION ENGINE (CLI CRON JOB)
 echo ========================================================
 echo.
 
-cd /d "C:\laragon\www\ci3_metafora"
+cd /d "%~dp0"
 
 if exist "C:\laragon\bin\php\php-7.2.34-nts-Win32-VC15-x64\php.exe" (
     "C:\laragon\bin\php\php-7.2.34-nts-Win32-VC15-x64\php.exe" index.php administrator crm cli_automations

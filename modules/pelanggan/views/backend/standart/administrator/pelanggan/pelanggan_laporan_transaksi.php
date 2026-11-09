@@ -20,7 +20,7 @@
                   <th>Kode</th>
                   <th>Nama Pelanggan</th>
                   <th>Tipe</th>
-                  <th class="text-center">Total Transaksi (SO)</th>
+                  <th class="text-center">Total Transaksi Penjualan</th>
                   <th class="text-center">Total Invoice</th>
                   <th class="text-right">Total Nominal Belanja</th>
                   <th class="text-right">Sisa Piutang</th>
@@ -41,7 +41,7 @@
                         <td class="text-right"><strong class="text-danger">Rp <?= number_format($l->sisa_piutang, 0, ',', '.'); ?></strong></td>
                         <td class="text-center">
                            <a href="<?= site_url('administrator/sales_order?q=' . urlencode($l->nama_pelanggan)); ?>" class="btn btn-xs btn-primary">
-                              <i class="fa fa-list"></i> Lihat SO
+                              <i class="fa fa-list"></i> Lihat Transaksi Penjualan
                            </a>
                         </td>
                      </tr>

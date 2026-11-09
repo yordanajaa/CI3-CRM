@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
    <meta charset="UTF-8">
-   <title>SALES ORDER / PESANAN PENJUALAN - <?= _ent($so->nomor_so ?? ''); ?></title>
+   <title>TRANSAKSI PENJUALAN - <?= _ent($so->nomor_so ?? ''); ?></title>
    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700">
    <style>
       body { font-family: 'Source Sans Pro', sans-serif; font-size: 13px; color: #333; margin: 20px; }
@@ -45,25 +45,55 @@
       <div>Telp: (0274) 123456 | Email: info@idmetafora.com</div>
    </div>
    <div>
-      <div class="doc-title">SALES ORDER / PESANAN PENJUALAN</div>
-      <div class="text-right"><strong>No SO:</strong> <?= _ent($so->nomor_so ?? ''); ?></div>
-      <div class="text-right"><strong>Tanggal:</strong> <?= isset($so->tanggal_so) ? date('d/m/Y', strtotime($so->tanggal_so)) : '-'; ?></div>
+      <div class="doc-title">TRANSAKSI PENJUALAN</div>
+      <table align="right" style="border-collapse: collapse; font-size: 12px; margin-top: 4px;">
+         <tr>
+            <td style="text-align: right; padding: 1px 0;"><strong>No. Transaksi Penjualan</strong></td>
+            <td style="width: 12px; text-align: center; padding: 1px 0;">:</td>
+            <td style="text-align: left; padding: 1px 0;"><strong><?= _ent($so->nomor_so ?? '-'); ?></strong></td>
+         </tr>
+         <tr>
+            <td style="text-align: right; padding: 1px 0; color: #475569;"><strong>Tanggal</strong></td>
+            <td style="text-align: center; padding: 1px 0; color: #475569;">:</td>
+            <td style="text-align: left; padding: 1px 0; color: #475569;"><?= isset($so->tanggal_so) ? date('d/m/Y', strtotime($so->tanggal_so)) : '-'; ?></td>
+         </tr>
+      </table>
    </div>
 </div>
 
 <table class="info-table">
    <tr>
-      <td width="50%">
-         <table style="width: 100%;">
-            <tr><td width="35%"><strong>Pelanggan:</strong></td><td><?= _ent($so->nama_pelanggan ?? '-'); ?></td></tr>
-            <tr><td width="35%"><strong>Alamat Pelanggan:</strong></td><td><?= _ent($so->alamat_pelanggan ?? '-'); ?></td></tr>
-            <tr><td width="35%"><strong>No Telp Pelanggan:</strong></td><td><?= _ent($so->telp_pelanggan ?? '-'); ?></td></tr>
+      <td width="50%" style="vertical-align: top; padding-right: 15px;">
+         <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+               <td width="35%" style="padding: 3px 0; color: #475569;"><strong>Pelanggan</strong></td>
+               <td width="4%" style="padding: 3px 0; text-align: center; color: #475569;">:</td>
+               <td width="61%" style="padding: 3px 0;"><strong><?= _ent($so->nama_pelanggan ?? '-'); ?></strong></td>
+            </tr>
+            <tr>
+               <td style="padding: 3px 0; color: #475569;"><strong>Alamat Pelanggan</strong></td>
+               <td style="padding: 3px 0; text-align: center; color: #475569;">:</td>
+               <td style="padding: 3px 0;"><?= _ent($so->alamat_pelanggan ?? '-'); ?></td>
+            </tr>
+            <tr>
+               <td style="padding: 3px 0; color: #475569;"><strong>No Telp Pelanggan</strong></td>
+               <td style="padding: 3px 0; text-align: center; color: #475569;">:</td>
+               <td style="padding: 3px 0;"><?= _ent($so->telp_pelanggan ?? '-'); ?></td>
+            </tr>
          </table>
       </td>
-      <td width="50%">
-         <table style="width: 100%;">
-            <tr><td width="40%"><strong>Est. Tgl Kirim:</strong></td><td><?= _ent($so->tanggal_kirim ?? '-'); ?></td></tr>
-            <tr><td width="40%"><strong>Salesperson:</strong></td><td><?= _ent($so->created_by ?? '-'); ?></td></tr>
+      <td width="50%" style="vertical-align: top; padding-left: 15px;">
+         <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+               <td width="38%" style="padding: 3px 0; color: #475569;"><strong>Est. Tgl Kirim</strong></td>
+               <td width="4%" style="padding: 3px 0; text-align: center; color: #475569;">:</td>
+               <td width="58%" style="padding: 3px 0;"><?= _ent($so->tanggal_kirim ?? '-'); ?></td>
+            </tr>
+            <tr>
+               <td style="padding: 3px 0; color: #475569;"><strong>Salesperson</strong></td>
+               <td style="padding: 3px 0; text-align: center; color: #475569;">:</td>
+               <td style="padding: 3px 0;"><?= _ent($so->created_by ?? '-'); ?></td>
+            </tr>
          </table>
       </td>
    </tr>

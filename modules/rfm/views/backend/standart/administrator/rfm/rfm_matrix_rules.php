@@ -749,8 +749,8 @@ $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
       <a href="<?= site_url('administrator/rfm' . $nav_qs); ?>" class="nav-tab-btn">
         <i class="fa fa-users"></i> 2. Daftar Customer
       </a>
-      <a href="<?= site_url('administrator/rfm/tracking' . $nav_qs); ?>" class="nav-tab-btn">
-        <i class="fa fa-line-chart"></i> 3. Tracking RFM Bulanan
+      <a href="<?= site_url('administrator/rfm/tracking'); ?>" class="nav-tab-btn">
+        <i class="fa fa-line-chart"></i> 3. Tracking RFM
       </a>
       <a href="<?= site_url('administrator/rfm/cohort' . $nav_qs); ?>" class="nav-tab-btn">
         <i class="fa fa-th"></i> 4. Analisis Kohort
@@ -1242,6 +1242,7 @@ $nav_qs = !empty($nav_params) ? '?' . http_build_query($nav_params) : '';
       </div>
 
       <form method="POST" action="<?= site_url('administrator/rfm/import_excel'); ?>" enctype="multipart/form-data">
+        <input type="hidden" name="<?= $this->security->get_csrf_token_name(); ?>" value="<?= $this->security->get_csrf_hash(); ?>">
         <input type="hidden" name="import_type" value="matrix">
         
         <div class="modal-body" style="padding:22px;">

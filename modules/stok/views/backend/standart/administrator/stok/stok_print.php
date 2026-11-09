@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
    <meta charset="UTF-8">
-   <title>LAPORAN STOK BARANG - <?= _ent($nama_gudang_aktif); ?> (<?= date('d/m/Y'); ?>)</title>
+   <title>LAPORAN STOK BARANG (<?= date('d/m/Y'); ?>)</title>
    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700">
    <style>
       body {
@@ -159,16 +159,24 @@
    <div>
       <div class="company-title">IDMETAFORA &bull; SISTEM MANAJEMEN INVENTORY</div>
       <div class="company-sub">
-         Pergudangan, Distribusi Logistik &amp; Penjualan Retail Multi-Outlet<br>
+         Distribusi Logistik &amp; Penjualan Retail Multi-Outlet<br>
          Jl. Waras No. 179, Sleman, D.I. Yogyakarta | Telp: (0274) 123456 | Email: info@idmetafora.com
       </div>
    </div>
    <div class="doc-info">
       <div class="doc-title">Laporan Posisi Stok Fisik</div>
-      <div class="doc-meta">
-         <strong>Tanggal Cetak:</strong> <?= date('d/m/Y H:i'); ?> WIB<br>
-         <strong>Dicetak Oleh:</strong> <?= _ent(get_user_data('full_name') ?: get_user_data('username') ?: 'Administrator'); ?>
-      </div>
+      <table align="right" style="border-collapse: collapse; font-size: 11.5px; margin-top: 4px; color: #475569;">
+         <tr>
+            <td style="text-align: right; padding: 1px 0;"><strong>Tanggal Cetak</strong></td>
+            <td style="width: 10px; text-align: center; padding: 1px 0;">:</td>
+            <td style="text-align: left; padding: 1px 0;"><?= date('d/m/Y H:i'); ?> WIB</td>
+         </tr>
+         <tr>
+            <td style="text-align: right; padding: 1px 0;"><strong>Dicetak Oleh</strong></td>
+            <td style="text-align: center; padding: 1px 0;">:</td>
+            <td style="text-align: left; padding: 1px 0;"><?= _ent(get_user_data('full_name') ?: get_user_data('username') ?: 'Administrator'); ?></td>
+         </tr>
+      </table>
    </div>
 </div>
 
@@ -282,7 +290,7 @@
       <div>Dibuat Oleh,</div>
       <div class="sign-space"></div>
       <div class="sign-line"><?= _ent(get_user_data('full_name') ?: get_user_data('username') ?: 'Staff Logistik'); ?></div>
-      <small style="color:#64748b;">Admin Gudang / Logistik</small>
+      <small style="color:#64748b;">Staff Inventory / Logistik</small>
    </div>
    <div class="sign-col">
       <div>Diperiksa Oleh,</div>

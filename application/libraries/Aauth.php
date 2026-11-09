@@ -150,23 +150,20 @@ class Aauth {
 				return FALSE;
 			}
 		}
- 		if( $this->config_vars['login_with_name'] == TRUE){
+ 		if( strlen($pass) < $this->config_vars['min'] OR strlen($pass) > $this->config_vars['max'] )
+		{
+			$this->error($this->CI->lang->line('aauth_error_login_failed_name'));
+			return FALSE;
+		}
 
-			if( !$identifier OR strlen($pass) < $this->config_vars['min'] OR strlen($pass) > $this->config_vars['max'] )
-			{
-				$this->error($this->CI->lang->line('aauth_error_login_failed_name'));
-				return FALSE;
-			}
+		$this->CI->load->helper('email');
+		if ($this->config_vars['login_with_name'] == TRUE) {
 			$db_identifier = 'username';
- 		}else{
-			$this->CI->load->helper('email');
-			if( !valid_email($identifier) OR strlen($pass) < $this->config_vars['min'] OR strlen($pass) > $this->config_vars['max'] )
-			{
-				$this->error($this->CI->lang->line('aauth_error_login_failed_email'));
-				return FALSE;
-			}
+		} elseif (valid_email($identifier)) {
 			$db_identifier = 'email';
- 		}
+		} else {
+			$db_identifier = 'username';
+		}
 
 		// if user is not verified
 		$query = null;

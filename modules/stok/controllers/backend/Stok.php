@@ -15,17 +15,14 @@ class Stok extends Admin
 		$this->is_allowed('stok_list');
 		$filter    = $this->input->get('q');
 		$field     = $this->input->get('f');
-		$gudang_id = $this->input->get('gudang_id');
 		$status    = $this->input->get('status');
 		$per_page  = $this->input->get('per_page') ? (int)$this->input->get('per_page') : 100;
 		if ($per_page <= 0) $per_page = 100;
 
-		$this->data['stoks']       = $this->model_stok->get($filter, $field, $per_page, $offset, $gudang_id, $status);
-		$this->data['stok_counts'] = $this->model_stok->count_all($filter, $field, $gudang_id, $status);
-		$this->data['summary']     = $this->model_stok->get_summary_dashboard($gudang_id);
-		$this->data['menipis']     = $this->model_stok->get_stok_menipis($gudang_id);
-		$this->data['gudangs']     = $this->db->get_where('gudang', ['status' => 'aktif'])->result();
-		$this->data['gudang_sel']  = $gudang_id;
+		$this->data['stoks']       = $this->model_stok->get($filter, $field, $per_page, $offset, $status);
+		$this->data['stok_counts'] = $this->model_stok->count_all($filter, $field, $status);
+		$this->data['summary']     = $this->model_stok->get_summary_dashboard();
+		$this->data['menipis']     = $this->model_stok->get_stok_menipis();
 		$this->data['status_sel']  = $status;
 		$this->data['per_page']    = $per_page;
 
@@ -45,14 +42,11 @@ class Stok extends Admin
 	public function menipis()
 	{
 		$this->is_allowed('stok_list');
-		$gudang_id = $this->input->get('gudang_id');
 
-		$this->data['stoks']       = $this->model_stok->get_stok_menipis($gudang_id);
+		$this->data['stoks']       = $this->model_stok->get_stok_menipis();
 		$this->data['stok_counts'] = count($this->data['stoks']);
-		$this->data['summary']     = $this->model_stok->get_summary_dashboard($gudang_id);
+		$this->data['summary']     = $this->model_stok->get_summary_dashboard();
 		$this->data['menipis']     = $this->data['stoks'];
-		$this->data['gudangs']     = $this->db->get('gudang')->result();
-		$this->data['gudang_sel']  = $gudang_id;
 		$this->data['pagination']  = '';
 
 		$this->template->title('Peringatan Stok Menipis & Habis');
@@ -70,15 +64,12 @@ class Stok extends Admin
 			}
 		}
 
-		$gudang_id  = $this->input->get('gudang_id');
 		$date_start = $this->input->get('date_start');
 		$date_end   = $this->input->get('date_end');
 
 		$this->data['produk']      = $this->db->get_where('produk', ['id' => $produk_id])->row();
-		$this->data['kartu']       = $this->model_stok->get_kartu_stok($produk_id, $gudang_id, $date_start, $date_end);
+		$this->data['kartu']       = $this->model_stok->get_kartu_stok($produk_id, $date_start, $date_end);
 		$this->data['all_produks'] = $this->db->where('status', 'aktif')->order_by('id', 'ASC')->get('produk')->result();
-		$this->data['gudangs']     = $this->db->get('gudang')->result();
-		$this->data['gudang_sel']  = $gudang_id;
 		$this->data['date_start']  = $date_start;
 		$this->data['date_end']    = $date_end;
 
@@ -88,60 +79,8 @@ class Stok extends Admin
 
 	public function api_summary()
 	{
-		$gudang_id = $this->input->get('gudang_id');
-		$summary   = $this->model_stok->get_summary_dashboard($gudang_id);
+		$summary = $this->model_stok->get_summary_dashboard();
 		$this->response(['success' => true, 'data' => $summary]);
-	}
-
-	public function batch_tracking()
-	{
-		$this->is_allowed('stok_list');
-		$produk_id  = $this->input->get('produk_id');
-		$gudang_id  = $this->input->get('gudang_id');
-		$date_start = $this->input->get('date_start');
-		$date_end   = $this->input->get('date_end');
-
-		// Batch summary: current batches per product per gudang
-		$this->db->select('pbi.batch_no, pbi.expired_date, p.kode_produk, p.nama_produk, g.nama_gudang, r.kode_rak, r.baris, r.kolom, r.keterangan as rak_keterangan, MAX(pb.tanggal_terima) as tanggal_terima, MAX(pb.nomor_penerimaan) as nomor_penerimaan, SUM(pbi.qty_baik) as total_qty_masuk');
-		$this->db->from('penerimaan_barang_item pbi');
-		$this->db->join('penerimaan_barang pb', 'pb.id = pbi.penerimaan_id');
-		$this->db->join('produk p', 'p.id = pbi.produk_id');
-		$this->db->join('gudang g', 'g.id = pb.gudang_id');
-		$this->db->join('stok s', 's.produk_id = pbi.produk_id AND s.gudang_id = pb.gudang_id', 'LEFT');
-		$this->db->join('rak r', 'r.id = IFNULL(s.rak_id, p.default_rak_id)', 'LEFT');
-		$this->db->where('pb.status', 'confirmed');
-		$this->db->where('pbi.batch_no IS NOT NULL', null, false);
-		$this->db->where("pbi.batch_no != ''", null, false);
-		if ($produk_id) $this->db->where('pbi.produk_id', $produk_id);
-		if ($gudang_id) $this->db->where('pb.gudang_id', $gudang_id);
-		if ($date_start) $this->db->where('pb.tanggal_terima >=', $date_start);
-		if ($date_end) $this->db->where('pb.tanggal_terima <=', $date_end);
-		$this->db->group_by('pbi.batch_no, pbi.produk_id, pb.gudang_id, pbi.expired_date, p.kode_produk, p.nama_produk, g.nama_gudang, r.kode_rak, r.baris, r.kolom, r.keterangan');
-		$this->db->order_by('tanggal_terima', 'DESC');
-
-		$this->data['batches']    = $this->db->get()->result();
-		$this->data['produks']    = $this->db->where('status', 'aktif')->get('produk')->result();
-		$this->data['gudangs']    = $this->db->get('gudang')->result();
-		$this->data['produk_sel'] = $produk_id;
-		$this->data['gudang_sel'] = $gudang_id;
-		$this->data['date_start'] = $date_start;
-		$this->data['date_end']   = $date_end;
-
-		// Products expiring within 30 days
-		$this->data['kadaluarsa_soon'] = $this->db->query("
-			SELECT pbi.batch_no, pbi.expired_date, p.kode_produk, p.nama_produk, g.nama_gudang, SUM(pbi.qty_baik) as qty
-			FROM penerimaan_barang_item pbi
-			JOIN penerimaan_barang pb ON pb.id = pbi.penerimaan_id
-			JOIN produk p ON p.id = pbi.produk_id
-			JOIN gudang g ON g.id = pb.gudang_id
-			WHERE pb.status = 'confirmed' AND pbi.expired_date IS NOT NULL AND pbi.expired_date > '1900-01-01'
-			AND pbi.expired_date <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)
-			GROUP BY pbi.batch_no, pbi.produk_id, pb.gudang_id, pbi.expired_date, p.kode_produk, p.nama_produk, g.nama_gudang
-			ORDER BY pbi.expired_date ASC
-		")->result();
-
-		$this->template->title('Laporan Batch & Lot Tracking');
-		$this->render('backend/standart/administrator/stok/stok_batch', $this->data);
 	}
 
 	public function api_chart()
@@ -164,10 +103,113 @@ class Stok extends Admin
 	public function export()
 	{
 		$this->is_allowed('stok_export');
-		$gudang_id = $this->input->get('gudang_id');
-		$this->model_stok->join_available();
-		if ($gudang_id) $this->db->where('stok.gudang_id', $gudang_id);
-		$this->model_stok->export('stok', 'stok_export');
+
+		$filter    = $this->input->get('q');
+		$field     = $this->input->get('f');
+		$status    = $this->input->get('status');
+
+		// Ambil seluruh data stok sesuai filter tanpa batasan halaman
+		$stoks = $this->model_stok->get($filter, $field, 0, 0, $status);
+
+		if (ob_get_length()) {
+			ob_end_clean();
+		}
+
+		$filename = 'Laporan_Stok_Barang_' . date('Y-m-d_His') . '.xls';
+
+		header('Content-Type: application/vnd.ms-excel; charset=utf-8');
+		header('Content-Disposition: attachment; filename="' . $filename . '"');
+		header('Cache-Control: max-age=0, no-cache, must-revalidate, proxy-revalidate');
+		header('Pragma: public');
+
+		echo '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+		echo '<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8">';
+		echo '<style>';
+		echo 'body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; }';
+		echo 'table { border-collapse: collapse; width: 100%; }';
+		echo 'th { background-color: #1E40AF; color: #FFFFFF; font-weight: bold; border: 1px solid #CBD5E1; padding: 10px 8px; text-align: center; }';
+		echo 'td { border: 1px solid #CBD5E1; padding: 6px 8px; vertical-align: middle; }';
+		echo '.text-center { text-align: center; }';
+		echo '.text-right { text-align: right; }';
+		echo '.text-left { text-align: left; }';
+		echo '.num { mso-number-format:"\#\,\#\#0"; }';
+		echo '.text { mso-number-format:"\@"; }';
+		echo '</style>';
+		echo '</head><body>';
+
+		echo '<div style="margin-bottom: 15px;">';
+		echo '<h3 style="margin: 0; padding: 0; color: #1E40AF;">LAPORAN DATA STOK BARANG</h3>';
+		echo '<p style="margin: 4px 0 0 0; font-size: 9pt; color: #64748B;">Tanggal Export: ' . date('d/m/Y H:i:s') . '</p>';
+		echo '</div>';
+
+		echo '<table>';
+		echo '<thead>';
+		echo '<tr>';
+		echo '<th>No</th>';
+		echo '<th>Kode Produk</th>';
+		echo '<th>Nama Produk</th>';
+		echo '<th>Kategori</th>';
+		echo '<th>Stok Fisik</th>';
+		echo '<th>Stok Rusak</th>';
+		echo '<th>Min. Stok</th>';
+		echo '<th>Satuan</th>';
+		echo '<th>Harga Beli (Rp)</th>';
+		echo '<th>Harga Jual (Rp)</th>';
+		echo '<th>Status Stok</th>';
+		echo '</tr>';
+		echo '</thead>';
+		echo '<tbody>';
+
+		$no = 1;
+		$total_fisik = 0;
+		$total_rusak = 0;
+
+		foreach ($stoks as $s) {
+			$status_text = 'Normal';
+			$status_style = 'color: #16A34A; font-weight: bold;';
+			$qty = (float)$s->qty;
+			$qty_rusak = (float)$s->qty_rusak;
+			$min_stok = (float)$s->stok_minimum;
+
+			if ($qty == 0) {
+				$status_text = 'Habis';
+				$status_style = 'color: #DC2626; font-weight: bold;';
+			} elseif ($qty <= $min_stok) {
+				$status_text = 'Menipis';
+				$status_style = 'color: #D97706; font-weight: bold;';
+			}
+
+			$total_fisik += $qty;
+			$total_rusak += $qty_rusak;
+
+			echo '<tr>';
+			echo '<td class="text-center">' . $no++ . '</td>';
+			echo '<td class="text-center text">' . htmlspecialchars($s->kode_produk ?? '') . '</td>';
+			echo '<td class="text-left">' . htmlspecialchars($s->nama_produk ?? '') . '</td>';
+			echo '<td class="text-left">' . htmlspecialchars($s->nama_kategori ?: '-') . '</td>';
+			echo '<td class="text-right num">' . $qty . '</td>';
+			echo '<td class="text-right num">' . $qty_rusak . '</td>';
+			echo '<td class="text-right num">' . $min_stok . '</td>';
+			echo '<td class="text-center">' . htmlspecialchars($s->singkatan ?: '-') . '</td>';
+			echo '<td class="text-right num">' . (float)($s->harga_beli ?? 0) . '</td>';
+			echo '<td class="text-right num">' . (float)($s->harga_jual ?? 0) . '</td>';
+			echo '<td class="text-center" style="' . $status_style . '">' . $status_text . '</td>';
+			echo '</tr>';
+		}
+
+		echo '</tbody>';
+		echo '<tfoot>';
+		echo '<tr style="background-color: #F1F5F9; font-weight: bold;">';
+		echo '<td colspan="4" class="text-center" style="font-weight: bold;">TOTAL STOK</td>';
+		echo '<td class="text-right num" style="font-weight: bold;">' . $total_fisik . '</td>';
+		echo '<td class="text-right num" style="font-weight: bold;">' . $total_rusak . '</td>';
+		echo '<td colspan="5"></td>';
+		echo '</tr>';
+		echo '</tfoot>';
+		echo '</table>';
+
+		echo '</body></html>';
+		exit;
 	}
 
 	public function add()
@@ -178,7 +220,6 @@ class Stok extends Admin
 			->where('produk.status', 'aktif')
 			->order_by('produk.id', 'ASC')
 			->get('produk')->result();
-		$this->data['gudangs'] = $this->db->get_where('gudang', ['status' => 'aktif'])->result();
 		$this->data['raks']    = $this->db->order_by('kode_rak', 'ASC')->get('rak')->result();
 		$this->template->title('Input Stok Manual');
 		$this->render('backend/standart/administrator/stok/stok_add', $this->data);
@@ -187,16 +228,15 @@ class Stok extends Admin
 	public function get_current_stok()
 	{
 		$produk_id = (int) $this->input->get('produk_id');
-		$gudang_id = (int) $this->input->get('gudang_id');
 
-		if (!$produk_id || !$gudang_id) {
+		if (!$produk_id) {
 			$this->response(['success' => false, 'message' => 'Parameter tidak lengkap']);
 			return;
 		}
 
 		$stok = $this->db->select('stok.*, rak.kode_rak, rak.baris, rak.kolom')
 			->join('rak', 'rak.id = stok.rak_id', 'LEFT')
-			->get_where('stok', ['produk_id' => $produk_id, 'gudang_id' => $gudang_id])
+			->get_where('stok', ['produk_id' => $produk_id])
 			->row();
 
 		$produk = $this->db->select('produk.*, satuan.singkatan as nama_satuan')
@@ -224,12 +264,10 @@ class Stok extends Admin
 		}
 
 		$this->form_validation->set_rules('produk_id', 'Produk', 'trim|required|numeric');
-		$this->form_validation->set_rules('gudang_id', 'Gudang', 'trim|required|numeric');
 		$this->form_validation->set_rules('qty', 'Jumlah Qty', 'trim|required|numeric');
 
 		if ($this->form_validation->run()) {
 			$produk_id  = (int) $this->input->post('produk_id');
-			$gudang_id  = (int) $this->input->post('gudang_id');
 			$rak_id     = $this->input->post('rak_id') ? (int) $this->input->post('rak_id') : null;
 			$mode       = $this->input->post('mode') ?: 'set'; // 'set', 'tambah', 'kurang'
 			$input_qty  = (float) $this->input->post('qty');
@@ -240,7 +278,7 @@ class Stok extends Admin
 			}
 
 			// Ambil stok sekarang
-			$existing    = $this->db->get_where('stok', ['produk_id' => $produk_id, 'gudang_id' => $gudang_id])->row();
+			$existing    = $this->db->get_where('stok', ['produk_id' => $produk_id])->row();
 			$current_qty = $existing ? (float) $existing->qty : 0;
 
 			// Hitung stok baru berdasarkan mode
@@ -273,14 +311,12 @@ class Stok extends Admin
 				$stok_id = $existing->id;
 			} else {
 				$data_stok['produk_id'] = $produk_id;
-				$data_stok['gudang_id'] = $gudang_id;
 				$stok_id = $this->model_stok->store($data_stok);
 			}
 
 			// Catat mutasi ke stok_log
 			$this->db->insert('stok_log', [
 				'produk_id'      => $produk_id,
-				'gudang_id'      => $gudang_id,
 				'jenis'          => $jenis_log,
 				'qty'            => $selisih > 0 ? $selisih : $new_qty,
 				'keterangan'     => $keterangan . " (Mode: {$mode}, Stok: {$current_qty} -> {$new_qty})",
@@ -370,7 +406,6 @@ class Stok extends Admin
 			// Catat mutasi ke stok_log
 			$this->db->insert('stok_log', [
 				'produk_id'      => $existing->produk_id,
-				'gudang_id'      => $existing->gudang_id,
 				'jenis'          => $jenis_log,
 				'qty'            => $selisih > 0 ? $selisih : $new_qty,
 				'keterangan'     => $keterangan . " (Mode: {$mode}, Stok: {$current_qty} -> {$new_qty})",
@@ -426,7 +461,6 @@ class Stok extends Admin
 			return;
 		}
 
-		// Jika ada stok (> 0), aksi "hapus" berarti mengosongkan stok menjadi 0
 		$now  = date('Y-m-d H:i:s');
 		$user = get_user_data('username') ?: 'admin';
 
@@ -441,7 +475,6 @@ class Stok extends Admin
 		// Catat ke stok_log bahwa stok telah dikosongkan/dihapus
 		$this->db->insert('stok_log', [
 			'produk_id'      => $stok->produk_id,
-			'gudang_id'      => $stok->gudang_id,
 			'jenis'          => 'keluar',
 			'qty'            => $current_qty,
 			'keterangan'     => "Stok dikosongkan/dihapus secara manual dari {$current_qty} menjadi 0",
@@ -465,28 +498,15 @@ class Stok extends Admin
 	public function edit_massal()
 	{
 		$this->is_allowed('stok_update');
-		$gudang_id = $this->input->get('gudang_id');
 
-		$this->data['gudangs'] = $this->db->get_where('gudang', ['status' => 'aktif'])->result();
-		if ($gudang_id === null || $gudang_id === '') {
-			$gudang_id = 'all';
-		}
-
-		$this->db->select('stok.*, produk.kode_produk, produk.nama_produk, produk.harga_jual, satuan.singkatan, gudang.nama_gudang, kategori_produk.nama_kategori')
-			->from('stok')
-			->join('produk', 'produk.id = stok.produk_id')
-			->join('satuan', 'satuan.id = produk.satuan_id', 'LEFT')
-			->join('gudang', 'gudang.id = stok.gudang_id')
+		$this->data['items'] = $this->db->select('produk.id, produk.kode_produk, produk.nama_produk, produk.harga_jual, satuan.singkatan, kategori_produk.nama_kategori, IFNULL(stok.qty, 0) AS total_stok')
+			->from('produk')
 			->join('kategori_produk', 'kategori_produk.id = produk.kategori_id', 'LEFT')
+			->join('satuan', 'satuan.id = produk.satuan_id', 'LEFT')
+			->join('stok', 'stok.produk_id = produk.id', 'LEFT')
 			->where('produk.status', 'aktif')
-			->where('gudang.status', 'aktif');
-
-		if (!empty($gudang_id) && $gudang_id !== 'all') {
-			$this->db->where('stok.gudang_id', $gudang_id);
-		}
-
-		$this->data['items']      = $this->db->order_by('produk.id', 'ASC')->order_by('stok.gudang_id', 'ASC')->get()->result();
-		$this->data['gudang_sel'] = $gudang_id;
+			->order_by('produk.id', 'ASC')
+			->get()->result();
 
 		$this->template->title('Edit Semua Stok Produk (Massal)');
 		$this->render('backend/standart/administrator/stok/stok_edit_massal', $this->data);
@@ -511,32 +531,42 @@ class Stok extends Admin
 
 		$this->db->trans_start();
 
-		foreach ($items as $stok_id => $val) {
-			$stok_id = (int)$stok_id;
-			$existing = $this->db->get_where('stok', ['id' => $stok_id])->row();
-			if (!$existing) continue;
+		foreach ($items as $produk_id => $val) {
+			$produk_id = (int)$produk_id;
+			$produk = $this->db->get_where('produk', ['id' => $produk_id])->row();
+			if (!$produk) continue;
 
-			$old_qty = (float)$existing->qty;
-			$new_qty = isset($val['qty']) && $val['qty'] !== '' ? max(0, (float)$val['qty']) : $old_qty;
+			$existing = $this->db->get_where('stok', ['produk_id' => $produk_id])->row();
+			$old_total = $existing ? (float)$existing->qty : 0;
+			$new_total = isset($val['qty']) && $val['qty'] !== '' ? max(0, (float)$val['qty']) : $old_total;
 
-			// Hanya update jika ada perubahan nilai stok
-			if ($new_qty != $old_qty) {
-				$this->db->update('stok', [
-					'qty'        => $new_qty,
-					'updated_at' => $now,
-				], ['id' => $stok_id]);
+			if ($new_total != $old_total) {
+				$diff = $new_total - $old_total;
 
-				$diff = $new_qty - $old_qty;
-				$jenis_log = $diff > 0 ? 'masuk' : 'keluar';
+				if ($existing) {
+					$this->db->update('stok', [
+						'qty'        => $new_total,
+						'updated_at' => $now,
+					], ['id' => $existing->id]);
+					$ref_id = $existing->id;
+				} else {
+					$this->db->insert('stok', [
+						'produk_id'  => $produk_id,
+						'rak_id'     => $produk->default_rak_id,
+						'qty'        => $new_total,
+						'qty_rusak'  => 0,
+						'updated_at' => $now,
+					]);
+					$ref_id = $this->db->insert_id();
+				}
 
 				$this->db->insert('stok_log', [
-					'produk_id'      => $existing->produk_id,
-					'gudang_id'      => $existing->gudang_id,
-					'jenis'          => $jenis_log,
+					'produk_id'      => $produk_id,
+					'jenis'          => $diff > 0 ? 'masuk' : 'keluar',
 					'qty'            => abs($diff),
-					'keterangan'     => "Penyesuaian Stok (Stok: {$old_qty} -> {$new_qty})",
+					'keterangan'     => "Penyesuaian Stok Massal ({$old_total} -> {$new_total})",
 					'referensi_type' => 'manual',
-					'referensi_id'   => $stok_id,
+					'referensi_id'   => $ref_id,
 					'created_by'     => $user,
 					'created_at'     => $now,
 				]);
@@ -552,10 +582,8 @@ class Stok extends Admin
 			return;
 		}
 
-		$gudang_id = $this->input->post('gudang_id');
-		$redirect_url = site_url('administrator/stok' . (!empty($gudang_id) && $gudang_id !== 'all' ? '?gudang_id=' . $gudang_id : ''));
-
-		$msg = 'Data Stok berhasil diperbarui.';
+		$redirect_url = site_url('administrator/stok');
+		$msg = 'Data Stok berhasil diperbarui (' . $updated_count . ' produk disesuaikan).';
 		set_message($msg, 'success');
 		$this->response([
 			'success'  => true,
@@ -567,32 +595,59 @@ class Stok extends Admin
 	public function export_pdf()
 	{
 		$this->is_allowed('stok_export');
-		$this->model_stok->pdf('stok', 'stok');
+
+		@ini_set('memory_limit', '512M');
+		@set_time_limit(180);
+
+		$filter    = $this->input->get('q');
+		$field     = $this->input->get('f');
+		$status    = $this->input->get('status');
+
+		// Ambil seluruh data stok sesuai filter tanpa batas
+		$stoks   = $this->model_stok->get($filter, $field, 0, 0, $status);
+		$summary = $this->model_stok->get_summary_dashboard();
+
+		$this->load->library('HtmlPdf');
+
+		$config = [
+			'orientation' => 'l',
+			'format'      => 'a4',
+			'marges'      => [8, 8, 8, 8]
+		];
+
+		$this->htmlpdf->initialize($config);
+
+		$content = $this->load->view('stok/backend/standart/administrator/stok/stok_export_pdf', [
+			'results'           => $stoks,
+			'summary'           => $summary,
+			'status_sel'        => $status,
+			'search_q'          => $filter
+		], true);
+
+		$this->htmlpdf->writeHTML($content);
+
+		if (ob_get_length()) { ob_end_clean(); }
+
+		$this->htmlpdf->Output('Laporan_Stok_Barang_' . date('Y-m-d') . '.pdf', 'I');
+		exit;
 	}
 
 	public function print_stok()
 	{
 		$this->is_allowed('stok_list');
-		$gudang_id = $this->input->get('gudang_id');
 		$status    = $this->input->get('status');
 		$q         = $this->input->get('q');
 		$f         = $this->input->get('f');
 
 		// Ambil seluruh data stok tanpa batas per_page untuk cetak
-		$this->data['stoks']      = $this->model_stok->get($q, $f, 999999, 0, $gudang_id, $status);
-		$this->data['summary']    = $this->model_stok->get_summary_dashboard($gudang_id);
-		$this->data['gudangs']    = $this->db->get_where('gudang', ['status' => 'aktif'])->result();
-		$this->data['gudang_sel'] = $gudang_id;
+		$this->data['stoks']      = $this->model_stok->get($q, $f, 999999, 0, $status);
+		$this->data['summary']    = $this->model_stok->get_summary_dashboard();
 		$this->data['status_sel'] = $status;
 
-		$nama_gudang = 'Semua Gudang Aktif';
-		if (!empty($gudang_id)) {
-			$g = $this->db->get_where('gudang', ['id' => $gudang_id])->row();
-			if ($g) $nama_gudang = $g->nama_gudang;
-		}
-		$this->data['nama_gudang_aktif'] = $nama_gudang;
-
-		$this->load->view('backend/standart/administrator/stok/stok_print', $this->data);
+		$this->load->view('stok/backend/standart/administrator/stok/stok_print', $this->data);
 	}
 
 }
+
+/* End of file Stok.php */
+/* Location: ./modules/stok/controllers/backend/Stok.php */

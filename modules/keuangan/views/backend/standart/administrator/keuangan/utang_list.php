@@ -94,7 +94,7 @@
                      <th width="40" class="text-center">No</th>
                      <th>No. Tagihan Utang</th>
                      <th>Supplier</th>
-                     <th>Ref Penerimaan (GRN)</th>
+                     <th>Ref Purchase Order</th>
                      <th>Tgl Faktur / Jatuh Tempo</th>
                      <th class="text-right">Total Tagihan</th>
                      <th class="text-right">Telah Dibayar</th>
@@ -114,8 +114,7 @@
                         <br><small class="text-muted"><i class="fa fa-tag"></i> <?= _ent($row->kode_supplier ?? '-'); ?></small>
                      </td>
                      <td>
-                        <?php if($row->nomor_penerimaan): ?><span class="label label-default">GRN: <?= _ent($row->nomor_penerimaan); ?></span><br><?php endif; ?>
-                        <?php if($row->nomor_po): ?><small class="text-muted">PO: <?= _ent($row->nomor_po); ?></small><?php endif; ?>
+                        <?php if($row->nomor_po): ?><span class="label label-info"><i class="fa fa-file-text-o"></i> <?= _ent($row->nomor_po); ?></span><?php else: ?>-<?php endif; ?>
                      </td>
                      <td>
                         <i class="fa fa-calendar text-muted"></i> <?= date('d/m/Y', strtotime($row->tanggal_utang ?: date('Y-m-d'))); ?>

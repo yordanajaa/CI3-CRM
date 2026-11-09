@@ -12,6 +12,7 @@ class Model_sales_order extends MY_Model {
 		'sales_order.nomor_resi', 
 		'sales_order.username_pembeli', 
 		'sales_order.nama_penerima', 
+		'sales_order.nama_produk_marketplace', 
 		'pelanggan.nama_pelanggan', 
 		'sales_order.status'
 	];
@@ -29,9 +30,8 @@ class Model_sales_order extends MY_Model {
 
 	public function join_available()
 	{
-		$this->db->select('sales_order.*, pelanggan.nama_pelanggan, pelanggan.kode_pelanggan, pelanggan.tipe_pelanggan, pelanggan.alamat as alamat_pelanggan, pelanggan.no_telp as telp_pelanggan, gudang.nama_gudang, (SELECT COALESCE(SUM(qty), 1) FROM sales_order_item WHERE sales_order_item.so_id = sales_order.id) as total_qty, (SELECT pp.metode_pembayaran FROM pembayaran_piutang pp JOIN piutang_usaha pu ON pu.id = pp.piutang_id WHERE pu.so_id = sales_order.id ORDER BY pp.id DESC LIMIT 1) as metode_bayar_db, (SELECT pp.akun_kas_bank FROM pembayaran_piutang pp JOIN piutang_usaha pu ON pu.id = pp.piutang_id WHERE pu.so_id = sales_order.id ORDER BY pp.id DESC LIMIT 1) as akun_kas_bank_db, (SELECT inv.status FROM invoice inv WHERE inv.so_id = sales_order.id LIMIT 1) as inv_status_db');
+		$this->db->select('sales_order.*, pelanggan.nama_pelanggan, pelanggan.kode_pelanggan, pelanggan.tipe_pelanggan, pelanggan.alamat as alamat_pelanggan, pelanggan.no_telp as telp_pelanggan, pelanggan.telepon as telepon_pelanggan, (SELECT COALESCE(SUM(qty), 1) FROM sales_order_item WHERE sales_order_item.so_id = sales_order.id) as total_qty, (SELECT pp.metode_pembayaran FROM pembayaran_piutang pp JOIN piutang_usaha pu ON pu.id = pp.piutang_id WHERE pu.so_id = sales_order.id ORDER BY pp.id DESC LIMIT 1) as metode_bayar_db, (SELECT pp.akun_kas_bank FROM pembayaran_piutang pp JOIN piutang_usaha pu ON pu.id = pp.piutang_id WHERE pu.so_id = sales_order.id ORDER BY pp.id DESC LIMIT 1) as akun_kas_bank_db, (SELECT inv.status FROM invoice inv WHERE inv.so_id = sales_order.id LIMIT 1) as inv_status_db');
 		$this->db->join('pelanggan', 'pelanggan.id = sales_order.pelanggan_id', 'LEFT');
-		$this->db->join('gudang', 'gudang.id = sales_order.gudang_id', 'LEFT');
 		return $this;
 	}
 
@@ -40,7 +40,6 @@ class Model_sales_order extends MY_Model {
 		$where = $this->build_where($q, $field);
 		if (!empty($where)) {
 			$this->db->join('pelanggan', 'pelanggan.id = sales_order.pelanggan_id', 'LEFT');
-			$this->db->join('gudang', 'gudang.id = sales_order.gudang_id', 'LEFT');
 			$this->db->where($where);
 		}
 		return $this->db->count_all_results($this->table_name);
@@ -53,7 +52,10 @@ class Model_sales_order extends MY_Model {
 		if (!empty($where)) {
 			$this->db->where($where);
 		}
-		$this->db->limit($limit, $offset);
+		if ($limit > 0) {
+			$this->db->limit($limit, $offset);
+		}
+		$this->db->order_by('GREATEST(COALESCE(sales_order.updated_at, "1970-01-01"), COALESCE(sales_order.created_at, "1970-01-01"))', 'DESC', FALSE);
 		$this->db->order_by('sales_order.'.$this->primary_key, 'DESC');
 		return $this->db->get($this->table_name)->result();
 	}
@@ -88,10 +90,6 @@ class Model_sales_order extends MY_Model {
 			$where .= ($where ? ' AND ' : '') . "sales_order.pelanggan_id = " . intval($pelanggan_id);
 		}
 
-		$gudang_id = $this->input->get('gudang_id');
-		if (!empty($gudang_id)) {
-			$where .= ($where ? ' AND ' : '') . "sales_order.gudang_id = " . intval($gudang_id);
-		}
 
 		$status = $this->input->get('status');
 		if (!empty($status)) {
@@ -111,14 +109,19 @@ class Model_sales_order extends MY_Model {
 		}
 
 		$source = $this->input->get('source');
+		$offline_condition = "((sales_order.source IN ('pos', 'manual', 'offline', '') OR sales_order.source IS NULL) AND (sales_order.source NOT IN ('shopee', 'tokopedia', 'tiktok', 'tiktokshop', 'lazada', 'marketplace', 'resi') OR sales_order.source IS NULL))";
+
 		if (!empty($source)) {
 			if ($source === 'pos') {
 				$where .= ($where ? ' AND ' : '') . "(sales_order.source = 'pos' OR sales_order.catatan LIKE '%[POS CEPAT%')";
-			} elseif ($source === 'manual') {
-				$where .= ($where ? ' AND ' : '') . "((sales_order.source = 'manual' OR sales_order.source IS NULL OR sales_order.source = '') AND sales_order.catatan NOT LIKE '%[POS CEPAT%')";
+			} elseif ($source === 'manual' || $source === 'offline') {
+				$where .= ($where ? ' AND ' : '') . "((sales_order.source IN ('manual', 'offline', '') OR sales_order.source IS NULL) AND sales_order.catatan NOT LIKE '%[POS CEPAT%' AND (sales_order.source NOT IN ('shopee', 'tokopedia', 'tiktok', 'tiktokshop', 'lazada', 'marketplace', 'resi') OR sales_order.source IS NULL))";
 			} else {
 				$where .= ($where ? ' AND ' : '') . "sales_order.source = " . $this->db->escape($source);
 			}
+		} else {
+			// Default (-- Semua Saluran --): Hanya menampilkan Transaksi Penjualan Offline (POS & Transaksi Offline)
+			$where .= ($where ? ' AND ' : '') . $offline_condition;
 		}
 
 		return $where;
@@ -132,19 +135,17 @@ class Model_sales_order extends MY_Model {
 
 	public function get_items($so_id)
 	{
-		$so = $this->db->get_where('sales_order', ['id' => $so_id])->row();
-		$gudang_id = $so ? $so->gudang_id : 0;
-		return $this->db->select('sales_order_item.*, produk.nama_produk, produk.kode_produk, satuan.singkatan, MIN(rak.kode_rak) as kode_rak, MIN(rak.baris) as baris')
+				return $this->db->select('sales_order_item.*, produk.nama_produk, produk.kode_produk, satuan.singkatan, MIN(rak.kode_rak) as kode_rak, MIN(rak.baris) as baris')
 			->join('produk', 'produk.id = sales_order_item.produk_id', 'LEFT')
 			->join('satuan', 'satuan.id = produk.satuan_id', 'LEFT')
-			->join('rak', "rak.id = produk.default_rak_id OR rak.gudang_id = '{$gudang_id}'", 'LEFT')
+			->join('rak', "rak.id = produk.default_rak_id", 'LEFT')
 			->group_by('sales_order_item.id')
 			->get_where('sales_order_item', ['so_id' => $so_id])->result();
 	}
 
 	public function generate_nomor()
 	{
-		$prefix = 'SO-' . date('Ym') . '-';
+		$prefix = 'TRX-' . date('Ym') . '-';
 		$last = $this->db->like('nomor_so', $prefix, 'after')
 			->order_by('id', 'DESC')
 			->limit(1)
@@ -183,7 +184,6 @@ class Model_sales_order extends MY_Model {
 		$errors = [];
 		foreach ($items as $item) {
 			$stok = $this->db->where('produk_id', $item->produk_id)
-				->where('gudang_id', $so->gudang_id)
 				->get('stok')->row();
 			$stok_tersedia = $stok ? $stok->qty : 0;
 			if ($stok_tersedia < $item->qty) {
@@ -212,8 +212,11 @@ class Model_sales_order extends MY_Model {
 
 	public function get_stats()
 	{
+		$offline_where = "((source IN ('pos', 'manual', 'offline', '') OR source IS NULL) AND (source NOT IN ('shopee', 'tokopedia', 'tiktok', 'tiktokshop', 'lazada', 'marketplace', 'resi') OR source IS NULL))";
+
 		$total_omset_all = $this->db->select_sum('total')
 			->where('status !=', 'cancelled')
+			->where($offline_where)
 			->get('sales_order')->row()->total ?: 0;
 
 		$start_month = date('Y-m-01');
@@ -221,6 +224,7 @@ class Model_sales_order extends MY_Model {
 
 		$penjualan_bulan_ini = $this->db->select_sum('total')
 			->where('status !=', 'cancelled')
+			->where($offline_where)
 			->where('DATE(tanggal_so) >=', $start_month)
 			->where('DATE(tanggal_so) <=', $end_month)
 			->get('sales_order')->row()->total ?: 0;
@@ -229,6 +233,7 @@ class Model_sales_order extends MY_Model {
 			SELECT SUM(total) as tot 
 			FROM sales_order 
 			WHERE status != 'cancelled' 
+			  AND " . $offline_where . "
 			  AND (
 			      waktu_pembayaran IS NOT NULL 
 			      OR EXISTS (SELECT 1 FROM invoice WHERE invoice.so_id = sales_order.id AND invoice.status = 'paid')
@@ -238,12 +243,15 @@ class Model_sales_order extends MY_Model {
 		$piutang_unpaid = max(0, $total_omset_all - $terbayar_lunas);
 
 		$pesanan_aktif = $this->db->where_in('status', ['draft', 'submitted', 'confirmed'])
+			->where($offline_where)
 			->count_all_results('sales_order');
 
-		$proses_gudang = $this->db->where('status', 'packing')
+		$proses_packing = $this->db->where('status', 'packing')
+			->where($offline_where)
 			->count_all_results('sales_order');
 
 		$siap_kirim = $this->db->where_in('status', ['ready_to_ship', 'shipped'])
+			->where($offline_where)
 			->count_all_results('sales_order');
 
 		$pesanan_terkirim = $this->db->where_in('status', ['delivered', 'completed', 'paid'])
@@ -255,7 +263,7 @@ class Model_sales_order extends MY_Model {
 			'terbayar_lunas'      => $terbayar_lunas,
 			'piutang_unpaid'      => $piutang_unpaid,
 			'pesanan_aktif'       => $pesanan_aktif,
-			'proses_gudang'       => $proses_gudang,
+			'proses_packing'       => $proses_packing,
 			'siap_kirim'          => $siap_kirim,
 			'pesanan_terkirim'    => $pesanan_terkirim,
 		];

@@ -16,8 +16,17 @@ class Retur_penjualan extends Admin
 		$filter = $this->input->get('q');
 		$field  = $this->input->get('f');
 
-		$this->data['returs']       = $this->model_retur_penjualan->get($filter, $field, $this->limit_page, $offset);
-		$this->data['retur_counts'] = $this->model_retur_penjualan->count_all($filter, $field);
+		$filter_extra = [
+			'date_start' => $this->input->get('date_start'),
+			'date_end'   => $this->input->get('date_end'),
+			'bulan'      => $this->input->get('bulan'),
+			'tahun'      => $this->input->get('tahun'),
+			'status'     => $this->input->get('status'),
+		];
+
+		$this->data['returs']          = $this->model_retur_penjualan->get($filter, $field, $this->limit_page, $offset, $filter_extra);
+		$this->data['retur_counts']    = $this->model_retur_penjualan->count_all($filter, $field, $filter_extra);
+		$this->data['available_years'] = $this->model_retur_penjualan->get_available_years();
 
 		$config = ['base_url' => 'administrator/retur_penjualan/index/', 'total_rows' => $this->data['retur_counts'], 'per_page' => $this->limit_page, 'uri_segment' => 4];
 		$this->data['pagination'] = $this->pagination($config);
@@ -31,7 +40,6 @@ class Retur_penjualan extends Admin
 		$this->is_allowed('retur_penjualan_add');
 		$this->data['nomor_baru']  = $this->model_retur_penjualan->generate_nomor();
 		$this->data['invoices']    = $this->db->where_in('status', ['sent','partial','paid'])->get('invoice')->result();
-		$this->data['gudangs']     = $this->db->where('status', 'aktif')->get('gudang')->result();
 		$this->template->title('Buat Retur Penjualan');
 		$this->render('backend/standart/administrator/retur_penjualan/retur_penjualan_add', $this->data);
 	}
@@ -54,7 +62,6 @@ class Retur_penjualan extends Admin
 				'nomor_retur'    => $this->model_retur_penjualan->generate_nomor(),
 				'invoice_id'     => $this->input->post('invoice_id'),
 				'pelanggan_id'   => $invoice->pelanggan_id,
-				'gudang_id'      => $this->input->post('gudang_id') ?: $invoice->gudang_id,
 				'tanggal_retur'  => $this->input->post('tanggal_retur'),
 				'alasan'         => $this->input->post('alasan'),
 				'catatan'        => $this->input->post('catatan'),
@@ -138,10 +145,7 @@ class Retur_penjualan extends Admin
 		$items = $this->db->select('invoice_item.*, produk.nama_produk, produk.kode_produk, produk.default_rak_id')
 			->join('produk', 'produk.id = invoice_item.produk_id')
 			->get_where('invoice_item', ['invoice_id' => $invoice_id])->result();
-		$raks = $this->db->select('rak.*, gudang.nama_gudang')
-			->join('gudang', 'gudang.id = rak.gudang_id', 'LEFT')
-			->order_by('rak.kode_rak', 'ASC')
-			->get('rak')->result();
+		$raks = $this->db->get('rak')->result();
 		$this->response(['success' => true, 'items' => $items, 'raks' => $raks]);
 	}
 
@@ -218,19 +222,19 @@ class Retur_penjualan extends Admin
 	{
 		$this->is_allowed('retur_penjualan_delete');
 		$r = $this->model_retur_penjualan->find($id);
-		if ($r && $r->status == 'draft') {
-			$this->db->delete('retur_penjualan_item', ['retur_penjualan_id' => $id]);
-			$this->model_retur_penjualan->remove($id);
-			set_message('Retur berhasil dihapus.', 'success');
+		if ($r) {
+			if ($r->status == 'draft' || $this->aauth->is_admin()) {
+				$this->db->delete('retur_penjualan_item', ['retur_penjualan_id' => $id]);
+				$this->model_retur_penjualan->remove($id);
+				set_message('Retur berhasil dihapus.', 'success');
+			} else {
+				set_message('Hanya retur berstatus Draft yang dapat dihapus.', 'error');
+			}
 		} else {
-			set_message('Hanya retur berstatus Draft yang bisa dihapus.', 'error');
+			set_message('Data retur tidak ditemukan.', 'error');
 		}
 		redirect('administrator/retur_penjualan');
 	}
-
-	
-
-	
 
 	public function cetak($id)
 	{
@@ -240,26 +244,135 @@ class Retur_penjualan extends Admin
 		
 		$this->load->library('HtmlPdf');
 		$this->htmlpdf->initialize(['orientation' => 'P', 'format' => 'A4', 'marges' => [5, 5, 5, 5]]);
-		$content = $this->load->view('backend/standart/administrator/retur_penjualan/retur_penjualan_pdf', $this->data, true);
+		$content = $this->load->view('retur_penjualan/backend/standart/administrator/retur_penjualan/retur_penjualan_pdf', $this->data, true);
 		
 		$this->htmlpdf->writeHTML($content);
 		$retur = $this->data['retur'];
 		$doc_num = preg_replace('/[^a-zA-Z0-9_-]/', '_', $retur->nomor_retur ?? $id);
 		$filename = 'retur_penjualan_' . $doc_num . '.pdf';
 		if (ob_get_length()) { ob_clean(); }
-		$this->htmlpdf->Output($filename, 'D');
+		$mode = $this->input->get('mode') ?: 'I';
+		$this->htmlpdf->Output($filename, $mode);
 	}
 
 	public function export()
 	{
 		$this->is_allowed('retur_penjualan_export');
-		$this->model_retur_penjualan->export('retur_penjualan', 'retur_penjualan');
+
+		$q     = $this->input->get('q');
+		$field = $this->input->get('f');
+		$filter_extra = [
+			'date_start' => $this->input->get('date_start'),
+			'date_end'   => $this->input->get('date_end'),
+			'bulan'      => $this->input->get('bulan'),
+			'tahun'      => $this->input->get('tahun'),
+			'status'     => $this->input->get('status'),
+		];
+
+		$returs = $this->model_retur_penjualan->get($q, $field, 0, 0, $filter_extra);
+
+		$filename = 'Laporan_Retur_Penjualan_' . date('Y-m-d') . '.xls';
+
+		if (ob_get_length()) { ob_end_clean(); }
+
+		header('Content-Type: application/vnd.ms-excel; charset=utf-8');
+		header('Content-Disposition: attachment; filename="' . $filename . '"');
+		header('Cache-Control: max-age=0');
+		header('Pragma: public');
+
+		echo "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n";
+		echo "<style>
+			th { background-color: #1E40AF; color: #ffffff; font-weight: bold; padding: 10px 8px; border: 1px solid #1E3A8A; text-align: center; font-family: Arial, sans-serif; font-size: 10.5pt; }
+			td { padding: 6px 8px; border: 1px solid #cbd5e1; font-family: Arial, sans-serif; font-size: 9.5pt; vertical-align: middle; }
+			.zebra { background-color: #F8FAFC; }
+			.num { mso-number-format:\"\\#\\,\\#\\#0\"; text-align: right; }
+			.currency { mso-number-format:\"\\\"Rp\\\"\\ \\#\\,\\#\\#0\"; text-align: right; font-weight: bold; }
+			.text { mso-number-format:\"\\@\"; }
+			.center { text-align: center; }
+			.total-row { font-weight: bold; background-color: #E2E8F0; color: #0F172A; }
+		</style>\n</head>\n<body>\n";
+
+		$headers = [
+			'No',
+			'No. Retur',
+			'No. Invoice',
+			'Pelanggan',
+			'Tanggal Retur',
+			'Total Nilai (Rp)',
+			'Alasan Retur',
+			'Tindak Lanjut',
+			'Status Retur'
+		];
+
+		echo "<table border=\"1\" cellpadding=\"4\" cellspacing=\"0\">\n<thead>\n<tr>\n";
+		foreach ($headers as $h) {
+			echo '<th>' . htmlspecialchars($h) . "</th>\n";
+		}
+		echo "</tr>\n</thead>\n<tbody>\n";
+
+		$no = 1;
+		$total_nominal = 0;
+		foreach ($returs as $r) {
+			$total_nominal += (float)$r->total;
+			$cls_row        = ($no % 2 === 0) ? ' class="zebra"' : '';
+
+			echo "<tr{$cls_row}>\n";
+			echo "<td class=\"center\">" . ($no++) . "</td>\n";
+			echo "<td class=\"text center\">" . htmlspecialchars($r->nomor_retur) . "</td>\n";
+			echo "<td class=\"text center\">" . htmlspecialchars($r->nomor_invoice ?: '-') . "</td>\n";
+			echo "<td>" . htmlspecialchars($r->nama_pelanggan ?: '-') . "</td>\n";
+			echo "<td class=\"center text\">" . date('d/m/Y', strtotime($r->tanggal_retur)) . "</td>\n";
+			echo "<td class=\"currency\">" . (float)$r->total . "</td>\n";
+			echo "<td>" . htmlspecialchars($r->alasan ?: '-') . "</td>\n";
+			echo "<td class=\"center\">" . htmlspecialchars(ucwords(str_replace('_', ' ', $r->tindak_lanjut ?: '-'))) . "</td>\n";
+			echo "<td class=\"center\">" . htmlspecialchars(strtoupper($r->status ?: '-')) . "</td>\n";
+			echo "</tr>\n";
+		}
+
+		echo "</tbody>\n<tfoot>\n";
+		echo "<tr class=\"total-row\">\n";
+		echo "<td colspan=\"5\" class=\"center\" style=\"padding:10px;\">TOTAL KESELURUHAN</td>\n";
+		echo "<td class=\"currency\" style=\"font-size:11pt;\">" . $total_nominal . "</td>\n";
+		echo "<td colspan=\"3\"></td>\n";
+		echo "</tr>\n</tfoot>\n</table>\n</body>\n</html>";
+		exit;
 	}
 
 	public function export_pdf()
 	{
 		$this->is_allowed('retur_penjualan_export');
-		$this->model_retur_penjualan->pdf('retur_penjualan', 'retur_penjualan');
+
+		$q     = $this->input->get('q');
+		$field = $this->input->get('f');
+		$filter_extra = [
+			'date_start' => $this->input->get('date_start'),
+			'date_end'   => $this->input->get('date_end'),
+			'bulan'      => $this->input->get('bulan'),
+			'tahun'      => $this->input->get('tahun'),
+			'status'     => $this->input->get('status'),
+		];
+
+		$returs = $this->model_retur_penjualan->get($q, $field, 0, 0, $filter_extra);
+
+		$total_nominal = 0;
+		foreach ($returs as $r) {
+			$total_nominal += (float)$r->total;
+		}
+
+		$this->data['returs']        = $returs;
+		$this->data['total_nominal'] = $total_nominal;
+		$this->data['search_q']      = $q;
+		$this->data['filter_extra']  = $filter_extra;
+
+		$this->load->library('HtmlPdf');
+		$this->htmlpdf->initialize(['orientation' => 'L', 'format' => 'A4', 'marges' => [8, 8, 8, 8]]);
+		$content = $this->load->view('retur_penjualan/backend/standart/administrator/retur_penjualan/retur_penjualan_rekap_pdf', $this->data, true);
+
+		$this->htmlpdf->writeHTML($content);
+		$filename = 'Laporan_Retur_Penjualan_' . date('Y-m-d') . '.pdf';
+		if (ob_get_length()) { ob_clean(); }
+		$mode = $this->input->get('mode') ?: 'I';
+		$this->htmlpdf->Output($filename, $mode);
 	}
 
 }

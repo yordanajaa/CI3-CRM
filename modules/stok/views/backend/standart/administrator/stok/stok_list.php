@@ -20,7 +20,7 @@
    <!-- Card Summary (Interaktif & Dapat Diklik) -->
    <div class="row stok-summary-row">
       <div class="col-md-3 col-sm-6 col-xs-12">
-         <a href="<?= site_url('administrator/stok?status=all' . ($gudang_sel ? '&gudang_id=' . $gudang_sel : '') . '&per_page=' . $per_page); ?>" class="info-box-link" title="Klik untuk menampilkan SEMUA produk">
+         <a href="<?= site_url('administrator/stok?status=all' . '' . '&per_page=' . $per_page); ?>" class="info-box-link" title="Klik untuk menampilkan SEMUA produk">
             <div class="info-box bg-aqua <?= (empty($status_sel) || $status_sel == 'all') ? 'active-card' : ''; ?>">
                <span class="info-box-icon"><i class="fa fa-cubes"></i></span>
                <div class="info-box-content">
@@ -33,7 +33,7 @@
       </div>
       
       <div class="col-md-3 col-sm-6 col-xs-12">
-         <a href="<?= site_url('administrator/stok?status=ada' . ($gudang_sel ? '&gudang_id=' . $gudang_sel : '') . '&per_page=' . $per_page); ?>" class="info-box-link" title="Klik untuk filter produk yang MEMILIKI STOK">
+         <a href="<?= site_url('administrator/stok?status=ada' . '' . '&per_page=' . $per_page); ?>" class="info-box-link" title="Klik untuk filter produk yang MEMILIKI STOK">
             <div class="info-box bg-green <?= ($status_sel == 'ada') ? 'active-card' : ''; ?>">
                <span class="info-box-icon"><i class="fa fa-check-circle"></i></span>
                <div class="info-box-content">
@@ -46,7 +46,7 @@
       </div>
       
       <div class="col-md-3 col-sm-6 col-xs-12">
-         <a href="<?= site_url('administrator/stok?status=menipis' . ($gudang_sel ? '&gudang_id=' . $gudang_sel : '') . '&per_page=' . $per_page); ?>" class="info-box-link" title="Klik untuk filter produk STOK MENIPIS">
+         <a href="<?= site_url('administrator/stok?status=menipis' . '' . '&per_page=' . $per_page); ?>" class="info-box-link" title="Klik untuk filter produk STOK MENIPIS">
             <div class="info-box bg-yellow <?= ($status_sel == 'menipis') ? 'active-card' : ''; ?>">
                <span class="info-box-icon"><i class="fa fa-exclamation-triangle"></i></span>
                <div class="info-box-content">
@@ -59,7 +59,7 @@
       </div>
       
       <div class="col-md-3 col-sm-6 col-xs-12">
-         <a href="<?= site_url('administrator/stok?status=habis' . ($gudang_sel ? '&gudang_id=' . $gudang_sel : '') . '&per_page=' . $per_page); ?>" class="info-box-link" title="Klik untuk filter produk STOK HABIS">
+         <a href="<?= site_url('administrator/stok?status=habis' . '' . '&per_page=' . $per_page); ?>" class="info-box-link" title="Klik untuk filter produk STOK HABIS">
             <div class="info-box bg-red <?= ($status_sel == 'habis') ? 'active-card' : ''; ?>">
                <span class="info-box-icon"><i class="fa fa-times-circle"></i></span>
                <div class="info-box-content">
@@ -237,7 +237,7 @@
                   </h3>
                </div>
                <div class="stok-header-actions">
-                  <a href="<?= site_url('administrator/stok/edit_massal' . ($gudang_sel ? '?gudang_id=' . $gudang_sel : '')); ?>" class="btn btn-warning btn-sm" style="font-weight: 700; background-color: #f59e0b; border-color: #d97706; color: #fff; padding: 6px 14px; border-radius: 5px;" title="Edit Stok Semua Produk Sekaligus (Massal)">
+                  <a href="<?= site_url('administrator/stok/edit_massal' . ''); ?>" class="btn btn-warning btn-sm" style="font-weight: 700; background-color: #f59e0b; border-color: #d97706; color: #fff; padding: 6px 14px; border-radius: 5px;" title="Edit Stok Semua Produk Sekaligus (Massal)">
                      <i class="fa fa-pencil-square-o"></i> Edit Semua Stok (Massal)
                   </a>
                   <?php if (is_allowed('stok_add', false)): ?>
@@ -256,34 +256,55 @@
                      <?php if(!empty($status_sel) && $status_sel !== 'all'): ?>
                         <input type="hidden" name="status" value="<?= _ent($status_sel); ?>">
                      <?php endif; ?>
+                     
                      <label style="font-size: 13px; font-weight: 600; color: #475569; margin: 0; white-space: nowrap;">
                         <i class="fa fa-list text-muted"></i> Tampil:
                      </label>
-                     <select class="form-control input-sm" name="per_page" onchange="this.form.submit()" style="font-weight: 600; width: 90px; border-radius: 4px;">
+                     <select class="form-control input-sm" name="per_page" onchange="this.form.submit()" style="font-weight: 600; width: 85px; border-radius: 4px;">
                         <option value="25" <?= ($per_page == 25) ? 'selected' : ''; ?>>25</option>
                         <option value="50" <?= ($per_page == 50) ? 'selected' : ''; ?>>50</option>
                         <option value="100" <?= ($per_page == 100) ? 'selected' : ''; ?>>100</option>
                         <option value="250" <?= ($per_page == 250) ? 'selected' : ''; ?>>Semua</option>
                      </select>
 
+                     <!-- Quick Search -->
+                     <div class="input-group input-group-sm" style="margin-left: 4px;">
+                        <input type="text" class="form-control" name="q" value="<?= _ent($this->input->get('q')); ?>" placeholder="Cari kode/nama produk..." style="border-radius: 4px 0 0 4px; min-width: 160px;">
+                        <span class="input-group-btn">
+                           <button type="submit" class="btn btn-default btn-flat" title="Cari"><i class="fa fa-search"></i></button>
+                           <?php if($this->input->get('q')): ?>
+                              <a href="<?= site_url('administrator/stok' . ''); ?>" class="btn btn-danger btn-flat" title="Reset Cari"><i class="fa fa-times"></i></a>
+                           <?php endif; ?>
+                        </span>
+                     </div>
+
                      <?php if(!empty($status_sel) && $status_sel !== 'all'): ?>
                         <span class="label <?= $status_sel == 'habis' ? 'label-danger' : ($status_sel == 'menipis' ? 'label-warning' : 'label-success'); ?>" style="font-size: 11.5px; padding: 5px 9px; border-radius: 4px; display: inline-flex; align-items: center; gap: 5px;">
                            <i class="fa fa-filter"></i> Filter: <?= $status_sel == 'habis' ? 'Stok Habis' : ($status_sel == 'menipis' ? 'Stok Menipis' : 'Ada Stok'); ?>
-                           <a href="<?= site_url('administrator/stok'); ?>" style="color: #fff; margin-left: 4px; font-weight: bold;" title="Hapus Filter"><i class="fa fa-times"></i></a>
+                           <a href="<?= site_url('administrator/stok' . ''); ?>" style="color: #fff; margin-left: 4px; font-weight: bold;" title="Hapus Filter"><i class="fa fa-times"></i></a>
                         </span>
                      <?php endif; ?>
                   </form>
 
                   <!-- Secondary Tools -->
                   <div class="stok-toolbar-tools">
-                     <a href="<?= site_url('administrator/stok/batch_tracking'); ?>" class="btn btn-info btn-sm" style="font-weight: 600; border-radius: 4px;">
-                        <i class="fa fa-qrcode"></i> Batch Tracking
-                     </a>
                      <?php if (is_allowed('stok_export', false)): ?>
-                        <a href="<?= site_url('administrator/stok/export'); ?>" class="btn btn-default btn-sm" style="font-weight: 600; border-radius: 4px;">
+                        <?php
+                        $export_params = array_filter([
+                           
+                           'status'    => (!empty($status_sel) && $status_sel !== 'all') ? $status_sel : null,
+                           'q'         => $this->input->get('q') ?: null,
+                           'f'         => $this->input->get('f') ?: null,
+                        ]);
+                        $export_qs = !empty($export_params) ? '?' . http_build_query($export_params) : '';
+                        ?>
+                        <a href="<?= site_url('administrator/stok/export' . $export_qs); ?>" class="btn btn-default btn-sm" style="font-weight: 600; border-radius: 4px;">
                            <i class="fa fa-file-excel-o text-success"></i> Export Excel
                         </a>
-                        <a href="<?= site_url('administrator/stok/print_stok' . (!empty($status_sel) && $status_sel !== 'all' ? '?status=' . $status_sel : '')); ?>" target="_blank" class="btn btn-default btn-sm" style="font-weight: 600; border-radius: 4px;" title="Cetak / Print Laporan Stok Resmi">
+                        <a href="<?= site_url('administrator/stok/export_pdf' . $export_qs); ?>" target="_blank" class="btn btn-default btn-sm" style="font-weight: 600; border-radius: 4px;">
+                           <i class="fa fa-file-pdf-o text-danger"></i> Export PDF
+                        </a>
+                        <a href="<?= site_url('administrator/stok/print_stok' . $export_qs); ?>" target="_blank" class="btn btn-default btn-sm" style="font-weight: 600; border-radius: 4px;" title="Cetak / Print Laporan Stok Resmi">
                            <i class="fa fa-print text-primary"></i> Cetak / Print
                         </a>
                      <?php endif; ?>
@@ -299,7 +320,7 @@
                            (<?= is_object($summary) ? $summary->stok_habis : 55; ?> produk lainnya saat ini stok fisiknya 0 sehingga tidak ditampilkan).
                         <?php endif; ?>
                      </div>
-                     <a href="<?= site_url('administrator/stok'); ?>" class="btn btn-xs btn-primary" style="font-weight:700; padding:4px 10px; border-radius:4px;">
+                     <a href="<?= site_url('administrator/stok' . ''); ?>" class="btn btn-xs btn-primary" style="font-weight:700; padding:4px 10px; border-radius:4px;">
                         <i class="fa fa-th-list"></i> Tampilkan Semua Produk (<?= is_object($summary) ? $summary->total_produk : 59; ?>)
                      </a>
                   </div>
@@ -344,7 +365,7 @@
                                           <i class="fa fa-pencil"></i> Sesuaikan Stok
                                        </a>
                                     <?php endif; ?>
-                                    <a href="<?= site_url('administrator/stok/kartu/' . $s->produk_id); ?>" class="btn btn-xs btn-primary" title="Kartu Stok">
+                                    <a href="<?= site_url('administrator/stok/kartu/' . $s->produk_id . ''); ?>" class="btn btn-xs btn-primary" title="Kartu Stok">
                                        <i class="fa fa-list-alt"></i> Kartu Stok
                                     </a>
                                     <?php if (is_allowed('stok_delete', false)): ?>
@@ -353,7 +374,7 @@
                                              <i class="fa fa-trash text-muted"></i> Hapus
                                           </button>
                                        <?php else: ?>
-                                          <a href="javascript:void(0);" data-href="<?= site_url('administrator/stok/delete/' . $s->id); ?>" data-nama="<?= htmlspecialchars($s->nama_produk, ENT_QUOTES); ?>" data-qty="<?= number_format((float)$s->qty, 0, ',', '.'); ?>" class="btn btn-xs btn-danger remove-data" style="margin: 2px 1px;" title="Hapus / Kosongkan Stok">
+                                          <a href="javascript:void(0);" data-href="<?= site_url('administrator/stok/delete/' . $s->id); ?>" data-nama="<?= htmlspecialchars($s->nama_produk, ENT_QUOTES); ?>"  data-qty="<?= number_format((float)$s->qty, 0, ',', '.'); ?>" class="btn btn-xs btn-danger remove-data" style="margin: 2px 1px;" title="Hapus / Kosongkan Stok">
                                              <i class="fa fa-trash"></i> Hapus
                                           </a>
                                        <?php endif; ?>

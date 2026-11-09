@@ -142,7 +142,17 @@
       <div class="box-header with-border">
          <h3 class="box-title"><i class="fa fa-book text-primary"></i> Buku Besar Piutang Usaha &amp; Status Pelunasan</h3>
          <div class="box-tools pull-right">
-            <a href="<?= site_url('administrator/piutang_usaha/kas_masuk'); ?>" class="btn btn-info btn-sm btn-flat" style="border-radius:4px;"><i class="fa fa-history"></i> Riwayat Kas Masuk (BKM)</a>
+            <?php 
+            $export_qs = !empty($_SERVER['QUERY_STRING']) ? ('?' . $_SERVER['QUERY_STRING']) : '';
+            if (is_allowed('piutang_usaha_export', false)): ?>
+               <a href="<?= site_url('administrator/piutang_usaha/export' . $export_qs); ?>" class="btn btn-primary btn-sm btn-flat" style="border-radius:4px; font-weight:600; margin-right:4px;">
+                  <i class="fa fa-file-excel-o"></i> Export XLS
+               </a>
+               <a href="<?= site_url('administrator/piutang_usaha/export_pdf' . $export_qs); ?>" target="_blank" class="btn btn-info btn-sm btn-flat" style="border-radius:4px; font-weight:600; margin-right:4px;">
+                  <i class="fa fa-file-pdf-o"></i> Export PDF
+               </a>
+            <?php endif; ?>
+            <a href="<?= site_url('administrator/piutang_usaha/kas_masuk'); ?>" class="btn btn-default btn-sm btn-flat" style="border-radius:4px; font-weight:600;"><i class="fa fa-history"></i> Riwayat Kas Masuk (BKM)</a>
          </div>
       </div>
       <div class="box-body">
@@ -182,7 +192,7 @@
                      <th width="40" class="text-center">No</th>
                      <th>No. Tagihan Piutang</th>
                      <th>Pelanggan</th>
-                     <th>Ref SO / Invoice</th>
+                     <th>Ref Transaksi / Invoice</th>
                      <th>Tgl Faktur / Jatuh Tempo</th>
                      <th class="text-right" style="white-space: nowrap; min-width: 120px;">Total Tagihan</th>
                      <th class="text-right" style="white-space: nowrap; min-width: 110px;">Telah Diterima</th>
@@ -201,7 +211,7 @@
                         <br><small class="text-muted"><i class="fa fa-tag"></i> <?= _ent($row->kode_pelanggan ?? '-'); ?></small>
                      </td>
                      <td>
-                        <?php if($row->nomor_so): ?><span class="label label-default">SO: <?= _ent($row->nomor_so); ?></span><br><?php endif; ?>
+                        <?php if($row->nomor_so): ?><span class="label label-default">Penjualan: <?= _ent($row->nomor_so); ?></span><br><?php endif; ?>
                         <?php if($row->nomor_invoice): ?><span class="label label-info">INV: <?= _ent($row->nomor_invoice); ?></span><?php endif; ?>
                      </td>
                      <td>
@@ -340,7 +350,7 @@
                         </label>
                         <select class="form-control" name="akun_kas_bank" id="akun_kas_bank" required style="border-radius: 8px; height: 38px; border: 1px solid #cbd5e1; font-weight: 600;">
                            <option value="Kas Tunai Kasir">💵 Kas Tunai Kasir / Cash</option>
-                           <option value="Kas Utama Gudang">🏢 Kas Utama Gudang</option>
+                           <option value="Kas Utama Operasional">🏢 Kas Utama Operasional</option>
                            <option value="Bank BCA" selected>🏦 Bank BCA - Operasional</option>
                            <option value="Bank Mandiri">🏦 Bank Mandiri - Penerimaan</option>
                            <option value="Bank BNI">🏦 Bank BNI</option>

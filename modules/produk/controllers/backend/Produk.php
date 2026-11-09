@@ -87,13 +87,16 @@ class Produk extends Admin
 			$id = $this->model_produk->store($data);
 
 			if ($id) {
-				// Inisialisasi stok 0 di semua gudang
-				$gudangs = $this->db->get('gudang')->result();
-				foreach ($gudangs as $g) {
-					$exists = $this->db->get_where('stok', ['produk_id' => $id, 'gudang_id' => $g->id])->row();
-					if (!$exists) {
-						$this->db->insert('stok', ['produk_id' => $id, 'gudang_id' => $g->id, 'rak_id' => $data['default_rak_id'], 'qty' => 0, 'qty_rusak' => 0, 'updated_at' => date('Y-m-d H:i:s')]);
-					}
+				// Inisialisasi stok awal
+				$exists = $this->db->get_where('stok', ['produk_id' => $id])->row();
+				if (!$exists) {
+					$this->db->insert('stok', [
+						'produk_id'  => $id,
+						'rak_id'     => $data['default_rak_id'],
+						'qty'        => 0,
+						'qty_rusak'  => 0,
+						'updated_at' => date('Y-m-d H:i:s')
+					]);
 				}
 
 				if ($this->input->post('save_type') == 'stay') {
@@ -202,9 +205,7 @@ class Produk extends Admin
 	{
 		$this->is_allowed('produk_view');
 		$this->data['produk'] = $this->model_produk->join_available()->find($id);
-		$this->data['stok_list'] = $this->db->select('stok.*, gudang.nama_gudang')
-			->join('gudang', 'gudang.id = stok.gudang_id')
-			->get_where('stok', ['produk_id' => $id])->result();
+		$this->data['stok_list'] = $this->db->get_where('stok', ['produk_id' => $id])->result();
 		$this->data['riwayat_harga'] = $this->model_produk->get_riwayat_harga($id);
 		$this->data['harga_logs']    = $this->db->where('produk_id', $id)->order_by('id', 'DESC')->get('produk_harga_log')->result();
 		$this->template->title('Detail Produk');
@@ -214,24 +215,22 @@ class Produk extends Admin
 	public function delete($id = null)
 	{
 		$this->is_allowed('produk_delete');
-		$arr_id = $this->input->get('id');
-		$remove = false;
+		$arr_id = (array) $this->input->get('id');
+		$ids = !empty($id) ? [$id] : $arr_id;
+		$ids = array_filter(array_map('intval', $ids));
 
-		if (!empty($id)) {
-			$remove = $this->model_produk->remove($id);
-			if ($remove) {
-				$this->db->delete('stok', ['produk_id' => $id]);
-			}
-		} elseif (count($arr_id) > 0) {
-			foreach ($arr_id as $aid) {
-				$remove = $this->model_produk->remove($aid);
-				if ($remove) {
-					$this->db->delete('stok', ['produk_id' => $aid]);
-				}
-			}
+		if (empty($ids)) {
+			set_message('Pilih produk yang ingin dihapus.', 'error');
+			redirect_back();
+			return;
 		}
 
-		set_message($remove ? 'Produk berhasil dihapus.' : 'Gagal menghapus.', $remove ? 'success' : 'error');
+		$res = $this->model_produk->delete_cascade($ids);
+		if ($res['status'] === 'success') {
+			set_message($res['message'], 'success');
+		} else {
+			set_message($res['message'], 'error');
+		}
 		redirect_back();
 	}
 
@@ -249,8 +248,7 @@ class Produk extends Admin
 	public function cek_stok()
 	{
 		$produk_id  = $this->input->get('produk_id');
-		$gudang_id  = $this->input->get('gudang_id');
-		$stok = $this->model_produk->get_stok($produk_id, $gudang_id);
+				$stok = $this->model_produk->get_stok($produk_id);
 		$this->response(['stok' => $stok, 'success' => true]);
 	}
 
@@ -258,8 +256,7 @@ class Produk extends Admin
 	{
 		$this->is_allowed('produk_view');
 		$this->data['produk']    = $this->model_produk->join_available()->find($id);
-		$this->data['logs']      = $this->db->select('stok_log.*, gudang.nama_gudang')
-			->join('gudang', 'gudang.id = stok_log.gudang_id', 'LEFT')
+		$this->data['logs']      = $this->db->select('stok_log.*')
 			->where('stok_log.produk_id', $id)
 			->order_by('stok_log.id', 'ASC')
 			->get('stok_log')->result();
@@ -271,13 +268,159 @@ class Produk extends Admin
 	public function export()
 	{
 		$this->is_allowed('produk_export');
-		$this->model_produk->export('produk', 'produk');
+
+		$q        = trim((string)$this->input->get('q'));
+		$kategori = $this->input->get('kategori');
+		$status   = $this->input->get('status');
+
+		$builder = $this->db->select('produk.id, produk.kode_produk, produk.nama_produk, kategori_produk.nama_kategori, satuan.singkatan, produk.harga_beli, produk.harga_jual, produk.stok_minimum, produk.status')
+			->from('produk')
+			->join('kategori_produk', 'kategori_produk.id = produk.kategori_id', 'LEFT')
+			->join('satuan', 'satuan.id = produk.satuan_id', 'LEFT');
+
+		if (!empty($q)) {
+			$builder->group_start()
+				->like('produk.kode_produk', $q)
+				->or_like('produk.nama_produk', $q)
+				->or_like('kategori_produk.nama_kategori', $q)
+				->group_end();
+		}
+		if (!empty($kategori)) {
+			$builder->where('produk.kategori_id', $kategori);
+		}
+		if (!empty($status)) {
+			$builder->where('produk.status', $status);
+		}
+
+		$produks = $builder->order_by('produk.id', 'ASC')->get()->result();
+
+		$filename = 'Data_Produk_' . date('Y-m-d') . '.xls';
+
+		if (ob_get_length()) { ob_end_clean(); }
+
+		header('Content-Type: application/vnd.ms-excel; charset=utf-8');
+		header('Content-Disposition: attachment; filename="' . $filename . '"');
+		header('Cache-Control: max-age=0');
+		header('Pragma: public');
+
+		echo "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n";
+		echo "<style>
+			th { background-color: #1E40AF; color: #ffffff; font-weight: bold; padding: 10px 8px; border: 1px solid #1E3A8A; text-align: center; font-family: Arial, sans-serif; font-size: 10.5pt; }
+			td { padding: 6px 8px; border: 1px solid #cbd5e1; font-family: Arial, sans-serif; font-size: 9.5pt; vertical-align: middle; }
+			.zebra { background-color: #F8FAFC; }
+			.num { mso-number-format:\"\\#\\,\\#\\#0\"; text-align: right; }
+			.currency { mso-number-format:\"\\\"Rp\\\"\\ \\#\\,\\#\\#0\"; text-align: right; font-weight: bold; }
+			.text { mso-number-format:\"\\@\"; }
+			.center { text-align: center; }
+		</style>\n</head>\n<body>\n";
+
+		$headers = [
+			'No',
+			'Kode Produk',
+			'Nama Produk',
+			'Kategori',
+			'Satuan',
+			'Harga Beli (Rp)',
+			'Harga Jual (Rp)',
+			'Min. Stok',
+			'Total Stok Fisik',
+			'Status Produk'
+		];
+
+		echo "<table border=\"1\" cellpadding=\"4\" cellspacing=\"0\">\n<thead>\n<tr>\n";
+		foreach ($headers as $h) {
+			echo '<th>' . htmlspecialchars($h) . "</th>\n";
+		}
+		echo "</tr>\n</thead>\n<tbody>\n";
+
+		$no = 1;
+		foreach ($produks as $p) {
+			$total_stok = $this->model_produk->get_stok($p->id);
+			$cls_row    = ($no % 2 === 0) ? ' class="zebra"' : '';
+
+			echo "<tr{$cls_row}>\n";
+			echo "<td class=\"center\">" . ($no++) . "</td>\n";
+			echo "<td class=\"text center\">" . htmlspecialchars($p->kode_produk) . "</td>\n";
+			echo "<td>" . htmlspecialchars($p->nama_produk) . "</td>\n";
+			echo "<td>" . htmlspecialchars($p->nama_kategori ?: '-') . "</td>\n";
+			echo "<td class=\"center\">" . htmlspecialchars($p->singkatan ?: '-') . "</td>\n";
+			echo "<td class=\"currency\">" . (float)$p->harga_beli . "</td>\n";
+			echo "<td class=\"currency\">" . (float)$p->harga_jual . "</td>\n";
+			echo "<td class=\"num\">" . (float)$p->stok_minimum . "</td>\n";
+			echo "<td class=\"num\">" . (float)$total_stok . "</td>\n";
+			echo "<td class=\"center\">" . htmlspecialchars(ucfirst($p->status)) . "</td>\n";
+			echo "</tr>\n";
+		}
+
+		echo "</tbody>\n</table>\n</body>\n</html>";
+		exit;
 	}
 
 	public function export_pdf()
 	{
 		$this->is_allowed('produk_export');
-		$this->model_produk->pdf('produk', 'produk');
+
+		@ini_set('memory_limit', '512M');
+		@set_time_limit(180);
+
+		$this->load->library('HtmlPdf');
+
+		$q        = trim((string)$this->input->get('q'));
+		$kategori = $this->input->get('kategori');
+		$status   = $this->input->get('status');
+
+		$builder = $this->db->select('produk.id, produk.kode_produk, produk.nama_produk, kategori_produk.nama_kategori, satuan.singkatan, produk.harga_beli, produk.harga_jual, produk.stok_minimum, produk.status')
+			->from('produk')
+			->join('kategori_produk', 'kategori_produk.id = produk.kategori_id', 'LEFT')
+			->join('satuan', 'satuan.id = produk.satuan_id', 'LEFT');
+
+		if (!empty($q)) {
+			$builder->group_start()
+				->like('produk.kode_produk', $q)
+				->or_like('produk.nama_produk', $q)
+				->or_like('kategori_produk.nama_kategori', $q)
+				->group_end();
+		}
+		if (!empty($kategori)) {
+			$builder->where('produk.kategori_id', $kategori);
+		}
+		if (!empty($status)) {
+			$builder->where('produk.status', $status);
+		}
+
+		$produks = $builder->order_by('produk.id', 'ASC')->get()->result();
+
+		foreach ($produks as $p) {
+			$p->total_stok = $this->model_produk->get_stok($p->id);
+		}
+
+		$kategori_nama = '';
+		if (!empty($kategori)) {
+			$kat = $this->db->get_where('kategori_produk', ['id' => $kategori])->row();
+			if ($kat) $kategori_nama = $kat->nama_kategori;
+		}
+
+		$config = [
+			'orientation' => 'l',
+			'format'      => 'a4',
+			'marges'      => [7, 7, 7, 7]
+		];
+
+		$this->htmlpdf->initialize($config);
+
+		$content = $this->load->view('produk/backend/standart/administrator/produk/produk_export_pdf', [
+			'results'       => $produks,
+			'search_q'      => $q,
+			'kategori_nama' => $kategori_nama,
+			'status_sel'    => $status,
+		], true);
+
+		$this->htmlpdf->writeHTML($content);
+
+		if (ob_get_length()) { ob_end_clean(); }
+
+		$this->htmlpdf->Output('Data_Produk_' . date('Y-m-d') . '.pdf', 'I');
+		exit;
 	}
 
 }

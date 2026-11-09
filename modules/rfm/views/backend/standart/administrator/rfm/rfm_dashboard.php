@@ -210,6 +210,54 @@
   gap: 7px;
 }
 
+/* Filter Bar */
+.rfm-filter-bar {
+  padding: 10px 16px;
+  margin-bottom: 14px;
+  background: #fff;
+  border-left: 4px solid #6366f1;
+}
+.rfm-filter-form {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.rfm-filter-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 280px;
+  flex-wrap: wrap;
+}
+.rfm-filter-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.rfm-filter-field label {
+  margin: 0;
+  font-weight: 700;
+  color: #1e1b4b;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* Charts & Segments Cards */
+.section-card-chart {
+  height: 360px;
+  display: flex;
+  flex-direction: column;
+}
+.section-card-segments {
+  height: 360px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 /* Segment Grid (Compact 2-columns) */
 .segment-grid-compact {
   display: grid;
@@ -396,24 +444,136 @@
     padding: 6px 12px !important;
     font-size: 11.5px !important;
   }
+
+  /* Filter Bar Mobile */
+  .rfm-filter-bar {
+    padding: 12px 14px !important;
+  }
+  #form-product-filter {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  .rfm-filter-inner {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    gap: 9px !important;
+  }
+  .filter-icon-indicator {
+    display: none !important;
+  }
+  .rfm-filter-field {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 3px !important;
+    width: 100% !important;
+  }
+  .rfm-filter-field label {
+    font-size: 11px !important;
+    color: #475569 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.3px !important;
+    font-weight: 700 !important;
+  }
+  .rfm-filter-field select,
+  .rfm-filter-field .form-control {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    height: 38px !important;
+    font-size: 12.5px !important;
+    border-radius: 8px !important;
+  }
+  .rfm-filter-reset {
+    width: 100% !important;
+  }
+  .rfm-filter-reset .btn {
+    width: 100% !important;
+    display: block !important;
+    text-align: center !important;
+    padding: 8px !important;
+    font-size: 12px !important;
+    border-radius: 8px !important;
+  }
+
+  /* KPI Grid Mobile: Strict 2x2 Clean Layout */
   .kpi-row {
-    margin-left: -4px !important;
-    margin-right: -4px !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  .kpi-row::before, .kpi-row::after {
+    display: none !important;
+    content: none !important;
   }
   .kpi-row > div {
-    padding-left: 4px !important;
-    padding-right: 4px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    float: none !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin: 0 !important;
   }
   .kpi-card {
-    padding: 12px 14px !important;
-    margin-bottom: 8px !important;
+    padding: 10px 10px !important;
+    margin-bottom: 0 !important;
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    border-radius: 10px !important;
+  }
+  .kpi-card .kpi-icon {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 15px !important;
+    border-radius: 8px !important;
+    flex-shrink: 0 !important;
+  }
+  .kpi-card .kpi-body {
+    min-width: 0 !important;
+    flex: 1 !important;
   }
   .kpi-card .kpi-value {
-    font-size: 17px !important;
+    font-size: 14.5px !important;
+    line-height: 1.15 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
+  .kpi-card .kpi-label {
+    font-size: 9.5px !important;
+    margin-top: 2px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* Section Cards Mobile */
   .section-card {
     padding: 12px !important;
   }
+  .section-card-chart {
+    height: 290px !important;
+    margin-bottom: 12px !important;
+  }
+  .section-card-segments {
+    height: auto !important;
+    max-height: 440px !important;
+    margin-bottom: 14px !important;
+  }
+  .segment-grid-compact {
+    grid-template-columns: 1fr !important;
+    gap: 6px !important;
+  }
+  .seg-card-compact {
+    padding: 8px 10px !important;
+  }
+
   .rfm-tab-card .tab-content {
     padding: 12px 10px !important;
   }
@@ -465,8 +625,8 @@
     <a href="<?= site_url('administrator/rfm' . $nav_qs); ?>" class="nav-tab-btn">
       <i class="fa fa-users"></i> 2. Daftar Customer
     </a>
-    <a href="<?= site_url('administrator/rfm/tracking' . $nav_qs); ?>" class="nav-tab-btn">
-      <i class="fa fa-line-chart"></i> 3. Tracking RFM Bulanan
+    <a href="<?= site_url('administrator/rfm/tracking'); ?>" class="nav-tab-btn">
+      <i class="fa fa-line-chart"></i> 3. Tracking RFM
     </a>
     <a href="<?= site_url('administrator/rfm/cohort' . $nav_qs); ?>" class="nav-tab-btn">
       <i class="fa fa-th"></i> 4. Analisis Kohort
@@ -483,20 +643,20 @@
 <!-- ==========================================
      2. COMPACT FILTER BAR
      ========================================== -->
-<div class="section-card" style="padding:10px 16px; margin-bottom:14px; background:#fff; border-left:4px solid #6366f1;">
-  <form method="GET" action="<?= site_url('administrator/rfm/dashboard'); ?>" id="form-product-filter" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
-    <div style="display:flex; align-items:center; gap:12px; flex:1; min-width:280px; flex-wrap:wrap;">
-      <i class="fa fa-filter" style="color:#6366f1; font-size:16px;"></i>
+<div class="section-card rfm-filter-bar">
+  <form method="GET" action="<?= site_url('administrator/rfm/dashboard'); ?>" id="form-product-filter" class="rfm-filter-form">
+    <div class="rfm-filter-inner">
+      <i class="fa fa-filter filter-icon-indicator" style="color:#6366f1; font-size:16px;"></i>
       
       <!-- Filter Kategori -->
-      <div style="display:flex; align-items:center; gap:6px;">
-        <label for="category-select" style="margin:0; font-weight:700; color:#1e1b4b; font-size:12px;">Kategori:</label>
+      <div class="rfm-filter-field">
+        <label for="category-select">Kategori:</label>
         <select name="kategori" id="category-select" class="form-control input-sm" style="border-radius:6px; font-weight:600; min-width:140px; max-width:200px;" onchange="document.getElementById('product-select').value=''; document.getElementById('form-product-filter').submit();">
           <option value="">-- Semua Kategori --</option>
           <?php if (!empty($categories_list)): ?>
             <?php foreach ($categories_list as $kat): ?>
               <option value="<?= htmlspecialchars($kat->nama_kategori); ?>" <?= (($category_filter ?? '') === $kat->nama_kategori) ? 'selected' : ''; ?>>
-                <?= htmlspecialchars($kat->nama_kategori); ?>
+                <?= (stripos($kat->nama_kategori, 'Resi') !== false ? '📦 ' : '📁 ') . htmlspecialchars($kat->nama_kategori); ?>
               </option>
             <?php endforeach; ?>
           <?php endif; ?>
@@ -504,8 +664,8 @@
       </div>
 
       <!-- Filter Produk (dengan pengelompokan Kategori agar spesifik) -->
-      <div style="display:flex; align-items:center; gap:6px;">
-        <label for="product-select" style="margin:0; font-weight:700; color:#1e1b4b; font-size:12px;">Produk:</label>
+      <div class="rfm-filter-field">
+        <label for="product-select">Produk:</label>
         <select name="product" id="product-select" class="form-control input-sm" style="border-radius:6px; font-weight:600; min-width:200px; max-width:320px;" onchange="document.getElementById('form-product-filter').submit();">
           <option value="">-- Semua Produk --</option>
           <?php 
@@ -534,8 +694,8 @@
       </div>
 
       <!-- Filter Periode Bulan -->
-      <div style="display:flex; align-items:center; gap:6px;">
-        <label for="period-select" style="margin:0; font-weight:700; color:#1e1b4b; font-size:12px;">Bulan:</label>
+      <div class="rfm-filter-field">
+        <label for="period-select">Bulan:</label>
         <select name="period" id="period-select" class="form-control input-sm" style="border-radius:6px; font-weight:600; min-width:160px;" onchange="document.getElementById('form-product-filter').submit();">
            <option value="">-- Semua Bulan --</option>
           <?php if (!empty($months_list)): ?>
@@ -549,7 +709,7 @@
       </div>
     </div>
 
-    <div>
+    <div class="rfm-filter-reset">
       <?php if (!empty($product_filter) || !empty($period_filter) || !empty($category_filter)): ?>
         <a href="<?= site_url('administrator/rfm/dashboard'); ?>" class="btn btn-xs btn-default" style="border-radius:6px; font-weight:600;"><i class="fa fa-times"></i> Reset</a>
       <?php endif; ?>
@@ -589,7 +749,7 @@
     </div>
   </div>
   <div class="col-md-3 col-sm-6 col-xs-6">
-    <div class="kpi-card" role="button" tabindex="0" onclick="window.location.href='<?= site_url('administrator/rfm/tracking' . $nav_qs); ?>';" title="Klik untuk melihat analisis tren omset &amp; pertumbuhan di Tracking Bulanan">
+    <div class="kpi-card" role="button" tabindex="0" onclick="window.location.href='<?= site_url('administrator/rfm/tracking'); ?>';" title="Klik untuk melihat analisis tren omset &amp; pertumbuhan di Tracking Bulanan">
       <div class="kpi-icon" style="background:#f3e8ff; color:#7c3aed;"><i class="fa fa-money"></i></div>
       <div class="kpi-body">
         <div class="kpi-value" style="font-size:17px;">Rp <?= number_format($kpis['avg_spend'], 0, ',', '.'); ?></div>
@@ -605,7 +765,7 @@
 <div class="row">
   <!-- Left: Donut Chart -->
   <div class="col-md-5 col-sm-12">
-    <div class="section-card" style="height:360px; display:flex; flex-direction:column;">
+    <div class="section-card section-card-chart">
       <div class="card-title"><i class="fa fa-pie-chart" style="color:#6366f1;"></i> Distribusi Segmen Pelanggan</div>
       <div style="flex:1; position:relative; min-height:0;">
         <canvas id="rfmPieChart"></canvas>
@@ -615,7 +775,7 @@
 
   <!-- Right: 10 Segmen Cards Grid (Compact) -->
   <div class="col-md-7 col-sm-12">
-    <div class="section-card" style="height:360px; display:flex; flex-direction:column; overflow:hidden;">
+    <div class="section-card section-card-segments">
       <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
         <span><i class="fa fa-th-large" style="color:#6366f1;"></i> Matriks 10 Segmen RFM</span>
         <a href="<?= site_url('administrator/rfm' . $nav_qs); ?>" class="btn btn-xs btn-default" style="font-size:11px; font-weight:700;"><i class="fa fa-users"></i> Buka Semua Customer</a>
@@ -792,7 +952,7 @@
           <strong style="color:#0f172a; font-size:13px;"><i class="fa fa-line-chart text-success"></i> Tren Performa Omset &amp; Pelanggan Bulanan</strong>
           <span class="text-muted" style="font-size:12px; margin-left:6px;">(Menampilkan ringkasan periode terbaru)</span>
         </div>
-        <a href="<?= site_url('administrator/rfm/tracking' . (!empty($product_filter) ? '?product=' . urlencode($product_filter) : '')); ?>" class="btn btn-xs btn-success" style="font-weight:700; border-radius:6px; padding:5px 12px;">
+        <a href="<?= site_url('administrator/rfm/tracking'); ?>" class="btn btn-xs btn-success" style="font-weight:700; border-radius:6px; padding:5px 12px;">
           <i class="fa fa-external-link"></i> Buka Halaman Khusus Tracking Bulanan Lengkap &rarr;
         </a>
       </div>
@@ -1156,6 +1316,7 @@ window.addEventListener('DOMContentLoaded', function() {
   <div class="modal-dialog" role="document" style="max-width:540px; margin:40px auto;">
     <div class="modal-content" style="border-radius:14px; border:none; box-shadow:0 20px 40px rgba(0,0,0,0.15); overflow:hidden;">
       <form method="POST" action="<?= site_url('administrator/rfm/import_excel'); ?>" enctype="multipart/form-data" id="form-import-excel" onsubmit="document.getElementById('btn-submit-import').disabled=true; document.getElementById('btn-submit-import').innerHTML='<i class=\'fa fa-spinner fa-spin\'></i> Mengimport Data...';">
+        <input type="hidden" name="<?= $this->security->get_csrf_token_name(); ?>" value="<?= $this->security->get_csrf_hash(); ?>">
         <div class="modal-header" style="background:linear-gradient(135deg, #1e1b4b, #312e81, #4338ca); color:#fff; padding:16px 20px;">
           <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color:#fff; opacity:0.8;">&times;</button>
           <h4 class="modal-title" id="modalImportExcelLabel" style="font-weight:700; font-size:16px; margin:0;">
@@ -1171,7 +1332,7 @@ window.addEventListener('DOMContentLoaded', function() {
             <label style="font-weight:700; color:#1e1b4b; font-size:12px;">Tipe Data Import:</label>
             <select name="import_type" class="form-control" style="border-radius:6px; font-weight:600; font-size:12.5px;">
               <option value="auto">✨ Deteksi Otomatis (Rekomendasi)</option>
-              <option value="transactions">🛒 Data Transaksi / Sales Order (Shopee, Tokopedia, CSV)</option>
+              <option value="transactions">🛒 Data Transaksi Penjualan (Shopee, Tokopedia, CSV)</option>
               <option value="matrix">📊 Aturan Matriks RFM &amp; Segmentasi</option>
             </select>
           </div>

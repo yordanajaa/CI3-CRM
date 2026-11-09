@@ -46,25 +46,59 @@
    </div>
    <div>
       <div class="doc-title">NOTA RETUR PENJUALAN</div>
-      <div class="text-right"><strong>No Retur:</strong> <?= _ent($retur->nomor_retur ?? ''); ?></div>
-      <div class="text-right"><strong>Tanggal:</strong> <?= isset($retur->tanggal_retur) ? date('d/m/Y', strtotime($retur->tanggal_retur)) : '-'; ?></div>
+      <table align="right" style="border-collapse: collapse; font-size: 12px; margin-top: 4px;">
+         <tr>
+            <td style="text-align: right; padding: 1px 0;"><strong>No Retur</strong></td>
+            <td style="width: 12px; text-align: center; padding: 1px 0;">:</td>
+            <td style="text-align: left; padding: 1px 0;"><strong><?= _ent($retur->nomor_retur ?? '-'); ?></strong></td>
+         </tr>
+         <tr>
+            <td style="text-align: right; padding: 1px 0; color: #475569;"><strong>Tanggal</strong></td>
+            <td style="text-align: center; padding: 1px 0; color: #475569;">:</td>
+            <td style="text-align: left; padding: 1px 0; color: #475569;"><?= isset($retur->tanggal_retur) ? date('d/m/Y', strtotime($retur->tanggal_retur)) : '-'; ?></td>
+         </tr>
+      </table>
    </div>
 </div>
 
 <table class="info-table">
    <tr>
-      <td width="50%">
-         <table style="width: 100%;">
-            <tr><td width="35%"><strong>Pelanggan:</strong></td><td><?= _ent($retur->nama_pelanggan ?? '-'); ?></td></tr>
-            <tr><td width="35%"><strong>Ref. Invoice:</strong></td><td><?= _ent($retur->nomor_invoice ?? '-'); ?></td></tr>
-            <tr><td width="35%"><strong>Alasan Retur:</strong></td><td><?= _ent($retur->alasan ?? '-'); ?></td></tr>
+      <td width="50%" style="vertical-align: top; padding-right: 15px;">
+         <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+               <td width="32%" style="padding: 3px 0; color: #64748b;"><strong>Pelanggan</strong></td>
+               <td width="4%" style="padding: 3px 0; text-align: center; color: #64748b;">:</td>
+               <td width="64%" style="padding: 3px 0;"><strong><?= _ent($retur->nama_pelanggan ?? '-'); ?></strong></td>
+            </tr>
+            <tr>
+               <td style="padding: 3px 0; color: #64748b;"><strong>Ref. Invoice</strong></td>
+               <td style="padding: 3px 0; text-align: center; color: #64748b;">:</td>
+               <td style="padding: 3px 0;"><?= _ent($retur->nomor_invoice ?? '-'); ?></td>
+            </tr>
+            <tr>
+               <td style="padding: 3px 0; color: #64748b;"><strong>Alasan Retur</strong></td>
+               <td style="padding: 3px 0; text-align: center; color: #64748b;">:</td>
+               <td style="padding: 3px 0;"><?= _ent(ucwords(str_replace('_', ' ', $retur->alasan ?? '-'))); ?></td>
+            </tr>
          </table>
       </td>
-      <td width="50%">
-         <table style="width: 100%;">
-            <tr><td width="40%"><strong>Gudang Tujuan:</strong></td><td><?= _ent($retur->nama_gudang ?? '-'); ?></td></tr>
-            <tr><td width="40%"><strong>Tindak Lanjut:</strong></td><td><?= _ent($retur->tindak_lanjut ?? '-'); ?></td></tr>
-            <tr><td width="40%"><strong>Petugas:</strong></td><td><?= _ent($retur->created_by ?? '-'); ?></td></tr>
+      <td width="50%" style="vertical-align: top; padding-left: 15px;">
+         <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+               <td width="38%" style="padding: 3px 0; color: #64748b;"><strong>Tindak Lanjut</strong></td>
+               <td width="4%" style="padding: 3px 0; text-align: center; color: #64748b;">:</td>
+               <td width="58%" style="padding: 3px 0; font-weight: bold; color: #0284c7;"><?= !empty($retur->tindak_lanjut) ? _ent(ucwords(str_replace('_', ' ', $retur->tindak_lanjut))) : '-'; ?></td>
+            </tr>
+            <tr>
+               <td style="padding: 3px 0; color: #64748b;"><strong>Petugas</strong></td>
+               <td style="padding: 3px 0; text-align: center; color: #64748b;">:</td>
+               <td style="padding: 3px 0;"><?= _ent($retur->created_by ?? '-'); ?></td>
+            </tr>
+            <tr>
+               <td style="padding: 3px 0; color: #64748b;"><strong>Status</strong></td>
+               <td style="padding: 3px 0; text-align: center; color: #64748b;">:</td>
+               <td style="padding: 3px 0; font-weight: bold; color: <?= ($retur->status == 'selesai' || $retur->status == 'approved') ? '#15803d' : '#475569'; ?>;"><?= strtoupper($retur->status ?? '-'); ?></td>
+            </tr>
          </table>
       </td>
    </tr>

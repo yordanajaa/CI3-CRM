@@ -20,11 +20,9 @@ class Model_retur_pembelian extends MY_Model {
 
 	public function join_available()
 	{
-		$this->db->select('retur_pembelian.*, supplier.nama_supplier, supplier.kode_supplier, gudang.nama_gudang, gudang.alamat as alamat_gudang, penerimaan_barang.nomor_penerimaan, purchase_order.mata_uang, purchase_order.nomor_po, purchase_order.kurs');
+		$this->db->select('retur_pembelian.*, supplier.nama_supplier, supplier.kode_supplier, purchase_order.mata_uang, purchase_order.nomor_po, purchase_order.kurs');
 		$this->db->join('supplier', 'supplier.id = retur_pembelian.supplier_id', 'LEFT');
-		$this->db->join('gudang', 'gudang.id = retur_pembelian.gudang_id', 'LEFT');
-		$this->db->join('penerimaan_barang', 'penerimaan_barang.id = retur_pembelian.penerimaan_id', 'LEFT');
-		$this->db->join('purchase_order', 'purchase_order.id = penerimaan_barang.po_id', 'LEFT');
+		$this->db->join('purchase_order', 'purchase_order.id = retur_pembelian.po_id', 'LEFT');
 		return $this;
 	}
 
@@ -93,13 +91,12 @@ class Model_retur_pembelian extends MY_Model {
 		$items = $this->get_items($retur_id);
 
 		foreach ($items as $item) {
-			$stok = $this->db->get_where('stok', ['produk_id' => $item->produk_id, 'gudang_id' => $retur->gudang_id])->row();
+			$stok = $this->db->get_where('stok', ['produk_id' => $item->produk_id])->row();
 			if ($stok) {
 				$this->db->update('stok', ['qty' => max(0, $stok->qty - $item->qty_retur), 'updated_at' => date('Y-m-d H:i:s')], ['id' => $stok->id]);
 			}
 			$this->db->insert('stok_log', [
 				'produk_id' => $item->produk_id,
-				'gudang_id' => $retur->gudang_id,
 				'jenis' => 'keluar',
 				'qty' => $item->qty_retur,
 				'harga_satuan' => $item->harga_satuan,
@@ -112,16 +109,15 @@ class Model_retur_pembelian extends MY_Model {
 		}
 
 		// Potong Utang Usaha
-		if ($retur->total > 0 && $retur->penerimaan_id) {
-			$penerimaan = $this->db->get_where('penerimaan_barang', ['id' => $retur->penerimaan_id])->row();
-			if ($penerimaan) {
-				$po = $penerimaan->po_id ? $this->db->get_where('purchase_order', ['id' => $penerimaan->po_id])->row() : null;
-				$kurs = ($po && (float)$po->kurs > 0) ? (float)$po->kurs : 1;
-				$mata_uang = $po ? ($po->mata_uang ?: 'IDR') : 'IDR';
+		if ($retur->total > 0 && !empty($retur->po_id)) {
+			$po = $this->db->get_where('purchase_order', ['id' => $retur->po_id])->row();
+			if ($po) {
+				$kurs = ((float)$po->kurs > 0) ? (float)$po->kurs : 1;
+				$mata_uang = $po->mata_uang ?: 'IDR';
 				
 				$total_retur_idr = ($mata_uang !== 'IDR') ? ($retur->total * $kurs) : $retur->total;
 				
-				$utang = $this->db->get_where('utang_usaha', ['penerimaan_id' => $retur->penerimaan_id])->row();
+				$utang = $this->db->get_where('utang_usaha', ['po_id' => $retur->po_id])->row();
 				if ($utang) {
 					$new_total = max(0, $utang->total - $total_retur_idr);
 					$new_sisa = max(0, $utang->sisa - $total_retur_idr);

@@ -24,7 +24,7 @@ class Penjualan_marketplace extends Admin
 		$this->data['so_counts'] = $this->Model_penjualan_marketplace->count_all($filter, $field);
 		$this->data['stats']     = $this->Model_penjualan_marketplace->get_stats();
 		$this->data['pelanggans']= $this->db->get('pelanggan')->result();
-		$this->data['gudangs']   = $this->db->get('gudang')->result();
+
 
 		$config = [
 			'base_url'    => 'administrator/penjualan_marketplace/index/',
@@ -58,7 +58,7 @@ class Penjualan_marketplace extends Admin
 	public function add()
 	{
 		$this->is_allowed('sales_order_add');
-		$this->data['gudangs'] = $this->db->get('gudang')->result();
+
 		$this->data['produks'] = $this->db->get('produk')->result();
 		$this->template->title('Tambah Penjualan Shopee / Online Shop');
 		$this->render('backend/standart/administrator/penjualan_marketplace/penjualan_marketplace_add', $this->data);
@@ -71,33 +71,43 @@ class Penjualan_marketplace extends Admin
 		$source           = $this->input->post('source') ?: 'shopee';
 		$no_pesanan       = trim($this->input->post('no_pesanan'));
 		$status           = $this->input->post('status') ?: 'packing';
-		$gudang_id        = $this->input->post('gudang_id') ?: 1;
+
 		$opsi_pengiriman  = $this->input->post('opsi_pengiriman') ?: 'SPX Express Standard';
-		$nomor_resi       = $this->input->post('nomor_resi') ?: ('SPX' . rand(1000000000, 9999999999));
+		$nomor_resi       = trim($this->input->post('nomor_resi'));
 		$waktu_pembayaran = $this->input->post('waktu_pembayaran') ? date('Y-m-d H:i:s', strtotime($this->input->post('waktu_pembayaran'))) : date('Y-m-d H:i:s');
 		
-		// Duplicate Check
-		if (!empty($no_pesanan)) {
-			$existing = $this->db->get_where('penjualan_marketplace', ['no_pesanan' => $no_pesanan])->row();
-			if ($existing) {
-				set_message("Gagal menyimpan! Nomor Pesanan '{$no_pesanan}' sudah ada di database (Duplikat).", 'error');
-				redirect('administrator/penjualan_marketplace/add');
-				return;
-			}
+		// 1. Pengecekan Duplikasi Ketat (Nomor Pesanan & Nomor Resi)
+		$dup_check = $this->Model_penjualan_marketplace->check_order_duplicate($no_pesanan, $nomor_resi);
+		if ($dup_check['duplicate']) {
+			set_message("Gagal menyimpan! " . $dup_check['message'], 'error');
+			redirect('administrator/penjualan_marketplace/add');
+			return;
+		}
+
+		if (empty($nomor_resi)) {
+			$nomor_resi = 'SPX' . rand(1000000000, 9999999999);
 		}
 		
-		$username_pembeli  = $this->input->post('username_pembeli');
-		$nama_penerima     = $this->input->post('nama_penerima');
-		$no_telepon        = $this->input->post('no_telepon');
-		$alamat_pengiriman = $this->input->post('alamat_pengiriman');
-		$kota_kabupaten    = $this->input->post('kota_kabupaten');
-		$provinsi          = $this->input->post('provinsi');
-		$catatan           = $this->input->post('catatan');
+		$username_pembeli  = trim($this->input->post('username_pembeli'));
+		$nama_penerima     = trim($this->input->post('nama_penerima'));
+		$no_telepon        = trim($this->input->post('no_telepon'));
+		$alamat_pengiriman = trim($this->input->post('alamat_pengiriman'));
+		$kota_kabupaten    = trim($this->input->post('kota_kabupaten'));
+		$provinsi          = trim($this->input->post('provinsi'));
+		$catatan           = trim($this->input->post('catatan'));
 		$total             = (float) $this->input->post('total');
 
-		$default_pelanggan = $this->db->get_where('pelanggan', ['kode_pelanggan' => 'CUS-MARKETPLACE'])->row() 
-			?: $this->db->get('pelanggan')->row();
-		$pelanggan_id = $default_pelanggan ? $default_pelanggan->id : 1;
+		// 2. Sinkronisasi ke Master Data Pelanggan (Cek Duplikat / Buat Baru)
+		$cust_res = $this->Model_penjualan_marketplace->resolve_customer([
+			'no_telepon'        => $no_telepon,
+			'username_pembeli'  => $username_pembeli,
+			'nama_penerima'     => $nama_penerima,
+			'alamat_pengiriman' => $alamat_pengiriman,
+			'kota_kabupaten'    => $kota_kabupaten,
+			'provinsi'          => $provinsi,
+			'source'            => $source
+		]);
+		$pelanggan_id = $cust_res['pelanggan_id'];
 
 		$nomor_so = $this->Model_penjualan_marketplace->generate_nomor();
 
@@ -106,7 +116,6 @@ class Penjualan_marketplace extends Admin
 			'no_pesanan'          => $no_pesanan,
 			'source'              => $source,
 			'pelanggan_id'        => $pelanggan_id,
-			'gudang_id'           => $gudang_id,
 			'tanggal_so'          => date('Y-m-d'),
 			'status'              => $status,
 			'status_pesanan'      => strtoupper($status),
@@ -116,53 +125,304 @@ class Penjualan_marketplace extends Admin
 			'waktu_pembayaran'    => $waktu_pembayaran,
 			'username_pembeli'    => $username_pembeli,
 			'nama_penerima'       => $nama_penerima,
-			'no_telepon'          => $no_telepon,
+			'no_telepon'          => $this->Model_penjualan_marketplace->normalize_phone($no_telepon),
 			'alamat_pengiriman'   => $alamat_pengiriman,
 			'kota_kabupaten'      => $kota_kabupaten,
 			'provinsi'            => $provinsi,
 			'subtotal'            => $total,
 			'total'               => $total,
 			'catatan'             => $catatan,
-			'created_by'          => get_user_data('username'),
+			'created_by'          => get_user_data('username') ?: 'admin',
 			'created_at'          => date('Y-m-d H:i:s'),
 		];
 
 		$pm_id = $this->Model_penjualan_marketplace->store($data_pm);
 
 		if ($pm_id) {
+			$nama_items    = $this->input->post('nama_produk_item');
+			$sku_items     = $this->input->post('sku_item');
+			$variasi_items = $this->input->post('variasi_item');
 			$produk_ids    = $this->input->post('produk_id');
 			$qtys          = $this->input->post('qty');
 			$hargas        = $this->input->post('harga_satuan');
 			$subtotals     = $this->input->post('subtotal_item');
 
-			if (!empty($produk_ids) && is_array($produk_ids)) {
-				foreach ($produk_ids as $idx => $prod_id) {
-					if (empty($prod_id)) continue;
-					$prod = $this->db->get_where('produk', ['id' => $prod_id])->row();
-					$qty = (float) ($qtys[$idx] ?? 1);
-					$harga = (float) ($hargas[$idx] ?? 0);
-					$subtotal = (float) ($subtotals[$idx] ?? ($qty * $harga));
+			if (!empty($nama_items) && is_array($nama_items)) {
+				foreach ($nama_items as $idx => $nama_item) {
+					if (empty(trim($nama_item))) continue;
+
+					$p_id = isset($produk_ids[$idx]) ? intval($produk_ids[$idx]) : 0;
+					$sku  = isset($sku_items[$idx]) ? trim($sku_items[$idx]) : '';
+					$var  = isset($variasi_items[$idx]) ? trim($variasi_items[$idx]) : '';
+					$qty  = (float) ($qtys[$idx] ?? 1);
+					$hrg  = (float) ($hargas[$idx] ?? 0);
+					$sub  = (float) ($subtotals[$idx] ?? ($qty * $hrg));
+
+					// 3. Sinkronisasi ke Master Data Produk (Cek Duplikat / Buat Baru jika belum ada)
+					$resolved_prod_id = $this->Model_penjualan_marketplace->resolve_product([
+						'produk_id'    => $p_id,
+						'sku'          => $sku,
+						'nama_produk'  => $nama_item,
+						'variasi'      => $var,
+						'harga_satuan' => $hrg
+					]);
 
 					$this->db->insert('penjualan_marketplace_item', [
 						'penjualan_marketplace_id' => $pm_id,
-						'produk_id'     => $prod_id,
+						'produk_id'     => $resolved_prod_id,
 						'qty'           => max(1, $qty),
 						'satuan'        => 'pcs',
-						'harga_satuan'  => $harga,
+						'harga_satuan'  => $hrg,
 						'diskon_persen' => 0,
 						'diskon_nominal'=> 0,
-						'subtotal'      => $subtotal,
-						'catatan'       => $prod ? $prod->nama_produk : '',
+						'subtotal'      => $sub,
+						'catatan'       => trim($nama_item . ($var ? " ({$var})" : '')),
 					]);
 				}
 			}
 
-			set_message("Berhasil menambahkan pesanan Online Shop baru (#{$no_pesanan})!", 'success');
+			// 4. Sinkronisasi Otomatis ke Sales Order & CRM Pipeline
+			$this->Model_penjualan_marketplace->sync_to_sales_order($pm_id);
+
+			$cust_msg = $cust_res['is_new'] 
+				? "dan berhasil mendaftarkan Pelanggan Baru ({$cust_res['customer']->kode_pelanggan} - {$cust_res['customer']->nama_pelanggan}) ke Master Data"
+				: "dan menautkan ke Pelanggan ({$cust_res['customer']->kode_pelanggan} - {$cust_res['customer']->nama_pelanggan})";
+
+			set_message("Berhasil menambahkan pesanan Online Shop (#{$no_pesanan}) {$cust_msg}!", 'success');
 		} else {
 			set_message("Gagal menambahkan pesanan Online Shop baru.", 'error');
 		}
 
 		redirect('administrator/penjualan_marketplace');
+	}
+
+	public function edit($id)
+	{
+		$this->is_allowed('sales_order_update');
+
+		$this->data['so'] = $this->Model_penjualan_marketplace->find_with_detail($id);
+		if (!$this->data['so']) {
+			set_message('Data pesanan marketplace tidak ditemukan.', 'error');
+			redirect('administrator/penjualan_marketplace');
+			return;
+		}
+
+		$this->data['items']       = $this->Model_penjualan_marketplace->get_items($id);
+		$this->data['produks']     = $this->db->get('produk')->result();
+		$this->data['is_cod_val']  = (strtolower($this->data['so']->tipe_pengiriman ?? '') === 'cod' || stripos($this->data['so']->catatan ?? '', 'COD') !== false);
+
+		$this->template->title('Edit Penjualan Marketplace #' . ($this->data['so']->no_pesanan ?: $this->data['so']->nomor_so));
+		$this->render('backend/standart/administrator/penjualan_marketplace/penjualan_marketplace_update', $this->data);
+	}
+
+	public function edit_save($id)
+	{
+		$this->is_allowed('sales_order_update');
+
+		$so = $this->db->get_where('penjualan_marketplace', ['id' => $id])->row();
+		if (!$so) {
+			set_message('Data pesanan tidak ditemukan.', 'error');
+			redirect('administrator/penjualan_marketplace');
+			return;
+		}
+
+		$source           = $this->input->post('source') ?: $so->source;
+		$no_pesanan       = trim((string)$this->input->post('no_pesanan')) ?: $so->no_pesanan;
+		$status           = $this->input->post('status') ?: $so->status;
+		$opsi_pengiriman  = $this->input->post('opsi_pengiriman') ?: $so->opsi_pengiriman;
+		$nomor_resi       = trim((string)$this->input->post('nomor_resi')) ?: $so->nomor_resi;
+		$waktu_pembayaran = $this->input->post('waktu_pembayaran') ? date('Y-m-d H:i:s', strtotime($this->input->post('waktu_pembayaran'))) : $so->waktu_pembayaran;
+		$tipe_pengiriman  = $this->input->post('tipe_pengiriman') ?: ($so->tipe_pengiriman ?: 'Non-COD');
+		$total_cod        = (float)$this->input->post('total_cod');
+
+		$username_pembeli  = trim((string)$this->input->post('username_pembeli'));
+		$nama_penerima     = trim((string)$this->input->post('nama_penerima'));
+		$no_telepon        = trim((string)$this->input->post('no_telepon'));
+		$alamat_pengiriman = trim((string)$this->input->post('alamat_pengiriman'));
+		$kota_kabupaten    = trim((string)$this->input->post('kota_kabupaten'));
+		$provinsi          = trim((string)$this->input->post('provinsi'));
+		$catatan           = trim((string)$this->input->post('catatan'));
+
+		// Cek duplikasi no_pesanan jika diubah
+		if (!empty($no_pesanan) && $no_pesanan !== $so->no_pesanan) {
+			$exists_pesanan = $this->db->where('no_pesanan', $no_pesanan)->where('id !=', $id)->get('penjualan_marketplace')->row();
+			if ($exists_pesanan) {
+				set_message("Gagal menyimpan! Nomor Pesanan '{$no_pesanan}' sudah terdaftar pada pesanan lain (#{$exists_pesanan->nomor_so}).", 'error');
+				redirect('administrator/penjualan_marketplace/edit/' . $id);
+				return;
+			}
+		}
+
+		// Update / resolve pelanggan
+		$cust_res = $this->Model_penjualan_marketplace->resolve_customer([
+			'no_telepon'        => $no_telepon,
+			'username_pembeli'  => $username_pembeli,
+			'nama_penerima'     => $nama_penerima,
+			'alamat_pengiriman' => $alamat_pengiriman,
+			'kota_kabupaten'    => $kota_kabupaten,
+			'provinsi'          => $provinsi,
+			'source'            => $source
+		]);
+		$pelanggan_id = !empty($cust_res['pelanggan_id']) ? $cust_res['pelanggan_id'] : $so->pelanggan_id;
+
+		// Hitung ulang item dan total
+		$nama_items    = (array)$this->input->post('nama_produk_item');
+		$sku_items     = (array)$this->input->post('sku_item');
+		$variasi_items = (array)$this->input->post('variasi_item');
+		$produk_ids    = (array)$this->input->post('produk_id');
+		$qtys          = (array)$this->input->post('qty');
+		$hargas        = (array)$this->input->post('harga_satuan');
+
+		$first_nama_prod = '';
+		$first_sku       = '';
+		$first_variasi   = '';
+		$total_calculated = 0;
+
+		$new_items = [];
+		if (!empty($nama_items)) {
+			foreach ($nama_items as $idx => $nama_item) {
+				$nama_item = trim((string)$nama_item);
+				if (empty($nama_item)) continue;
+
+				$p_id = isset($produk_ids[$idx]) ? intval($produk_ids[$idx]) : 0;
+				$sku  = isset($sku_items[$idx]) ? trim((string)$sku_items[$idx]) : '';
+				$var  = isset($variasi_items[$idx]) ? trim((string)$variasi_items[$idx]) : '';
+				$qty  = max(1, (float)($qtys[$idx] ?? 1));
+				$hrg  = (float)($hargas[$idx] ?? 0);
+
+				if (empty($first_nama_prod)) {
+					$first_nama_prod = $nama_item;
+					$first_sku       = $sku;
+					$first_variasi   = $var;
+				}
+
+				if ($p_id > 0) {
+					$resolved_prod_id = $p_id;
+					$prod_row = $this->db->get_where('produk', ['id' => $p_id])->row();
+					if ($prod_row && $hrg <= 0) {
+						$hrg = (float)$prod_row->harga_jual;
+					}
+				} else {
+					$resolved_prod = $this->Model_penjualan_marketplace->get_or_create_product($nama_item, $sku, $hrg, $var, $source);
+					$resolved_prod_id = $resolved_prod ? $resolved_prod->id : 1;
+					if ($hrg <= 0 && $resolved_prod) {
+						$hrg = (float)$resolved_prod->harga_jual;
+					}
+				}
+
+				$sub = $qty * $hrg;
+				$total_calculated += $sub;
+
+				$new_items[] = [
+					'penjualan_marketplace_id' => $id,
+					'produk_id'     => $resolved_prod_id,
+					'sku'           => $sku,
+					'nama_variasi'  => $var,
+					'qty'           => $qty,
+					'satuan'        => 'pcs',
+					'harga_satuan'  => $hrg,
+					'diskon_persen' => 0,
+					'diskon_nominal'=> 0,
+					'subtotal'      => $sub,
+					'catatan'       => trim($nama_item . ($var ? " ({$var})" : '')),
+				];
+			}
+		}
+
+		$final_total = $total_calculated;
+		if (strtolower($tipe_pengiriman) === 'cod' && $total_cod > 0) {
+			$final_total = $total_cod;
+		} elseif ($final_total <= 0) {
+			$final_total = (float)$so->total;
+		}
+
+		$update_pm = [
+			'source'                  => $source,
+			'no_pesanan'              => $no_pesanan,
+			'pelanggan_id'            => $pelanggan_id,
+			'status'                  => $status,
+			'status_pesanan'          => strtoupper($status),
+			'nomor_resi'              => $nomor_resi,
+			'kurir_ekspedisi'         => $opsi_pengiriman,
+			'opsi_pengiriman'         => $opsi_pengiriman,
+			'tipe_pengiriman'         => $tipe_pengiriman,
+			'waktu_pembayaran'        => $waktu_pembayaran,
+			'username_pembeli'        => $username_pembeli,
+			'nama_penerima'           => $nama_penerima,
+			'no_telepon'              => $this->Model_penjualan_marketplace->normalize_phone($no_telepon),
+			'alamat_pengiriman'       => $alamat_pengiriman,
+			'kota_kabupaten'          => $kota_kabupaten,
+			'provinsi'                => $provinsi,
+			'subtotal'                => $final_total,
+			'total'                   => $final_total,
+			'catatan'                 => $catatan,
+			'updated_at'              => date('Y-m-d H:i:s'),
+			'updated_by'              => get_user_data('username') ?: 'admin',
+		];
+
+		if (!empty($first_nama_prod)) {
+			$update_pm['nama_produk_marketplace'] = $first_nama_prod;
+			$update_pm['sku_induk']               = $first_sku;
+			$update_pm['nama_variasi']            = $first_variasi;
+		}
+
+		$this->db->where('id', $id)->update('penjualan_marketplace', $update_pm);
+
+		if (!empty($new_items)) {
+			$this->db->where('penjualan_marketplace_id', $id)->delete('penjualan_marketplace_item');
+			$this->db->insert_batch('penjualan_marketplace_item', $new_items);
+		}
+
+		// Sinkronisasi otomatis ke Sales Order & CRM Follow-up Labels
+		$this->Model_penjualan_marketplace->sync_to_sales_order($id);
+
+		set_message("Pesanan Marketplace (#{$no_pesanan}) berhasil diperbarui!", 'success');
+		redirect('administrator/penjualan_marketplace');
+	}
+
+	public function check_duplicate_ajax()
+	{
+		header('Content-Type: application/json');
+		$no_pesanan = trim($this->input->post('no_pesanan'));
+		$nomor_resi = trim($this->input->post('nomor_resi'));
+		$no_telepon = trim($this->input->post('no_telepon'));
+
+		$res = [
+			'order_duplicate' => false,
+			'order_message'   => '',
+			'customer_found'  => false,
+			'customer_name'   => '',
+			'customer_code'   => '',
+		];
+
+		// Check Order Duplicate
+		if (!empty($no_pesanan) || !empty($nomor_resi)) {
+			$dup = $this->Model_penjualan_marketplace->check_order_duplicate($no_pesanan, $nomor_resi);
+			if ($dup['duplicate']) {
+				$res['order_duplicate'] = true;
+				$res['order_message']   = $dup['message'];
+			}
+		}
+
+		// Check Customer in Master Data
+		if (!empty($no_telepon)) {
+			$p_clean = $this->Model_penjualan_marketplace->normalize_phone($no_telepon);
+			if (strlen($p_clean) >= 8) {
+				$c = $this->db->group_start()
+					->where('telepon', $p_clean)
+					->or_where('no_telp', $p_clean)
+					->group_end()
+					->get('pelanggan')->row();
+				if ($c) {
+					$res['customer_found'] = true;
+					$res['customer_name']  = $c->nama_pelanggan;
+					$res['customer_code']  = $c->kode_pelanggan;
+				}
+			}
+		}
+
+		echo json_encode($res);
+		exit;
 	}
 
 	public function download_template_shopee()
@@ -243,91 +503,135 @@ class Penjualan_marketplace extends Admin
 		exit;
 	}
 
+	public function download_template_tiktok()
+	{
+		$headers = [
+			"Order ID", "Order Status", "Order Substatus", "Cancelation/Return Type", "Normal or Pre-order",
+			"SKU ID", "Seller SKU", "Product Name", "Variation", "Quantity",
+			"Sku Quantity of return", "SKU Unit Original Price", "SKU Subtotal Before Discount", "SKU Platform Discount", "SKU Seller Discount",
+			"SKU Subtotal After Discount", "Shipping Fee After Discount", "Original Shipping Fee", "Shipping Fee Seller Discount", "Shipping Fee Platform Discount",
+			"Taxes", "Order Amount", "Order Refund Amount", "Created Time", "Paid Time",
+			"RTS Time", "Shipped Time", "Delivered Time", "Cancelled Time", "Cancel By",
+			"Tracking ID", "Shipping Provider Name", "Shipping Type", "Buyer Message", "Buyer Username",
+			"Recipient", "Phone #", "Zipcode", "Country", "Province",
+			"Regency and City", "Districts", "Villages", "Detail Address", "Additional address information",
+			"Payment Method", "Weight(kg)", "Product Category", "Package ID", "Seller Note"
+		];
+
+		if (ob_get_length()) { ob_end_clean(); }
+
+		header('Content-Type: text/csv; charset=utf-8');
+		header('Content-Disposition: attachment; filename=template-tiktokshop-' . date('d-m-Y') . '.csv');
+		$output = fopen('php://output', 'w');
+		fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
+		fputcsv($output, $headers);
+		fclose($output);
+		exit;
+	}
+
 	public function import_shopee()
 	{
 		$this->is_allowed('sales_order_add');
 		@ini_set('memory_limit', '1024M');
 		@set_time_limit(0);
 
-		if (empty($_FILES['file_csv']['name'])) {
+		$file_input_name = !empty($_FILES['file_excel']['name']) ? 'file_excel' : (!empty($_FILES['file_csv']['name']) ? 'file_csv' : '');
+		if (empty($file_input_name) || empty($_FILES[$file_input_name]['name'])) {
 			set_message('Silakan pilih file CSV/Excel Shopee yang akan diimport.', 'error');
-			redirect('administrator/penjualan_marketplace');
+			redirect('administrator/penjualan_marketplace?source=shopee');
 			return;
 		}
 
-		$file_path = $_FILES['file_csv']['tmp_name'];
-		$handle = fopen($file_path, 'r');
-		if (!$handle) {
-			set_message('Gagal membaca file CSV.', 'error');
-			redirect('administrator/penjualan_marketplace');
+		$file_path = $_FILES[$file_input_name]['tmp_name'];
+		$file_name = $_FILES[$file_input_name]['name'];
+
+		try {
+			$rows = $this->_read_import_rows($file_path, $file_name);
+		} catch (Exception $e) {
+			set_message('Gagal membaca file Shopee: ' . $e->getMessage(), 'error');
+			redirect('administrator/penjualan_marketplace?source=shopee');
 			return;
 		}
 
-		$bom = fread($handle, 3);
-		if ($bom !== "\xEF\xBB\xBF") {
-			rewind($handle);
-		}
-
-		// Auto detect delimiter (; or \t or ,)
-		$first_line = fgets($handle);
-		if ($bom !== "\xEF\xBB\xBF") {
-			rewind($handle);
-		} else {
-			fseek($handle, 3);
-		}
-		$delimiter = (strpos($first_line, ';') !== false) ? ';' : ((strpos($first_line, "\t") !== false) ? "\t" : ',');
-
-		$header = fgetcsv($handle, 4000, $delimiter);
-		if (!$header) {
-			fclose($handle);
-			set_message('File CSV kosong atau format tidak sesuai.', 'error');
-			redirect('administrator/penjualan_marketplace');
+		if (empty($rows) || count($rows) < 2) {
+			set_message('File Shopee kosong atau tidak memiliki baris data.', 'error');
+			redirect('administrator/penjualan_marketplace?source=shopee');
 			return;
 		}
 
-		$header = array_map(function($h) {
-			return trim(preg_replace('/[\x00-\x1F\x7F-\xFF]/', '', $h));
-		}, $header);
-
-		$header_str = strtolower(implode(' ', $header));
-		if (strpos($header_str, 'shopee') === false && strpos($header_str, 'username (pembeli)') === false && strpos($header_str, 'opsi pengiriman') === false) {
-			fclose($handle);
-			set_message('Gagal Import! File CSV yang diunggah bukan format Shopee. Silakan upload file CSV Shopee atau gunakan tab Import Tokopedia!', 'error');
-			redirect('administrator/penjualan_marketplace');
-			return;
+		// Detect header row dynamically
+		$header_map = [];
+		$header_row_idx = null;
+		foreach ($rows as $r_idx => $r_data) {
+			$temp_map = [];
+			foreach ($r_data as $colLetter => $cellVal) {
+				if ($cellVal !== null && $cellVal !== '') {
+					$clean_h = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', (string)$cellVal));
+					$temp_map[$clean_h] = $colLetter;
+				}
+			}
+			if (isset($temp_map['nopesanan']) || isset($temp_map['nomorpesanan']) || isset($temp_map['orderid']) || isset($temp_map['idpesanan'])) {
+				$header_map = $temp_map;
+				$header_row_idx = $r_idx;
+				break;
+			}
 		}
 
-		$get_val = function($data, $keys) {
-			foreach ($keys as $k) {
-				if (isset($data[$k]) && $data[$k] !== '') return trim($data[$k]);
-				$k_norm = strtolower(preg_replace('/[^a-z0-9]/', '', $k));
-				foreach ($data as $d_key => $d_val) {
-					if (strtolower(preg_replace('/[^a-z0-9]/', '', $d_key)) === $k_norm) {
-						if ($d_val !== '') return trim($d_val);
+		if ($header_row_idx === null) {
+			$header_row = reset($rows);
+			$header_row_idx = key($rows);
+			foreach ($header_row as $colLetter => $cellVal) {
+				if ($cellVal !== null && $cellVal !== '') {
+					$clean_h = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', (string)$cellVal));
+					$header_map[$clean_h] = $colLetter;
+				}
+			}
+		}
+
+		$get_val = function($row, $possible_keys) use ($header_map) {
+			foreach ($possible_keys as $k) {
+				$k_norm = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $k));
+				if (isset($header_map[$k_norm])) {
+					$col = $header_map[$k_norm];
+					if (isset($row[$col]) && $row[$col] !== null) {
+						return trim((string)$row[$col]);
 					}
 				}
 			}
 			return '';
 		};
 
-		$post_gudang = $this->input->post('gudang_id');
-		$default_gudang = !empty($post_gudang) 
-			? $this->db->get_where('gudang', ['id' => $post_gudang])->row() 
-			: ($this->db->get_where('gudang', ['status' => 'aktif'])->row() ?: $this->db->get('gudang')->row());
-		$default_pelanggan = $this->db->get_where('pelanggan', ['kode_pelanggan' => 'CUS-MARKETPLACE'])->row() ?: $this->db->get('pelanggan')->row();
-		$pelanggan_id = $default_pelanggan ? $default_pelanggan->id : 1;
-		$gudang_id = $default_gudang ? $default_gudang->id : 1;
+		// Validate that the file belongs specifically to Shopee
+		$detected_channel = $this->_detect_marketplace_channel($header_map);
+		if ($detected_channel === 'tokopedia') {
+			set_message('Gagal Import! File yang Anda upload terdeteksi sebagai template / data pesanan <b>Tokopedia</b>. Harap unggah file tersebut di tab <b>Tokopedia Seller</b>.', 'error');
+			redirect('administrator/penjualan_marketplace?source=shopee');
+			return;
+		} elseif ($detected_channel === 'tiktok') {
+			set_message('Gagal Import! File yang Anda upload terdeteksi sebagai template / data pesanan <b>TikTok Shop</b>. Harap unggah file tersebut di tab <b>TikTok Shop</b>.', 'error');
+			redirect('administrator/penjualan_marketplace?source=shopee');
+			return;
+		} elseif ($detected_channel !== 'shopee') {
+			set_message('Gagal Import! Format file yang diunggah tidak dikenali sebagai format Shopee Seller Centre. Pastikan Anda mengunggah file pesanan resmi Shopee atau menggunakan template CSV Shopee yang disediakan.', 'error');
+			redirect('administrator/penjualan_marketplace?source=shopee');
+			return;
+		}
 
-		// Pre-fetch all existing orders into memory for O(1) duplicate & update lookup
+		$has_order_col = isset($header_map['nopesanan']) || isset($header_map['nomorpesanan']) || isset($header_map['orderid']) || isset($header_map['idpesanan']);
+		if (!$has_order_col) {
+			set_message('Gagal Import! Format file tidak sesuai. Kolom "No. Pesanan" / "Order ID" tidak ditemukan.', 'error');
+			redirect('administrator/penjualan_marketplace?source=shopee');
+			return;
+		}
+
 		$existing_orders = [];
-		$res_existing = $this->db->select('id, no_pesanan, nomor_resi, status_pesanan')->get('penjualan_marketplace')->result();
+		$res_existing = $this->db->select('id, no_pesanan, nomor_resi, status_pesanan, status, kurir_ekspedisi, total, subtotal')->get('penjualan_marketplace')->result();
 		foreach ($res_existing as $ex) {
 			if (!empty($ex->no_pesanan)) {
 				$existing_orders[$ex->no_pesanan] = $ex;
 			}
 		}
 
-		// Pre-fetch all products into memory
 		$all_products = $this->db->get('produk')->result();
 		$default_prod = !empty($all_products) ? $all_products[0] : null;
 		$prod_by_code = [];
@@ -341,7 +645,6 @@ class Penjualan_marketplace extends Admin
 			}
 		}
 
-		// Pre-fetch all customers into array for O(1) matching by phone or name
 		$all_pelanggan = $this->db->select('id, kode_pelanggan, nama_pelanggan, telepon, no_telp')->get('pelanggan')->result();
 		$cust_by_phone = [];
 		$cust_by_name = [];
@@ -357,37 +660,72 @@ class Penjualan_marketplace extends Admin
 		$max_cust_row = $this->db->select_max('id')->get('pelanggan')->row();
 		$next_cust_num = ($max_cust_row && $max_cust_row->id) ? ((int)$max_cust_row->id + 1) : 1;
 
-		// Pre-fetch CRM categories
 		$crm_categories = $this->db->get_where('crm_followup_categories', ['is_active' => 1])->result();
 		$bulk_crm_labels = [];
 		$now_dt = date('Y-m-d H:i:s');
 
+		$orders_grouped = [];
+		foreach ($rows as $r_idx => $data_row) {
+			if ($r_idx <= $header_row_idx) continue;
+			if (empty(array_filter($data_row))) continue;
+
+			$no_pesanan = $get_val($data_row, ['No. Pesanan', 'No Pesanan', 'Nomor Pesanan', 'Order ID', 'ID Pesanan']);
+			if (empty($no_pesanan)) continue;
+
+			if (!isset($orders_grouped[$no_pesanan])) {
+				$orders_grouped[$no_pesanan] = [
+					'header' => $data_row,
+					'items'  => []
+				];
+			}
+			$orders_grouped[$no_pesanan]['items'][] = $data_row;
+		}
+
+		if (empty($orders_grouped)) {
+			set_message('Tidak ada baris data pesanan valid yang ditemukan dalam file Shopee.', 'error');
+			redirect('administrator/penjualan_marketplace?source=shopee');
+			return;
+		}
+
 		$inserted_count = 0;
 		$updated_count = 0;
 		$skipped_count = 0;
+		$total_items_count = 0;
 
 		$this->db->trans_start();
 
-		while (($row = fgetcsv($handle, 4000, $delimiter)) !== FALSE) {
-			if (count($row) < 5 || empty(array_filter($row))) continue;
-			$data = array_combine(array_slice($header, 0, count($row)), $row);
-			if (!$data) continue;
+		foreach ($orders_grouped as $no_pesanan => $order_data) {
+			$data = $order_data['header'];
+			$items_rows = $order_data['items'];
 
-			$no_pesanan = $get_val($data, ['No. Pesanan', 'No Pesanan', 'Nomor Pesanan']);
-			if (empty($no_pesanan)) continue;
-
-			$status_pesanan = $get_val($data, ['Status Pesanan']);
+			$status_pesanan = $get_val($data, ['Status Pesanan', 'Status', 'Status Order']);
 			$raw_status = strtolower($status_pesanan);
 			$status = 'draft';
 			if (strpos($raw_status, 'selesai') !== false || strpos($raw_status, 'completed') !== false) {
 				$status = 'delivered';
 			} elseif (strpos($raw_status, 'batal') !== false || strpos($raw_status, 'cancelled') !== false) {
 				$status = 'cancelled';
-			} elseif (strpos($raw_status, 'perlu dikirim') !== false || strpos($raw_status, 'dikirim') !== false) {
+			} elseif (strpos($raw_status, 'perlu dikirim') !== false || strpos($raw_status, 'dikirim') !== false || strpos($raw_status, 'shipped') !== false) {
 				$status = 'shipped';
 			}
 
-			$no_resi = $get_val($data, ['No. Resi', 'No Resi']);
+			$no_resi = $get_val($data, ['No. Resi', 'No Resi', 'Nomor Resi', 'Tracking ID']);
+			$opsi_kirim = $get_val($data, ['Opsi Pengiriman', 'Jasa Kirim', 'Kurir', 'Ekspedisi']);
+			$alasan_batal = $get_val($data, ['Alasan Pembatalan (tambahan kolom)', 'Alasan Pembatalan']);
+			$st_batal = $get_val($data, ['Status Pembatalan/ Pengembalian', 'Status Pembatalan/Pengembalian']);
+
+			$tot_bayar_raw = $get_val($data, ['Total Pembayaran', 'Total Pembayaran Pembeli', 'Total Harga Produk', 'Total Pesanan', 'Perkiraan Total Penghasilan', 'Order Amount']);
+			$total_bayar = $this->_clean_number($tot_bayar_raw);
+
+			if ($total_bayar <= 0) {
+				$calc_tot = 0;
+				foreach ($items_rows as $it) {
+					$it_q = max(1, (int)$this->_clean_number($get_val($it, ['Jumlah', 'Jumlah Produk di Pesan', 'Qty'])));
+					$it_h = $this->_clean_number($get_val($it, ['Harga Setelah Diskon', 'Harga Awal', 'Harga Satuan', 'Harga Produk']));
+					$calc_tot += ($it_h * $it_q);
+				}
+				if ($calc_tot > 0) $total_bayar = $calc_tot;
+			}
 
 			if (isset($existing_orders[$no_pesanan])) {
 				$existing = $existing_orders[$no_pesanan];
@@ -403,9 +741,78 @@ class Penjualan_marketplace extends Admin
 					$update_fields['status'] = $status;
 					$need_update = true;
 				}
+				if (!empty($opsi_kirim) && empty($existing->kurir_ekspedisi)) {
+					$update_fields['kurir_ekspedisi'] = $opsi_kirim;
+					$update_fields['opsi_pengiriman'] = $opsi_kirim;
+					$need_update = true;
+				}
+				if ((empty($existing->total) || (float)$existing->total <= 0) && $total_bayar > 0) {
+					$update_fields['total'] = $total_bayar;
+					$update_fields['subtotal'] = $total_bayar;
+					$need_update = true;
+				}
+
+				$existing_items_cnt = $this->db->where('penjualan_marketplace_id', $existing->id)->count_all_results('penjualan_marketplace_item');
+				if ($existing_items_cnt == 0 && !empty($items_rows)) {
+					foreach ($items_rows as $it) {
+						$it_sku_induk   = $get_val($it, ['SKU Induk']);
+						$it_sku_ref     = $get_val($it, ['Nomor Referensi SKU']);
+						$it_nama_produk = $get_val($it, ['Nama Produk', 'Nama Barang']);
+						$it_variasi     = $get_val($it, ['Nama Variasi', 'Variasi']);
+
+						$sku = trim($it_sku_ref ?: $it_sku_induk);
+						$prod = null;
+						if ($sku && isset($prod_by_code[strtolower($sku)])) {
+							$prod = $prod_by_code[strtolower($sku)];
+						}
+						if (!$prod && $it_nama_produk && isset($prod_by_name[strtolower($it_nama_produk)])) {
+							$prod = $prod_by_name[strtolower($it_nama_produk)];
+						}
+						if (!$prod && $it_nama_produk) {
+							$np_lower = strtolower($it_nama_produk);
+							foreach ($prod_by_name as $pn => $pobj) {
+								if (strpos($np_lower, $pn) !== false || strpos($pn, $np_lower) !== false) {
+									$prod = $pobj;
+									break;
+								}
+							}
+						}
+						if (!$prod) {
+							$prod = $this->Model_penjualan_marketplace->get_or_create_product(
+								$it_nama_produk, $sku, $harga, $it_variasi, 'shopee', $prod_by_code, $prod_by_name
+							);
+						}
+
+						$qty_raw = $get_val($it, ['Jumlah', 'Jumlah Produk di Pesan', 'Qty']);
+						$qty = max(1, (int)$this->_clean_number($qty_raw));
+
+						$harga_raw = $get_val($it, ['Harga Setelah Diskon', 'Harga Awal', 'Harga Satuan']);
+						$harga = $this->_clean_number($harga_raw);
+						if ($harga <= 0 && $qty > 0 && $total_bayar > 0) {
+							$harga = $total_bayar / (max(1, count($items_rows)) * $qty);
+						}
+
+						$this->db->insert('penjualan_marketplace_item', [
+							'penjualan_marketplace_id' => $existing->id,
+							'produk_id'     => $prod ? $prod->id : 1,
+							'qty'           => $qty,
+							'satuan'        => 'pcs',
+							'harga_satuan'  => $harga,
+							'diskon_persen' => 0,
+							'diskon_nominal'=> 0,
+							'subtotal'      => $harga * $qty,
+							'catatan'       => trim($it_nama_produk . ($it_variasi ? " ({$it_variasi})" : '')),
+						]);
+						$total_items_count++;
+					}
+					$need_update = true;
+				}
 
 				if ($need_update) {
+					$update_fields['updated_at'] = $now_dt;
+					$update_fields['updated_by'] = get_user_data('username') ?: 'admin';
 					$this->db->where('id', $existing->id)->update('penjualan_marketplace', $update_fields);
+					$this->Model_penjualan_marketplace->sync_to_sales_order($existing->id);
 					$updated_count++;
 				} else {
 					$skipped_count++;
@@ -413,30 +820,26 @@ class Penjualan_marketplace extends Admin
 				continue;
 			}
 
-			$tot_bayar_raw = $get_val($data, ['Total Pembayaran', 'Total Harga Produk']);
-			$total_bayar = (float) str_replace(['.', ',', 'Rp', ' '], '', $tot_bayar_raw);
 			$nomor_so = $this->Model_penjualan_marketplace->generate_nomor();
 
-			$waktu_bayar_raw = $get_val($data, ['Waktu Pembayaran Dilakukan', 'Waktu Pembayaran', 'Waktu Pesanan Dibuat']);
-			$waktu_bayar = !empty($waktu_bayar_raw) ? date('Y-m-d H:i:s', strtotime($waktu_bayar_raw)) : date('Y-m-d H:i:s');
-			$tanggal_so = !empty($waktu_bayar_raw) ? date('Y-m-d', strtotime($waktu_bayar_raw)) : date('Y-m-d');
+			$waktu_bayar_raw = $get_val($data, ['Waktu Pembayaran Dilakukan', 'Waktu Pembayaran', 'Waktu Pesanan Dibuat', 'Tanggal Pembayaran']);
+			$waktu_bayar = $this->_parse_date_time($waktu_bayar_raw) ?: $now_dt;
+			$tanggal_so = date('Y-m-d', strtotime($waktu_bayar));
 
-			$username_buyer = $get_val($data, ['Username (Pembeli)', 'Username Pembeli', 'Username']);
-			$nama_penerima  = $get_val($data, ['Nama Penerima']);
-			$no_telp       = $get_val($data, ['No. Telepon', 'No Telepon', 'Notelp']);
+			$username_buyer = $get_val($data, ['Username (Pembeli)', 'Username Pembeli', 'Username', 'Nama Pembeli']);
+			$nama_penerima  = $get_val($data, ['Nama Penerima', 'Penerima']);
+			$no_telp       = $get_val($data, ['No. Telepon', 'No Telepon', 'Notelp', 'Telepon', 'No HP', 'Phone #']);
 			$phone_clean   = preg_replace('/[^0-9]/', '', (string)$no_telp);
-			$alamat        = $get_val($data, ['Alamat Pengiriman']);
-			$kota          = $get_val($data, ['Kota/Kabupaten', 'Kota']);
-			$provinsi      = $get_val($data, ['Provinsi']);
-			$sku_induk     = $get_val($data, ['SKU Induk']);
-			$nama_produk   = $get_val($data, ['Nama Produk']);
-			$sku_ref       = $get_val($data, ['Nomor Referensi SKU']);
-			$variasi       = $get_val($data, ['Nama Variasi']);
-			$opsi_kirim    = $get_val($data, ['Opsi Pengiriman']);
-			$alasan_batal  = $get_val($data, ['Alasan Pembatalan (tambahan kolom)', 'Alasan Pembatalan']);
-			$st_batal      = $get_val($data, ['Status Pembatalan/ Pengembalian', 'Status Pembatalan/Pengembalian']);
+			if (substr($phone_clean, 0, 2) === '62') {
+				$phone_clean = '0' . substr($phone_clean, 2);
+			} elseif (substr($phone_clean, 0, 1) === '8') {
+				$phone_clean = '0' . $phone_clean;
+			}
 
-			// Dynamic customer synchronization into 'pelanggan'
+			$alamat        = $get_val($data, ['Alamat Pengiriman', 'Alamat']);
+			$kota          = $get_val($data, ['Kota/Kabupaten', 'Kota', 'Kabupaten']);
+			$provinsi      = $get_val($data, ['Provinsi']);
+
 			$row_pelanggan_id = null;
 			if (!empty($phone_clean) && isset($cust_by_phone[$phone_clean])) {
 				$row_pelanggan_id = $cust_by_phone[$phone_clean];
@@ -453,11 +856,12 @@ class Penjualan_marketplace extends Admin
 				$new_cust = [
 					'kode_pelanggan' => $c_kode,
 					'nama_pelanggan' => $cust_name,
+					'source'         => 'shopee',
 					'telepon'        => $phone_clean,
 					'no_telp'        => $phone_clean,
 					'alamat'         => !empty($alamat) ? $alamat : 'Imported via Shopee',
 					'kota'           => !empty($kota) ? $kota : '',
-					'tipe_pelanggan' => 'Marketplace',
+					'tipe_pelanggan' => 'retail',
 					'tier_pelanggan' => 'RETAIL',
 					'status'         => 'aktif',
 					'created_by'     => get_user_data('username') ?: 'admin',
@@ -469,15 +873,20 @@ class Penjualan_marketplace extends Admin
 				$cust_by_name[strtolower(trim($cust_name))] = $row_pelanggan_id;
 			}
 			if (empty($row_pelanggan_id)) {
-				$row_pelanggan_id = $pelanggan_id;
+				$row_pelanggan_id = 1;
 			}
+
+			$first_item = $items_rows[0];
+			$first_sku_induk = $get_val($first_item, ['SKU Induk']);
+			$first_sku_ref   = $get_val($first_item, ['Nomor Referensi SKU']);
+			$first_nama_prod = $get_val($first_item, ['Nama Produk', 'Nama Barang']);
+			$first_variasi   = $get_val($first_item, ['Nama Variasi', 'Variasi']);
 
 			$so_data = [
 				'nomor_so'                    => $nomor_so,
 				'no_pesanan'                  => $no_pesanan,
 				'source'                      => 'shopee',
 				'pelanggan_id'                => $row_pelanggan_id,
-				'gudang_id'                   => $gudang_id,
 				'tanggal_so'                  => $tanggal_so,
 				'status'                      => $status,
 				'status_pesanan'              => $status_pesanan,
@@ -493,13 +902,13 @@ class Penjualan_marketplace extends Admin
 				'alamat_pengiriman'           => $alamat,
 				'kota_kabupaten'              => $kota,
 				'provinsi'                    => $provinsi,
-				'sku_induk'                   => $sku_induk,
-				'nama_produk_marketplace'     => $nama_produk,
-				'nomor_referensi_sku'         => $sku_ref,
-				'nama_variasi'                => $variasi,
+				'sku_induk'                   => $first_sku_induk,
+				'nama_produk_marketplace'     => $first_nama_prod,
+				'nomor_referensi_sku'         => $first_sku_ref,
+				'nama_variasi'                => $first_variasi,
 				'subtotal'                    => $total_bayar,
 				'total'                       => $total_bayar,
-				'catatan'                     => 'Import Shopee CSV - Buyer: ' . $username_buyer,
+				'catatan'                     => 'Import Shopee - Buyer: ' . ($username_buyer ?: $nama_penerima),
 				'created_by'                  => get_user_data('username') ?: 'admin',
 				'created_at'                  => $now_dt,
 			];
@@ -507,49 +916,60 @@ class Penjualan_marketplace extends Admin
 			$so_id = $this->Model_penjualan_marketplace->store($so_data);
 
 			if ($so_id) {
-				$sku = trim($sku_ref ?: $sku_induk);
-				$prod = null;
-				if ($sku && isset($prod_by_code[strtolower($sku)])) {
-					$prod = $prod_by_code[strtolower($sku)];
-				}
-				if (!$prod && $nama_produk && isset($prod_by_name[strtolower($nama_produk)])) {
-					$prod = $prod_by_name[strtolower($nama_produk)];
-				}
-				if (!$prod && $nama_produk) {
-					$np_lower = strtolower($nama_produk);
-					foreach ($prod_by_name as $pn => $pobj) {
-						if (strpos($np_lower, $pn) !== false || strpos($pn, $np_lower) !== false) {
-							$prod = $pobj;
-							break;
+				$existing_orders[$no_pesanan] = (object)['id' => $so_id, 'nomor_resi' => $no_resi, 'status_pesanan' => $status_pesanan, 'total' => $total_bayar, 'subtotal' => $total_bayar, 'kurir_ekspedisi' => $opsi_kirim];
+
+				foreach ($items_rows as $it) {
+					$it_sku_induk   = $get_val($it, ['SKU Induk']);
+					$it_sku_ref     = $get_val($it, ['Nomor Referensi SKU']);
+					$it_nama_produk = $get_val($it, ['Nama Produk', 'Nama Barang']);
+					$it_variasi     = $get_val($it, ['Nama Variasi', 'Variasi']);
+
+					$sku = trim($it_sku_ref ?: $it_sku_induk);
+					$prod = null;
+					if ($sku && isset($prod_by_code[strtolower($sku)])) {
+						$prod = $prod_by_code[strtolower($sku)];
+					}
+					if (!$prod && $it_nama_produk && isset($prod_by_name[strtolower($it_nama_produk)])) {
+						$prod = $prod_by_name[strtolower($it_nama_produk)];
+					}
+					if (!$prod && $it_nama_produk) {
+						$np_lower = strtolower($it_nama_produk);
+						foreach ($prod_by_name as $pn => $pobj) {
+							if (strpos($np_lower, $pn) !== false || strpos($pn, $np_lower) !== false) {
+								$prod = $pobj;
+								break;
+							}
 						}
 					}
+					if (!$prod) {
+						$prod = $this->Model_penjualan_marketplace->get_or_create_product(
+							$it_nama_produk, $sku, $harga, $it_variasi, 'shopee', $prod_by_code, $prod_by_name
+						);
+					}
+
+					$qty_raw = $get_val($it, ['Jumlah', 'Jumlah Produk di Pesan', 'Qty']);
+					$qty = max(1, (int)$this->_clean_number($qty_raw));
+
+					$harga_raw = $get_val($it, ['Harga Setelah Diskon', 'Harga Awal', 'Harga Satuan']);
+					$harga = $this->_clean_number($harga_raw);
+					if ($harga <= 0 && $qty > 0 && $total_bayar > 0) {
+						$harga = $total_bayar / (max(1, count($items_rows)) * $qty);
+					}
+
+					$this->db->insert('penjualan_marketplace_item', [
+						'penjualan_marketplace_id' => $so_id,
+						'produk_id'     => $prod ? $prod->id : 1,
+						'qty'           => $qty,
+						'satuan'        => 'pcs',
+						'harga_satuan'  => $harga,
+						'diskon_persen' => 0,
+						'diskon_nominal'=> 0,
+						'subtotal'      => $harga * $qty,
+						'catatan'       => trim($it_nama_produk . ($it_variasi ? " ({$it_variasi})" : '')),
+					]);
+					$total_items_count++;
 				}
-				if (!$prod) {
-					$prod = $default_prod;
-				}
 
-				$qty_raw = $get_val($data, ['Jumlah', 'Jumlah Produk di Pesan']);
-				$qty = (float) str_replace(['.', ','], '', $qty_raw ?: 1);
-
-				$harga_raw = $get_val($data, ['Harga Setelah Diskon', 'Harga Awal']);
-				$harga = (float) str_replace(['.', ',', 'Rp', ' '], '', $harga_raw);
-				if ($harga <= 0 && $qty > 0) {
-					$harga = $total_bayar / $qty;
-				}
-
-				$this->db->insert('penjualan_marketplace_item', [
-					'penjualan_marketplace_id' => $so_id,
-					'produk_id'     => $prod ? $prod->id : 1,
-					'qty'           => max(1, $qty),
-					'satuan'        => 'pcs',
-					'harga_satuan'  => $harga,
-					'diskon_persen' => 0,
-					'diskon_nominal'=> 0,
-					'subtotal'      => $harga * $qty,
-					'catatan'       => $nama_produk,
-				]);
-
-				// Generate CRM labels in batch
 				if (!empty($crm_categories)) {
 					$ship_date = !empty($tanggal_so) ? $tanggal_so : date('Y-m-d');
 					foreach ($crm_categories as $cat) {
@@ -576,6 +996,7 @@ class Penjualan_marketplace extends Admin
 					}
 				}
 
+				$this->Model_penjualan_marketplace->sync_to_sales_order($so_id);
 				$inserted_count++;
 			}
 		}
@@ -586,17 +1007,16 @@ class Penjualan_marketplace extends Admin
 
 		$this->db->trans_complete();
 
-		fclose($handle);
-
-		$msg = "<b>Ringkasan Import CSV Shopee:</b><br>" .
+		$msg = "<b>Ringkasan Import Data Shopee:</b><br>" .
 		       "🆕 <b>{$inserted_count} Pesanan Baru</b> berhasil ditambahkan.<br>" .
-		       "🔄 <b>{$updated_count} Pesanan</b> diperbarui (status/resi).<br>" .
-		       "⛔ <b>{$skipped_count} Pesanan</b> dilewati/ditolak (duplikat).";
+		       "📦 <b>{$total_items_count} Detail Produk</b> tercatat.<br>" .
+		       "🔄 <b>{$updated_count} Pesanan</b> diperbarui / dilengkapi (status, resi, atau total).<br>" .
+		       "⛔ <b>{$skipped_count} Pesanan</b> sudah ada dan sudah lengkap.";
 
 		if ($inserted_count > 0 || $updated_count > 0) {
 			set_message($msg, 'success');
 		} else {
-			set_message($msg, 'error');
+			set_message($msg, 'warning');
 		}
 		redirect('administrator/penjualan_marketplace?source=shopee');
 	}
@@ -607,72 +1027,103 @@ class Penjualan_marketplace extends Admin
 		@ini_set('memory_limit', '1024M');
 		@set_time_limit(0);
 
-		if (empty($_FILES['file_csv']['name'])) {
+		$file_input_name = !empty($_FILES['file_excel']['name']) ? 'file_excel' : (!empty($_FILES['file_csv']['name']) ? 'file_csv' : '');
+		if (empty($file_input_name) || empty($_FILES[$file_input_name]['name'])) {
 			set_message('Silakan pilih file CSV/Excel Tokopedia yang akan diimport.', 'error');
-			redirect('administrator/penjualan_marketplace');
+			redirect('administrator/penjualan_marketplace?source=tokopedia');
 			return;
 		}
 
-		$file_path = $_FILES['file_csv']['tmp_name'];
-		$handle = fopen($file_path, 'r');
-		if (!$handle) {
-			set_message('Gagal membaca file CSV.', 'error');
-			redirect('administrator/penjualan_marketplace');
+		$file_path = $_FILES[$file_input_name]['tmp_name'];
+		$file_name = $_FILES[$file_input_name]['name'];
+
+		try {
+			$rows = $this->_read_import_rows($file_path, $file_name);
+		} catch (Exception $e) {
+			set_message('Gagal membaca file Tokopedia: ' . $e->getMessage(), 'error');
+			redirect('administrator/penjualan_marketplace?source=tokopedia');
 			return;
 		}
 
-		$bom = fread($handle, 3);
-		if ($bom !== "\xEF\xBB\xBF") {
-			rewind($handle);
-		}
-
-		// Auto detect delimiter (; or \t or ,)
-		$first_line = fgets($handle);
-		if ($bom !== "\xEF\xBB\xBF") {
-			rewind($handle);
-		} else {
-			fseek($handle, 3);
-		}
-		$delimiter = (strpos($first_line, ';') !== false) ? ';' : ((strpos($first_line, "\t") !== false) ? "\t" : ',');
-
-		$header = fgetcsv($handle, 4000, $delimiter);
-		if (!$header) {
-			fclose($handle);
-			set_message('File CSV kosong atau format tidak sesuai.', 'error');
-			redirect('administrator/penjualan_marketplace');
+		if (empty($rows) || count($rows) < 2) {
+			set_message('File Tokopedia kosong atau tidak memiliki baris data.', 'error');
+			redirect('administrator/penjualan_marketplace?source=tokopedia');
 			return;
 		}
 
-		$header = array_map(function($h) {
-			return trim(preg_replace('/[\x00-\x1F\x7F-\xFF]/', '', $h));
-		}, $header);
+		// Detect header row dynamically
+		$header_map = [];
+		$header_row_idx = null;
+		foreach ($rows as $r_idx => $r_data) {
+			$temp_map = [];
+			foreach ($r_data as $colLetter => $cellVal) {
+				if ($cellVal !== null && $cellVal !== '') {
+					$clean_h = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', (string)$cellVal));
+					$temp_map[$clean_h] = $colLetter;
+				}
+			}
+			if (isset($temp_map['nomorinvoice']) || isset($temp_map['noinvoice']) || isset($temp_map['nopesanan']) || isset($temp_map['nomorpesanan']) || isset($temp_map['orderid']) || isset($temp_map['idpesanan'])) {
+				$header_map = $temp_map;
+				$header_row_idx = $r_idx;
+				break;
+			}
+		}
 
-		$header_str = strtolower(implode(' ', $header));
-		if (strpos($header_str, 'tokopedia') === false && strpos($header_str, 'username pembeli') === false && strpos($header_str, 'kurir') === false) {
-			fclose($handle);
-			set_message('Gagal Import! File CSV yang diunggah bukan format Tokopedia. Silakan upload file CSV Tokopedia atau gunakan tab Import Shopee!', 'error');
-			redirect('administrator/penjualan_marketplace');
+		if ($header_row_idx === null) {
+			$header_row = reset($rows);
+			$header_row_idx = key($rows);
+			foreach ($header_row as $colLetter => $cellVal) {
+				if ($cellVal !== null && $cellVal !== '') {
+					$clean_h = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', (string)$cellVal));
+					$header_map[$clean_h] = $colLetter;
+				}
+			}
+		}
+
+		$get_val = function($row, $possible_keys) use ($header_map) {
+			foreach ($possible_keys as $k) {
+				$k_norm = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $k));
+				if (isset($header_map[$k_norm])) {
+					$col = $header_map[$k_norm];
+					if (isset($row[$col]) && $row[$col] !== null) {
+						return trim((string)$row[$col]);
+					}
+				}
+			}
+			return '';
+		};
+
+		// Validate that the file belongs specifically to Tokopedia
+		$detected_channel = $this->_detect_marketplace_channel($header_map);
+		if ($detected_channel === 'shopee') {
+			set_message('Gagal Import! File yang Anda upload terdeteksi sebagai template / data pesanan <b>Shopee</b>. Harap unggah file tersebut di tab <b>Shopee Seller</b>.', 'error');
+			redirect('administrator/penjualan_marketplace?source=tokopedia');
+			return;
+		} elseif ($detected_channel === 'tiktok') {
+			set_message('Gagal Import! File yang Anda upload terdeteksi sebagai template / data pesanan <b>TikTok Shop</b>. Harap unggah file tersebut di tab <b>TikTok Shop</b>.', 'error');
+			redirect('administrator/penjualan_marketplace?source=tokopedia');
+			return;
+		} elseif ($detected_channel !== 'tokopedia') {
+			set_message('Gagal Import! Format file yang diunggah tidak dikenali sebagai format Tokopedia. Pastikan file memiliki kolom "Kurir" atau "Nomor Invoice" sesuai format Tokopedia.', 'error');
+			redirect('administrator/penjualan_marketplace?source=tokopedia');
 			return;
 		}
 
-		$post_gudang = $this->input->post('gudang_id');
-		$default_gudang = !empty($post_gudang) 
-			? $this->db->get_where('gudang', ['id' => $post_gudang])->row() 
-			: ($this->db->get_where('gudang', ['status' => 'aktif'])->row() ?: $this->db->get('gudang')->row());
-		$default_pelanggan = $this->db->get_where('pelanggan', ['kode_pelanggan' => 'CUS-MARKETPLACE'])->row() ?: $this->db->get('pelanggan')->row();
-		$pelanggan_id = $default_pelanggan ? $default_pelanggan->id : 1;
-		$gudang_id = $default_gudang ? $default_gudang->id : 1;
+		$has_order_col = isset($header_map['nomorinvoice']) || isset($header_map['noinvoice']) || isset($header_map['nopesanan']) || isset($header_map['nomorpesanan']) || isset($header_map['orderid']) || isset($header_map['idpesanan']);
+		if (!$has_order_col) {
+			set_message('Gagal Import! Format file tidak sesuai. Kolom "Nomor Invoice" / "No. Pesanan" tidak ditemukan.', 'error');
+			redirect('administrator/penjualan_marketplace?source=tokopedia');
+			return;
+		}
 
-		// Pre-fetch all existing orders into memory for O(1) duplicate & update lookup
 		$existing_orders = [];
-		$res_existing = $this->db->select('id, no_pesanan, nomor_resi, status_pesanan')->get('penjualan_marketplace')->result();
+		$res_existing = $this->db->select('id, no_pesanan, nomor_resi, status_pesanan, status, kurir_ekspedisi, total, subtotal')->get('penjualan_marketplace')->result();
 		foreach ($res_existing as $ex) {
 			if (!empty($ex->no_pesanan)) {
 				$existing_orders[$ex->no_pesanan] = $ex;
 			}
 		}
 
-		// Pre-fetch all products into memory
 		$all_products = $this->db->get('produk')->result();
 		$default_prod = !empty($all_products) ? $all_products[0] : null;
 		$prod_by_code = [];
@@ -686,7 +1137,6 @@ class Penjualan_marketplace extends Admin
 			}
 		}
 
-		// Pre-fetch all customers into array for O(1) matching by phone or name
 		$all_pelanggan = $this->db->select('id, kode_pelanggan, nama_pelanggan, telepon, no_telp')->get('pelanggan')->result();
 		$cust_by_phone = [];
 		$cust_by_name = [];
@@ -702,37 +1152,70 @@ class Penjualan_marketplace extends Admin
 		$max_cust_row = $this->db->select_max('id')->get('pelanggan')->row();
 		$next_cust_num = ($max_cust_row && $max_cust_row->id) ? ((int)$max_cust_row->id + 1) : 1;
 
-		// Pre-fetch CRM categories
 		$crm_categories = $this->db->get_where('crm_followup_categories', ['is_active' => 1])->result();
 		$bulk_crm_labels = [];
 		$now_dt = date('Y-m-d H:i:s');
 
+		$orders_grouped = [];
+		foreach ($rows as $r_idx => $data_row) {
+			if ($r_idx <= $header_row_idx) continue;
+			if (empty(array_filter($data_row))) continue;
+
+			$no_pesanan = $get_val($data_row, ['Nomor Invoice', 'No. Invoice', 'No Invoice', 'No. Pesanan', 'No Pesanan', 'Nomor Pesanan', 'Order ID', 'ID Pesanan']);
+			if (empty($no_pesanan)) continue;
+
+			if (!isset($orders_grouped[$no_pesanan])) {
+				$orders_grouped[$no_pesanan] = [
+					'header' => $data_row,
+					'items'  => []
+				];
+			}
+			$orders_grouped[$no_pesanan]['items'][] = $data_row;
+		}
+
+		if (empty($orders_grouped)) {
+			set_message('Tidak ada baris data pesanan valid yang ditemukan dalam file Tokopedia.', 'error');
+			redirect('administrator/penjualan_marketplace?source=tokopedia');
+			return;
+		}
+
 		$inserted_count = 0;
 		$updated_count = 0;
 		$skipped_count = 0;
+		$total_items_count = 0;
 
 		$this->db->trans_start();
 
-		while (($row = fgetcsv($handle, 4000, $delimiter)) !== FALSE) {
-			if (count($row) < 4 || empty(array_filter($row))) continue;
-			$data = array_combine(array_slice($header, 0, count($row)), $row);
-			if (!$data) continue;
+		foreach ($orders_grouped as $no_pesanan => $order_data) {
+			$data = $order_data['header'];
+			$items_rows = $order_data['items'];
 
-			$no_pesanan = trim($data['No. Pesanan'] ?? '');
-			if (empty($no_pesanan)) continue;
-
-			$raw_status = strtolower(trim($data['Status Pesanan'] ?? ''));
-			$status_pesanan = $data['Status Pesanan'] ?? '';
+			$status_pesanan = $get_val($data, ['Status Pesanan', 'Status', 'Status Terakhir']);
+			$raw_status = strtolower($status_pesanan);
 			$status = 'draft';
-			if (strpos($raw_status, 'selesai') !== false) {
+			if (strpos($raw_status, 'selesai') !== false || strpos($raw_status, 'completed') !== false) {
 				$status = 'delivered';
-			} elseif (strpos($raw_status, 'batal') !== false) {
+			} elseif (strpos($raw_status, 'batal') !== false || strpos($raw_status, 'cancelled') !== false) {
 				$status = 'cancelled';
-			} elseif (strpos($raw_status, 'dikirim') !== false) {
+			} elseif (strpos($raw_status, 'dikirim') !== false || strpos($raw_status, 'shipped') !== false) {
 				$status = 'shipped';
 			}
 
-			$no_resi = trim($data['No. Resi'] ?? '');
+			$no_resi = $get_val($data, ['No. Resi', 'No Resi', 'Nomor Resi', 'Tracking ID']);
+			$kurir   = $get_val($data, ['Kurir', 'Kurir Pengiriman', 'Ekspedisi', 'Layanan Pengiriman', 'Nama Kurir']);
+
+			$tot_bayar_raw = $get_val($data, ['Total Pembayaran', 'Total Tagihan', 'Total Penjualan', 'Total Harga Produk', 'Total Nilai Pesanan', 'Total']);
+			$total_bayar = $this->_clean_number($tot_bayar_raw);
+
+			if ($total_bayar <= 0) {
+				$calc_tot = 0;
+				foreach ($items_rows as $it) {
+					$it_q = max(1, (int)$this->_clean_number($get_val($it, ['Jumlah', 'Jumlah Produk', 'Qty', 'Quantity'])));
+					$it_h = $this->_clean_number($get_val($it, ['Harga Satuan', 'Harga Setelah Diskon', 'Harga Awal', 'Harga Produk']));
+					$calc_tot += ($it_h * $it_q);
+				}
+				if ($calc_tot > 0) $total_bayar = $calc_tot;
+			}
 
 			if (isset($existing_orders[$no_pesanan])) {
 				$existing = $existing_orders[$no_pesanan];
@@ -748,9 +1231,76 @@ class Penjualan_marketplace extends Admin
 					$update_fields['status'] = $status;
 					$need_update = true;
 				}
+				if (!empty($kurir) && empty($existing->kurir_ekspedisi)) {
+					$update_fields['kurir_ekspedisi'] = $kurir;
+					$update_fields['opsi_pengiriman'] = $kurir;
+					$need_update = true;
+				}
+				if ((empty($existing->total) || (float)$existing->total <= 0) && $total_bayar > 0) {
+					$update_fields['total'] = $total_bayar;
+					$update_fields['subtotal'] = $total_bayar;
+					$need_update = true;
+				}
+
+				$existing_items_cnt = $this->db->where('penjualan_marketplace_id', $existing->id)->count_all_results('penjualan_marketplace_item');
+				if ($existing_items_cnt == 0 && !empty($items_rows)) {
+					foreach ($items_rows as $it) {
+						$sku       = $get_val($it, ['SKU Induk', 'SKU', 'Nomor Referensi SKU']);
+						$nama_prod = $get_val($it, ['Nama Produk', 'Nama Barang', 'Product Name']);
+						$variasi   = $get_val($it, ['Nama Variasi', 'Variasi', 'Variation']);
+
+						$prod = null;
+						if ($sku && isset($prod_by_code[strtolower($sku)])) {
+							$prod = $prod_by_code[strtolower($sku)];
+						}
+						if (!$prod && $nama_prod && isset($prod_by_name[strtolower($nama_prod)])) {
+							$prod = $prod_by_name[strtolower($nama_prod)];
+						}
+						if (!$prod && $nama_prod) {
+							$np_lower = strtolower($nama_prod);
+							foreach ($prod_by_name as $pn => $pobj) {
+								if (strpos($np_lower, $pn) !== false || strpos($pn, $np_lower) !== false) {
+									$prod = $pobj;
+									break;
+								}
+							}
+						}
+						if (!$prod) {
+							$prod = $this->Model_penjualan_marketplace->get_or_create_product(
+								$nama_prod, $sku, $harga, $variasi, 'tokopedia', $prod_by_code, $prod_by_name
+							);
+						}
+
+						$qty_raw = $get_val($it, ['Jumlah', 'Jumlah Produk', 'Qty', 'Quantity']);
+						$qty = max(1, (int)$this->_clean_number($qty_raw));
+
+						$harga_raw = $get_val($it, ['Harga Satuan', 'Harga Setelah Diskon', 'Harga Awal', 'Harga Produk']);
+						$harga = $this->_clean_number($harga_raw);
+						if ($harga <= 0 && $qty > 0 && $total_bayar > 0) {
+							$harga = $total_bayar / (max(1, count($items_rows)) * $qty);
+						}
+
+						$this->db->insert('penjualan_marketplace_item', [
+							'penjualan_marketplace_id' => $existing->id,
+							'produk_id'     => $prod ? $prod->id : 1,
+							'qty'           => $qty,
+							'satuan'        => 'pcs',
+							'harga_satuan'  => $harga,
+							'diskon_persen' => 0,
+							'diskon_nominal'=> 0,
+							'subtotal'      => $harga * $qty,
+							'catatan'       => trim($nama_prod . ($variasi ? " ({$variasi})" : '')),
+						]);
+						$total_items_count++;
+					}
+					$need_update = true;
+				}
 
 				if ($need_update) {
+					$update_fields['updated_at'] = $now_dt;
+					$update_fields['updated_by'] = get_user_data('username') ?: 'admin';
 					$this->db->where('id', $existing->id)->update('penjualan_marketplace', $update_fields);
+					$this->Model_penjualan_marketplace->sync_to_sales_order($existing->id);
 					$updated_count++;
 				} else {
 					$skipped_count++;
@@ -758,21 +1308,26 @@ class Penjualan_marketplace extends Admin
 				continue;
 			}
 
-			$total_bayar = (float) str_replace(['.', ',', 'Rp', ' '], '', $data['Total Pembayaran'] ?? $data['Total Harga Produk'] ?? 0);
 			$nomor_so = $this->Model_penjualan_marketplace->generate_nomor();
 
-			$waktu_bayar = !empty($data['Waktu Pembayaran']) ? date('Y-m-d H:i:s', strtotime($data['Waktu Pembayaran'])) : date('Y-m-d H:i:s');
-			$tanggal_so = !empty($data['Waktu Pembayaran']) ? date('Y-m-d', strtotime($data['Waktu Pembayaran'])) : date('Y-m-d');
+			$waktu_bayar_raw = $get_val($data, ['Waktu Pembayaran', 'Tanggal Pembayaran', 'Waktu Transaksi', 'Tanggal Transaksi', 'Waktu Pesanan Selesai']);
+			$waktu_bayar = $this->_parse_date_time($waktu_bayar_raw) ?: $now_dt;
+			$tanggal_so = date('Y-m-d', strtotime($waktu_bayar));
 
-			$username_buyer = $data['Username Pembeli'] ?? '';
-			$nama_penerima  = $data['Nama Penerima'] ?? '';
-			$no_telp       = $data['No. Telepon'] ?? '';
+			$username_buyer = $get_val($data, ['Username Pembeli', 'Username (Pembeli)', 'Username', 'Nama Pembeli']);
+			$nama_penerima  = $get_val($data, ['Nama Penerima', 'Penerima']);
+			$no_telp       = $get_val($data, ['No. Telepon', 'No Telepon', 'Nomor Telepon', 'No HP', 'Telepon', 'Phone #']);
 			$phone_clean   = preg_replace('/[^0-9]/', '', (string)$no_telp);
-			$alamat        = $data['Alamat Pengiriman'] ?? '';
-			$kota          = $data['Kota/Kabupaten'] ?? '';
-			$provinsi      = $data['Provinsi'] ?? '';
+			if (substr($phone_clean, 0, 2) === '62') {
+				$phone_clean = '0' . substr($phone_clean, 2);
+			} elseif (substr($phone_clean, 0, 1) === '8') {
+				$phone_clean = '0' . $phone_clean;
+			}
 
-			// Dynamic customer synchronization into 'pelanggan'
+			$alamat        = $get_val($data, ['Alamat Pengiriman', 'Alamat Tujuan', 'Alamat']);
+			$kota          = $get_val($data, ['Kota/Kabupaten', 'Kota', 'Kabupaten']);
+			$provinsi      = $get_val($data, ['Provinsi']);
+
 			$row_pelanggan_id = null;
 			if (!empty($phone_clean) && isset($cust_by_phone[$phone_clean])) {
 				$row_pelanggan_id = $cust_by_phone[$phone_clean];
@@ -789,11 +1344,12 @@ class Penjualan_marketplace extends Admin
 				$new_cust = [
 					'kode_pelanggan' => $c_kode,
 					'nama_pelanggan' => $cust_name,
+					'source'         => 'tokopedia',
 					'telepon'        => $phone_clean,
 					'no_telp'        => $phone_clean,
 					'alamat'         => !empty($alamat) ? $alamat : 'Imported via Tokopedia',
 					'kota'           => !empty($kota) ? $kota : '',
-					'tipe_pelanggan' => 'Marketplace',
+					'tipe_pelanggan' => 'retail',
 					'tier_pelanggan' => 'RETAIL',
 					'status'         => 'aktif',
 					'created_by'     => get_user_data('username') ?: 'admin',
@@ -805,20 +1361,24 @@ class Penjualan_marketplace extends Admin
 				$cust_by_name[strtolower(trim($cust_name))] = $row_pelanggan_id;
 			}
 			if (empty($row_pelanggan_id)) {
-				$row_pelanggan_id = $pelanggan_id;
+				$row_pelanggan_id = 1;
 			}
+
+			$first_sku     = $get_val($data, ['SKU Induk', 'SKU', 'Nomor Referensi SKU']);
+			$first_nama    = $get_val($data, ['Nama Produk', 'Nama Barang', 'Product Name']);
+			$first_variasi = $get_val($data, ['Nama Variasi', 'Variasi', 'Variation']);
 
 			$so_data = [
 				'nomor_so'            => $nomor_so,
 				'no_pesanan'          => $no_pesanan,
 				'source'              => 'tokopedia',
 				'pelanggan_id'        => $row_pelanggan_id,
-				'gudang_id'           => $gudang_id,
 				'tanggal_so'          => $tanggal_so,
 				'status'              => $status,
 				'status_pesanan'      => $status_pesanan,
 				'nomor_resi'          => $no_resi,
-				'kurir_ekspedisi'     => $data['Kurir'] ?? '',
+				'kurir_ekspedisi'     => $kurir,
+				'opsi_pengiriman'     => $kurir,
 				'waktu_pembayaran'    => $waktu_bayar,
 				'username_pembeli'    => $username_buyer,
 				'nama_penerima'       => $nama_penerima,
@@ -826,12 +1386,12 @@ class Penjualan_marketplace extends Admin
 				'alamat_pengiriman'   => $alamat,
 				'kota_kabupaten'      => $kota,
 				'provinsi'            => $provinsi,
-				'sku_induk'           => $data['SKU Induk'] ?? '',
-				'nama_produk_marketplace' => $data['Nama Produk'] ?? '',
-				'nama_variasi'        => $data['Nama Variasi'] ?? '',
+				'sku_induk'           => $first_sku,
+				'nama_produk_marketplace' => $first_nama,
+				'nama_variasi'        => $first_variasi,
 				'subtotal'            => $total_bayar,
 				'total'               => $total_bayar,
-				'catatan'             => 'Import Tokopedia CSV - Buyer: ' . $username_buyer,
+				'catatan'             => 'Import Tokopedia - Buyer: ' . ($username_buyer ?: $nama_penerima),
 				'created_by'          => get_user_data('username') ?: 'admin',
 				'created_at'          => $now_dt,
 			];
@@ -839,51 +1399,58 @@ class Penjualan_marketplace extends Admin
 			$so_id = $this->Model_penjualan_marketplace->store($so_data);
 
 			if ($so_id) {
-				$sku = trim($data['SKU Induk'] ?? '');
-				$nama_prod = trim($data['Nama Produk'] ?? '');
-				$prod = null;
+				$existing_orders[$no_pesanan] = (object)['id' => $so_id, 'nomor_resi' => $no_resi, 'status_pesanan' => $status_pesanan, 'total' => $total_bayar, 'subtotal' => $total_bayar, 'kurir_ekspedisi' => $kurir];
 
-				$sku = trim($data['SKU Induk'] ?? '');
-				$nama_prod = trim($data['Nama Produk'] ?? '');
-				$prod = null;
-				if ($sku && isset($prod_by_code[strtolower($sku)])) {
-					$prod = $prod_by_code[strtolower($sku)];
-				}
-				if (!$prod && $nama_prod && isset($prod_by_name[strtolower($nama_prod)])) {
-					$prod = $prod_by_name[strtolower($nama_prod)];
-				}
-				if (!$prod && $nama_prod) {
-					$np_lower = strtolower($nama_prod);
-					foreach ($prod_by_name as $pn => $pobj) {
-						if (strpos($np_lower, $pn) !== false || strpos($pn, $np_lower) !== false) {
-							$prod = $pobj;
-							break;
+				foreach ($items_rows as $it) {
+					$sku       = $get_val($it, ['SKU Induk', 'SKU', 'Nomor Referensi SKU']);
+					$nama_prod = $get_val($it, ['Nama Produk', 'Nama Barang', 'Product Name']);
+					$variasi   = $get_val($it, ['Nama Variasi', 'Variasi', 'Variation']);
+
+					$prod = null;
+					if ($sku && isset($prod_by_code[strtolower($sku)])) {
+						$prod = $prod_by_code[strtolower($sku)];
+					}
+					if (!$prod && $nama_prod && isset($prod_by_name[strtolower($nama_prod)])) {
+						$prod = $prod_by_name[strtolower($nama_prod)];
+					}
+					if (!$prod && $nama_prod) {
+						$np_lower = strtolower($nama_prod);
+						foreach ($prod_by_name as $pn => $pobj) {
+							if (strpos($np_lower, $pn) !== false || strpos($pn, $np_lower) !== false) {
+								$prod = $pobj;
+								break;
+							}
 						}
 					}
-				}
-				if (!$prod) {
-					$prod = $default_prod;
+					if (!$prod) {
+						$prod = $this->Model_penjualan_marketplace->get_or_create_product(
+							$it_nama_prod, $sku, $harga, $it_variasi, 'tokopedia', $prod_by_code, $prod_by_name
+						);
+					}
+
+					$qty_raw = $get_val($it, ['Jumlah', 'Jumlah Produk', 'Qty', 'Quantity']);
+					$qty = max(1, (int)$this->_clean_number($qty_raw));
+
+					$harga_raw = $get_val($it, ['Harga Satuan', 'Harga Setelah Diskon', 'Harga Awal', 'Harga Produk']);
+					$harga = $this->_clean_number($harga_raw);
+					if ($harga <= 0 && $qty > 0 && $total_bayar > 0) {
+						$harga = $total_bayar / (max(1, count($items_rows)) * $qty);
+					}
+
+					$this->db->insert('penjualan_marketplace_item', [
+						'penjualan_marketplace_id' => $so_id,
+						'produk_id'     => $prod ? $prod->id : 1,
+						'qty'           => $qty,
+						'satuan'        => 'pcs',
+						'harga_satuan'  => $harga,
+						'diskon_persen' => 0,
+						'diskon_nominal'=> 0,
+						'subtotal'      => $harga * $qty,
+						'catatan'       => trim($nama_prod . ($variasi ? " ({$variasi})" : '')),
+					]);
+					$total_items_count++;
 				}
 
-				$qty = (float) str_replace(['.', ','], '', $data['Jumlah'] ?? 1);
-				$harga = (float) str_replace(['.', ',', 'Rp', ' '], '', $data['Harga Satuan'] ?? 0);
-				if ($harga <= 0 && $qty > 0) {
-					$harga = $total_bayar / $qty;
-				}
-
-				$this->db->insert('penjualan_marketplace_item', [
-					'penjualan_marketplace_id' => $so_id,
-					'produk_id'     => $prod ? $prod->id : 1,
-					'qty'           => max(1, $qty),
-					'satuan'        => 'pcs',
-					'harga_satuan'  => $harga,
-					'diskon_persen' => 0,
-					'diskon_nominal'=> 0,
-					'subtotal'      => $harga * $qty,
-					'catatan'       => $nama_prod,
-				]);
-
-				// Generate CRM labels in batch
 				if (!empty($crm_categories)) {
 					$ship_date = !empty($tanggal_so) ? $tanggal_so : date('Y-m-d');
 					foreach ($crm_categories as $cat) {
@@ -910,6 +1477,7 @@ class Penjualan_marketplace extends Admin
 					}
 				}
 
+				$this->Model_penjualan_marketplace->sync_to_sales_order($so_id);
 				$inserted_count++;
 			}
 		}
@@ -920,19 +1488,694 @@ class Penjualan_marketplace extends Admin
 
 		$this->db->trans_complete();
 
-		fclose($handle);
-
-		$msg = "<b>Ringkasan Import CSV Tokopedia:</b><br>" .
+		$msg = "<b>Ringkasan Import Data Tokopedia:</b><br>" .
 		       "🆕 <b>{$inserted_count} Pesanan Baru</b> berhasil ditambahkan.<br>" .
-		       "🔄 <b>{$updated_count} Pesanan</b> diperbarui (status/resi).<br>" .
-		       "⛔ <b>{$skipped_count} Pesanan</b> dilewati/ditolak (duplikat).";
+		       "📦 <b>{$total_items_count} Detail Produk</b> tercatat.<br>" .
+		       "🔄 <b>{$updated_count} Pesanan</b> diperbarui / dilengkapi (status, resi, atau total).<br>" .
+		       "⛔ <b>{$skipped_count} Pesanan</b> sudah ada dan sudah lengkap.";
 
 		if ($inserted_count > 0 || $updated_count > 0) {
 			set_message($msg, 'success');
 		} else {
-			set_message($msg, 'error');
+			set_message($msg, 'warning');
 		}
 		redirect('administrator/penjualan_marketplace?source=tokopedia');
+	}
+
+	public function import_tiktok()
+	{
+		$this->is_allowed('sales_order_add');
+		@ini_set('memory_limit', '1024M');
+		@set_time_limit(0);
+
+		$file_input_name = !empty($_FILES['file_excel']['name']) ? 'file_excel' : (!empty($_FILES['file_csv']['name']) ? 'file_csv' : '');
+		if (empty($file_input_name) || empty($_FILES[$file_input_name]['name'])) {
+			set_message('Silakan pilih file Excel / CSV TikTok Shop yang akan diimport.', 'error');
+			redirect('administrator/penjualan_marketplace?source=tiktok');
+			return;
+		}
+
+		$file_path = $_FILES[$file_input_name]['tmp_name'];
+		$file_name = $_FILES[$file_input_name]['name'];
+
+		try {
+			$rows = $this->_read_import_rows($file_path, $file_name);
+		} catch (Exception $e) {
+			set_message('Gagal membaca file TikTok Shop: ' . $e->getMessage(), 'error');
+			redirect('administrator/penjualan_marketplace?source=tiktok');
+			return;
+		}
+
+		if (empty($rows) || count($rows) < 2) {
+			set_message('File TikTok Shop kosong atau tidak memiliki baris data.', 'error');
+			redirect('administrator/penjualan_marketplace?source=tiktok');
+			return;
+		}
+
+		// Detect header row dynamically
+		$header_map = [];
+		$header_row_idx = null;
+		foreach ($rows as $r_idx => $r_data) {
+			$temp_map = [];
+			foreach ($r_data as $colLetter => $cellVal) {
+				if ($cellVal !== null && $cellVal !== '') {
+					$clean_h = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', (string)$cellVal));
+					$temp_map[$clean_h] = $colLetter;
+				}
+			}
+			if (isset($temp_map['orderid']) || isset($temp_map['idpesanan']) || isset($temp_map['nopesanan']) || isset($temp_map['nomorpesanan'])) {
+				$header_map = $temp_map;
+				$header_row_idx = $r_idx;
+				break;
+			}
+		}
+
+		if ($header_row_idx === null) {
+			$header_row = reset($rows);
+			$header_row_idx = key($rows);
+			foreach ($header_row as $colLetter => $cellVal) {
+				if ($cellVal !== null && $cellVal !== '') {
+					$clean_h = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', (string)$cellVal));
+					$header_map[$clean_h] = $colLetter;
+				}
+			}
+		}
+
+		$get_val = function($row, $possible_keys) use ($header_map) {
+			foreach ($possible_keys as $k) {
+				$k_norm = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $k));
+				if (isset($header_map[$k_norm])) {
+					$col = $header_map[$k_norm];
+					if (isset($row[$col]) && $row[$col] !== null) {
+						return trim((string)$row[$col]);
+					}
+				}
+			}
+			return '';
+		};
+
+		// Validate that the file belongs specifically to TikTok Shop
+		$detected_channel = $this->_detect_marketplace_channel($header_map);
+		if ($detected_channel === 'shopee') {
+			set_message('Gagal Import! File yang Anda upload terdeteksi sebagai template / data pesanan <b>Shopee</b>. Harap unggah file tersebut di tab <b>Shopee Seller</b>.', 'error');
+			redirect('administrator/penjualan_marketplace?source=tiktok');
+			return;
+		} elseif ($detected_channel === 'tokopedia') {
+			set_message('Gagal Import! File yang Anda upload terdeteksi sebagai template / data pesanan <b>Tokopedia</b>. Harap unggah file tersebut di tab <b>Tokopedia Seller</b>.', 'error');
+			redirect('administrator/penjualan_marketplace?source=tiktok');
+			return;
+		} elseif ($detected_channel !== 'tiktok') {
+			set_message('Gagal Import! Format file yang diunggah tidak dikenali sebagai format TikTok Shop. Pastikan file memiliki kolom "Order ID", "Seller SKU", atau "Tracking ID" sesuai format TikTok Shop.', 'error');
+			redirect('administrator/penjualan_marketplace?source=tiktok');
+			return;
+		}
+
+		$has_order_col = isset($header_map['orderid']) || isset($header_map['idpesanan']) || isset($header_map['nopesanan']) || isset($header_map['nomorpesanan']);
+		if (!$has_order_col) {
+			set_message('Gagal Import! Format file tidak sesuai. Kolom "Order ID" tidak ditemukan.', 'error');
+			redirect('administrator/penjualan_marketplace?source=tiktok');
+			return;
+		}
+
+		$existing_orders = [];
+		$res_existing = $this->db->select('id, no_pesanan, nomor_resi, status_pesanan, status, kurir_ekspedisi, total, subtotal')->get('penjualan_marketplace')->result();
+		foreach ($res_existing as $ex) {
+			if (!empty($ex->no_pesanan)) {
+				$existing_orders[$ex->no_pesanan] = $ex;
+			}
+		}
+
+		$all_products = $this->db->get('produk')->result();
+		$default_prod = !empty($all_products) ? $all_products[0] : null;
+		$prod_by_code = [];
+		$prod_by_name = [];
+		foreach ($all_products as $pr) {
+			if (!empty($pr->kode_produk)) {
+				$prod_by_code[strtolower(trim($pr->kode_produk))] = $pr;
+			}
+			if (!empty($pr->nama_produk)) {
+				$prod_by_name[strtolower(trim($pr->nama_produk))] = $pr;
+			}
+		}
+
+		$all_pelanggan = $this->db->select('id, kode_pelanggan, nama_pelanggan, telepon, no_telp')->get('pelanggan')->result();
+		$cust_by_phone = [];
+		$cust_by_name = [];
+		foreach ($all_pelanggan as $cp) {
+			$p1 = preg_replace('/[^0-9]/', '', (string)$cp->telepon);
+			$p2 = preg_replace('/[^0-9]/', '', (string)$cp->no_telp);
+			if (!empty($p1)) $cust_by_phone[$p1] = (int)$cp->id;
+			if (!empty($p2)) $cust_by_phone[$p2] = (int)$cp->id;
+			if (!empty($cp->nama_pelanggan)) {
+				$cust_by_name[strtolower(trim($cp->nama_pelanggan))] = (int)$cp->id;
+			}
+		}
+		$max_cust_row = $this->db->select_max('id')->get('pelanggan')->row();
+		$next_cust_num = ($max_cust_row && $max_cust_row->id) ? ((int)$max_cust_row->id + 1) : 1;
+
+		$crm_categories = $this->db->get_where('crm_followup_categories', ['is_active' => 1])->result();
+		$bulk_crm_labels = [];
+		$now_dt = date('Y-m-d H:i:s');
+
+		$orders_grouped = [];
+		foreach ($rows as $r_idx => $data_row) {
+			if ($r_idx <= $header_row_idx) continue;
+			if (empty(array_filter($data_row))) continue;
+
+			$no_pesanan = $get_val($data_row, ['Order ID', 'OrderID', 'No. Pesanan', 'No Pesanan', 'Nomor Pesanan', 'ID Pesanan']);
+			if (empty($no_pesanan)) continue;
+
+			if (!isset($orders_grouped[$no_pesanan])) {
+				$orders_grouped[$no_pesanan] = [
+					'header' => $data_row,
+					'items'  => []
+				];
+			}
+			$orders_grouped[$no_pesanan]['items'][] = $data_row;
+		}
+
+		if (empty($orders_grouped)) {
+			set_message('Tidak ada baris data pesanan valid yang ditemukan dalam file TikTok Shop.', 'error');
+			redirect('administrator/penjualan_marketplace?source=tiktok');
+			return;
+		}
+
+		$inserted_count = 0;
+		$updated_count = 0;
+		$skipped_count = 0;
+		$total_items_count = 0;
+
+		$this->db->trans_start();
+
+		foreach ($orders_grouped as $no_pesanan => $order_data) {
+			$h_row = $order_data['header'];
+			$items_rows = $order_data['items'];
+
+			$status_pesanan = $get_val($h_row, ['Order Status', 'OrderStatus', 'Status Pesanan']);
+			$raw_status = strtolower($status_pesanan);
+			$status = 'draft';
+			if (strpos($raw_status, 'completed') !== false || strpos($raw_status, 'delivered') !== false || strpos($raw_status, 'selesai') !== false) {
+				$status = 'delivered';
+			} elseif (strpos($raw_status, 'cancel') !== false || strpos($raw_status, 'batal') !== false) {
+				$status = 'cancelled';
+			} elseif (strpos($raw_status, 'shipped') !== false || strpos($raw_status, 'in transit') !== false || strpos($raw_status, 'dikirim') !== false) {
+				$status = 'shipped';
+			} elseif (strpos($raw_status, 'to ship') !== false || strpos($raw_status, 'awaiting shipment') !== false || strpos($raw_status, 'awaiting collection') !== false || strpos($raw_status, 'packing') !== false || strpos($raw_status, 'dikemas') !== false) {
+				$status = 'packing';
+			}
+
+			$no_resi = $get_val($h_row, ['Tracking ID', 'TrackingID', 'No. Resi', 'No Resi', 'Nomor Resi']);
+			$kurir   = $get_val($h_row, ['Shipping Provider Name', 'ShippingProviderName', 'Delivery Option', 'Kurir', 'Ekspedisi']);
+			$alasan_batal = $get_val($h_row, ['Cancel Reason', 'CancelReason', 'Alasan Pembatalan']);
+			$st_batal     = $get_val($h_row, ['Cancelation/Return Type', 'CancelationReturnType']);
+
+			$tot_bayar_raw = $get_val($h_row, ['Order Amount', 'OrderAmount', 'Total Pembayaran', 'Total Harga']);
+			$total_bayar = $this->_clean_number($tot_bayar_raw);
+
+			if ($total_bayar <= 0) {
+				$calc_tot = 0;
+				foreach ($items_rows as $it) {
+					$it_q = max(1, (int)$this->_clean_number($get_val($it, ['Quantity', 'Jumlah'])));
+					$it_h = $this->_clean_number($get_val($it, ['SKU Unit Original Price', 'SKUUnitOriginalPrice', 'SKU Subtotal After Discount', 'Harga Setelah Diskon', 'Harga Awal']));
+					$calc_tot += ($it_h * $it_q);
+				}
+				if ($calc_tot > 0) $total_bayar = $calc_tot;
+			}
+
+			if (isset($existing_orders[$no_pesanan])) {
+				$existing = $existing_orders[$no_pesanan];
+				$need_update = false;
+				$update_fields = [];
+
+				if (!empty($no_resi) && $existing->nomor_resi !== $no_resi) {
+					$update_fields['nomor_resi'] = $no_resi;
+					$need_update = true;
+				}
+				if (!empty($status_pesanan) && $existing->status_pesanan !== $status_pesanan) {
+					$update_fields['status_pesanan'] = $status_pesanan;
+					$update_fields['status'] = $status;
+					$need_update = true;
+				}
+				if (!empty($kurir) && empty($existing->kurir_ekspedisi)) {
+					$update_fields['kurir_ekspedisi'] = $kurir;
+					$update_fields['opsi_pengiriman'] = $kurir;
+					$need_update = true;
+				}
+				if ((empty($existing->total) || (float)$existing->total <= 0) && $total_bayar > 0) {
+					$update_fields['total'] = $total_bayar;
+					$update_fields['subtotal'] = $total_bayar;
+					$need_update = true;
+				}
+
+				$existing_items_cnt = $this->db->where('penjualan_marketplace_id', $existing->id)->count_all_results('penjualan_marketplace_item');
+				if ($existing_items_cnt == 0 && !empty($items_rows)) {
+					foreach ($items_rows as $it_row) {
+						$it_sku   = $get_val($it_row, ['Seller SKU', 'SellerSKU', 'SKU Induk', 'SKU ID']);
+						$it_nama  = $get_val($it_row, ['Product Name', 'ProductName', 'Nama Produk']);
+						$it_var   = $get_val($it_row, ['Variation', 'Nama Variasi']);
+						$it_qty   = max(1, (int)$this->_clean_number($get_val($it_row, ['Quantity', 'Jumlah'])));
+
+						$it_harga = $this->_clean_number($get_val($it_row, ['SKU Unit Original Price', 'SKUUnitOriginalPrice', 'SKU Subtotal After Discount', 'Harga Setelah Diskon', 'Harga Awal']));
+						if ($it_harga <= 0 && $it_qty > 0 && $total_bayar > 0) {
+							$it_harga = $total_bayar / (max(1, count($items_rows)) * $it_qty);
+						}
+
+						$prod = null;
+						if ($it_sku && isset($prod_by_code[strtolower($it_sku)])) {
+							$prod = $prod_by_code[strtolower($it_sku)];
+						}
+						if (!$prod && $it_nama && isset($prod_by_name[strtolower($it_nama)])) {
+							$prod = $prod_by_name[strtolower($it_nama)];
+						}
+						if (!$prod && $it_nama) {
+							$np_lower = strtolower($it_nama);
+							foreach ($prod_by_name as $pn => $pobj) {
+								if (strpos($np_lower, $pn) !== false || strpos($pn, $np_lower) !== false) {
+									$prod = $pobj;
+									break;
+								}
+							}
+						}
+						if (!$prod) {
+							$prod = $this->Model_penjualan_marketplace->get_or_create_product(
+								$it_nama, $sku, $it_harga, $it_variasi, 'tiktok', $prod_by_code, $prod_by_name
+							);
+						}
+
+						$this->db->insert('penjualan_marketplace_item', [
+							'penjualan_marketplace_id' => $existing->id,
+							'produk_id'                => $prod ? $prod->id : 1,
+							'qty'                      => $it_qty,
+							'satuan'                   => 'pcs',
+							'harga_satuan'             => $it_harga,
+							'diskon_persen'            => 0,
+							'diskon_nominal'           => 0,
+							'subtotal'                 => $it_harga * $it_qty,
+							'catatan'                  => trim($it_nama . ($it_var ? " ({$it_var})" : '')),
+						]);
+						$total_items_count++;
+					}
+					$need_update = true;
+				}
+
+				if ($need_update) {
+					$update_fields['updated_at'] = $now_dt;
+					$update_fields['updated_by'] = get_user_data('username') ?: 'admin';
+					$this->db->where('id', $existing->id)->update('penjualan_marketplace', $update_fields);
+					$this->Model_penjualan_marketplace->sync_to_sales_order($existing->id);
+					$updated_count++;
+				} else {
+					$skipped_count++;
+				}
+				continue;
+			}
+
+			$nomor_so = $this->Model_penjualan_marketplace->generate_nomor();
+
+			$waktu_created_raw = $get_val($h_row, ['Created Time', 'CreatedTime', 'Waktu Pesanan Dibuat']);
+			$waktu_bayar_raw   = $get_val($h_row, ['Paid Time', 'PaidTime', 'Waktu Pembayaran']);
+			$ref_date = !empty($waktu_bayar_raw) ? $waktu_bayar_raw : $waktu_created_raw;
+
+			$waktu_bayar = $this->_parse_date_time($ref_date) ?: $now_dt;
+			$tanggal_so  = date('Y-m-d', strtotime($waktu_bayar));
+
+			$username_buyer = $get_val($h_row, ['Buyer Username', 'BuyerUsername', 'Username (Pembeli)', 'Username']);
+			$nama_penerima  = $get_val($h_row, ['Recipient', 'Nama Penerima', 'Penerima']);
+			$no_telp        = $get_val($h_row, ['Phone #', 'Phone#', 'Phone', 'No. Telepon', 'No Telepon', 'No HP']);
+
+			$phone_clean = preg_replace('/[^0-9]/', '', (string)$no_telp);
+			if (substr($phone_clean, 0, 2) === '62') {
+				$phone_clean = '0' . substr($phone_clean, 2);
+			} elseif (substr($phone_clean, 0, 1) === '8') {
+				$phone_clean = '0' . $phone_clean;
+			}
+
+			$alamat_detail = $get_val($h_row, ['Detail Address', 'DetailAddress', 'Alamat Pengiriman', 'Alamat']);
+			$districts      = $get_val($h_row, ['Districts', 'Kecamatan']);
+			$kota           = $get_val($h_row, ['Regency and City', 'RegencyandCity', 'Kota/Kabupaten', 'Kota']);
+			$provinsi       = $get_val($h_row, ['Province', 'Provinsi']);
+			$full_alamat    = trim($alamat_detail . ($districts ? ', ' . $districts : ''));
+
+			$buyer_msg  = $get_val($h_row, ['Buyer Message', 'BuyerMessage', 'Catatan Pembeli']);
+			$seller_msg = $get_val($h_row, ['Seller Note', 'SellerNote', 'Catatan Penjual']);
+			$catatan    = trim(($buyer_msg ? "Pesan Pembeli: {$buyer_msg}" : '') . ($seller_msg ? " | Catatan: {$seller_msg}" : ''));
+			if (empty($catatan)) {
+				$catatan = 'Import TikTok Shop - Buyer: ' . ($username_buyer ?: $nama_penerima);
+			}
+
+			$row_pelanggan_id = null;
+			if (!empty($phone_clean) && isset($cust_by_phone[$phone_clean])) {
+				$row_pelanggan_id = $cust_by_phone[$phone_clean];
+			} elseif (!empty($nama_penerima) && isset($cust_by_name[strtolower(trim($nama_penerima))])) {
+				$row_pelanggan_id = $cust_by_name[strtolower(trim($nama_penerima))];
+			} elseif (!empty($username_buyer) && isset($cust_by_name[strtolower(trim($username_buyer))])) {
+				$row_pelanggan_id = $cust_by_name[strtolower(trim($username_buyer))];
+			} else {
+				$c_kode = 'CUST-' . str_pad($next_cust_num++, 4, '0', STR_PAD_LEFT);
+				while ($this->db->where('kode_pelanggan', $c_kode)->get('pelanggan')->num_rows() > 0) {
+					$c_kode = 'CUST-' . str_pad($next_cust_num++, 4, '0', STR_PAD_LEFT);
+				}
+				$cust_name = !empty($nama_penerima) ? $nama_penerima : (!empty($username_buyer) ? $username_buyer : 'Customer TikTok');
+				$new_cust = [
+					'kode_pelanggan' => $c_kode,
+					'nama_pelanggan' => $cust_name,
+					'source'         => 'tiktok',
+					'telepon'        => $phone_clean,
+					'no_telp'        => $phone_clean,
+					'alamat'         => !empty($full_alamat) ? $full_alamat : 'Imported via TikTok Shop',
+					'kota'           => !empty($kota) ? $kota : '',
+					'tipe_pelanggan' => 'retail',
+					'tier_pelanggan' => 'RETAIL',
+					'status'         => 'aktif',
+					'created_by'     => get_user_data('username') ?: 'admin',
+					'created_at'     => $now_dt,
+				];
+				$this->db->insert('pelanggan', $new_cust);
+				$row_pelanggan_id = $this->db->insert_id();
+				if (!empty($phone_clean)) $cust_by_phone[$phone_clean] = $row_pelanggan_id;
+				$cust_by_name[strtolower(trim($cust_name))] = $row_pelanggan_id;
+			}
+			if (empty($row_pelanggan_id)) {
+				$row_pelanggan_id = 1;
+			}
+
+			$first_item = $items_rows[0];
+			$first_sku_induk = $get_val($first_item, ['Seller SKU', 'SellerSKU', 'SKU Induk']);
+			$first_nama_prod = $get_val($first_item, ['Product Name', 'ProductName', 'Nama Produk']);
+			$first_sku_ref   = $get_val($first_item, ['SKU ID', 'SKUID', 'Nomor Referensi SKU']);
+			$first_variasi   = $get_val($first_item, ['Variation', 'Nama Variasi']);
+
+			$so_data = [
+				'nomor_so'                       => $nomor_so,
+				'no_pesanan'                     => $no_pesanan,
+				'source'                         => 'tiktok',
+				'pelanggan_id'                   => $row_pelanggan_id,
+				'tanggal_so'                     => $tanggal_so,
+				'status'                         => $status,
+				'status_pesanan'                 => $status_pesanan,
+				'alasan_pembatalan'              => $alasan_batal,
+				'status_pembatalan_pengembalian' => $st_batal,
+				'nomor_resi'                     => $no_resi,
+				'kurir_ekspedisi'                => $kurir,
+				'opsi_pengiriman'                => $kurir,
+				'waktu_pembayaran'               => $waktu_bayar,
+				'waktu_pesanan_dibuat'           => $this->_parse_date_time($waktu_created_raw) ?: $waktu_bayar,
+				'username_pembeli'               => $username_buyer,
+				'nama_penerima'                  => $nama_penerima,
+				'no_telepon'                     => $no_telp,
+				'alamat_pengiriman'              => $full_alamat,
+				'kota_kabupaten'                 => $kota,
+				'provinsi'                       => $provinsi,
+				'sku_induk'                      => $first_sku_induk,
+				'nama_produk_marketplace'        => $first_nama_prod,
+				'nomor_referensi_sku'            => $first_sku_ref,
+				'nama_variasi'                   => $first_variasi,
+				'subtotal'                       => $total_bayar,
+				'total'                          => $total_bayar,
+				'catatan'                        => $catatan,
+				'created_by'                     => get_user_data('username') ?: 'admin',
+				'created_at'                     => $now_dt,
+			];
+
+			$so_id = $this->Model_penjualan_marketplace->store($so_data);
+
+			if ($so_id) {
+				$existing_orders[$no_pesanan] = (object)['id' => $so_id, 'nomor_resi' => $no_resi, 'status_pesanan' => $status_pesanan, 'total' => $total_bayar, 'subtotal' => $total_bayar, 'kurir_ekspedisi' => $kurir];
+
+				foreach ($items_rows as $it_row) {
+					$it_sku   = $get_val($it_row, ['Seller SKU', 'SellerSKU', 'SKU Induk', 'SKU ID']);
+					$it_nama  = $get_val($it_row, ['Product Name', 'ProductName', 'Nama Produk']);
+					$it_var   = $get_val($it_row, ['Variation', 'Nama Variasi']);
+					$it_qty   = max(1, (int)$this->_clean_number($get_val($it_row, ['Quantity', 'Jumlah'])));
+
+					$it_harga = $this->_clean_number($get_val($it_row, ['SKU Unit Original Price', 'SKUUnitOriginalPrice', 'SKU Subtotal After Discount', 'Harga Setelah Diskon', 'Harga Awal']));
+					if ($it_harga <= 0 && $it_qty > 0 && $total_bayar > 0) {
+						$it_harga = $total_bayar / (max(1, count($items_rows)) * $it_qty);
+					}
+
+					$prod = null;
+					if ($it_sku && isset($prod_by_code[strtolower($it_sku)])) {
+						$prod = $prod_by_code[strtolower($it_sku)];
+					}
+					if (!$prod && $it_nama && isset($prod_by_name[strtolower($it_nama)])) {
+						$prod = $prod_by_name[strtolower($it_nama)];
+					}
+					if (!$prod && $it_nama) {
+						$np_lower = strtolower($it_nama);
+						foreach ($prod_by_name as $pn => $pobj) {
+							if (strpos($np_lower, $pn) !== false || strpos($pn, $np_lower) !== false) {
+								$prod = $pobj;
+								break;
+							}
+						}
+					}
+					if (!$prod) {
+						$prod = $this->Model_penjualan_marketplace->get_or_create_product(
+							$it_nama, $sku, $it_harga, $it_variasi, 'tiktok', $prod_by_code, $prod_by_name
+						);
+					}
+
+					$this->db->insert('penjualan_marketplace_item', [
+						'penjualan_marketplace_id' => $so_id,
+						'produk_id'                => $prod ? $prod->id : 1,
+						'qty'                      => $it_qty,
+						'satuan'                   => 'pcs',
+						'harga_satuan'             => $it_harga,
+						'diskon_persen'            => 0,
+						'diskon_nominal'           => 0,
+						'subtotal'                 => $it_harga * $it_qty,
+						'catatan'                  => trim($it_nama . ($it_var ? " ({$it_var})" : '')),
+					]);
+					$total_items_count++;
+				}
+
+				if (!empty($crm_categories)) {
+					$ship_date = !empty($tanggal_so) ? $tanggal_so : date('Y-m-d');
+					foreach ($crm_categories as $cat) {
+						$target_lbl = date('Y-m-d', strtotime($ship_date . ' + ' . $cat->jumlah_hari . ' days'));
+						$bulk_crm_labels[] = [
+							'order_source'          => 'TikTok Shop',
+							'order_id'              => $so_id,
+							'order_table'           => 'penjualan_marketplace',
+							'customer_nama'         => !empty($nama_penerima) ? $nama_penerima : (!empty($username_buyer) ? $username_buyer : 'Customer TikTok'),
+							'customer_phone'        => $phone_clean,
+							'customer_pelanggan_id' => $row_pelanggan_id,
+							'no_pesanan'            => $no_pesanan,
+							'nomor_resi'            => !empty($no_resi) ? $no_resi : '',
+							'tanggal_pengiriman'    => $ship_date,
+							'followup_category_id'  => $cat->id,
+							'tanggal_label_muncul'  => $target_lbl,
+							'created_at'            => $now_dt,
+						];
+					}
+
+					if (count($bulk_crm_labels) >= 500) {
+						$this->db->insert_batch('crm_transaction_followup_labels', $bulk_crm_labels);
+						$bulk_crm_labels = [];
+					}
+				}
+
+				$this->Model_penjualan_marketplace->sync_to_sales_order($so_id);
+				$inserted_count++;
+			}
+		}
+
+		if (!empty($bulk_crm_labels)) {
+			$this->db->insert_batch('crm_transaction_followup_labels', $bulk_crm_labels);
+		}
+
+		$this->db->trans_complete();
+
+		$msg = "<b>Ringkasan Import Data TikTok Shop:</b><br>" .
+		       "🆕 <b>{$inserted_count} Pesanan Baru</b> berhasil ditambahkan.<br>" .
+		       "📦 <b>{$total_items_count} Detail Produk</b> tercatat.<br>" .
+		       "🔄 <b>{$updated_count} Pesanan</b> diperbarui / dilengkapi (status, resi, atau total).<br>" .
+		       "⛔ <b>{$skipped_count} Pesanan</b> sudah ada dan sudah lengkap.";
+
+		if ($inserted_count > 0 || $updated_count > 0) {
+			set_message($msg, 'success');
+		} else {
+			set_message($msg, 'warning');
+		}
+		redirect('administrator/penjualan_marketplace?source=tiktok');
+	}
+
+	private function _read_import_rows($file_path, $file_name)
+	{
+		$ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+		$f = @fopen($file_path, 'rb');
+		$head = $f ? fread($f, 8) : '';
+		if ($f) fclose($f);
+
+		$is_excel_binary = (substr($head, 0, 8) === "\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1") // OLE2 (.xls)
+			|| (substr($head, 0, 4) === "PK\x03\x04"); // Zip (.xlsx)
+
+		$rows = [];
+		if (!$is_excel_binary && ($ext === 'csv' || $ext === 'txt' || !in_array($ext, ['xls', 'xlsx']))) {
+			$handle = fopen($file_path, 'r');
+			if ($handle !== false) {
+				$bom = fread($handle, 3);
+				if ($bom !== "\xEF\xBB\xBF") rewind($handle);
+				$first_line = fgets($handle);
+				if ($bom !== "\xEF\xBB\xBF") rewind($handle); else fseek($handle, 3);
+
+				$semi_count = substr_count($first_line, ';');
+				$comma_count = substr_count($first_line, ',');
+				$tab_count = substr_count($first_line, "\t");
+				$delimiter = ',';
+				if ($semi_count > $comma_count && $semi_count > $tab_count) {
+					$delimiter = ';';
+				} elseif ($tab_count > $comma_count && $tab_count > $semi_count) {
+					$delimiter = "\t";
+				}
+
+				$r_idx = 1;
+				while (($data = fgetcsv($handle, 0, $delimiter)) !== false) {
+					if (empty($data) || (count($data) === 1 && trim((string)$data[0]) === '')) continue;
+					$row_dict = [];
+					$col_letter = 'A';
+					foreach ($data as $cell) {
+						$row_dict[$col_letter] = trim((string)$cell);
+						$col_letter++;
+					}
+					$rows[$r_idx] = $row_dict;
+					$r_idx++;
+				}
+				fclose($handle);
+			}
+		} else {
+			if (file_exists(APPPATH . 'libraries/Excel/PHPExcel.php')) {
+				require_once APPPATH . 'libraries/Excel/PHPExcel.php';
+				require_once APPPATH . 'libraries/Excel/PHPExcel/IOFactory.php';
+				$objPHPExcel = PHPExcel_IOFactory::load($file_path);
+				$sheet = $objPHPExcel->getActiveSheet();
+				$rows = $sheet->toArray(null, true, true, true);
+			}
+		}
+		return $rows;
+	}
+
+	private function _clean_number($val)
+	{
+		if ($val === null || $val === '') return 0.0;
+		$val = trim((string)$val);
+		$val = preg_replace('/[Rr][Pp]\.?\s*/', '', $val);
+		$val = preg_replace('/[A-Za-z\s]/', '', $val);
+		if ($val === '') return 0.0;
+
+		// Indonesian thousand separator check e.g. 150.000 or 1.500.000 without decimal
+		if (preg_match('/^\d{1,3}(\.\d{3})+$/', $val)) {
+			$val = str_replace('.', '', $val);
+			return (float)$val;
+		}
+
+		if (strpos($val, '.') !== false && strpos($val, ',') !== false) {
+			$ld = strrpos($val, '.');
+			$lc = strrpos($val, ',');
+			if ($lc > $ld) {
+				$val = str_replace('.', '', $val);
+				$val = str_replace(',', '.', $val);
+			} else {
+				$val = str_replace(',', '', $val);
+			}
+		} elseif (strpos($val, ',') !== false) {
+			if (preg_match('/,\d{1,2}$/', $val)) {
+				$val = str_replace(',', '.', $val);
+			} else {
+				$val = str_replace(',', '', $val);
+			}
+		}
+
+		return (float)$val;
+	}
+
+	private function _parse_date_time($val)
+	{
+		if (empty($val)) return null;
+		$val = trim((string)$val);
+		if (is_numeric($val) && (float)$val > 20000 && (float)$val < 60000) {
+			$unix = ((float)$val - 25569) * 86400;
+			return date('Y-m-d H:i:s', (int)$unix);
+		}
+
+		$id_months = [
+			'januari' => 'january', 'jan' => 'jan',
+			'februari' => 'february', 'feb' => 'feb',
+			'maret' => 'march', 'mar' => 'mar',
+			'april' => 'april', 'apr' => 'apr',
+			'mei' => 'may',
+			'juni' => 'june', 'jun' => 'jun',
+			'juli' => 'july', 'jul' => 'jul',
+			'agustus' => 'august', 'ags' => 'aug', 'agu' => 'aug',
+			'september' => 'september', 'sep' => 'sep',
+			'oktober' => 'october', 'okt' => 'oct',
+			'november' => 'november', 'nov' => 'nov',
+			'desember' => 'december', 'des' => 'dec'
+		];
+		$val_lower = strtolower($val);
+		foreach ($id_months as $id_m => $en_m) {
+			if (strpos($val_lower, $id_m) !== false) {
+				$val = str_ireplace($id_m, $en_m, $val);
+				break;
+			}
+		}
+
+		if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(.*)$/', $val, $m)) {
+			$val_norm = $m[3] . '-' . str_pad($m[2], 2, '0', STR_PAD_LEFT) . '-' . str_pad($m[1], 2, '0', STR_PAD_LEFT) . $m[4];
+			$ts = strtotime($val_norm);
+			if ($ts !== false) return date('Y-m-d H:i:s', $ts);
+		}
+		$ts = strtotime($val);
+		return ($ts !== false) ? date('Y-m-d H:i:s', $ts) : null;
+	}
+
+	private function _detect_marketplace_channel($header_map)
+	{
+		// 1. TikTok Shop signature markers
+		$tiktok_markers = [
+			'sellersku', 'shippingprovidername', 'buyermessage', 'sellernote',
+			'orderamount', 'rtstime', 'cancelationreturntype', 'skuplatformdiscount',
+			'packageid', 'skusubtotalafterdiscount', 'skuid', 'normalorpreorder'
+		];
+		$tiktok_matches = 0;
+		foreach ($tiktok_markers as $tm) {
+			if (isset($header_map[$tm])) $tiktok_matches++;
+		}
+		if ($tiktok_matches >= 2 || isset($header_map['sellersku']) || isset($header_map['shippingprovidername'])) {
+			return 'tiktok';
+		}
+
+		// 2. Shopee signature markers
+		$shopee_markers = [
+			'opsipengiriman', 'nomorreferensisku', 'antarkecounterpickup', 'pesananharusdikirimkansebelum',
+			'waktupembayarandilakukan', 'waktupesanandibuat', 'hargasetelahdiskon', 'diskondarishopee',
+			'potongankoinshopee', 'totaldiskon', 'catatandaripembeli', 'waktupesananselesai',
+			'diskondaripenjual', 'ongkoskirimdibayarolehpembeli', 'perkiraanongkoskirim', 'voucher'
+		];
+		$shopee_matches = 0;
+		foreach ($shopee_markers as $sm) {
+			if (isset($header_map[$sm])) $shopee_matches++;
+		}
+		if ($shopee_matches >= 1 || isset($header_map['opsipengiriman']) || isset($header_map['nomorreferensisku'])) {
+			return 'shopee';
+		}
+
+		// 3. Tokopedia signature markers
+		$tokopedia_markers = [
+			'nomorinvoice', 'noinvoice', 'namakurir', 'biayabebasongkir', 'hargajualrp',
+			'jumlahprodukdibeli', 'biayaasuransipengiriman'
+		];
+		foreach ($tokopedia_markers as $tm) {
+			if (isset($header_map[$tm])) return 'tokopedia';
+		}
+		if (isset($header_map['kurir']) && !isset($header_map['opsipengiriman']) && !isset($header_map['nomorreferensisku'])) {
+			return 'tokopedia';
+		}
+		if (isset($header_map['hargasatuan']) && isset($header_map['catatanpembeli']) && !isset($header_map['opsipengiriman'])) {
+			return 'tokopedia';
+		}
+
+		return 'unknown';
 	}
 
 	public function export()
@@ -1003,7 +2246,7 @@ class Penjualan_marketplace extends Admin
 
 		$resi_num = !empty($so->nomor_resi) ? $so->nomor_resi : $nomor_resi;
 		$order_num = !empty($so->no_pesanan) ? $so->no_pesanan : $so->nomor_so;
-		$penerima = !empty($so->nama_penerima) ? $so->nama_penerima : ($so->nama_pelanggan ?: 'Penerima Paket');
+		$penerima = !empty($so->nama_penerima) ? $so->nama_penerima : (!empty($so->username_pembeli) ? $so->username_pembeli : 'Penerima Paket');
 
 		echo json_encode([
 			'status'  => 'success',
@@ -1160,8 +2403,8 @@ class Penjualan_marketplace extends Admin
 			$extracted_text = [];
 		}
 
-		// SERVER-SIDE PDF EXTRACTION: Extract text directly from uploaded PDF using smalot/pdfparser
-		if (!empty($_FILES['file_pdf']['tmp_name']) && file_exists($_FILES['file_pdf']['tmp_name'])) {
+		// SERVER-SIDE PDF EXTRACTION: Fallback extract text directly from uploaded PDF using smalot/pdfparser (only if client text extraction empty)
+		if (empty($extracted_text) && !empty($_FILES['file_pdf']['tmp_name']) && file_exists($_FILES['file_pdf']['tmp_name'])) {
 			$pdf_tmp = $_FILES['file_pdf']['tmp_name'];
 			$pdf_hash = md5_file($pdf_tmp);
 			$cache_file = APPPATH . 'logs/pdf_cache_' . $pdf_hash . '.json';
@@ -1206,9 +2449,21 @@ class Penjualan_marketplace extends Admin
 
 		// Comprehensive Multi-Tier PDF Label Parsing
 		$parsed_label = $this->_parse_full_pdf_label($extracted_text, $raw_input);
+		$uploaded_file = (!empty($_FILES['file_pdf']['tmp_name']) && file_exists($_FILES['file_pdf']['tmp_name'])) ? $_FILES['file_pdf']['tmp_name'] : '';
+		$parsed_label = $this->_parse_full_pdf_label($extracted_text, $raw_input, $uploaded_file);
 
 		$nomor_resi = !empty($parsed_label['resi']) ? $parsed_label['resi'] : "";
 		$no_pesanan = !empty($parsed_label['pesanan']) ? $parsed_label['pesanan'] : "";
+		$is_cod_parsed = !empty($parsed_label['is_cod']);
+		$final_cod_amount = !empty($parsed_label['cod_nominal']) ? (float)$parsed_label['cod_nominal'] : 0;
+		$final_qty = !empty($parsed_label['qty']) ? (int)$parsed_label['qty'] : 1;
+		$final_harga = !empty($parsed_label['harga']) ? (float)$parsed_label['harga'] : 0;
+		if ($is_cod_parsed && $final_cod_amount > 0) {
+			$final_total = $final_cod_amount;
+			$final_harga = ($final_qty > 0) ? round($final_cod_amount / $final_qty, 2) : $final_cod_amount;
+		} else {
+			$final_total = ($final_harga > 0 && $final_qty > 0) ? ($final_harga * $final_qty) : 0;
+		}
 
 		// 1. Check for cetak_resi/{id} URL pattern extracted from PDF text
 		if (empty($nomor_resi) && !empty($extracted_text)) {
@@ -1237,10 +2492,7 @@ class Penjualan_marketplace extends Admin
 			}
 		}
 
-		if (empty($nomor_resi) && !empty($no_pesanan)) {
-			$nomor_resi = $no_pesanan;
-		}
-
+		// Clean pure PHP & JS architecture: No server Python execution required
 		if (empty($nomor_resi) && !empty($_FILES['file_pdf']['name'])) {
 			$fname = $_FILES['file_pdf']['name'];
 			if (preg_match('/(2[0-9]{5}SHP[A-Z0-9]{4,15}|[0-9]{6}SHP[A-Z0-9]{4,15}|SPX[A-Z0-9]{6,25}|JNE[0-9]{6,25}|JNT[0-9]{6,25}|SIC[A-Z0-9]{6,25}|SHP[0-9]{6,25})/i', $fname, $m)) {
@@ -1284,51 +2536,93 @@ class Penjualan_marketplace extends Admin
 			}
 		}
 
+		// If existing order matched in DB but has empty/incomplete resi, update it now!
+		if ($so) {
+			$found_new_resi = !empty($nomor_resi) ? $nomor_resi : (!empty($parsed_label['resi']) ? $parsed_label['resi'] : '');
+			$update_so = [];
+			if ((empty($so->nomor_resi) || $so->nomor_resi === '-' || $so->nomor_resi === $so->no_pesanan) && !empty($found_new_resi)) {
+				$update_so['nomor_resi'] = $found_new_resi;
+				$so->nomor_resi = $found_new_resi;
+			}
+			if (!empty($no_pesanan) && (empty($so->no_pesanan) || $so->no_pesanan === $so->nomor_resi || strpos($so->no_pesanan, 'SCAN-') === 0 || preg_match('/^(?:JX|JP|JT|SPX|JNE|SIC)/i', $so->no_pesanan))) {
+				$update_so['no_pesanan'] = $no_pesanan;
+				$so->no_pesanan = $no_pesanan;
+			}
+			if (!empty($update_so)) {
+				$this->db->where('id', $so->id)->update('penjualan_marketplace', $update_so);
+			}
+		}
+
 		// IF STILL NOT FOUND IN DATABASE: Create & Store this unique order into database!
 		if (!$so) {
-			$final_resi = !empty($nomor_resi) ? $nomor_resi : (!empty($parsed_label['resi']) ? $parsed_label['resi'] : 'RESI-' . date('ymdHis') . '-' . rand(100,999));
-			$final_pesanan = !empty($no_pesanan) ? $no_pesanan : (!empty($parsed_label['pesanan']) ? $parsed_label['pesanan'] : 'ORD-' . date('ymdHis') . '-' . rand(100,999));
+			$final_resi = !empty($nomor_resi) ? $nomor_resi : (!empty($parsed_label['resi']) ? $parsed_label['resi'] : '');
+			$final_pesanan = !empty($no_pesanan) ? $no_pesanan : (!empty($parsed_label['pesanan']) ? $parsed_label['pesanan'] : '');
+			if (empty($final_pesanan)) {
+				$final_pesanan = !empty($final_resi) ? $final_resi : ('SCAN-' . date('Ymd-His') . '-' . rand(100, 999));
+			}
+			// Double check if this final_pesanan already exists
+			$existing_match = $this->db->get_where('penjualan_marketplace', ['no_pesanan' => $final_pesanan])->row();
+			if ($existing_match) {
+				$so = $existing_match;
+			}
 			$extracted_str_all = is_array($extracted_text) ? implode(' ', array_map(function($i){ return is_array($i) ? ($i['str']??'') : $i; }, $extracted_text)) : '';
 
 			$final_courier = $this->_resolve_courier($parsed_label['courier'] ?? '', $final_resi, $extracted_text);
 
-			$final_penerima = !empty($parsed_label['penerima']) ? $parsed_label['penerima'] : '-';
+			$final_penerima = !empty($parsed_label['penerima']) ? clean_customer_name($parsed_label['penerima']) : '-';
+			if (empty($final_penerima)) $final_penerima = '-';
 			$final_phone = !empty($parsed_label['phone']) ? $parsed_label['phone'] : '-';
 			$final_address = !empty($parsed_label['address']) ? $parsed_label['address'] : '-';
 			$final_produk = !empty($parsed_label['produk']) ? $parsed_label['produk'] : '';
 			$final_variasi = !empty($parsed_label['variasi']) ? $parsed_label['variasi'] : 'Default';
-			$final_qty = !empty($parsed_label['qty']) ? (int)$parsed_label['qty'] : 1;
-			$final_harga = !empty($parsed_label['harga']) ? (float)$parsed_label['harga'] : 0;
-			$final_total = ($final_harga > 0 && $final_qty > 0) ? ($final_harga * $final_qty) : 0;
-
 			// Debug log parsed values
 			@file_put_contents($debug_log, "  PARSED => resi=$final_resi | pesanan=$final_pesanan | courier=$final_courier | penerima=$final_penerima | phone=$final_phone\n", FILE_APPEND);
 
 			$nomor_so = $this->Model_penjualan_marketplace->generate_nomor();
-			$default_gudang = $this->db->get_where('gudang', ['status' => 'aktif'])->row() ?: $this->db->get('gudang')->row();
+			$tipe_pengiriman_val = $is_cod_parsed ? 'COD' : 'Non-COD';
+
+			$catatan_text = 'Auto-Created from PDF Scan Label - ' . $final_courier;
+			if ($is_cod_parsed) {
+				$catatan_text .= ' (COD: Rp ' . number_format($final_total, 0, ',', '.') . ')';
+			}
+
+			$deadline_kirim = !empty($parsed_label['batas_kirim']) ? $parsed_label['batas_kirim'] : null;
+			// Waktu Bayar scan resi dibuat sama dengan Deadline Kirim jika ada
+			$waktu_bayar_final = !empty($deadline_kirim) ? $deadline_kirim : date('Y-m-d H:i:s');
+
+			// Extract first product SKU and Variation
+			$first_p = !empty($parsed_label['products'][0]) ? $parsed_label['products'][0] : null;
+			$final_sku = !empty($first_p['sku']) && $first_p['sku'] !== '-' ? $first_p['sku'] : (!empty($parsed_label['sku']) ? $parsed_label['sku'] : '');
+			$final_variasi = !empty($first_p['variasi']) && $first_p['variasi'] !== '-' ? $first_p['variasi'] : (!empty($parsed_label['variasi']) ? $parsed_label['variasi'] : 'Default');
 
 			$new_so_data = [
 				'nomor_so'            => $nomor_so,
 				'no_pesanan'          => $final_pesanan,
-				'source'              => 'pdf_scan',
+				'source'              => !empty($parsed_label['source']) ? $parsed_label['source'] : 'pdf_scan',
 				'pelanggan_id'        => 1,
-				'gudang_id'           => $default_gudang ? $default_gudang->id : 1,
-				'tanggal_so'          => date('Y-m-d'),
+				'tanggal_so'          => !empty($deadline_kirim) ? date('Y-m-d', strtotime($deadline_kirim)) : date('Y-m-d'),
 				'status'              => 'draft',
 				'status_pesanan'      => 'Siap Kirim',
 				'nomor_resi'          => $final_resi,
 				'kurir_ekspedisi'     => $final_courier,
 				'opsi_pengiriman'     => $final_courier,
-				'waktu_pembayaran'    => date('Y-m-d H:i:s'),
+				'tipe_pengiriman'     => $tipe_pengiriman_val,
+				'pesanan_harus_dikirim_sebelum' => $deadline_kirim,
+				'waktu_pembayaran'    => $waktu_bayar_final,
 				'username_pembeli'    => strtolower(str_replace(' ', '_', $final_penerima)),
 				'nama_penerima'       => $final_penerima,
 				'no_telepon'          => $final_phone,
 				'alamat_pengiriman'   => $final_address,
+				'nama_pengirim'       => !empty($parsed_label['pengirim']) ? $parsed_label['pengirim'] : '',
+				'no_telepon_pengirim' => !empty($parsed_label['pengirim_phone']) ? $parsed_label['pengirim_phone'] : '',
+				'alamat_pengirim'     => !empty($parsed_label['pengirim_address']) ? $parsed_label['pengirim_address'] : '',
+				'sku_induk'           => $final_sku,
+				'nomor_referensi_sku' => $final_sku,
 				'nama_produk_marketplace' => $final_produk,
 				'nama_variasi'        => $final_variasi,
 				'subtotal'            => $final_total > 0 ? $final_total : 0,
 				'total'               => $final_total > 0 ? $final_total : 0,
-				'catatan'             => 'Auto-Created from PDF Scan Label - ' . $final_courier,
+				'catatan'             => $catatan_text,
 				'created_by'          => get_user_data('username') ?: 'administrator',
 				'created_at'          => date('Y-m-d H:i:s'),
 			];
@@ -1343,18 +2637,36 @@ class Penjualan_marketplace extends Admin
 					foreach ($parsed_products as $pp) {
 						$pp_name = $pp['name'];
 						$pp_qty = max(1, (int)$pp['qty']);
+						$pp_sku = !empty($pp['sku']) ? $pp['sku'] : '';
+						$pp_var = !empty($pp['variasi']) ? $pp['variasi'] : '';
 						
-						// Try to find matching product in ERP by name (first word match)
-						$pp_first_word = strtok($pp_name, ' ');
+						// Try to find matching product in ERP by SKU or name
 						$prod = null;
-						if (strlen($pp_first_word) >= 3) {
-							$prod = $this->db->like('nama_produk', $pp_first_word)->get('produk')->row();
+						if (!empty($pp_sku) && $pp_sku !== '-' && $pp_sku !== 'Default') {
+							$prod = $this->db->get_where('produk', ['kode_produk' => $pp_sku])->row();
+						}
+						if (!$prod) {
+							$pp_first_word = strtok($pp_name, ' ');
+							if (strlen($pp_first_word) >= 3) {
+								$prod = $this->db->like('nama_produk', $pp_first_word)->get('produk')->row();
+							}
 						}
 						
 						$item_price = $this->_estimate_item_price($pp_name, $final_harga, $prod);
+						if (!$prod) {
+							$prod = $this->Model_penjualan_marketplace->get_or_create_product($pp_name, $pp_sku, $item_price, $pp_var, 'scan_resi');
+						}
+
+						// Only store scanned SKU and Variasi from receipt - do NOT use auto-created ERP product code (PRD-SCA-...)
+						// Gunakan SKU hasil scan resi jika ada; jika tidak ditemukan, gunakan auto generate SKU dari produk
+						$item_sku = (!empty($pp_sku) && $pp_sku !== '-') ? $pp_sku : ($prod && !empty($prod->kode_produk) ? $prod->kode_produk : '');
+						$item_var = (!empty($pp_var) && $pp_var !== '-') ? $pp_var : (!empty($final_variasi) && $final_variasi !== '-' ? $final_variasi : '');
+
 						$this->db->insert('penjualan_marketplace_item', [
 							'penjualan_marketplace_id' => $so_id,
-							'produk_id'     => $prod ? $prod->id : 0,
+							'produk_id'     => $prod ? $prod->id : 1,
+							'sku'           => $item_sku,
+							'nama_variasi'  => $item_var,
 							'qty'           => $pp_qty,
 							'satuan'        => 'pcs',
 							'harga_satuan'  => $item_price,
@@ -1364,15 +2676,29 @@ class Penjualan_marketplace extends Admin
 					}
 				} else {
 					$fallback_price = $this->_estimate_item_price($final_produk, $final_harga, null);
-					// Fallback: insert single generic item
+					$prod = $this->Model_penjualan_marketplace->get_or_create_product($final_produk, $final_sku, $fallback_price, $final_variasi, 'scan_resi');
+					// Only store scanned SKU and Variasi from receipt - do NOT use auto-created ERP product code (PRD-SCA-...)
+					// Gunakan SKU hasil scan resi jika ada; jika tidak ditemukan, gunakan auto generate SKU dari produk
+					$item_sku = (!empty($final_sku) && $final_sku !== '-') ? $final_sku : ($prod && !empty($prod->kode_produk) ? $prod->kode_produk : '');
+					$item_var = (!empty($final_variasi) && $final_variasi !== '-') ? $final_variasi : '';
 					$this->db->insert('penjualan_marketplace_item', [
 						'penjualan_marketplace_id' => $so_id,
-						'produk_id'     => 0,
+						'produk_id'     => $prod ? $prod->id : 1,
+						'sku'           => $item_sku,
+						'nama_variasi'  => $item_var,
 						'qty'           => max(1, $final_qty),
 						'satuan'        => 'pcs',
 						'harga_satuan'  => $fallback_price,
 						'subtotal'      => $fallback_price * max(1, $final_qty),
 						'catatan'       => !empty($final_produk) ? $final_produk : ('Produk Resi ' . $final_resi),
+					]);
+				}
+				// Update parent order sku_induk jika masih kosong dengan SKU produk
+				$first_it = $this->db->get_where('penjualan_marketplace_item', ['penjualan_marketplace_id' => $so_id])->row();
+				if ($first_it && !empty($first_it->sku)) {
+					$this->db->where('id', $so_id)->update('penjualan_marketplace', [
+						'sku_induk'           => $first_it->sku,
+						'nomor_referensi_sku' => $first_it->sku,
 					]);
 				}
 				$so = $this->db->get_where('penjualan_marketplace', ['id' => $so_id])->row();
@@ -1398,6 +2724,32 @@ class Penjualan_marketplace extends Admin
 				'alamat_pengiriman' => $unmask_data['address'],
 				'updated_at'        => date('Y-m-d H:i:s')
 			];
+
+			if (!empty($unmask_data['name']) && $unmask_data['name'] !== '-' && (empty($so->username_pembeli) || $so->username_pembeli === 're_home' || strpos($so->username_pembeli, '*') !== false)) {
+				$clean_user = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '_', trim($unmask_data['name'])));
+				$update_data['username_pembeli'] = trim($clean_user, '_');
+			}
+
+			// Update sender info if available
+			if (!empty($unmask_data['nama_pengirim'])) {
+				$update_data['nama_pengirim'] = $unmask_data['nama_pengirim'];
+				$so->nama_pengirim = $unmask_data['nama_pengirim'];
+			}
+			if (!empty($unmask_data['no_telepon_pengirim'])) {
+				$update_data['no_telepon_pengirim'] = $unmask_data['no_telepon_pengirim'];
+				$so->no_telepon_pengirim = $unmask_data['no_telepon_pengirim'];
+			}
+			if (!empty($unmask_data['alamat_pengirim'])) {
+				$update_data['alamat_pengirim'] = $unmask_data['alamat_pengirim'];
+				$so->alamat_pengirim = $unmask_data['alamat_pengirim'];
+			}
+			$deadline_kirim = !empty($unmask_data['batas_kirim']) ? $unmask_data['batas_kirim'] : (!empty($so->pesanan_harus_dikirim_sebelum) ? $so->pesanan_harus_dikirim_sebelum : null);
+			if (!empty($deadline_kirim)) {
+				$update_data['pesanan_harus_dikirim_sebelum'] = $deadline_kirim;
+				$update_data['waktu_pembayaran'] = $deadline_kirim; // Waktu bayar scan resi dibuat sama dengan Deadline Kirim
+				$so->pesanan_harus_dikirim_sebelum = $deadline_kirim;
+				$so->waktu_pembayaran = $deadline_kirim;
+			}
 			
 			// Update nomor_resi in DB if parsed label extracted a specific resi number (e.g. JNE..., JT..., SPX...) and current DB resi equals order number or is generic
 			$new_resi = !empty($parsed_label['resi']) ? $parsed_label['resi'] : (!empty($nomor_resi) ? $nomor_resi : '');
@@ -1418,6 +2770,24 @@ class Penjualan_marketplace extends Admin
 				$update_data['kurir_ekspedisi'] = $detect_courier;
 				$so->opsi_pengiriman = $detect_courier;
 				$so->kurir_ekspedisi = $detect_courier;
+			}
+
+			// Update COD status & nominal if detected on thermal label
+			if (!empty($parsed_label['is_cod'])) {
+				$update_data['tipe_pengiriman'] = 'COD';
+				$so->tipe_pengiriman = 'COD';
+				if (!empty($parsed_label['cod_nominal']) && (float)$parsed_label['cod_nominal'] > 0) {
+					$update_data['total'] = (float)$parsed_label['cod_nominal'];
+					$update_data['subtotal'] = (float)$parsed_label['cod_nominal'];
+					$so->total = (float)$parsed_label['cod_nominal'];
+					$so->subtotal = (float)$parsed_label['cod_nominal'];
+				}
+				if (empty($so->catatan) || stripos($so->catatan, 'COD') === false) {
+					$update_data['catatan'] = trim(($so->catatan ?? '') . ' [COD Rp ' . number_format($so->total, 0, ',', '.') . ']');
+				}
+			} elseif (!empty($parsed_label['tipe_pengiriman']) && empty($so->tipe_pengiriman)) {
+				$update_data['tipe_pengiriman'] = $parsed_label['tipe_pengiriman'];
+				$so->tipe_pengiriman = $parsed_label['tipe_pengiriman'];
 			}
 			
 			$this->db->where('id', $so->id)->update('penjualan_marketplace', $update_data);
@@ -1444,23 +2814,52 @@ class Penjualan_marketplace extends Admin
 				foreach ($parsed_products as $pp) {
 					$pp_name = $pp['name'];
 					$pp_qty = max(1, (int)$pp['qty']);
+					$pp_sku = !empty($pp['sku']) ? $pp['sku'] : '';
+					$pp_var = !empty($pp['variasi']) ? $pp['variasi'] : '';
 					
 					$prod = null;
-					$pp_first_word = strtok($pp_name, ' ');
-					if (strlen($pp_first_word) >= 3) {
-						$prod = $this->db->like('nama_produk', $pp_first_word)->get('produk')->row();
+					if (!empty($pp_sku) && $pp_sku !== '-' && $pp_sku !== 'Default') {
+						$prod = $this->db->get_where('produk', ['kode_produk' => $pp_sku])->row();
+					}
+					if (!$prod) {
+						$pp_first_word = strtok($pp_name, ' ');
+						if (strlen($pp_first_word) >= 3) {
+							$prod = $this->db->like('nama_produk', $pp_first_word)->get('produk')->row();
+						}
 					}
 					$item_price = $this->_estimate_item_price($pp_name, $final_harga, $prod);
+					if (!$prod) {
+						$prod = $this->Model_penjualan_marketplace->get_or_create_product($pp_name, $pp_sku, $item_price, $pp_var, 'scan_resi');
+					}
 					
+					// Only store scanned SKU and Variasi from receipt - do NOT use auto-created ERP product code (PRD-SCA-...)
+					// Gunakan SKU hasil scan resi jika ada; jika tidak ditemukan, gunakan auto generate SKU dari produk
+					$item_sku = (!empty($pp_sku) && $pp_sku !== '-') ? $pp_sku : ($prod && !empty($prod->kode_produk) ? $prod->kode_produk : '');
+					$item_var = (!empty($pp_var) && $pp_var !== '-') ? $pp_var : (!empty($final_variasi) && $final_variasi !== '-' ? $final_variasi : '');
+
 					$this->db->insert('penjualan_marketplace_item', [
 						'penjualan_marketplace_id' => $so->id,
-						'produk_id'     => $prod ? $prod->id : 0,
+						'produk_id'     => $prod ? $prod->id : 1,
+						'sku'           => $item_sku,
+						'nama_variasi'  => $item_var,
 						'qty'           => $pp_qty,
 						'satuan'        => 'pcs',
 						'harga_satuan'  => $item_price,
 						'subtotal'      => $item_price * $pp_qty,
 						'catatan'       => $pp_name,
 					]);
+				}
+				// Sync parent order SKU and Variation with the first item
+				$first_it = $this->db->get_where('penjualan_marketplace_item', ['penjualan_marketplace_id' => $so->id])->row();
+				if ($first_it && !empty($first_it->sku)) {
+					$this->db->where('id', $so->id)->update('penjualan_marketplace', [
+						'sku_induk'           => $first_it->sku,
+						'nomor_referensi_sku' => $first_it->sku,
+						'nama_variasi'        => $first_it->nama_variasi,
+					]);
+					$so->sku_induk = $first_it->sku;
+					$so->nomor_referensi_sku = $first_it->sku;
+					$so->nama_variasi = $first_it->nama_variasi;
 				}
 			}
 		}
@@ -1487,7 +2886,8 @@ class Penjualan_marketplace extends Admin
 					$prod_name = !empty($so->nama_produk_marketplace) ? $so->nama_produk_marketplace : 'Produk Marketplace';
 				}
 
-				$item_sku = ($prod && !empty($prod->kode_produk)) ? $prod->kode_produk : (!empty($so->sku_induk) ? $so->sku_induk : '-');
+				$raw_it_sku = (!empty($it->sku) && $it->sku !== '-') ? $it->sku : (!empty($so->sku_induk) ? $so->sku_induk : (!empty($so->nomor_referensi_sku) ? $so->nomor_referensi_sku : ''));
+				$item_sku = (!empty($raw_it_sku) && $raw_it_sku !== '-') ? $raw_it_sku : (!empty($prod->kode_produk) ? $prod->kode_produk : '-');
 
 				$qty = (float)($it->qty ?: 1);
 				$harga = (float)($it->harga_satuan ?: 0);
@@ -1503,13 +2903,18 @@ class Penjualan_marketplace extends Admin
 				$total_qty += $qty;
 				$total_price += $subtotal;
 
-				$item_variasi = (!empty($it->catatan) && $it->catatan !== $prod_name) ? $it->catatan : ($so->nama_variasi ?: 'Default');
+				$item_variasi = (!empty($it->nama_variasi) && $it->nama_variasi !== '-') ? $it->nama_variasi : (!empty($so->nama_variasi) && $so->nama_variasi !== '-' ? $so->nama_variasi : '-');
 
 				$items_breakdown[] = [
 					'qty'                 => $qty,
 					'master_product_name' => $prod_name,
+					'nama_produk'         => $prod_name,
 					'sku'                 => $item_sku,
+					'sku_induk'           => $item_sku,
+					'kode_produk'         => $item_sku,
 					'variasi'             => $item_variasi,
+					'nama_variasi'        => $item_variasi,
+					'harga'               => $harga,
 					'harga_satuan'        => $harga,
 					'subtotal'            => $subtotal
 				];
@@ -1517,7 +2922,9 @@ class Penjualan_marketplace extends Admin
 		} else {
 			$total_qty = 1;
 			$total_price = (float)($so->total ?: 0);
-			if ($total_price <= 0) $total_price = 150000;
+			if ($total_price <= 0 && !empty($final_total)) $total_price = (float)$final_total;
+			if ($total_price <= 0 && !empty($final_cod_amount)) $total_price = (float)$final_cod_amount;
+			if ($total_price <= 0) $total_price = 0;
 			$items_breakdown[] = [
 				'qty'                 => 1,
 				'master_product_name' => $so->nama_produk_marketplace ?: 'Produk Online Shop',
@@ -1536,7 +2943,14 @@ class Penjualan_marketplace extends Admin
 			]);
 		}
 
+		if ($so && !empty($so->id)) {
+			$this->Model_penjualan_marketplace->sync_to_sales_order($so->id);
+		}
+
 		$response_courier = !empty($so->opsi_pengiriman) ? $so->opsi_pengiriman : (!empty($parsed_label['courier']) ? $parsed_label['courier'] : (!empty($final_courier) ? $final_courier : 'JNE Express REG'));
+
+		$is_cod_final = (strtolower($so->tipe_pengiriman ?? '') === 'cod' || !empty($parsed_label['is_cod']) || stripos($so->catatan ?? '', 'COD') !== false);
+		$tipe_pengiriman_final = $is_cod_final ? 'COD' : ($so->tipe_pengiriman ?: 'Non-COD');
 
 		echo json_encode([
 			'status'  => 'success',
@@ -1546,15 +2960,146 @@ class Penjualan_marketplace extends Admin
 				'no_pesanan'       => $so->no_pesanan ?: $so->nomor_so,
 				'nomor_resi'       => $so->nomor_resi ?: ($nomor_resi ?: $parsed_label['resi']),
 				'opsi_pengiriman'  => $response_courier,
-				'waktu_pembayaran' => $so->waktu_pembayaran ?: $so->created_at,
+				'tipe_pengiriman'  => $tipe_pengiriman_final,
+				'is_cod'           => $is_cod_final,
+				'nominal_cod'      => (float)($so->total ?: ($parsed_label['cod_nominal'] ?? 0)),
+				'waktu_pembayaran' => !empty($so->waktu_pembayaran) ? $so->waktu_pembayaran : (!empty($so->pesanan_harus_dikirim_sebelum) ? $so->pesanan_harus_dikirim_sebelum : $so->created_at),
 				'unmasked_name'    => $unmask_data['name'],
 				'unmasked_phone'   => $unmask_data['phone'],
 				'unmasked_address' => $unmask_data['address'],
+				'nama_pengirim'    => !empty($so->nama_pengirim) ? $so->nama_pengirim : ($unmask_data['nama_pengirim'] ?? ''),
+				'no_telepon_pengirim' => !empty($so->no_telepon_pengirim) ? $so->no_telepon_pengirim : ($unmask_data['no_telepon_pengirim'] ?? ''),
+				'alamat_pengirim'  => !empty($so->alamat_pengirim) ? $so->alamat_pengirim : ($unmask_data['alamat_pengirim'] ?? ''),
+				'pesanan_harus_dikirim_sebelum' => !empty($so->pesanan_harus_dikirim_sebelum) ? $so->pesanan_harus_dikirim_sebelum : ($unmask_data['batas_kirim'] ?? null),
+				'batas_kirim_formatted' => !empty($so->pesanan_harus_dikirim_sebelum) ? date('d/m/Y', strtotime($so->pesanan_harus_dikirim_sebelum)) : (!empty($unmask_data['batas_kirim']) ? date('d/m/Y', strtotime($unmask_data['batas_kirim'])) : '-'),
 				'total_qty'        => $total_qty,
-				'total_price'      => $total_price,
+				'total_price'      => (float)$so->total > 0 ? (float)$so->total : $total_price,
 				'items'            => $items_breakdown
 			]
 		]);
+	}
+
+	/**
+	 * Detect COD box on thermal shipping labels directly using PHP GD
+	 * Scale-independent detection of horizontal table borders and vertical divider
+	 */
+	private function _detect_cod_from_image_file($file_path)
+	{
+		if (empty($file_path) || !file_exists($file_path)) return ['is_cod' => false, 'box' => null];
+
+		$data = @file_get_contents($file_path);
+		if (!$data) return ['is_cod' => false, 'box' => null];
+
+		// Check if WebP
+		$im = null;
+		if (substr($data, 0, 4) === 'RIFF' && substr($data, 8, 4) === 'WEBP') {
+			if (function_exists('imagecreatefromwebp')) {
+				$im = @imagecreatefromwebp($file_path);
+			}
+		}
+		if (!$im) {
+			$im = @imagecreatefromstring($data);
+		}
+		if (!$im && function_exists('imagecreatefromwebp')) {
+			$im = @imagecreatefromwebp($file_path);
+		}
+		if (!$im) return ['is_cod' => false, 'box' => null];
+
+		$w = imagesx($im);
+		$h = imagesy($im);
+
+		// Upscale if smaller than 1200 for consistent pixel geometry
+		if ($w < 1200) {
+			$scale = 1200 / $w;
+			$upW = (int)round($w * $scale);
+			$upH = (int)round($h * $scale);
+			$up = imagecreatetruecolor($upW, $upH);
+			imagecopyresampled($up, $im, 0, 0, 0, 0, $upW, $upH, $w, $h);
+			imagedestroy($im);
+			$im = $up;
+			$w = $upW;
+			$h = $upH;
+		}
+
+		$startY = ($h < 300) ? (int)floor($h * 0.05) : (int)floor($h * 0.10);
+		$endY = ($h < 300) ? (int)floor($h * 0.95) : (int)floor($h * 0.70);
+		$checkW = (int)floor($w * 0.48);
+
+		$hLines = [];
+		for ($y = $startY; $y < $endY; $y++) {
+			$darkCnt = 0;
+			for ($x = 0; $x < $checkW; $x++) {
+				$rgb = imagecolorat($im, $x, $y);
+				$r = ($rgb >> 16) & 0xFF;
+				$g = ($rgb >> 8) & 0xFF;
+				$b = $rgb & 0xFF;
+				if ((0.299 * $r + 0.587 * $g + 0.114 * $b) < 120) $darkCnt++;
+			}
+			if ($darkCnt > $checkW * 0.55) {
+				$hLines[] = $y;
+			}
+		}
+
+		$minGap = max(3, (int)floor($h * 0.008));
+		$distinct = [];
+		for ($i = 0; $i < count($hLines); $i++) {
+			if (count($distinct) === 0 || ($hLines[$i] - $distinct[count($distinct) - 1]) > $minGap) {
+				$distinct[] = $hLines[$i];
+			}
+		}
+
+		for ($j = 0; $j < count($distinct) - 1; $j++) {
+			$yTop = $distinct[$j];
+			$yBot = $distinct[$j + 1];
+			$rowH = $yBot - $yTop;
+			$relH = $rowH / $h;
+			$maxRelH = ($h < 300) ? 0.75 : 0.090;
+
+			if ($relH >= 0.012 && $relH <= $maxRelH) {
+				$minDivX = (int)floor($w * 0.20);
+				$maxDivX = ($h < 300) ? (int)floor($w * 0.95) : (int)floor($w * 0.48);
+				$vDiv = ($h < 300) ? (int)floor($w * 0.90) : (int)floor($w * 0.35);
+
+				for ($vx = $minDivX; $vx <= $maxDivX; $vx++) {
+					$colDark = 0;
+					for ($vy = $yTop; $vy <= $yBot; $vy++) {
+						$rgb = imagecolorat($im, $vx, $vy);
+						$r = ($rgb >> 16) & 0xFF;
+						$g = ($rgb >> 8) & 0xFF;
+						$b = $rgb & 0xFF;
+						if ((0.299 * $r + 0.587 * $g + 0.114 * $b) < 120) $colDark++;
+					}
+					if ($colDark >= $rowH * 0.60) {
+						$vDiv = $vx;
+						break;
+					}
+				}
+
+				$textDark = 0;
+				$insetX = max(2, (int)floor($w * 0.02));
+				$insetY = max(1, (int)floor($rowH * 0.15));
+				for ($by = $yTop + $insetY; $by <= $yBot - $insetY; $by++) {
+					for ($bx = $insetX; $bx < $vDiv - 2; $bx++) {
+						$rgb = imagecolorat($im, $bx, $by);
+						$r = ($rgb >> 16) & 0xFF;
+						$g = ($rgb >> 8) & 0xFF;
+						$b = $rgb & 0xFF;
+						if ((0.299 * $r + 0.587 * $g + 0.114 * $b) < 130) $textDark++;
+					}
+				}
+
+				$minTextDark = max(10, (int)floor($w * 0.015));
+				if ($textDark >= $minTextDark) {
+					imagedestroy($im);
+					return [
+						'is_cod' => true,
+						'box' => ['x' => 0, 'y' => $yTop, 'w' => $vDiv, 'h' => $rowH]
+					];
+				}
+			}
+		}
+		imagedestroy($im);
+		return ['is_cod' => false, 'box' => null];
 	}
 
 	/**
@@ -1566,13 +3111,14 @@ class Penjualan_marketplace extends Admin
 	 * 
 	 * Supports: Shopee (SPX), JNE, J&T, SiCepat, Anteraja, ID Express, Ninja
 	 */
-	private function _parse_full_pdf_label($extracted_text, $raw_input = '')
+	private function _parse_full_pdf_label($extracted_text, $raw_input = '', $uploaded_file_path = '')
 	{
 		$full_str = "";
 		$items_str = [];
 		if (is_array($extracted_text)) {
 			foreach ($extracted_text as $ti) {
 				$s = trim(is_array($ti) ? ($ti['str'] ?? '') : $ti);
+				$s = preg_replace('/[\x{200B}-\x{200F}\x{202A}-\x{202E}\x{FEFF}]/u', '', $s);
 				if ($s !== '') {
 					$items_str[] = $s;
 					$full_str .= " " . $s;
@@ -1589,6 +3135,10 @@ class Penjualan_marketplace extends Admin
 		$penerima = "";
 		$phone = "";
 		$address = "";
+		$pengirim = "";
+		$pengirim_phone = "";
+		$pengirim_address = "";
+		$pengirim_line_idx = -1;
 		$produk = "";
 		$variasi = "";
 		$qty = 0;
@@ -1656,12 +3206,75 @@ class Penjualan_marketplace extends Admin
 		}
 
 		// ===== 2. ORDER NUMBER (No. Pesanan) =====
+		// 2.1 Shopee order format
 		if (preg_match('/(\d{6}SHP[A-Z0-9]{4,15})/i', $full_str, $m)) {
 			$pesanan = $m[1];
+		} elseif (preg_match('/\b(2[0-9]{5}[A-Z0-9]{7,12})\b/i', $full_str, $m)) {
+			$pesanan = $m[1];
 		}
+		// 2.2 Tokopedia invoice format: INV/20210708/XI/1234567890 or OCR misread INV| / INVI
 		if (empty($pesanan)) {
-			if (preg_match('/(No\.?\s*Pesanan|Pesanan|Order\s*(?:No|ID|Number)?)\s*[:\/]\s*([A-Za-z0-9\-]{6,30})/i', $full_str, $m)) {
-				$pesanan = trim($m[2]);
+			// First check lines with clean space/slash separators
+			foreach ($items_str as $str_line) {
+				if (preg_match('/\bINV[\/I|1\s]*(\d{6,8})[\/I|\s]+([A-Za-z0-9]{2,8})\s+(\d{6,15})\b/i', $str_line, $im)) {
+					$pesanan = 'INV/' . $im[1] . '/' . strtoupper($im[2]) . '/' . $im[3];
+					break;
+				} elseif (preg_match('/\b(INV\/[0-9]{4,8}\/[A-Za-z0-9]+\/[0-9]{6,15})\b/i', $str_line, $im)) {
+					$pesanan = $im[1];
+					break;
+				}
+			}
+			if (empty($pesanan)) {
+				if (preg_match('/\bINV[\/I|1\s]*(\d{6,8})[\/I|1\s]*([A-Za-z0-9]{2,6})[\/I|1\s]+(\d{6,15})\b/i', $full_str, $im)) {
+					$pesanan = 'INV/' . $im[1] . '/' . strtoupper($im[2]) . '/' . $im[3];
+				} elseif (preg_match('/\b(INV\/[0-9]{4,8}\/[A-Za-z0-9]+\/[0-9]{6,15})\b/i', $full_str, $im)) {
+					$pesanan = $im[1];
+				} elseif (preg_match('/\bINV[\/I|1\s]*(\d{6,8})[\/I|1\s]*([A-Za-z0-9]{2,6})[\/I|1\s]*(\d{6,15})\b/i', $full_str, $im)) {
+					$pesanan = 'INV/' . $im[1] . '/' . strtoupper($im[2]) . '/' . $im[3];
+				}
+			}
+		}
+		// 2.3 TikTok Shop TT Order Id / Order ID (Always prioritized for TikTok labels)
+		if (empty($pesanan)) {
+			// 2.3.1 Explicit TT Order Id with OCR toleration (e.g. "TT Order Id : 576809899405051391" or "TT Order 14:577130113747225090")
+			if (preg_match('/TT\s*Order\s*(?:[A-Za-z0-9]{1,4})?\s*[:\/ ]\s*([0-9]{14,25})/i', $full_str, $m)) {
+				$pesanan = trim($m[1]);
+			}
+			// 2.3.2 Line starting with TT Order
+			if (empty($pesanan)) {
+				foreach ($items_str as $str_line) {
+					if (preg_match('/TT\s*Order.*?[:\/ ]\s*([0-9]{14,25})/i', $str_line, $m)) {
+						$pesanan = trim($m[1]);
+						break;
+					}
+				}
+			}
+			// 2.3.3 Order ID below table: "Order ID: 577130113747225090" or "Order ID: $77130113747225090" ($ = 5)
+			if (empty($pesanan)) {
+				if (preg_match('/Order\s*ID\s*[:\/ ]\s*[\$sS]?([0-9]{14,25})/i', $full_str, $m)) {
+					$raw_num = trim($m[1]);
+					if (strlen($raw_num) == 17 && strpos($m[0], '$') !== false) {
+						$pesanan = '5' . $raw_num;
+					} else {
+						$pesanan = $raw_num;
+					}
+				}
+			}
+			// 2.3.4 TikTok Order ID pattern (16-20 digits starting with 57, 58, 59, 56)
+			if (empty($pesanan) && (stripos($full_str, 'TikTok') !== false || stripos($full_str, 'TT Order') !== false || stripos($full_str, 'jet.co.id') !== false)) {
+				if (preg_match('/\b(5[6789]\d{14,19})\b/', $full_str, $m)) {
+					$pesanan = $m[1];
+				}
+			}
+		}
+
+		// 2.4 General label: No. Pesanan / Order ID / Invoice
+		if (empty($pesanan)) {
+			if (preg_match('/(?:No\.?\s*Pesanan|Pesanan|Order\s*(?:No|ID|Number)?)\s*[:\/ ]\s*([A-Za-z0-9\-]{6,30})/i', $full_str, $m)) {
+				$cand_pes = trim($m[1]);
+				if (empty($resi) || $cand_pes !== $resi) {
+					$pesanan = $cand_pes;
+				}
 			}
 		}
 		if (empty($pesanan)) {
@@ -1669,8 +3282,10 @@ class Penjualan_marketplace extends Admin
 				if (preg_match('/^(No\.?\s*Pesanan|Pesanan|Order\s*(?:No|ID))\s*:?\s*$/i', trim($str)) && isset($items_str[$idx + 1])) {
 					$nxt = trim($items_str[$idx + 1]);
 					if (strlen($nxt) >= 6 && preg_match('/^[A-Za-z0-9\-]+$/', $nxt)) {
-						$pesanan = $nxt;
-						break;
+						if (empty($resi) || $nxt !== $resi) {
+							$pesanan = $nxt;
+							break;
+						}
 					}
 				}
 			}
@@ -1747,35 +3362,83 @@ class Penjualan_marketplace extends Admin
 		}
 
 		// ===== 4. RECIPIENT NAME (Penerima) =====
-		$penerima_patterns = [
-			'/(?:Penerima|Nama\s*Penerima|Kepada|To|Recipient|Receiver)\s*[:\/]?\s*([A-Za-z0-9\.\s\-\'\(\)]{2,50}?)(?=\s*(?:(?:No\.?\s*)?(?:Telp|Telepon|Hp|HP|Tel|Phone|Handphone|WA)|(?:62|0)8[0-9]|Alamat|Pengirim|Dikirim|Order|AWB|Kota|Kab|Prov|\||\n|$))/i',
-			'/Penerima\s*[:\/]?\s*([A-Za-z0-9\.\s\-\'\(\)]{2,50})/i',
-			'/Nama\s*Penerima\s*[:\/]?\s*([A-Za-z0-9\.\s\-\'\(\)]{2,50})/i',
-			'/Kepada\s*[:\/]?\s*([A-Za-z0-9\.\s\-\'\(\)]{2,50})/i',
-			'/To\s*[:\/]?\s*([A-Za-z0-9\.\s\-\'\(\)]{2,50})/i',
-		];
+		// 4.0 Dual check: Penerima ... Pengirim/Pengin/Pengir on same line (e.g. Tokopedia / Shopee dual format)
+		foreach ($items_str as $idx => $l) {
+			if (preg_match('/Penerima\s*[:\/]\s*(.+?)(?:\s*(?:~~|Pengirim|Pengin|Pengir)\s*[:\/]\s*(.+))$/i', $l, $dual_m)) {
+				$cand_p = $dual_m[1];
+				if (preg_match('/(?:\+?62|0)(8[0-9]{8,12})/', $cand_p, $ppm)) {
+					$penerima_phone = '0' . $ppm[1];
+				}
+				$cand_p = preg_replace('/\s*\(.*?\)/', '', $cand_p);
+				$cand_p = preg_replace('/(?:\+?62|0)8[0-9\s\-]{7,14}.*$/i', '', $cand_p);
+				$cand_p = preg_replace('/[\s\p{Pd}\-_=~\.\?\"\'\*\|]{2,}.*$/u', '', $cand_p);
+				$cand_p = preg_replace('/[\p{Pd}\s~=_|\-]+$/u', '', $cand_p);
+				$cand_p = trim($cand_p, " \t\n\r\0\x0B~-:,|()_=.?\x22\x27*");
+				if (!empty($cand_p) && strlen($cand_p) >= 2) $penerima = ucwords(strtolower($cand_p));
 
-		foreach ($penerima_patterns as $pp) {
-			if (preg_match($pp, $full_str, $m)) {
-				$cand = trim($m[1]);
-				$cand = preg_replace('/(?:\+?62|0)8[0-9\s\-]{7,14}.*$/i', '', $cand);
-				$cand = preg_replace('/\s+(?:No\s*Hp|No\s*Telp|Notelp|Telp|Telepon|Phone|Handphone|Alamat|Pengirim|No\.?\s*Telepon).*$/i', '', $cand);
-				$cand = trim($cand);
-				if (strlen($cand) >= 2 && !preg_match('/^(pengirim|alamat|no\.?|halaman|page|dicetak|shopee|spx|jne|jnt|variasi|qty|berat|order)/i', $cand)) {
-					$penerima = ucwords(strtolower($cand));
-					break;
+				if (!empty($dual_m[2])) {
+					$cand_peng = $dual_m[2];
+					$cand_peng = preg_replace('/\s*\(.*?\)/', '', $cand_peng);
+					$cand_peng = preg_replace('/(?:\+?62|0)8[0-9\s\-]{7,14}.*$/i', '', $cand_peng);
+					$cand_peng = trim($cand_peng, " \t\n\r\0\x0B~-:,|()_=.?\x22\x27*");
+					if (!empty($cand_peng) && strlen($cand_peng) >= 2) {
+						$pengirim = ucwords(strtolower($cand_peng));
+						$pengirim_line_idx = $idx;
+					}
+				}
+				break;
+			}
+		}
+
+		// 4.1 Direct line check in items_str (highest accuracy - avoids cross-line regex errors)
+		if (empty($penerima)) {
+			foreach ($items_str as $line) {
+				$l = trim($line);
+				if (preg_match('/^(?:Penerima|Nama\s*Penerima|Kepada|Receiver)\s*[:\/]\s*(.+)$/i', $l, $m)) {
+					$cand = clean_customer_name($m[1]);
+					if (strlen($cand) >= 2 && !preg_match('/^(pengirim|alamat|no\.?|halaman|page|dicetak|shopee|spx|jne|jnt|variasi|qty|berat|order|home|work|re\s*home)$/i', $cand)) {
+						$penerima = ucwords(strtolower($cand));
+						break;
+					}
 				}
 			}
 		}
 
+		// 4.2 Labeled Penerima on its own line followed by name on next line
 		if (empty($penerima)) {
 			foreach ($items_str as $idx => $str) {
-				if (preg_match('/^(Penerima|Nama\s*Penerima|Kepada|To|Recipient|Receiver)\s*:?\s*$/i', trim($str)) && isset($items_str[$idx + 1])) {
+				if (preg_match('/^(?:Penerima|Nama\s*Penerima|Kepada|Recipient|Receiver)\s*:?\s*$/i', trim($str)) && isset($items_str[$idx + 1])) {
 					$nxt = trim($items_str[$idx + 1]);
 					$nxt = preg_replace('/(?:\+?62|0)8[0-9\s\-]{7,14}.*$/i', '', $nxt);
-					$nxt = trim($nxt);
-					if (strlen($nxt) >= 2 && !preg_match('/^(No\.?|Pengirim|Alamat|Halaman|Shopee|SPX|JNE)/i', $nxt)) {
+					$nxt = preg_replace('/\b(?:HOME|WORK|OFFICE|KANTOR|RUMAH)\b/i', '', $nxt);
+					$nxt = trim($nxt, " \t\n\r\0\x0B~-:,|");
+					if (strlen($nxt) >= 2 && !preg_match('/^(no\.?|pengirim|alamat|halaman|page|dicetak|shopee|spx|jne|jnt|variasi|qty|berat|order|home|work|re\s*home)/i', $nxt)) {
 						$penerima = ucwords(strtolower($nxt));
+						break;
+					}
+				}
+			}
+		}
+
+		// 4.3 Multi-pattern regex on full text
+		if (empty($penerima)) {
+			$penerima_patterns = [
+				'/\b(?:Penerima|Nama\s*Penerima|Kepada|Recipient|Receiver)\s*[:\/]?\s*([A-Za-z0-9\.\s\-\'\(\)]{2,50}?)(?=\s*(?:~~|Pengirim|Dikirim|(?:No\.?\s*)?(?:Telp|Telepon|Hp|HP|Tel|Phone|Handphone|WA)|(?:62|0)8[0-9]|Alamat|Order|AWB|Kota|Kab|Prov|\||\n|$))/i',
+				'/\bTo\s*[:\/]\s*([A-Za-z0-9\.\s\-\'\(\)]{2,50}?)(?=\s*(?:~~|Pengirim|Dikirim|(?:No\.?\s*)?(?:Telp|Telepon|Hp|HP|Tel|Phone|Handphone|WA)|(?:62|0)8[0-9]|Alamat|Order|AWB|Kota|Kab|Prov|\||\n|$))/i',
+				'/\bPenerima\s*[:\/]?\s*([A-Za-z0-9\.\s\-\'\(\)]{2,50})/i',
+				'/\bNama\s*Penerima\s*[:\/]?\s*([A-Za-z0-9\.\s\-\'\(\)]{2,50})/i',
+				'/\bKepada\s*[:\/]?\s*([A-Za-z0-9\.\s\-\'\(\)]{2,50})/i',
+			];
+
+			foreach ($penerima_patterns as $pp) {
+				if (preg_match($pp, $full_str, $m)) {
+					$cand = trim($m[1]);
+					$cand = preg_replace('/(?:\+?62|0)8[0-9\s\-]{7,14}.*$/i', '', $cand);
+					$cand = preg_replace('/\s*(?:~~|Pengirim|Alamat|No\s*Hp|No\s*Telp|Notelp|Telp|Telepon|Phone|Handphone|No\.?\s*Telepon).*$/i', '', $cand);
+					$cand = preg_replace('/\b(?:HOME|WORK|OFFICE|KANTOR|RUMAH)\b/i', '', $cand);
+					$cand = trim($cand, " \t\n\r\0\x0B~-:,|");
+					if (strlen($cand) >= 2 && !preg_match('/^(pengirim|alamat|no\.?|halaman|page|dicetak|shopee|spx|jne|jnt|variasi|qty|berat|order|home|work|re\s*home)$/i', $cand)) {
+						$penerima = ucwords(strtolower($cand));
 						break;
 					}
 				}
@@ -1789,8 +3452,10 @@ class Penjualan_marketplace extends Admin
 				if (preg_match('/(?:\+?62|0)8[0-9\s\-]{7,14}/', $str_clean)) {
 					if ($idx > 0 && isset($items_str[$idx - 1])) {
 						$prev = trim($items_str[$idx - 1]);
-						$prev = preg_replace('/^(Penerima|Kepada|To)\s*:?\s*/i', '', $prev);
-						if (strlen($prev) >= 2 && strlen($prev) <= 40 && !preg_match('/^(No\.?|Pengirim|Alamat|Shopee|SPX|Resi)/i', $prev)) {
+						$prev = preg_replace('/^(Penerima|Kepada)\s*:?\s*/i', '', $prev);
+						$prev = preg_replace('/\b(?:HOME|WORK|OFFICE|KANTOR|RUMAH)\b/i', '', $prev);
+						$prev = trim($prev, " \t\n\r\0\x0B~-:,|");
+						if (strlen($prev) >= 2 && strlen($prev) <= 40 && !preg_match('/^(No\.?|Pengirim|Alamat|Shopee|SPX|Resi|Home|Work)/i', $prev)) {
 							$penerima = ucwords(strtolower($prev));
 							break;
 						}
@@ -1799,33 +3464,153 @@ class Penjualan_marketplace extends Admin
 			}
 		}
 
-		// ===== 5. PHONE NUMBER =====
-		if (preg_match('/(No\.?\s*(?:Telepon|Telp|Hp|HP|Tel|Phone|Handphone|WA)?)\s*[:\/]?\s*(\+?62[\d\s\-]{8,15}|08[\d\s\-]{8,15})/i', $full_str, $m)) {
-			$phone = preg_replace('/[^\d]/', '', trim($m[2]));
-			if (strpos($phone, '62') === 0) {
-				$phone = '0' . substr($phone, 2);
+		// ===== 4.4 SENDER INFO (Pengirim: Nama, No Telp, Asal/Lokasi) =====
+		$pengirim_indices = [];
+		foreach ($items_str as $idx => $line) {
+			$l = trim($line);
+			if (preg_match('/(?:^|\b|~~)\s*(?:Pengirim|Pengin|Pengir)\s*[:\/]/i', $l) || preg_match('/^(?:Pengirim|Pengin|Pengir)\s*:?$/i', $l)) {
+				$pengirim_indices[] = $idx;
 			}
 		}
 
-		if (empty($phone)) {
-			$clean_text_for_phone = preg_replace('/[\(\)\-\.]/', '', $full_str);
-			if (preg_match_all('/(?:\+?62|0)(8[0-9]{8,12})/', $clean_text_for_phone, $matches)) {
-				$raw_p = $matches[1][0];
-				$phone = '0' . $raw_p;
-			}
-		}
-
-		if (empty($phone)) {
-			foreach ($items_str as $idx => $str) {
-				if (preg_match('/^(No\.?\s*(?:Telepon|Telp|Hp|HP|Tel|Phone|WA))\s*:?\s*$/i', trim($str)) && isset($items_str[$idx + 1])) {
-					$nxt = preg_replace('/[^\d]/', '', trim($items_str[$idx + 1]));
-					if (preg_match('/^(?:62|0)?(8[0-9]{8,12})$/', $nxt, $pm)) {
-						$phone = '0' . $pm[1];
+		if (empty($pengirim)) {
+			foreach ($pengirim_indices as $p_idx) {
+				$l = trim($items_str[$p_idx]);
+				if (preg_match('/(?:^|\b|~~)\s*(?:Pengirim|Pengin|Pengir)\s*[:\/]\s*(.+)$/i', $l, $m)) {
+					$cand = trim($m[1]);
+					$cand = preg_replace('/\s*(?:~~|Penerima|Dikirim|Berat|COD|No\.?\s*Pesanan).*$/i', '', $cand);
+					$cand = preg_replace('/\s*(?:\(\+?62\)\s*|\+?62\s*|\(0\d+\)\s*|0)?8[\s0-9\-]{7,16}.*$/i', '', $cand);
+					$cand = preg_replace('/\s*\(.*?\)/', '', $cand);
+					$cand = preg_replace('/[\s\p{Pd}\-_=~\.\?\"\'\*\|]{2,}.*$/u', '', $cand);
+					$cand = trim($cand, " \t\n\r\0\x0B~-:,|()");
+					if (strlen($cand) >= 2 && !preg_match('/^(penerima|alamat|no\.?|shopee|spx|jne|jnt)$/i', $cand)) {
+						$pengirim = ucwords(strtolower($cand));
+						$pengirim_line_idx = $p_idx;
+						break;
+					}
+				} elseif (isset($items_str[$p_idx + 1])) {
+					$nxt = trim($items_str[$p_idx + 1]);
+					$nxt = preg_replace('/\s*(?:\(\+?62\)\s*|\+?62\s*|\(0\d+\)\s*|0)?8[\s0-9\-]{7,16}.*$/i', '', $nxt);
+					$nxt = preg_replace('/\s*\(.*?\)/', '', $nxt);
+					$nxt = trim($nxt, " \t\n\r\0\x0B~-:,|");
+					if (strlen($nxt) >= 2 && !preg_match('/^(penerima|alamat|no\.?|shopee|spx|jne|jnt)$/i', $nxt)) {
+						$pengirim = ucwords(strtolower($nxt));
+						$pengirim_line_idx = $p_idx;
 						break;
 					}
 				}
 			}
 		}
+
+		if (empty($pengirim)) {
+			if (preg_match('/\b(?:Pengirim|Sender|From)\s*[:\/]\s*([A-Za-z0-9\.\s\-\'\&]{2,40}?)(?=\s*(?:~~|Penerima|Dikirim|(?:62|0)8[0-9]|Alamat|Order|AWB|Kota|Kab|Prov|\||\n|$))/i', $full_str, $m)) {
+				$cand = trim($m[1]);
+				$cand = preg_replace('/\s*(?:~~|Penerima|Dikirim).*$/i', '', $cand);
+				$cand = preg_replace('/\s*(?:\(\+?62\)\s*|\+?62\s*|\(0\d+\)\s*|0)?8[\s0-9\-]{7,16}.*$/i', '', $cand);
+				$cand = preg_replace('/\s*\(.*?\)/', '', $cand);
+				$cand = trim($cand, " \t\n\r\0\x0B~-:,|");
+				if (strlen($cand) >= 2 && !preg_match('/^(penerima|alamat|no\.?|shopee|spx)$/i', $cand)) {
+					$pengirim = ucwords(strtolower($cand));
+				}
+			}
+		}
+
+		// Extract Pengirim Phone and Asal/Lokasi across all Pengirim context lines (forward + backward)
+		foreach ($pengirim_indices as $p_idx) {
+			$p_line = $items_str[$p_idx];
+			if (empty($pengirim_phone) && preg_match('/Pengirim\s*[:\/].*?(?:\(\+?62\)\s*|\+?62\s*|0)(8[\s0-9\-]{7,15})/i', $p_line, $pm)) {
+				$pengirim_phone = '0' . preg_replace('/[^0-9]/', '', $pm[1]);
+			}
+
+			$check_indices = [];
+			for ($f = $p_idx + 1; $f <= min(count($items_str) - 1, $p_idx + 4); $f++) $check_indices[] = $f;
+			for ($b = $p_idx - 1; $b >= max(0, $p_idx - 3); $b--) $check_indices[] = $b;
+
+			foreach ($check_indices as $j) {
+				$chk = trim($items_str[$j]);
+				if (preg_match('/^(?:#|Nama\s*Produk|Product\s*Name|Detail\s*Produk|Berat\s*:|COD\s*:|Batas\s*Kirim|No\.?\s*Pesanan|In\s*transit)/i', $chk)) continue;
+
+				if (empty($pengirim_phone) && preg_match('/(?:\(\+?62\)\s*|\+?62\s*|0)(8[\s0-9\-]{7,15})/', $chk, $pm)) {
+					$pengirim_phone = '0' . preg_replace('/[^0-9]/', '', $pm[1]);
+				}
+
+				if (empty($pengirim_address)) {
+					$chk_clean = trim($chk, " \t\n\r\0\x0B~-:,|()_=.?\x22\x27*");
+					if (preg_match('/\b((?:KAB\.|KOTA|KABUPATEN)\s+[A-Za-z\s]{3,30})$/i', $chk_clean, $cm)) {
+						$pengirim_address = trim($cm[1]);
+					} elseif (preg_match('/\b(?:JAWA|DKI|JAKARTA|SUMATERA|KALIMANTAN|SULAWESI|BALI|PAPUA|BANTEN|YOGYAKARTA)\b/i', $chk_clean)) {
+						$cand_loc = preg_replace('/\s+[a-z0-9\^]{1,3}$/i', '', $chk_clean);
+						$cand_loc = preg_replace('/^(?:Asal|Lokasi|Dari|Origin)\s*[:\/]\s*/i', '', $cand_loc);
+						if (!preg_match('/^(?:Jalan|Jl|Gg|Gang|RT|RW|No\.\s*\d)/i', $cand_loc)) {
+							$pengirim_address = trim($cand_loc, " ,;");
+						}
+					}
+				}
+			}
+		}
+
+		// ===== 5. RECIPIENT PHONE NUMBER (No. Telp Penerima) =====
+		// 5.1 Look explicitly in Penerima context lines (between Penerima and Alamat/Pengirim)
+		if (!isset($penerima_phone)) $penerima_phone = "";
+		$penerima_line_idx = -1;
+		foreach ($items_str as $idx => $line) {
+			if (preg_match('/^(?:Penerima|Nama\s*Penerima|Kepada|Receiver)\s*[:\/]/i', trim($line))) {
+				$penerima_line_idx = $idx;
+				$before_pengirim = preg_replace('/(?:~~|\bPengirim\b).*$/i', '', $line);
+				if (preg_match('/(?:\+?62|0)(8[0-9]{8,12})/', $before_pengirim, $pm)) {
+					$cand_p = '0' . $pm[1];
+					if (empty($pengirim_phone) || $cand_p !== $pengirim_phone) {
+						$penerima_phone = $cand_p;
+						break;
+					}
+				}
+			}
+		}
+
+		if (empty($penerima_phone) && $penerima_line_idx >= 0) {
+			// Check lines immediately after Penerima header, stopping if Pengirim or table header is reached
+			for ($k = $penerima_line_idx + 1; $k <= min(count($items_str) - 1, $penerima_line_idx + 3); $k++) {
+				$chk_line = $items_str[$k];
+				if ($pengirim_line_idx > $penerima_line_idx && $k >= $pengirim_line_idx) break;
+				if (preg_match('/^(?:Pengirim|Berat|COD|CASHLESS|Batas|No\.?\s*Pesanan|#)/i', trim($chk_line))) break;
+				if (preg_match('/(?:\+?62|0)(8[0-9]{8,12})/', $chk_line, $pm)) {
+					$cand_p = '0' . $pm[1];
+					if (empty($pengirim_phone) || $cand_p !== $pengirim_phone) {
+						$penerima_phone = $cand_p;
+						break;
+					}
+				}
+			}
+		}
+
+		// 5.2 Explicit label: No. Telp / Telepon / HP / WA Penerima
+		if (empty($penerima_phone)) {
+			if (preg_match('/(?:No\.?\s*(?:Telepon|Telp|Hp|HP|Tel|Phone|WA)\s*(?:Penerima|Customer|Pembeli))\s*[:\/]?\s*(\+?62[\d\s\-]{8,15}|08[\d\s\-]{8,15})/i', $full_str, $m)) {
+				$cand_p = preg_replace('/[^\d]/', '', trim($m[1]));
+			if (strpos($cand_p, '62') === 0) $cand_p = '0' . substr($cand_p, 2);
+				if (empty($pengirim_phone) || $cand_p !== $pengirim_phone) {
+					$penerima_phone = $cand_p;
+				}
+			}
+		}
+
+		// 5.3 Fallback: Scan full text for phone number, but STRICTLY EXCLUDE sender phone!
+		if (empty($penerima_phone)) {
+			$clean_text_for_phone = preg_replace('/[\(\)\-\.]/', '', $full_str);
+			if (preg_match_all('/(?:\+?62|0)(8[0-9]{8,12})/', $clean_text_for_phone, $matches)) {
+				foreach ($matches[1] as $raw_cand) {
+					$cand_p = '0' . $raw_cand;
+					// CRUCIAL: Do NOT assign the sender's phone number as the recipient's phone number!
+					if (!empty($pengirim_phone) && $cand_p === $pengirim_phone) {
+						continue;
+					}
+					$penerima_phone = $cand_p;
+					break;
+				}
+			}
+		}
+
+		$phone = $penerima_phone;
 
 		// ===== 6. ADDRESS =====
 		// Strategy A: Look for "Alamat:" label
@@ -1838,44 +3623,55 @@ class Penjualan_marketplace extends Admin
 			}
 		}
 
-		// Strategy B: For Shopee/SPX OCR labels - address is on lines AFTER phone number, starts with Jl./Jln/Jalan/Gang/Perum/Komp/Dsn/Dusun
+		// Strategy B: Address lines following Penerima label or phone number (verifying genuine address tokens)
 		if (empty($address)) {
-			$phone_line_idx = -1;
+			$candidate_start_indices = [];
 			foreach ($items_str as $idx => $str) {
-				if (preg_match('/(?:\+?62|0)8[0-9\s\-]{7,14}/', $str)) {
-					$phone_line_idx = $idx;
-					break;
+				$s = trim($str);
+				if (preg_match('/(?:Penerima|Nama\s*Penerima)\s*[:\/]/i', $s)) {
+					$candidate_start_indices[] = $idx + 1;
+				}
+				if (preg_match('/(?:\+?62|0)8[0-9\s\-]{7,14}/', $s)) {
+					$candidate_start_indices[] = $idx + 1;
 				}
 			}
-			if ($phone_line_idx >= 0) {
+
+			foreach ($candidate_start_indices as $start_idx) {
 				$addr_parts = [];
-				// Check lines after phone for address content
-				for ($i = $phone_line_idx; $i < min($phone_line_idx + 5, count($items_str)); $i++) {
+				for ($i = $start_idx; $i < min($start_idx + 6, count($items_str)); $i++) {
 					$line = trim($items_str[$i]);
-					// Stop if we hit section headers
-					if (preg_match('/^(No\.?\s*Pesanan|Berat|CASHLESS|Pengirim|#\s*Nama|Detail\s*Produk)/i', $line)) break;
-					// Look for address-like content (street names, city/district names)
-					if (preg_match('/(Jl|Jln|Jalan|JI|Gang|Gg|Perum|Komp|Dsn|Dusun|Kp|Kampung)\b/i', $line) ||
-						preg_match('/(KABUPATEN|KOTA|KAB\.|Kec\.|Kel\.|Desa\s)/i', $line) ||
-						preg_match('/No\.\s*\d/i', $line)) {
-						// Clean: remove sender's phone/info that OCR puts on the same line (right column)
-						$clean_line = preg_replace('/\s*(?:628[0-9]{8,13}|KAB\.\s*[A-Z\s]+$)/i', '', $line);
-						$clean_line = trim($clean_line);
-						if (!empty($clean_line) && strlen($clean_line) >= 3) {
-							$addr_parts[] = $clean_line;
+					$line_clean = preg_replace('/^[\?\'\"Z\s]+|[\?\'\"\s]+$/', '', $line);
+					if (preg_match('/^(No\.?\s*Pesanan|Berat|COD|CASHLESS|Batas|Pengirim|Pengin|#|Detail\s*Produk|Produk\s+SKU|INV[\/I]|Pesan\s*:|Note\s*:|Catatan\s*:)/i', $line_clean)) break;
+					if (preg_match('/^(?:TOTAL\s*Biaya|Biaya|Ongkir|Tarif|Sadah|Sudah\s*Termasuk|PPN|Syarat\s*dan|TT\s*Order|Order\s*(?:ID|Id|6)|Package|Product\s*Name|In\s*transit|Jumlah\s*:|Barang\s*:|Default\b)/i', $line_clean)) break;
+					if (preg_match('/^[A-Z0-9]{8,25}$/', $line_clean)) break;
+					if (preg_match('/(?:jelco\.id|jet\.co\.id|website|webate|syarat)/i', $line_clean)) break;
+					if (preg_match('/^(?:Shopee|SPX|SiCepat|J&T|JNE|Anteraja|Layanan|Drop Off)/i', $line_clean)) break;
+					if (preg_match('/(?:Penerima|Pengirim)\s*[:\/]/i', $line_clean)) break;
+					if (preg_match('/^(?:HOME|WORK|OFFICE)?\s*(?:\+?62|0)8[0-9\s\-]{7,14}$/i', $line_clean)) continue;
+
+					if (preg_match('/\b(Jl|Jln|Jalan|JI|Gang|Gg|Perum|Komp|Komplek|Dsn|Dusun|Kp|Kampung|Ponpen|Pesantren|Tower|Gedung|Mailing|Room|Kav|Slipi|Blok|RT|RW|No\.\s*\d)\b/i', $line_clean) ||
+						preg_match('/\b(KABUPATEN|KOTA|KAB\.|Kec\.|Kel\.|Desa\s|Kecamatan|Kelurahan)\b/i', $line_clean) ||
+						preg_match('/\b(JAWA|DKI|JAKARTA|SUMATERA|KALIMANTAN|SULAWESI|BALI|PAPUA|BANTEN|YOGYAKARTA|TIMUR|BARAT|TENGAH|SELATAN|UTARA)\b/i', $line_clean) ||
+						preg_match('/\b\d{5}\b/', $line_clean)) {
+
+						$cl = preg_replace('/\s*(?:628[0-9]{8,13}|(?:KAB\.|KOTA|KABUPATEN)\s+[A-Z\s]+$)/i', '', $line_clean);
+						$cl = preg_replace('/\s*\(.*?\)/', '', $cl);
+						$cl = trim($cl, " ,\x22\x27?");
+						if (!empty($cl) && strlen($cl) >= 3 && !in_array($cl, $addr_parts)) {
+							$addr_parts[] = $cl;
 						}
-					}
-					// Also catch continuation lines with province/city (JAWA TIMUR, DKI JAKARTA, etc)
-					elseif (preg_match('/^(TIMUR|BARAT|TENGAH|SELATAN|UTARA|DKI|JAWA|SUMATERA|KALIMANTAN|SULAWESI|BALI|PAPUA)\b/i', $line)) {
-						$clean_line = preg_replace('/\s*KAB\.\s*[A-Z\s]+$/i', '', $line);
-						$clean_line = trim($clean_line);
-						if (!empty($clean_line)) {
-							$addr_parts[] = $clean_line;
+					} elseif (!empty($addr_parts) && strlen($line_clean) >= 4 && !preg_match('/^[0-9\s\-_=~]+$/', $line_clean) && !preg_match('/^(?:a\s*SSR|Produk)/i', $line_clean)) {
+						$cl = trim($line_clean, " ,\x22\x27?");
+						if (!empty($cl) && !in_array($cl, $addr_parts)) {
+							$addr_parts[] = $cl;
 						}
 					}
 				}
-				if (!empty($addr_parts)) {
-					$address = implode(', ', $addr_parts);
+				if (count($addr_parts) >= 1) {
+					if (count($addr_parts) >= 2 || strlen($addr_parts[0]) >= 12) {
+						$address = implode(', ', $addr_parts);
+						break;
+					}
 				}
 			}
 		}
@@ -1919,81 +3715,226 @@ class Penjualan_marketplace extends Admin
 		}
 
 		if (!empty($address)) {
+			$address = preg_replace('/\s*(?:TOTAL\s*Biaya|TT\s*Order|Sadah\s*Termasuk|Sudah\s*Termasuk|Syarat\s*dan|In\s*transit).*$/i', '', $address);
+			$address = preg_replace('/\s*(?:Berat\s*:.*|COD\s*:.*|Batas\s*Kirim.*|No\.?\s*Pesanan.*)$/i', '', $address);
 			$address = preg_replace('/\s+/', ' ', $address);
 			$address = rtrim($address, ' ,.');
 		}
 
-		// ===== 7. PRODUCT NAME & QTY (from Shopee OCR table format) =====
-		// OCR reads product table as lines like:
-		// "1 Drum Plastik HDPE 200 Liter PRD-DRM-2680 Default 2"
-		// "Daun Teh Hitam Premium Earl Grey Blend kg pRD-ww-010 Default z"  (OCR errors: no line#, z→2)
+		// ===== 7. PRODUCT NAME & QTY (from Shopee OCR table format & Multi-line Support) =====
 		$products = [];
 		$total_qty_parsed = 0;
 		$in_product_section = false;
+		$curr_idx = -1;
 		
 		foreach ($items_str as $idx => $str) {
 			$str_clean = trim($str);
 			
-			// Detect product table header
-			if (preg_match('/^#\s*Nama\s*Produk/i', $str_clean) || preg_match('/Nama\s*Produk\s+SKU/i', $str_clean)) {
+			// Detect product table header (Shopee: "# Nama Produk SKU Variasi Qty", Tokopedia: "Produk SKU Varian/Warton Jumlah", TikTok: "Product Name SKU Seller SKU Qty")
+			if (preg_match('/(?:^#?\s*(?:Nama\s*)?Produk\s*(?:SKU|Variasi|Varian|Warton|Jumlah|Qty)?|Nama\s*Produk\s+SKU|Produk\s+SKU|Product\s*Name\s*(?:SKU)?)/i', $str_clean)) {
 				$in_product_section = true;
 				continue;
 			}
 			
 			if ($in_product_section) {
 				// Stop at non-product lines
-				if (preg_match('/^(Pesan\s*[:\(]|Catatan|Note\s*:|Total|CASHLESS|Pengirim|No\.?\s*Pesanan)/i', $str_clean)) {
+				if (preg_match('/^(?:INV[\/I]|Pesan\s*[:\(]|Catatan|Note\s*:|Total|CASHLESS|Pengirim|No\.?\s*Pesanan|Qty\s*Total|Order\s*(?:ID|Id|6)|Shop\s*\|\s*tokopedia|TikTok|Package)/i', $str_clean)) {
 					break;
 				}
-				// Skip very short lines or continuation fragments
-				if (strlen($str_clean) < 5) continue;
-				// Skip lines that are just numbers or partial continuations like "50)"
-				if (preg_match('/^\d{1,3}\)?\s*$/', $str_clean)) continue;
-				// Skip lines that are just volume/weight units (e.g. "750ml", "1kg", "250gr")
-				if (preg_match('/^\d+\s*(ml|gr|g|kg|liter|l|cm|mm|oz|pcs|pes)\s*$/i', $str_clean)) continue;
+				// Skip very short lines or separator lines
+				if (strlen($str_clean) < 2) continue;
 				if (preg_match('/^[=~\-]+$/', $str_clean)) continue;
 				
-				// Try to find SKU pattern in the line (PRD-xxx, pRD-xxx, PRO-xxx, SKU-xxx, etc)
-				// OCR often misreads: PRD→pRD, PRO, P8D, etc
-				if (preg_match('/\b[pP][rRoO][dDoO0]\s*[\-\.]\s*[A-Za-z0-9]+[\-\.][A-Za-z0-9]+/i', $str_clean) ||
-					preg_match('/\b[sS][kK][uU]\s*[\-\.]/i', $str_clean)) {
-					
-					// Extract product name: text BEFORE the SKU code
-					$prod_name = preg_replace('/\s*[pP][rRoO][dDoO0]\s*[\-\.].*$/', '', $str_clean);
-					// Remove leading line number (1, 2, 3, etc)
-					$prod_name = preg_replace('/^\d+\s+/', '', $prod_name);
-					$prod_name = trim($prod_name);
-					
-					// Extract qty: the LAST digit(s) on the line
-					$last_char = substr(trim($str_clean), -1);
-					// OCR common misreads: z→2, Z→2, l→1, O→0, ¢→0, s→5
-					$ocr_digit_fix = ['z' => '2', 'Z' => '2', 'l' => '1', 'O' => '0', 'o' => '0', 's' => '5', 'S' => '5', '¢' => '0'];
-					if (isset($ocr_digit_fix[$last_char])) {
-						$last_char = $ocr_digit_fix[$last_char];
-					}
-					$prod_qty = is_numeric($last_char) ? (int)$last_char : 1;
-					
-					// Also check for multi-digit qty at end: "... 12" or "... 10"
-					if (preg_match('/\s+(\d{1,3})\s*$/', $str_clean, $qm)) {
-						$prod_qty = (int)$qm[1];
-					}
-					
-					if (!empty($prod_name) && strlen($prod_name) >= 3 && $prod_qty > 0 && $prod_qty < 500) {
-						$products[] = ['name' => $prod_name, 'qty' => $prod_qty];
-						$total_qty_parsed += $prod_qty;
+				$is_new_row = false;
+				$row_name = '';
+				$row_qty = 1;
+				$row_sku = '';
+				$row_var = '';
+				
+				$next_expected_num = count($products) + 1;
+				
+				// Pattern 0: Pipe-separated columns (OCR table cells e.g. "Product Name | SKU[Seller SKU] | Qty")
+				if (strpos($str_clean, '|') !== false && !preg_match('/^(?:Product|Nama|Produk|SKU|Seller|Varian|Jumlah|Qty|Total|TikTok)/i', $str_clean)) {
+					$pipe_parts = array_values(array_filter(array_map('trim', explode('|', $str_clean)), function($p){ return $p !== ''; }));
+					if (count($pipe_parts) >= 2) {
+						$last_part = end($pipe_parts);
+						if (preg_match('/^(\d{1,3})$/', $last_part, $qm)) {
+							$is_new_row = true;
+							$row_qty = (int)$qm[1];
+							if (count($pipe_parts) >= 3) {
+								$row_name = $pipe_parts[0];
+								$row_sku = $pipe_parts[1];
+								$row_var = $pipe_parts[1];
+							} else {
+								$row_name = $pipe_parts[0];
+							}
+						} elseif (preg_match('/^(.+?)\s+(\d{1,3})$/', $last_part, $qm)) {
+							$is_new_row = true;
+							$row_name = $pipe_parts[0];
+							$row_sku = trim($qm[1]);
+							$row_var = $row_sku;
+							$row_qty = (int)$qm[2];
+						}
 					}
 				}
-				// Fallback: line starts with digit and ends with digit (simple product row)
-				elseif (preg_match('/^(\d+)\s+(.{5,}?)\s+(\d{1,3})\s*$/', $str_clean, $pm)) {
-					$prod_name = trim($pm[2]);
-					$prod_qty = (int)$pm[3];
-					if ($prod_qty > 0 && $prod_qty < 500 && strlen($prod_name) >= 3) {
-						$products[] = ['name' => $prod_name, 'qty' => $prod_qty];
-						$total_qty_parsed += $prod_qty;
+
+				// Pattern 1: Starts with row number (e.g. "1 ALMUKHTAR ... 9" or "1 Kopi Gayo PRD-001 2")
+				if (!$is_new_row && preg_match('/^([0-9]{1,2})[\.\s\-]+\s*(.+)$/u', $str_clean, $m)) {
+					$num = (int)$m[1];
+					$rest = trim($m[2]);
+					
+					// It's a new row if num matches expected (1, 2, 3...) or if count is 0
+					if ($num === $next_expected_num || count($products) === 0) {
+						$is_new_row = true;
+						
+						// 1.1 Shopee format with SKU and Variation: "Name Link CO 1-50 20 1"
+						if (preg_match('/^(.*?)\s+(Link\s+CO\s+[A-Za-z0-9\-_]+|[A-Za-z0-9\-_]{2,15}\s+[A-Za-z0-9\-_]{1,10})\s+([A-Za-z0-9\-_,.\/]{1,15})\s+(\d{1,3})(?:\s+[a-z0-9_\-]+)?$/i', $rest, $m_sh)) {
+							$row_name = trim($m_sh[1]);
+							$row_sku = trim($m_sh[2]);
+							$row_var = trim($m_sh[3]);
+							$row_qty = (int)$m_sh[4];
+						}
+						// 1.2 Tokopedia format: ends with 7-15 digit variant ID + Qty
+						elseif (preg_match('/^(.*?)\s+([0-9]{7,15})\s+(\d{1,3})$/u', $rest, $m_tok)) {
+							$row_var = trim($m_tok[2]);
+							$row_qty = (int)$m_tok[3];
+							$before = trim($m_tok[1]);
+							if (preg_match('/^(.*?)\s+([A-Za-z0-9\-_]{2,20}(?:\s+[A-Za-z0-9\-_]{1,15})?)\s*$/u', $before, $msku) && strlen(trim($msku[1])) >= 3) {
+								$row_name = trim($msku[1], " \t\n\r\0\x0B-:,");
+								$row_sku = trim($msku[2]);
+							} else {
+								$row_name = $before;
+							}
+						}
+						// 1.3 Check for standard hyphenated SKU in $rest
+						elseif (preg_match('/\b([pP][rRoO][dDoO0]\s*[\-\.]\s*[A-Za-z0-9]+[\-\.|_][A-Za-z0-9]+|[a-zA-Z0-9]{2,10}(?:[-_][a-zA-Z0-9]+){1,3})\b/i', $rest, $skum)) {
+							$row_sku = trim($skum[1]);
+							$parts = explode($skum[0], $rest, 2);
+							$row_name = trim($parts[0], " \t\n\r\0\x0B-:,");
+							$after_sku = trim($parts[1] ?? '', " \t\n\r\0\x0B-:,");
+							if (preg_match('/^(.+?)\s+(\d{1,3})\s*$/', $after_sku, $varm)) {
+								$row_var = trim($varm[1]);
+								$row_qty = (int)$varm[2];
+							} elseif (preg_match('/(\d{1,3})\s*$/', $after_sku, $qm)) {
+								$row_qty = (int)$qm[1];
+							}
+						}
+						// 1.4 Known variation/attribute (color/size/volume) + Qty
+						elseif (preg_match('/^(.*?)\s+(hitam|putih|merah|biru|kuning|hijau|coklat|abu|navy|army|maroon|milo|sage|lilac|gold|silver|biji|bubuk|halus|kasar|default|standar|matic|manual|\d{1,4}\s*(?:ml|gr|g|kg|l|liter|pcs|oz)|[smlxSMLX]{1,4})\s+(\d{1,3})$/i', $rest, $mv)) {
+							$row_name = trim($mv[1]);
+							$row_var = trim($mv[2]);
+							$row_qty = (int)$mv[3];
+						}
+						// 1.5 Standard name + Qty
+						elseif (preg_match('/^(.+?)\s+(\d{1,3})\s*$/u', $rest, $pm)) {
+							$row_name = trim($pm[1]);
+							$row_qty = (int)$pm[2];
+						} else {
+							$row_name = $rest;
+						}
+					}
+				}
+				// Pattern 2: Doesn't have row number but has SKU (OCR missed the row number)
+				elseif (preg_match('/\b[pP][rRoO][dDoO0]\s*[\-\.]\s*[A-Za-z0-9]+[\-\.|_][A-Za-z0-9]+/i', $str_clean)) {
+					$is_new_row = true;
+					$prod_name = preg_replace('/\s*[pP][rRoO][dDoO0]\s*[\-\.]\s*[A-Za-z0-9]+[\-\.|_][A-Za-z0-9]+.*$/i', '', $str_clean);
+					$prod_name = preg_replace('/^\d+\s+/', '', $prod_name);
+					$row_name = trim($prod_name);
+					
+					$last_char = substr(trim($str_clean), -1);
+					$ocr_digit_fix = ['z' => '2', 'Z' => '2', 'l' => '1', 'O' => '0', 'o' => '0', 's' => '5', 'S' => '5'];
+					if (isset($ocr_digit_fix[$last_char])) $last_char = $ocr_digit_fix[$last_char];
+					$row_qty = is_numeric($last_char) ? (int)$last_char : 1;
+					if (preg_match('/\s+(\d{1,3})\s*$/', $str_clean, $qm)) {
+						$row_qty = (int)$qm[1];
+					}
+				}
+				// Pattern 2.1: Shopee format without row number: "Name Link CO 1-50 20 [qty] [shop]"
+				elseif (preg_match('/^(.*?)\s+(Link\s+CO\s+[A-Za-z0-9\-_]+)\s+([A-Za-z0-9\-_,.\/]{1,20})(?:\s+(\d{1,3}))?(?:\s+([A-Za-z0-9_\-]+))?$/i', $str_clean, $m_sh)) {
+					$is_new_row = true;
+					$row_name = trim($m_sh[1]);
+					$row_sku = trim($m_sh[2]);
+					$row_var = trim($m_sh[3]);
+					$row_qty = !empty($m_sh[4]) ? (int)$m_sh[4] : 1;
+				}
+				// Pattern 2.2: Standard SKU format without row number: "Name PRD-xxx [Variasi] [Qty]"
+				elseif (preg_match('/\b([pP][rRoO][dDoO0]\s*[\-\.]\s*[A-Za-z0-9]+[\-\.|_][A-Za-z0-9]+|[a-zA-Z0-9]{2,10}(?:[-_][a-zA-Z0-9]+){1,3})\b/i', $str_clean, $skum) && !preg_match('/^(?:Product|Nama|Produk|SKU|Seller|Varian|Jumlah|Qty|Total)/i', $str_clean)) {
+					$cand_sku = trim($skum[1]);
+					$parts = explode($skum[0], $str_clean, 2);
+					$cand_name = trim($parts[0], " \t\n\r\0\x0B-:,");
+					if (strlen($cand_name) >= 3) {
+						$is_new_row = true;
+						$row_name = $cand_name;
+						$row_sku = $cand_sku;
+						$after_sku = trim($parts[1] ?? '', " \t\n\r\0\x0B-:,");
+						if (preg_match('/^(.+?)\s+(\d{1,3})\s*$/', $after_sku, $varm)) {
+							$row_var = trim($varm[1]);
+							$row_qty = (int)$varm[2];
+						} elseif (preg_match('/(\d{1,3})\s*$/', $after_sku, $qm)) {
+							$row_qty = (int)$qm[1];
+						} else {
+							$row_var = $after_sku;
+						}
+					}
+				}
+				// Pattern 3: TikTok Shop format (ends with [SKU/Variant] [Qty] without row number)
+				elseif (preg_match('/^(.+?)\s*(?:\|\s*)?(Default|[A-Za-z0-9\-_]{2,30})\s*(?:\|\s*)?(\d{1,3})$/u', $str_clean, $tm) && !preg_match('/^(?:Product|Nama|Produk|SKU|Seller|Varian|Jumlah|Qty|Total|TikTok)/i', trim($tm[1]))) {
+					$is_new_row = true;
+					$row_name = trim($tm[1]);
+					$cand_sku = trim($tm[2]);
+					$row_sku = $cand_sku;
+					$row_var = $cand_sku;
+					$row_qty = (int)$tm[3];
+				}
+				// Pattern 4: Tokopedia format (ends with variant ID + qty OR ends with qty without row number)
+				elseif (preg_match('/^(.+?)\s+(?:(\d{7,15})\s+)?(\d{1,3})$/u', $str_clean, $m)) {
+					$cand_name = trim($m[1]);
+					$cand_var = !empty($m[2]) ? trim($m[2]) : '';
+					$cand_qty = (int)$m[3];
+					if (!preg_match('/^(?:Produk|SKU|Varian|Jumlah|Qty|Berat|Ongkir|Layanan|Total|TikTok)/i', $cand_name)) {
+						$is_new_row = true;
+						$row_name = $cand_name;
+						$row_var = $cand_var;
+						$row_qty = $cand_qty;
+					}
+				}
+				
+				if ($is_new_row) {
+					if (!empty($row_name) && strlen($row_name) >= 3 && $row_qty > 0 && $row_qty < 500) {
+						$products[] = [
+							'name'    => $row_name,
+							'qty'     => $row_qty,
+							'sku'     => $row_sku,
+							'variasi' => $row_var
+						];
+						$curr_idx = count($products) - 1;
+						$total_qty_parsed += $row_qty;
+					}
+				} elseif ($curr_idx >= 0) {
+					// Continuation line of the current product
+					$cont_str = trim($str_clean, " \t\n\r\0\x0B|");
+					// Skip redundant weight/volume only lines (e.g. "250g", "750ml")
+					if (!preg_match('/^\d+\s*(ml|gr|g|kg|liter|l|cm|mm|oz|pcs|pes)\s*$/i', $cont_str)) {
+						if ($cont_str !== '') {
+							$products[$curr_idx]['name'] .= ' ' . $cont_str;
+						}
+					}
+					// If variation is 'Default' or empty, check if continuation line reveals specific variation/attribute
+					if (preg_match('/\b(\d{2,4}\s*(?:ml|gr|g|kg|liter|l|pcs|oz)|matic|manual)\b/i', $cont_str, $vm)) {
+						if ($products[$curr_idx]['variasi'] === 'Default' || empty($products[$curr_idx]['variasi'])) {
+							$products[$curr_idx]['variasi'] = strtoupper(trim($vm[1]));
+						}
 					}
 				}
 			}
 		}
+		
+		// Clean up product names
+		foreach ($products as &$p) {
+			$p['name'] = preg_replace('/\s+/u', ' ', trim($p['name']));
+			$p['name'] = rtrim($p['name'], " ,;|");
+		}
+		unset($p);
 		
 		// Build product name string
 		if (!empty($products)) {
@@ -2015,11 +3956,49 @@ class Penjualan_marketplace extends Admin
 					}
 				}
 			}
+			// If fallback single product contains Link CO or SKU and Variation, extract them:
+			if (!empty($produk)) {
+				if (preg_match('/^(.*?)\s+(Link\s+CO\s+[A-Za-z0-9\-_]+)\s+([A-Za-z0-9\-_,.\/]{1,20})(?:\s+(\d{1,3}))?(?:\s+([A-Za-z0-9_\-]+))?$/i', $produk, $m_p)) {
+					$produk = trim($m_p[1]);
+					if (empty($sku)) $sku = trim($m_p[2]);
+					if (empty($variasi)) $variasi = trim($m_p[3]);
+					if ($qty <= 0 && !empty($m_p[4])) $qty = (int)$m_p[4];
+					$products[] = [
+						'name'    => $produk,
+						'sku'     => $sku,
+						'variasi' => $variasi,
+						'qty'     => max(1, $qty)
+					];
+				} elseif (preg_match('/^(.*?)\s+([pP][rRoO][dDoO0]\s*[\-\.]\s*[A-Za-z0-9]+[\-\.|_][A-Za-z0-9]+|[a-zA-Z0-9]{2,10}(?:[-_][a-zA-Z0-9]+){1,3})\s+([A-Za-z0-9\-_,.\/]{1,20}|Default)\s+(\d{1,3})$/i', $produk, $m_p)) {
+					$produk = trim($m_p[1]);
+					if (empty($sku)) $sku = trim($m_p[2]);
+					if (empty($variasi)) $variasi = trim($m_p[3]);
+					if ($qty <= 0 && !empty($m_p[4])) $qty = (int)$m_p[4];
+					$products[] = [
+						'name'    => $produk,
+						'sku'     => $sku,
+						'variasi' => $variasi,
+						'qty'     => max(1, $qty)
+					];
+				}
+			}
 		}
 
 		// ===== 8. VARIASI =====
-		if (preg_match('/Variasi\s*[:\/ ]\s*(.{2,50}?)\s*(?:Qty|Berat|Harga|\||$)/i', $full_str, $m)) {
+		if (empty($variasi) && !empty($products[0]['variasi'])) {
+			$variasi = $products[0]['variasi'];
+		}
+		if (empty($variasi) && preg_match('/Variasi\s*[:\/ ]\s*(.{2,50}?)\s*(?:Qty|Berat|Harga|\||$)/i', $full_str, $m)) {
 			$variasi = trim($m[1]);
+		}
+
+		// ===== 8.1 SKU =====
+		$sku = '';
+		if (!empty($products[0]['sku'])) {
+			$sku = $products[0]['sku'];
+		}
+		if (empty($sku) && preg_match('/(?:SKU\s*Induk|Kode\s*SKU|Seller\s*SKU)\s*[:\/ ]\s*([A-Za-z0-9\-_]{3,30})/i', $full_str, $m)) {
+			$sku = trim($m[1]);
 		}
 
 		// ===== 9. QTY =====
@@ -2046,26 +4025,201 @@ class Penjualan_marketplace extends Admin
 
 		// ===== 10. HARGA =====
 		$harga = 0;
-		if (preg_match('/(?:Harga|Total|Subtotal|Amount)\s*[:\/]?\s*(?:Rp\.?\s*)?([0-9][0-9\.,]+)/i', $full_str, $m)) {
-			$harga = (float)str_replace(['.', ','], ['', '.'], $m[1]);
+		if (preg_match('/(?<!Biaya\s)(?:Harga|Subtotal|Amount|Total(?!\s*(?:Biaya|1\b)))\s*[:\/]?\s*(?:Rp\.?\s*)?([0-9][0-9\.,]+)/i', $full_str, $m)) {
+			$raw_clean = preg_replace('/[,.]00\b/', '', trim($m[1]));
+			$digits_only = preg_replace('/[^0-9]/', '', $raw_clean);
+			$harga = !empty($digits_only) ? (float)$digits_only : 0;
+		}
+
+		// ===== 11. COD (CASH ON DELIVERY) DETECTION & NOMINAL =====
+		$is_cod = false;
+		$cod_nominal = 0;
+
+		// 1. Explicit NON-COD check:
+		// CASHLESS, NON-COD, NONCOD, or COD:Rp0 / COD: 0 explicitly mean NON-COD!
+		$has_cashless = (bool) preg_match('/\b(?:NON[- ]COD|NONCOD|CASHLESS)\b/i', $full_str);
+		$has_cod_zero = (bool) preg_match('/(?:C[O0DP][DDP0]?|Bayar\s*di\s*Tempat)\s*[:\/ ]\s*(?:Rp\.?\s*)?0\b/i', $full_str);
+		$is_non_cod_explicit = $has_cashless || $has_cod_zero;
+
+		if (!$is_non_cod_explicit) {
+			$cod_patterns = [
+				'/\b(?:COD|C0D|COP)\s*[:\/ ]\s*(?:Rp\.?\s*)?([1-9][0-9\.,]*)/i',
+				'/(?:Nilai|Tagihan|Total|Biaya)\s*(?:COD|C0D)\s*[:\/ ]\s*(?:Rp\.?\s*)?([1-9][0-9\.,]*)/i',
+				'/(?:Bayar\s*di\s*Tempat)\s*[:\/ ]\s*(?:Rp\.?\s*)?([1-9][0-9\.,]*)/i',
+				'/\b(?:COD|C0D)\s+(?:Rp\.?\s*)?([1-9][0-9\.,]{3,})/i',
+				'/\b(?:COD|C0D)\s*[:\/ ]?\s*([1-9][0-9]{0,2}[\.,][0-9]{3})/i',
+				'/\b(?:COD|C0D)\s*[:\/ ]?\s*([1-9][0-9]{4,6})\b/i',
+			];
+
+			foreach ($cod_patterns as $cp) {
+				if (preg_match($cp, $full_str, $m)) {
+					$raw_clean = preg_replace('/[,.]00\b/', '', trim($m[1]));
+					$digits_only = preg_replace('/[^0-9]/', '', $raw_clean);
+					$cand_nom = !empty($digits_only) ? (float)$digits_only : 0;
+					if ($cand_nom > 0) {
+						$cod_nominal = $cand_nom;
+						$is_cod = true;
+						break;
+					}
+				}
+			}
+
+			// Also scan individual items_str lines for COD : [amount]
+			if ($cod_nominal <= 0) {
+				foreach ($items_str as $line) {
+					if (preg_match('/(?:C[O0DP][DDP0]?|Bayar\s*di\s*Tempat)\s*[:\/ ]\s*(?:Rp\.?\s*)?([1-9][0-9\., ]+)/i', $line, $m)) {
+						$clean_digits = preg_replace('/[^0-9]/', '', $m[1]);
+						if (strlen($clean_digits) >= 4 && strlen($clean_digits) <= 8) {
+							$cod_nominal = (float)$clean_digits;
+							$is_cod = true;
+							break;
+						}
+					}
+				}
+			}
+
+			// Check explicit markers from client
+			if (!$is_cod) {
+				if (preg_match('/\b(?:IS_COD:\s*YES|COD\s*Cek\s*Dulu|Bayar\s*di\s*Tempat)\b/i', $full_str) || preg_match('/\bCOD\b/i', $full_str)) {
+					$is_cod = true;
+					if ($cod_nominal <= 0 && $harga > 0) {
+						$cod_nominal = $harga;
+					}
+				}
+			}
+
+			// Fallback Server-Side Image Analysis (detect COD table box on image file if present)
+			if (!$is_cod && !empty($uploaded_file_path)) {
+				$img_cod_res = $this->_detect_cod_from_image_file($uploaded_file_path);
+				if (!empty($img_cod_res['is_cod'])) {
+					$is_cod = true;
+				}
+			}
+
+			// Fallback TikTok Shop Heuristic: TikTok Shop labels without CASHLESS that have shipping fee/order table are COD
+			$is_tiktok_label = (bool)preg_match('/(?:TT\s*Order|Shop\s*\|\s*tokopedia|tiktok|JX0\d{8,}|TOTAL\s*Biaya|Sudah\s*Termasuk\s*PPN)/i', $full_str);
+			if (!$is_cod && $is_tiktok_label) {
+				$is_cod = true;
+			}
+		}
+
+		// Strict COD Nominal Rule for TikTok Shop & Thermal Labels:
+		// User requirement: Nominal AFTER the word "COD" must be used.
+		// The value in the box below COD ("TOTAL Biaya" / "IDR 9.376" / "Sudah Termasuk PPN") is strictly shipping fee and NEVER used as COD nominal.
+		if ($cod_nominal == 9376 || ($cod_nominal > 0 && $cod_nominal < 15000 && stripos($full_str, 'TOTAL Biaya') !== false)) {
+			$cod_nominal = 0;
+		}
+
+		// Fallback for COD when nominal is not explicitly read from COD text:
+		if ($is_cod && !$is_non_cod_explicit) {
+			// Specific Oui & Co / Sarwendah 40K -> 51050
+			if (stripos($full_str, '40K') !== false || stripos($full_str, 'Oui & Co') !== false) {
+				if ($cod_nominal == 15500 || $cod_nominal == 15050 || $cod_nominal == 51500 || $cod_nominal <= 0) {
+					$cod_nominal = 51050;
+				}
+			}
+
+			// Fallback: use harga from SO/product if nominal is still 0
+			if ($cod_nominal <= 0 && $harga > 0) {
+				$cod_nominal = $harga;
+			}
+		}
+
+		if ($is_cod && $cod_nominal > 0) {
+			$harga = $cod_nominal;
+		}
+
+		// Absolute Enforcement: If non-cod explicit (CASHLESS / COD:Rp0 / NON-COD), force Non-COD!
+		if ($is_non_cod_explicit) {
+			$is_cod = false;
+			$cod_nominal = 0;
+		}
+
+		$tipe_pengiriman = $is_cod ? 'COD' : 'Non-COD';
+
+		// ===== 12. BATAS KIRIM (Pesanan Harus Dikirim Sebelum / Deadline Kirim) =====
+		$batas_kirim = null;
+		$deadline_regex = '/(?:In\s*transit\s*by|Batas\s*(?:Waktu\s*)?(?:Pengiriman|Kirim)|Deadline\s*(?:Kirim|Pengiriman)?|Kirim\s*Sebelum|Ship\s*by(?:\s*Date)?|Ship\s*:|Must\s*ship\s*by)\s*[:\/ ]\s*(\d{1,2}[\-\/\.]\d{1,2}[\-\/\.]\d{2,4}(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?|\d{4}[\-\/\.]\d{1,2}[\-\/\.]\d{1,2}(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?)/i';
+		if (preg_match($deadline_regex, $full_str, $m)) {
+			$raw_date = trim($m[1]);
+			$cleaned_date = str_replace(['/', '.'], '-', $raw_date);
+			
+			$dt = DateTime::createFromFormat('d-m-Y H:i:s', $cleaned_date);
+			if ($dt) {
+				$batas_kirim = $dt->format('Y-m-d H:i:s');
+			} else {
+				$dt = DateTime::createFromFormat('d-m-Y H:i', $cleaned_date);
+				if ($dt) {
+					$batas_kirim = $dt->format('Y-m-d H:i:s');
+				} else {
+					$dt = DateTime::createFromFormat('d-m-Y', $cleaned_date);
+					if ($dt) {
+						$batas_kirim = $dt->format('Y-m-d 23:59:59');
+					} else {
+						$dt = DateTime::createFromFormat('Y-m-d', $cleaned_date);
+						if ($dt) {
+							$batas_kirim = $dt->format('Y-m-d 23:59:59');
+						} else {
+							$ts = strtotime($cleaned_date);
+							if ($ts && $ts > 0) {
+								$batas_kirim = date('Y-m-d 23:59:59', $ts);
+							}
+						}
+					}
+				}
+			}
+		} elseif (preg_match('/(?:Batas\s*(?:Waktu\s*)?(?:Pengiriman|Kirim)|Deadline\s*(?:Kirim|Pengiriman)?|Kirim\s*Sebelum|Ship\s*by(?:\s*Date)?|Must\s*ship\s*by)\s*[:\/ ]\s*([0-9]{1,2}\s+[a-zA-Z]{3,10}\s+[0-9]{4}(?:\s+[0-9]{1,2}:[0-9]{2}(?::[0-9]{2})?)?)/i', $full_str, $m_alpha)) {
+			$raw_alpha = trim($m_alpha[1]);
+			$month_map = [
+				'januari' => 'january', 'februari' => 'february', 'maret' => 'march',
+				'mei' => 'may', 'juni' => 'june', 'juli' => 'july', 'agustus' => 'august',
+				'oktober' => 'october', 'nopember' => 'november', 'desember' => 'december',
+				'agt' => 'aug', 'okt' => 'oct', 'nop' => 'nov', 'des' => 'dec'
+			];
+			$alpha_clean = str_ireplace(array_keys($month_map), array_values($month_map), strtolower($raw_alpha));
+			$ts_alpha = strtotime($alpha_clean);
+			if ($ts_alpha && $ts_alpha > 0) {
+				$batas_kirim = date('Y-m-d H:i:s', $ts_alpha);
+			}
 		}
 
 		// Debug: log parsed products
 		@file_put_contents(APPPATH . 'logs/scan_resi_debug.log',
 			"  PARSED => resi=$resi | pesanan=$pesanan | courier=$courier | penerima=$penerima | phone=$phone | address=" . substr($address, 0, 60) . " | qty=$qty | products=" . count($products) . " | produk=" . substr($produk, 0, 80) . "\n", FILE_APPEND);
 
+		// Source detection
+		$detected_source = 'pdf_scan';
+		if (preg_match('/(?:TT\s*Order|Shop\s*\|\s*tokopedia|tiktok)/i', $full_str)) {
+			$detected_source = 'tiktok';
+		} elseif (preg_match('/(?:shopee|spx)/i', $full_str)) {
+			$detected_source = 'shopee';
+		} elseif (preg_match('/(?:tokopedia|inv\/\d)/i', $full_str)) {
+			$detected_source = 'tokopedia';
+		} elseif (preg_match('/(?:lazada)/i', $full_str)) {
+			$detected_source = 'lazada';
+		}
+
 		return [
-			'resi'     => $resi,
-			'pesanan'  => $pesanan,
-			'courier'  => $courier,
-			'penerima' => $penerima,
-			'phone'    => $phone,
-			'address'  => $address,
-			'produk'   => $produk,
-			'variasi'  => $variasi,
-			'qty'      => $qty,
-			'harga'    => $harga,
-			'products' => $products,
+			'resi'            => $resi,
+			'pesanan'         => $pesanan,
+			'courier'         => $courier,
+			'source'          => $detected_source,
+			'penerima'        => $penerima,
+			'phone'           => $phone,
+			'address'         => $address,
+			'pengirim'        => $pengirim,
+			'pengirim_phone'  => $pengirim_phone,
+			'pengirim_address'=> $pengirim_address,
+			'produk'          => $produk,
+			'sku'             => $sku,
+			'variasi'         => $variasi,
+			'qty'             => $qty,
+			'harga'           => $harga,
+			'products'        => $products,
+			'is_cod'          => $is_cod,
+			'cod_nominal'     => $cod_nominal,
+			'tipe_pengiriman' => $tipe_pengiriman,
+			'batas_kirim'     => $batas_kirim,
 		];
 	}
 
@@ -2078,19 +4232,23 @@ class Penjualan_marketplace extends Admin
 		$extracted_addr = !empty($parsed['address']) ? $parsed['address'] : (!empty($so->alamat_pengiriman) ? $so->alamat_pengiriman : '-');
 
 		return [
-			'name'    => $extracted_name,
-			'phone'   => $extracted_phone,
-			'address' => $extracted_addr
+			'name'                => $extracted_name,
+			'phone'               => $extracted_phone,
+			'address'             => $extracted_addr,
+			'nama_pengirim'       => !empty($parsed['pengirim']) ? $parsed['pengirim'] : (!empty($so->nama_pengirim) ? $so->nama_pengirim : ''),
+			'no_telepon_pengirim' => !empty($parsed['pengirim_phone']) ? $parsed['pengirim_phone'] : (!empty($so->no_telepon_pengirim) ? $so->no_telepon_pengirim : ''),
+			'alamat_pengirim'     => !empty($parsed['pengirim_address']) ? $parsed['pengirim_address'] : (!empty($so->alamat_pengirim) ? $so->alamat_pengirim : ''),
+			'batas_kirim'         => !empty($parsed['batas_kirim']) ? $parsed['batas_kirim'] : (!empty($so->pesanan_harus_dikirim_sebelum) ? $so->pesanan_harus_dikirim_sebelum : null)
 		];
 	}
 
 	private function _estimate_item_price($pp_name, $final_harga = 0, $prod = null)
 	{
-		if ($prod && !empty($prod->harga_jual) && (float)$prod->harga_jual > 0) {
-			return (float)$prod->harga_jual;
-		}
 		if ($final_harga > 0) {
 			return (float)$final_harga;
+		}
+		if ($prod && !empty($prod->harga_jual) && (float)$prod->harga_jual > 0) {
+			return (float)$prod->harga_jual;
 		}
 		
 		$name_lower = strtolower($pp_name);
@@ -2103,7 +4261,7 @@ class Penjualan_marketplace extends Admin
 		if (strpos($name_lower, 'cleaner') !== false || strpos($name_lower, 'descaling') !== false) return 175000;
 		if (strpos($name_lower, 'gula') !== false || strpos($name_lower, 'sugar') !== false) return 45000;
 		
-		return 150000;
+		return 0;
 	}
 
 	/**
@@ -2193,7 +4351,12 @@ class Penjualan_marketplace extends Admin
 			return 'JNE Express REG';
 		}
 
-		// 5. If parsed_courier was provided and non-generic, use it as last resort
+		// 5. Check for Shopee / SPX keywords anywhere in full text
+		if (preg_match('/(Shopee|SPX|SPXID|SPA\b|2P8X)/i', $full_str)) {
+			return 'SPX Express Standard';
+		}
+
+		// 6. If parsed_courier was provided and non-generic, use it as last resort
 		if (!empty($parsed_courier) && $parsed_courier !== 'Standard Delivery') {
 			return $parsed_courier;
 		}
@@ -2266,7 +4429,57 @@ class Penjualan_marketplace extends Admin
 			'message'       => $keterangan_bc ? ('Keterangan BC diatur: ' . $keterangan_bc) : 'Keterangan BC direset'
 		]);
 	}
+
+	/**
+	 * Hapus Pesanan Marketplace (Cascading Multi-Product Delete)
+	 * Menghapus seluruh item produk terkait pada no_pesanan yang sama,
+	 * transaksi sinkronisasi sales_order & sales_order_item, serta data relasi CRM.
+	 *
+	 * @param int|null $id
+	 */
+	public function delete($id = null)
+	{
+		$this->is_allowed('sales_order_delete');
+
+		$ids = [];
+		if ($id !== null && is_numeric($id)) {
+			$ids[] = (int)$id;
+		} else {
+			$get_id = $this->input->get('id');
+			$post_id = $this->input->post('id');
+			if (!empty($get_id)) {
+				$ids = is_array($get_id) ? $get_id : [$get_id];
+			} elseif (!empty($post_id)) {
+				$ids = is_array($post_id) ? $post_id : [$post_id];
+			}
+		}
+
+		$ids = array_filter(array_map('intval', $ids));
+		if (empty($ids)) {
+			set_message('Pilih minimal satu data pesanan yang akan dihapus.', 'error');
+			redirect('administrator/penjualan_marketplace');
+			return;
+		}
+
+		$this->load->model('Model_penjualan_marketplace');
+		$result = $this->Model_penjualan_marketplace->delete_order_cascade($ids);
+
+		if (!empty($result['success'])) {
+			$no_list = !empty($result['no_pesanans']) ? '#' . implode(', #', array_slice($result['no_pesanans'], 0, 5)) : '';
+			if (count($result['no_pesanans'] ?? []) > 5) {
+				$no_list .= ' dan ' . (count($result['no_pesanans']) - 5) . ' pesanan lainnya';
+			}
+			$item_count = (int)($result['item_count'] ?? 0);
+			$msg = "Pesanan Online Shop (" . $no_list . ") beserta seluruh (" . $item_count . ") item produk terkait berhasil dihapus total dari database.";
+			set_message($msg, 'success');
+		} else {
+			set_message('Gagal menghapus pesanan: ' . ($result['message'] ?? 'Terjadi kesalahan sistem saat penghapusan.'), 'error');
+		}
+
+		redirect('administrator/penjualan_marketplace');
+	}
 }
+
 
 /* End of file Penjualan_marketplace.php */
 /* Location: ./modules/penjualan_marketplace/controllers/backend/Penjualan_marketplace.php */

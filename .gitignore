@@ -46,3 +46,5 @@ phploy.ini
 *.stTheme.cache
 *.sublime-workspace
 *.sublime-project
+scratch/*
+.agents/*

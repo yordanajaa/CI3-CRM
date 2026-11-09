@@ -33,9 +33,23 @@
       </div>
       <div style="text-align:right;">
          <div class="invoice-title">INVOICE</div>
-         <div><strong>No: <?= _ent($invoice->nomor_invoice); ?></strong></div>
-         <div>Tanggal: <?= date('d/m/Y',strtotime($invoice->tanggal_invoice)); ?></div>
-         <div>Jatuh Tempo: <?= $invoice->tanggal_jatuh_tempo ? date('d/m/Y',strtotime($invoice->tanggal_jatuh_tempo)) : '-'; ?></div>
+         <table align="right" style="border-collapse: collapse; font-size: 12px; margin-top: 4px;">
+            <tr>
+               <td style="text-align: right; padding: 1px 0;"><strong>No. Invoice</strong></td>
+               <td style="width: 12px; text-align: center; padding: 1px 0;">:</td>
+               <td style="text-align: left; padding: 1px 0;"><strong><?= _ent($invoice->nomor_invoice); ?></strong></td>
+            </tr>
+            <tr>
+               <td style="text-align: right; padding: 1px 0; color: #475569;">Tanggal</td>
+               <td style="text-align: center; padding: 1px 0; color: #475569;">:</td>
+               <td style="text-align: left; padding: 1px 0; color: #475569;"><?= date('d/m/Y', strtotime($invoice->tanggal_invoice)); ?></td>
+            </tr>
+            <tr>
+               <td style="text-align: right; padding: 1px 0; color: #475569;">Jatuh Tempo</td>
+               <td style="text-align: center; padding: 1px 0; color: #475569;">:</td>
+               <td style="text-align: left; padding: 1px 0; color: #475569;"><?= $invoice->tanggal_jatuh_tempo ? date('d/m/Y', strtotime($invoice->tanggal_jatuh_tempo)) : '-'; ?></td>
+            </tr>
+         </table>
       </div>
    </div>
    <div style="margin-bottom:20px;">

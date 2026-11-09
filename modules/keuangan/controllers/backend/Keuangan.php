@@ -268,6 +268,16 @@ class Keuangan extends Admin
 		}
 		$this->response($this->data);
 	}
+
+	public function buku_besar($offset = 0)
+	{
+		redirect('administrator/buku_besar' . ($offset ? '/index/' . $offset : ''));
+	}
+
+	public function cetak_bkm($id)
+	{
+		redirect('administrator/piutang_usaha/cetak_bkm/' . $id . ($this->input->get('mode') ? '?mode=' . $this->input->get('mode') : ''));
+	}
 }
 
 /* End of file Keuangan.php */

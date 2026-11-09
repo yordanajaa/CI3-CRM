@@ -76,20 +76,37 @@ class Kategori_produk extends Admin
 		}
 
 		$this->form_validation->set_rules('nama_kategori', 'Nama Kategori', 'trim|required|max_length[100]');
-		$this->form_validation->set_rules('deskripsi', 'Deskripsi', 'trim|required');
-		$this->form_validation->set_rules('created_at', 'Created At', 'trim|required');
-		
+		$this->form_validation->set_rules('kode_kategori', 'Kode Kategori', 'trim|max_length[30]');
+		$this->form_validation->set_rules('deskripsi', 'Deskripsi', 'trim');
 
 		if ($this->form_validation->run()) {
-		
+			$nama = trim((string)$this->input->post('nama_kategori'));
+			$kode = trim((string)$this->input->post('kode_kategori'));
+
+			// Jika kode kategori tidak diisi, buat otomatis secara unik
+			if (empty($kode)) {
+				$clean = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $nama), 0, 6));
+				if (empty($clean)) $clean = 'GEN';
+				$candidate = 'KAT-' . $clean;
+				$chk = $this->db->get_where('kategori_produk', ['kode_kategori' => $candidate])->row();
+				if ($chk) {
+					$candidate = 'KAT-' . $clean . '-' . rand(10, 99);
+				}
+				$kode = $candidate;
+			}
+
+			$created_at = $this->input->post('created_at');
+			if (empty($created_at)) {
+				$created_at = date('Y-m-d H:i:s');
+			}
+
 			$save_data = [
-				'id' => $this->input->post('id'),
-				'nama_kategori' => $this->input->post('nama_kategori'),
-				'deskripsi' => $this->input->post('deskripsi'),
-				'created_at' => $this->input->post('created_at'),
+				'kode_kategori' => $kode,
+				'nama_kategori' => $nama,
+				'deskripsi'     => $this->input->post('deskripsi'),
+				'created_at'    => $created_at,
 			];
 
-			
 			$save_kategori_produk = $this->model_kategori_produk->store($save_data);
             
 
@@ -160,19 +177,42 @@ class Kategori_produk extends Admin
 		}
 		
 		$this->form_validation->set_rules('nama_kategori', 'Nama Kategori', 'trim|required|max_length[100]');
-		$this->form_validation->set_rules('deskripsi', 'Deskripsi', 'trim|required');
-		$this->form_validation->set_rules('created_at', 'Created At', 'trim|required');
-		
+		$this->form_validation->set_rules('kode_kategori', 'Kode Kategori', 'trim|max_length[30]');
+		$this->form_validation->set_rules('deskripsi', 'Deskripsi', 'trim');
+
 		if ($this->form_validation->run()) {
-		
+			$nama = trim((string)$this->input->post('nama_kategori'));
+			$kode = trim((string)$this->input->post('kode_kategori'));
+
+			if (empty($kode)) {
+				$existing = $this->db->get_where('kategori_produk', ['id' => $id])->row();
+				if (!empty($existing->kode_kategori)) {
+					$kode = $existing->kode_kategori;
+				} else {
+					$clean = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $nama), 0, 6));
+					if (empty($clean)) $clean = 'GEN';
+					$candidate = 'KAT-' . $clean;
+					$chk = $this->db->get_where('kategori_produk', ['kode_kategori' => $candidate, 'id !=' => $id])->row();
+					if ($chk) {
+						$candidate = 'KAT-' . $clean . '-' . rand(10, 99);
+					}
+					$kode = $candidate;
+				}
+			}
+
+			$created_at = $this->input->post('created_at');
+			if (empty($created_at)) {
+				$existing = $this->db->get_where('kategori_produk', ['id' => $id])->row();
+				$created_at = !empty($existing->created_at) ? $existing->created_at : date('Y-m-d H:i:s');
+			}
+
 			$save_data = [
-				'id' => $this->input->post('id'),
-				'nama_kategori' => $this->input->post('nama_kategori'),
-				'deskripsi' => $this->input->post('deskripsi'),
-				'created_at' => $this->input->post('created_at'),
+				'kode_kategori' => $kode,
+				'nama_kategori' => $nama,
+				'deskripsi'     => $this->input->post('deskripsi'),
+				'created_at'    => $created_at,
 			];
 
-			
 			$save_kategori_produk = $this->model_kategori_produk->change($id, $save_data);
 
 			if ($save_kategori_produk) {

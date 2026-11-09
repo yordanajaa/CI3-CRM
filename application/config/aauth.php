@@ -107,7 +107,7 @@ $config_aauth["default"] = array(
  'max'                            => 30,
  'min'                            => 5,
 
- 'additional_valid_chars'         => array(),
+ 'additional_valid_chars'         => array('-', '_', '.'),
 
  'ddos_protection'                => true,
 

@@ -5,7 +5,7 @@ class Model_kategori_produk extends MY_Model {
 
     private $primary_key    = 'id';
     private $table_name     = 'kategori_produk';
-    private $field_search   = ['id', 'nama_kategori', 'deskripsi', 'created_at'];
+    private $field_search   = ['id', 'kode_kategori', 'nama_kategori', 'deskripsi', 'created_at'];
 
     public function __construct()
     {

@@ -1,8 +1,8 @@
 <section class="content-header">
-   <h1>Kategori Barang <small>Register All</small></h1>
+   <h1>Kategori Barang <small>Klasifikasi &amp; Pengelompokan Produk</small></h1>
    <ol class="breadcrumb">
-      <li><a href="<?= base_url('administrator/dashboard'); ?>"><i class="fa fa-dashboard"></i> Home</a></li>
-      <li><a href="<?= base_url('administrator/kategori_produk'); ?>">Master Data</a></li>
+      <li><a href="<?= base_url('administrator/dashboard'); ?>"><i class="fa fa-dashboard"></i> Beranda</a></li>
+      <li>Master Data</li>
       <li class="active">Kategori Barang</li>
    </ol>
 </section>
@@ -12,14 +12,16 @@
       <div class="col-md-12">
          <div class="box box-primary">
             <div class="box-header with-border">
-               <h3 class="box-title"><i class="fa fa-tags"></i> Register All Kategori Barang <span class="label label-warning" style="font-size:11px;"><?= $kategori_produk_counts; ?> Item</span></h3>
+               <h3 class="box-title"><i class="fa fa-tags text-primary"></i> Daftar Kategori Barang <span class="label label-warning" style="font-size:11px;"><?= $kategori_produk_counts; ?> Item</span></h3>
                <div class="box-tools pull-right">
                   <?php is_allowed('kategori_produk_add', function(){?>
                   <a class="btn btn-flat btn-success btn-sm" href="<?= site_url('administrator/kategori_produk/add'); ?>"><i class="fa fa-plus"></i> Tambah Kategori Barang</a>
                   <?php }); ?>
-                  <?php is_allowed('kategori_produk_export', function(){?>
-                  <a class="btn btn-flat btn-primary btn-sm" href="<?= site_url('administrator/kategori_produk/export'); ?>"><i class="fa fa-file-excel-o"></i> Export XLS</a>
-                  <a class="btn btn-flat btn-info btn-sm" href="<?= site_url('administrator/kategori_produk/export_pdf'); ?>"><i class="fa fa-file-pdf-o"></i> Export PDF</a>
+                  <?php 
+                  $export_qs = !empty($_SERVER['QUERY_STRING']) ? ('?' . $_SERVER['QUERY_STRING']) : '';
+                  is_allowed('kategori_produk_export', function() use ($export_qs){?>
+                  <a class="btn btn-flat btn-primary btn-sm" href="<?= site_url('administrator/kategori_produk/export' . $export_qs); ?>"><i class="fa fa-file-excel-o"></i> Export XLS</a>
+                  <a class="btn btn-flat btn-info btn-sm" href="<?= site_url('administrator/kategori_produk/export_pdf' . $export_qs); ?>" target="_blank"><i class="fa fa-file-pdf-o"></i> Export PDF</a>
                   <?php }); ?>
                </div>
             </div>
@@ -41,22 +43,20 @@
                      <table class="table table-bordered table-striped dataTable">
                         <thead>
                            <tr>
-                              <th>Category Code</th>
-                              <th>Category Name</th>
-                              <th>Description</th>
-                              <th>Created At</th>
-                              <th>Updated At</th>
-                              <th width="120" class="text-center">Action</th>
+                              <th width="140">Kode Kategori</th>
+                              <th>Nama Kategori</th>
+                              <th>Deskripsi</th>
+                              <th width="160">Tanggal Dibuat</th>
+                              <th width="120" class="text-center">Aksi</th>
                            </tr>
                         </thead>
                         <tbody>
                         <?php foreach($kategori_produks as $k): ?>
                            <tr>
-                              <td><span class="label label-default">KAT-<?= strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $k->nama_kategori), 0, 8)); ?></span></td>
+                              <td><span class="label label-primary"><?= !empty($k->kode_kategori) ? htmlspecialchars($k->kode_kategori) : ('KAT-' . strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $k->nama_kategori), 0, 6))); ?></span></td>
                               <td><strong><a href="<?= site_url('administrator/kategori_produk/view/' . $k->id); ?>"><?= _ent($k->nama_kategori); ?></a></strong></td> 
                               <td><small><?= _ent($k->deskripsi ?? '-'); ?></small></td> 
-                              <td><small><?= date('Y-m-d H:i', strtotime($k->created_at ?? date('Y-m-d H:i'))); ?></small></td> 
-                              <td><small><?= date('Y-m-d H:i', strtotime($k->created_at ?? date('Y-m-d H:i'))); ?></small></td> 
+                              <td><small><?= !empty($k->created_at) && $k->created_at !== '0000-00-00 00:00:00' ? date('d/m/Y H:i', strtotime($k->created_at)) : '-'; ?></small></td> 
                               <td class="text-center">
                                  <?php is_allowed('kategori_produk_view', function() use ($k){?>
                                  <a href="<?= site_url('administrator/kategori_produk/view/' . $k->id); ?>" class="btn btn-default btn-xs" title="Detail"><i class="fa fa-eye"></i></a>
@@ -71,7 +71,7 @@
                            </tr>
                         <?php endforeach; ?>
                         <?php if ($kategori_produk_counts == 0) :?>
-                           <tr><td colspan="6" class="text-center text-muted">Kategori Barang data is not available</td></tr>
+                           <tr><td colspan="5" class="text-center text-muted">Data Kategori Barang tidak ditemukan</td></tr>
                         <?php endif; ?>
                         </tbody>
                      </table>

@@ -112,7 +112,6 @@
                            <?php endforeach; ?>
                         </select>
                      </div>
-                     <input type="hidden" name="gudang_id" id="gudang_id" value="<?= !empty($gudangs[0]->id) ? $gudangs[0]->id : 1; ?>">
                   </div>
                </div>
 
@@ -239,7 +238,7 @@
                   <div style="margin-top: 16px; padding: 12px 16px; background: #fff; border: 1px solid #cbd5e1; border-radius: 8px;">
                      <div style="font-size: 12px; font-weight: 700; color: #475569;"><i class="fa fa-calculator text-primary"></i> Rincian Perhitungan Stok:</div>
                      <div id="simulasi_formula" style="font-size: 14px; font-weight: 700; color: #1e40af; margin-top: 4px;">
-                        Pilih produk dan gudang untuk melihat simulasi perhitungan stok.
+                        Pilih produk untuk melihat simulasi perhitungan stok.
                      </div>
                   </div>
                </div>
@@ -373,14 +372,13 @@ function calculateSimulation() {
 
 function checkLiveStok() {
    var pId = $('#produk_id').val();
-   var gId = $('#gudang_id').val();
-
+   
    var $opt = $('#produk_id').find('option:selected');
    if ($opt.data('satuan')) {
       updateSatuanLabel($opt.data('satuan'));
    }
 
-   if (!pId || !gId) {
+   if (!pId) {
       $('#section_comparison').slideUp(200);
       return;
    }
@@ -389,7 +387,7 @@ function checkLiveStok() {
       url: '<?= site_url("administrator/stok/get_current_stok"); ?>',
       type: 'GET',
       dataType: 'json',
-      data: { produk_id: pId, gudang_id: gId },
+      data: { produk_id: pId },
       success: function(res) {
          if (res.success) {
             currentStokQty = parseFloat(res.qty) || 0;
@@ -423,7 +421,7 @@ $(document).ready(function(){
       $('.chosen-select').chosen({width: '100%'});
    }
 
-   $('#produk_id, #gudang_id').on('change', function(){
+   $('#produk_id').on('change', function(){
       checkLiveStok();
    });
 

@@ -10,6 +10,57 @@
   animation: invoiceFadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .table-responsive { -webkit-overflow-scrolling: touch; }
+
+/* Responsive Invoice Info Table */
+.table-invoice-info {
+  table-layout: fixed !important;
+  width: 100% !important;
+}
+.table-invoice-info th {
+  width: 32% !important;
+  color: #475569 !important;
+  font-weight: 600 !important;
+  vertical-align: top !important;
+  white-space: normal !important;
+  word-break: break-word !important;
+  padding: 5px 4px 5px 0 !important;
+}
+.table-invoice-info td {
+  width: 68% !important;
+  vertical-align: top !important;
+  white-space: normal !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+  line-height: 1.45 !important;
+  padding: 5px 0 5px 4px !important;
+}
+
+@media (max-width: 768px) {
+  .box-tools.pull-right {
+    float: none !important;
+    margin-top: 10px !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+  .box-tools.pull-right .btn {
+    margin: 0 !important;
+    flex: 1 1 auto !important;
+    text-align: center !important;
+  }
+  .table-invoice-info th {
+    width: 33% !important;
+    font-size: 11.5px !important;
+  }
+  .table-invoice-info td {
+    width: 67% !important;
+    font-size: 11.5px !important;
+  }
+  .table-invoice-info .chat-wa-wrapper {
+    display: inline-block;
+    margin-top: 3px;
+  }
+}
 </style>
 
 <section class="content-header">
@@ -28,6 +79,12 @@
                <?php endif; ?>
             </h3>
             <div class="box-tools pull-right">
+               <?php 
+               $is_pos_view = (!empty($invoice->so_source) && $invoice->so_source == 'pos') || (stripos($invoice->catatan ?? '', 'POS Cepat') !== false);
+               if ($is_pos_view && !empty($invoice->so_id)): 
+               ?>
+                  <a href="<?= site_url('administrator/sales_order/cetak_struk/'.$invoice->so_id.'?template=thermal'); ?>" class="btn btn-success btn-sm" style="background:#059669; border-color:#047857; font-weight:700;" target="_blank" title="Cetak Struk Kasir Thermal (58mm/80mm)"><i class="fa fa-print"></i> Cetak Struk Thermal</a>
+               <?php endif; ?>
                <a href="<?= site_url('administrator/invoice/print_invoice/'.$invoice->id); ?>" class="btn btn-info btn-sm" target="_blank"><i class="fa fa-print"></i> Cetak PDF</a>
                <?php if($invoice->status=='draft'): ?><?php is_allowed('invoice_update', function() use ($invoice){ ?>
                <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#modal_kirim"><i class="fa fa-truck"></i> Kirim &amp; Potong Stok</button>
@@ -42,15 +99,15 @@
          <div class="box-body">
             
             <!-- Header Grid: 2 Columns -->
-            <div class="row" style="margin-bottom: 20px;">
-               <div class="col-md-6">
-                  <div class="panel panel-default" style="border-radius: 4px; box-shadow: none;">
-                     <div class="panel-heading" style="background:#f8f9fa; font-weight:bold;"><i class="fa fa-user"></i> Informasi Pelanggan &amp; Order</div>
-                     <div class="panel-body" style="padding: 10px 15px;">
-                        <table class="table table-condensed table-borderless" style="margin-bottom:0;">
-                           <tr><th style="width:35%;">Pelanggan:</th><td><a href="<?= site_url('administrator/pelanggan/view/'.$invoice->pelanggan_id); ?>"><strong style="font-size:14px; color:#0284c7;"><?= _ent($invoice->nama_pelanggan); ?> <i class="fa fa-external-link" style="font-size:11px;"></i></strong></a></td></tr>
-                           <tr><th>Alamat:</th><td><?= _ent($invoice->alamat_pelanggan ?? '-'); ?></td></tr>
-                           <tr>
+             <div class="row" style="margin-bottom: 20px;">
+                <div class="col-md-6">
+                   <div class="panel panel-default" style="border-radius: 4px; box-shadow: none;">
+                      <div class="panel-heading" style="background:#f8f9fa; font-weight:bold;"><i class="fa fa-user"></i> Informasi Pelanggan &amp; Order</div>
+                      <div class="panel-body" style="padding: 10px 15px;">
+                         <table class="table table-condensed table-borderless table-invoice-info" style="margin-bottom:0;">
+                            <tr><th>Pelanggan:</th><td><a href="<?= site_url('administrator/pelanggan/view/'.$invoice->pelanggan_id); ?>"><strong style="font-size:14px; color:#0284c7;"><?= _ent($invoice->nama_pelanggan); ?> <i class="fa fa-external-link" style="font-size:11px;"></i></strong></a></td></tr>
+                            <tr><th>Alamat:</th><td style="word-break:break-word; overflow-wrap:break-word; line-height:1.45;"><?= nl2br(_ent($invoice->alamat_pelanggan ?? '-')); ?></td></tr>
+                            <tr>
                                <th>No. Telp:</th>
                                <td>
                                   <?= _ent($invoice->telp_pelanggan ?? '-'); ?>
@@ -60,37 +117,57 @@
                                         $inv_wa = (substr($inv_ph, 0, 1) === '0') ? ('62' . substr($inv_ph, 1)) : $inv_ph;
                                         $inv_msg = "Halo Kak " . ($invoice->nama_pelanggan ?? '') . ", ini informasi Faktur/Invoice No. " . $invoice->nomor_invoice . " senilai Rp " . number_format($invoice->total, 0, ',', '.') . ". Terima kasih.";
                                   ?>
-                                     <a href="https://wa.me/<?= $inv_wa; ?>?text=<?= urlencode($inv_msg); ?>" target="_blank" class="btn btn-xs btn-success" style="margin-left:6px; border-radius:3px; padding:1px 6px;" title="Chat WhatsApp Pelanggan">
-                                        <i class="fa fa-whatsapp"></i> Chat WA
-                                     </a>
+                                     <span class="chat-wa-wrapper" style="margin-left:4px;">
+                                        <a href="https://wa.me/<?= $inv_wa; ?>?text=<?= urlencode($inv_msg); ?>" target="_blank" class="btn btn-xs btn-success" style="border-radius:3px; padding:2px 7px; font-weight:600;" title="Chat WhatsApp Pelanggan">
+                                           <i class="fa fa-whatsapp"></i> Chat WA
+                                        </a>
+                                     </span>
                                   <?php endif; ?>
                                </td>
                             </tr>
-                           <tr><th>Referensi SO:</th><td><?= !empty($invoice->so_id) ? '<a href="'.site_url('administrator/sales_order/view/'.$invoice->so_id).'"><span class="label label-info">' . _ent($invoice->nomor_so) . ' <i class="fa fa-external-link" style="font-size:10px;"></i></span></a>' : '-'; ?></td></tr>
-                        </table>
-                     </div>
-                  </div>
-               </div>
-               
-               <div class="col-md-6">
-                  <div class="panel panel-default" style="border-radius: 4px; box-shadow: none;">
-                     <div class="panel-heading" style="background:#f8f9fa; font-weight:bold;"><i class="fa fa-truck"></i> Detail Pengiriman &amp; Tanggal</div>
-                     <div class="panel-body" style="padding: 10px 15px;">
-                        <table class="table table-condensed table-borderless" style="margin-bottom:0;">
-                           <tr><th style="width:40%;">Tgl Invoice:</th><td><?= date('d/m/Y', strtotime($invoice->tanggal_invoice)); ?></td></tr>
-                           <tr><th>Jatuh Tempo:</th><td><?= $invoice->tanggal_jatuh_tempo ? date('d/m/Y', strtotime($invoice->tanggal_jatuh_tempo)) : '-'; ?></td></tr>
-                           <tr><th>Status Kirim:</th><td><strong class="text-primary"><?= strtoupper(_ent($invoice->status_kirim ?? 'BELUM DIKIRIM')); ?></strong></td></tr>
-                           <tr><th>No. Resi / AWB:</th><td><strong><?= _ent($invoice->nomor_resi ?? '-'); ?></strong></td></tr>
-                           <tr><th>Ekspedisi / Kurir:</th><td><?= _ent($invoice->ekspedisi ?? '-'); ?></td></tr>
-                         <?php $linked_piutang = $this->db->get_where('piutang_usaha', ['invoice_id' => $invoice->id])->row(); ?>
-                         <?php if($linked_piutang): ?>
-                         <tr><th>Status Piutang:</th><td><a href="<?= site_url('administrator/piutang_usaha?q=' . urlencode($linked_piutang->nomor_piutang)); ?>"><span class="label <?= $linked_piutang->status == 'lunas' ? 'label-success' : 'label-warning'; ?>"><i class="fa fa-money"></i> <?= _ent($linked_piutang->nomor_piutang); ?> (<?= strtoupper($linked_piutang->status); ?> - Sisa Rp <?= number_format($linked_piutang->sisa, 0, ',', '.'); ?>)</span></a></td></tr>
-                         <?php endif; ?>
-                        </table>
-                     </div>
-                  </div>
-               </div>
-            </div>
+                            <tr>
+                               <th>Sumber:</th>
+                               <td>
+                                  <?php 
+                                  $is_pos_view = (!empty($invoice->so_source) && $invoice->so_source == 'pos') || (stripos($invoice->catatan ?? '', 'POS Cepat') !== false);
+                                  if ($is_pos_view): 
+                                  ?>
+                                     <span class="label" style="background:#059669; color:#fff; font-size:11px; font-weight:700; padding:4px 8px; border-radius:4px;"><i class="fa fa-bolt"></i> Kasir Cepat (POS)</span>
+                                     <?php if (!empty($invoice->so_id)): ?>
+                                        <a href="<?= site_url('administrator/sales_order/cetak_struk/' . $invoice->so_id . '?template=thermal'); ?>" target="_blank" class="btn btn-xs btn-default" style="margin-left:6px; font-weight:600; border-color:#059669; color:#059669;" title="Cetak Struk Thermal (58mm/80mm)">
+                                           <i class="fa fa-print"></i> Cetak Thermal
+                                        </a>
+                                     <?php endif; ?>
+                                  <?php else: ?>
+                                     <span class="label" style="background:#2563eb; color:#fff; font-size:11px; font-weight:700; padding:4px 8px; border-radius:4px;"><i class="fa fa-list-alt"></i> Transaksi Penjualan</span>
+                                  <?php endif; ?>
+                                </td>
+                             </tr>
+                             <tr><th>Ref. Transaksi:</th><td><?= !empty($invoice->so_id) ? '<a href="'.site_url('administrator/sales_order/view/'.$invoice->so_id).'"><span class="label label-info" style="font-size:11px; padding:3px 6px; word-break:break-all;">' . _ent($invoice->nomor_so) . ' <i class="fa fa-external-link" style="font-size:10px;"></i></span></a>' : '-'; ?></td></tr>
+                         </table>
+                      </div>
+                   </div>
+                </div>
+                
+                <div class="col-md-6">
+                   <div class="panel panel-default" style="border-radius: 4px; box-shadow: none;">
+                      <div class="panel-heading" style="background:#f8f9fa; font-weight:bold;"><i class="fa fa-truck"></i> Detail Pengiriman &amp; Tanggal</div>
+                      <div class="panel-body" style="padding: 10px 15px;">
+                         <table class="table table-condensed table-borderless table-invoice-info" style="margin-bottom:0;">
+                            <tr><th>Tgl Invoice:</th><td><?= date('d/m/Y', strtotime($invoice->tanggal_invoice)); ?></td></tr>
+                            <tr><th>Jatuh Tempo:</th><td><?= $invoice->tanggal_jatuh_tempo ? date('d/m/Y', strtotime($invoice->tanggal_jatuh_tempo)) : '-'; ?></td></tr>
+                            <tr><th>Status Kirim:</th><td><strong class="text-primary"><?= strtoupper(_ent($invoice->status_kirim ?? 'BELUM DIKIRIM')); ?></strong></td></tr>
+                            <tr><th>No. Resi / AWB:</th><td style="word-break:break-all;"><strong><?= _ent($invoice->nomor_resi ?? '-'); ?></strong></td></tr>
+                            <tr><th>Ekspedisi:</th><td><?= _ent($invoice->ekspedisi ?? '-'); ?></td></tr>
+                          <?php $linked_piutang = $this->db->get_where('piutang_usaha', ['invoice_id' => $invoice->id])->row(); ?>
+                          <?php if($linked_piutang): ?>
+                          <tr><th>Status Piutang:</th><td><a href="<?= site_url('administrator/piutang_usaha?q=' . urlencode($linked_piutang->nomor_piutang)); ?>"><span class="label <?= $linked_piutang->status == 'lunas' ? 'label-success' : 'label-warning'; ?>" style="word-break:break-all;"><i class="fa fa-money"></i> <?= _ent($linked_piutang->nomor_piutang); ?> (<?= strtoupper($linked_piutang->status); ?> - Sisa Rp <?= number_format($linked_piutang->sisa, 0, ',', '.'); ?>)</span></a></td></tr>
+                          <?php endif; ?>
+                         </table>
+                      </div>
+                   </div>
+                </div>
+             </div>
 
             <!-- Item Table -->
             <h4 style="border-bottom:2px solid #3c8dbc; padding-bottom:5px; margin-bottom:15px; font-weight:bold; color:#333;"><i class="fa fa-cubes"></i> Item Barang Penjualan</h4>
@@ -223,7 +300,7 @@
                <label>No. Resi / AWB / Bukti Kirim <span class="text-danger">*</span></label>
                <input type="text" class="form-control" name="nomor_resi" placeholder="Ketik No. Resi (Contoh: JNE123456789)..." required>
             </div>
-            <div class="callout callout-warning" style="margin-bottom:0;"><p><i class="fa fa-info-circle"></i> Setelah dikonfirmasi: Status kirim berubah ke <strong>SHIPPED</strong>, stok barang di gudang otomatis terpotong, dan piutang usaha diterbitkan.</p></div>
+            <div class="callout callout-warning" style="margin-bottom:0;"><p><i class="fa fa-info-circle"></i> Setelah dikonfirmasi: Status kirim berubah ke <strong>SHIPPED</strong>, stok barang otomatis terpotong, dan piutang usaha diterbitkan.</p></div>
          </div>
          <div class="modal-footer">
             <button type="submit" class="btn btn-primary"><i class="fa fa-send"></i> Konfirmasi & Kirim</button>

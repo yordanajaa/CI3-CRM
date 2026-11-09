@@ -35,12 +35,11 @@ $action_url = $is_edit
          <div class="box-body">
             <div class="row">
                <div class="col-md-4">
-                  <div class="form-group"><label>Referensi Penerimaan (Opsional)</label>
-                     <select class="form-control chosen" name="penerimaan_id" id="penerimaan_id">
+                  <div class="form-group"><label>Referensi Purchase Order (Opsional)</label>
+                     <select class="form-control chosen" name="po_id" id="po_id">
                         <option value="">-- Manual / Tanpa Referensi PO --</option>
-                        <?php foreach($penerimaans as $p): ?>
-                            <?php $po_lbl = !empty($p->nomor_po) ? ' (Ref PO: ' . $p->nomor_po . ')' : ''; ?>
-                            <option value="<?= $p->id; ?>" <?= ((isset($selected_penerimaan_id) && $selected_penerimaan_id == $p->id) || ($is_edit && isset($retur) && $retur->penerimaan_id == $p->id)) ? 'selected' : ''; ?>><?= _ent($p->nomor_penerimaan . $po_lbl); ?></option>
+                        <?php foreach($pos as $p): ?>
+                            <option value="<?= $p->id; ?>" <?= ((isset($selected_po_id) && $selected_po_id == $p->id) || ($is_edit && isset($retur) && $retur->po_id == $p->id)) ? 'selected' : ''; ?>><?= _ent($p->nomor_po . ' - ' . ($p->nama_supplier ?? '')); ?></option>
                         <?php endforeach; ?>
                      </select>
                   </div>
@@ -73,8 +72,6 @@ $action_url = $is_edit
                      </select>
                   </div>
                </div>
-               <?php $default_gudang_id = ($is_edit && !empty($retur->gudang_id)) ? $retur->gudang_id : (isset($gudangs[0]) ? $gudangs[0]->id : 1); ?>
-               <input type="hidden" name="gudang_id" id="gudang_id" value="<?= $default_gudang_id; ?>">
             </div>
          </div>
       </div>
@@ -203,70 +200,52 @@ $(document).ready(function() {
       add_item_row();
    });
 
-   $('#penerimaan_id').on('change', function() {
-      var pid = $(this).val();
-      if (!pid) return;
-      $.get('<?= site_url("administrator/retur_pembelian/get_items"); ?>', { penerimaan_id: pid }, function(r) {
+   $('#po_id').on('change', function() {
+      var poid = $(this).val();
+      if (!poid) return;
+      $.get('<?= site_url("administrator/retur_pembelian/get_items"); ?>', { po_id: poid }, function(r) {
          if (r.success) {
-            if (r.penerimaan) {
-               $('#supplier_id').val(r.penerimaan.supplier_id).trigger('chosen:updated');
-               $('#gudang_id').val(r.penerimaan.gudang_id).trigger('chosen:updated');
+            if (r.po) {
+               $('#supplier_id').val(r.po.supplier_id).trigger('chosen:updated');
             }
             if (r.items && r.items.length > 0) {
                $('#item_rows').empty();
                item_count = 0;
-               var has_damaged = false;
                r.items.forEach(function(it) {
                   var idx = item_count++;
-                  var qty_rusak = Math.round(parseFloat(it.qty_rusak) || 0);
-                  var qty_terima = Math.round(parseFloat(it.qty_terima) || 1);
-                  var default_qty = qty_rusak > 0 ? qty_rusak : qty_terima;
+                  var qty_order = Math.round(parseFloat(it.qty) || 1);
                   var harga = Math.round(parseFloat(it.harga_satuan || it.harga_beli) || 0);
-                  var sub = default_qty * harga;
+                  var sub = qty_order * harga;
                   var harga_fmt = harga > 0 ? harga.toLocaleString('id-ID') : '0';
                   var sub_fmt = sub > 0 ? sub.toLocaleString('id-ID') : '0';
-                  var default_alasan = qty_rusak > 0 ? ("Barang Cacat/Rusak saat Penerimaan (" + qty_rusak + " unit)") : "";
                   
-                  if (qty_rusak > 0) {
-                     has_damaged = true;
-                  }
-
-                  var damaged_badge = qty_rusak > 0 
-                     ? '<br><span class="label label-danger" style="font-size:10px; margin-top:3px; display:inline-block;"><i class="fa fa-exclamation-triangle"></i> Terdeteksi ' + qty_rusak + ' Unit Rusak saat Penerimaan</span>' 
-                     : '';
-
                   var rowHtml = '<tr class="item-row" id="item_row_' + idx + '">' +
                      '<td>' +
-                        '<strong>' + (it.kode_produk ? it.kode_produk + ' - ' : '') + (it.nama_produk ? it.nama_produk : '<i class="text-muted">(Produk Telah Dihapus)</i>') + '</strong>' + damaged_badge +
+                        '<strong>' + (it.kode_produk ? it.kode_produk + ' - ' : '') + (it.nama_produk ? it.nama_produk : '<i class="text-muted">(Produk Telah Dihapus)</i>') + '</strong>' +
                         '<input type="hidden" name="items[' + idx + '][produk_id]" value="' + it.produk_id + '">' +
                      '</td>' +
-                     '<td><input type="number" step="1" min="1" class="form-control qty" name="items[' + idx + '][qty_retur]" value="' + default_qty + '" max="' + qty_terima + '" min="1"></td>' +
+                     '<td><input type="number" step="1" min="1" class="form-control qty" name="items[' + idx + '][qty_retur]" value="' + qty_order + '" max="' + qty_order + '" min="1"></td>' +
                      '<td><input type="text" class="form-control rupiah harga" name="items[' + idx + '][harga_satuan]" value="' + harga_fmt + '"></td>' +
                      '<td><input type="text" class="form-control rupiah subtotal-disp" value="' + sub_fmt + '" readonly></td>' +
-                     '<td><input type="text" class="form-control" name="items[' + idx + '][alasan]" value="' + default_alasan + '" placeholder="Alasan"></td>' +
+                     '<td><input type="text" class="form-control" name="items[' + idx + '][alasan]" value="" placeholder="Alasan"></td>' +
                      '<td><button type="button" class="btn btn-xs btn-danger remove-row"><i class="fa fa-times"></i></button></td>' +
                      '</tr>';
                   $('#item_rows').append(rowHtml);
                });
 
-               if (has_damaged) {
-                  $('select[name="alasan"]').val('cacat');
-                  $('#items_loaded').html('<p><i class="fa fa-exclamation-circle text-warning"></i> <strong>Otomatisasi Barang Rusak:</strong> Terdeteksi barang kondisi rusak dari dokumen penerimaan ini. Kuantitas retur dan alasan telah diisi secara otomatis sesuai jumlah barang rusak!</p>').addClass('callout-warning').removeClass('callout-info').show();
-               } else {
-                  $('#items_loaded').html('<p><i class="fa fa-info-circle"></i> Item dari penerimaan dimuat secara otomatis. Anda dapat menyesuaikan Qty atau Alasan.</p>').addClass('callout-info').removeClass('callout-warning').show();
-               }
+               $('#items_loaded').html('<p><i class="fa fa-info-circle"></i> Item dari Purchase Order dimuat secara otomatis. Anda dapat menyesuaikan Qty atau Alasan.</p>').addClass('callout-info').show();
             }
          }
       }, 'json');
    });
 
 <?php if (!$is_edit): ?>
-   if ($('#penerimaan_id').val()) {
-      $('#penerimaan_id').trigger('change');
+   if ($('#po_id').val()) {
+      $('#po_id').trigger('change');
    }
 <?php else: ?>
    setTimeout(function(){
-      $('#penerimaan_id, #supplier_id, #gudang_id').trigger('chosen:updated');
+      $('#po_id, #supplier_id').trigger('chosen:updated');
    }, 150);
 <?php endif; ?>
 

@@ -1,63 +1,141 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>Laporan Kinerja & Konversi Tim CS</title>
 <style type="text/css">
-body { font-family: sans-serif; font-size: 10px; color: #333; margin: 0; padding: 0; }
-.header { text-align: center; margin-bottom: 15px; border-bottom: 2px solid #7c3aed; padding-bottom: 8px; }
-.header h2 { margin: 0; padding: 0; color: #4c1d95; font-size: 16px; font-weight: bold; }
-.header p { margin: 3px 0 0 0; color: #64748b; font-size: 10px; }
-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-th { background-color: #4c1d95; color: #ffffff; padding: 6px 4px; text-align: left; font-size: 8.5px; font-weight: bold; text-transform: uppercase; border: 1px solid #4c1d95; }
-td { padding: 5px 4px; border: 1px solid #cbd5e1; font-size: 8.5px; vertical-align: middle; }
-tr:nth-child(even) { background-color: #f8fafc; }
-.footer { margin-top: 15px; text-align: right; font-size: 8.5px; color: #94a3b8; }
+	* {
+		font-family: helvetica, arial, sans-serif;
+		font-size: 7.5pt;
+		color: #1e293b;
+	}
+	table.data-table {
+		width: 100%;
+		table-layout: fixed;
+		border-collapse: collapse;
+		margin-top: 8px;
+	}
+	table.data-table thead th {
+		background-color: #1e40af;
+		color: #ffffff;
+		font-weight: bold;
+		padding: 6px 4px;
+		border: 0.5px solid #1e3a8a;
+		text-align: center;
+		font-size: 7.5pt;
+		vertical-align: middle;
+	}
+	table.data-table tbody td {
+		padding: 5px 4px;
+		border: 0.5px solid #cbd5e1;
+		font-size: 7.5pt;
+		word-wrap: break-word;
+		vertical-align: middle;
+	}
+	.text-center { text-align: center; }
+	.text-right { text-align: right; }
+	.text-left { text-align: left; }
+	tr.even { background-color: #f8fafc; }
 </style>
-</head>
-<body>
-<div class="header">
-    <h2>LAPORAN KINERJA &amp; PRODUKSI REPEAT ORDER TIM CS</h2>
-    <p>METAFORA ERP System — Waktu Ekspor: <?= date('d/m/Y H:i:s'); ?></p>
-</div>
 
-<table>
-    <thead>
-        <tr>
-            <th width="5%">Rank</th>
-            <th width="20%">Operator CS</th>
-            <th width="12%" style="text-align:center;">Followup</th>
-            <th width="12%" style="text-align:center;">Broadcast WA</th>
-            <th width="11%" style="text-align:center;">Respon Positif</th>
-            <th width="10%" style="text-align:center;">Komplain</th>
-            <th width="10%" style="text-align:center;">Konversi RO</th>
-            <th width="12%" style="text-align:right;">Omset RO</th>
-            <th width="8%" style="text-align:center;">Conv Rate</th>
-        </tr>
-    </thead>
-    <tbody>
-        <?php if (!empty($report)): $no = 1; foreach ($report as $r): ?>
-        <tr>
-            <td style="text-align:center;"><strong>#<?= $no++; ?></strong></td>
-            <td><strong><?= htmlspecialchars($r->cs_name ?? 'cs_operator'); ?></strong></td>
-            <td style="text-align:center;"><?= number_format($r->total_handled ?? 0); ?></td>
-            <td style="text-align:center;"><?= number_format($r->broadcast_count ?? 0); ?></td>
-            <td style="text-align:center;color:#059669;font-weight:bold;"><?= number_format($r->respon_positif ?? 0); ?></td>
-            <td style="text-align:center;color:#dc2626;"><?= number_format($r->komplain_count ?? 0); ?></td>
-            <td style="text-align:center;font-weight:bold;"><?= number_format($r->conversion_count ?? 0); ?> SO</td>
-            <td style="text-align:right;font-weight:bold;color:#059669;">Rp <?= number_format($r->conversion_amount ?? 0, 0, ',', '.'); ?></td>
-            <td style="text-align:center;font-weight:bold;"><?= number_format($r->conversion_rate ?? 0, 1); ?>%</td>
-        </tr>
-        <?php endforeach; else: ?>
-        <tr>
-            <td colspan="9" style="text-align:center;padding:15px;color:#94a3b8;">Tidak ada data kinerja tim CS.</td>
-        </tr>
-        <?php endif; ?>
-    </tbody>
-</table>
+<page orientation="paysage" format="A4" backtop="8mm" backbottom="8mm" backleft="7mm" backright="7mm">
+	<page_footer>
+		<table style="width: 100%; border: none;">
+			<tr>
+				<td style="width: 60%; font-size: 7pt; color: #64748b;">
+					Dicetak otomatis pada: <?= date('d/m/Y H:i:s'); ?> | Sistem CRM &amp; After Sales IDMETAFORA
+				</td>
+				<td style="width: 40%; text-align: right; font-size: 7pt; color: #64748b;">
+					Halaman [[page_cu]] dari [[page_nb]]
+				</td>
+			</tr>
+		</table>
+	</page_footer>
 
-<div class="footer">
-    Dokumen ini dihasilkan secara otomatis oleh Modul CRM & After Sales Metafora ERP.
-</div>
-</body>
-</html>
+	<table style="width: 100%; border-bottom: 2px solid #1e40af; padding-bottom: 6px; margin-bottom: 8px;">
+		<tr>
+			<td style="width: 68%;">
+				<h2 style="margin: 0; font-size: 13pt; color: #1e40af; font-weight: bold;">LAPORAN KINERJA &amp; PRODUKTIVITAS TIM CS / OPERATOR</h2>
+				<p style="margin: 2px 0 0 0; font-size: 7.5pt; color: #64748b;">
+					Modul Manajemen Kinerja Tim Customer Service &amp; After Sales CRM
+				</p>
+			</td>
+			<td style="width: 32%; text-align: right; vertical-align: middle;">
+				<table align="right" style="border-collapse: collapse; font-size: 7.5pt; color: #475569;">
+					<tr>
+						<td style="text-align: right; padding: 1px 0; color: #334155;">Total CS</td>
+						<td style="width: 10px; text-align: center; padding: 1px 0; color: #334155;">:</td>
+						<td style="text-align: left; padding: 1px 0; color: #334155;"><strong><?= count($report ?? []); ?> Orang</strong></td>
+					</tr>
+					<tr>
+						<td style="text-align: right; padding: 1px 0; color: #64748b; font-size: 7pt;">Tanggal Cetak</td>
+						<td style="text-align: center; padding: 1px 0; color: #64748b; font-size: 7pt;">:</td>
+						<td style="text-align: left; padding: 1px 0; color: #64748b; font-size: 7pt;"><?= date('d F Y'); ?></td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+	</table>
+
+	<table class="data-table">
+		<thead>
+			<tr>
+				<th style="width: 5%;">Rank</th>
+				<th style="width: 20%;">Username CS / Operator</th>
+				<th style="width: 12%;">Total Handled</th>
+				<th style="width: 12%;">Broadcast WA</th>
+				<th style="width: 11%;">Respon Positif</th>
+				<th style="width: 10%;">Komplain</th>
+				<th style="width: 10%;">Repeat Order</th>
+				<th style="width: 12%;">Omset Konversi</th>
+				<th style="width: 8%;">Rate (%)</th>
+			</tr>
+		</thead>
+		<tbody>
+			<?php if (!empty($report)): 
+				$no = 1; 
+				$tot_handled = 0;
+				$tot_broadcast = 0;
+				$tot_positif = 0;
+				$tot_komplain = 0;
+				$tot_conversion = 0;
+				$tot_amount = 0;
+				foreach ($report as $r): 
+					$is_even = ($no % 2 == 0);
+					$tot_handled += (int)($r->total_handled ?? 0);
+					$tot_broadcast += (int)($r->broadcast_count ?? 0);
+					$tot_positif += (int)($r->respon_positif ?? 0);
+					$tot_komplain += (int)($r->komplain_count ?? 0);
+					$tot_conversion += (int)($r->conversion_count ?? 0);
+					$tot_amount += (float)($r->conversion_amount ?? 0);
+			?>
+			<tr class="<?= $is_even ? 'even' : ''; ?>">
+				<td class="text-center" style="width: 5%; font-weight: bold;"><?= $no++; ?></td>
+				<td class="text-left" style="width: 20%;"><strong><?= htmlspecialchars($r->cs_name ?? '-', ENT_QUOTES); ?></strong></td>
+				<td class="text-center" style="width: 12%;"><?= number_format((int)($r->total_handled ?? 0), 0, ',', '.'); ?></td>
+				<td class="text-center" style="width: 12%;"><?= number_format((int)($r->broadcast_count ?? 0), 0, ',', '.'); ?></td>
+				<td class="text-center" style="width: 11%; color: #059669; font-weight: bold;"><?= number_format((int)($r->respon_positif ?? 0), 0, ',', '.'); ?></td>
+				<td class="text-center" style="width: 10%; color: <?= ((int)($r->komplain_count ?? 0) > 0) ? '#dc2626' : '#64748b'; ?>;">
+					<?= number_format((int)($r->komplain_count ?? 0), 0, ',', '.'); ?>
+				</td>
+				<td class="text-center" style="width: 10%; font-weight: bold;"><?= number_format((int)($r->conversion_count ?? 0), 0, ',', '.'); ?></td>
+				<td class="text-right" style="width: 12%; font-weight: bold; color: #1e40af;">Rp <?= number_format((float)($r->conversion_amount ?? 0), 0, ',', '.'); ?></td>
+				<td class="text-center" style="width: 8%; font-weight: bold; color: #059669;"><?= $r->conversion_rate ?? 0; ?>%</td>
+			</tr>
+			<?php endforeach; ?>
+			
+			<tr style="background-color: #f1f5f9; font-weight: bold; border-top: 2px solid #cbd5e1;">
+				<td colspan="2" class="text-center" style="padding: 7px 4px; font-weight: bold;">TOTAL KESELURUHAN</td>
+				<td class="text-center" style="padding: 7px 4px;"><?= number_format($tot_handled, 0, ',', '.'); ?></td>
+				<td class="text-center" style="padding: 7px 4px;"><?= number_format($tot_broadcast, 0, ',', '.'); ?></td>
+				<td class="text-center" style="padding: 7px 4px; color: #059669;"><?= number_format($tot_positif, 0, ',', '.'); ?></td>
+				<td class="text-center" style="padding: 7px 4px;"><?= number_format($tot_komplain, 0, ',', '.'); ?></td>
+				<td class="text-center" style="padding: 7px 4px;"><?= number_format($tot_conversion, 0, ',', '.'); ?></td>
+				<td class="text-right" style="padding: 7px 4px; color: #1e40af;">Rp <?= number_format($tot_amount, 0, ',', '.'); ?></td>
+				<td class="text-center" style="padding: 7px 4px; color: #059669;">
+					<?= $tot_handled > 0 ? round(($tot_conversion / $tot_handled) * 100, 1) : 0; ?>%
+				</td>
+			</tr>
+			<?php else: ?>
+			<tr>
+				<td colspan="9" class="text-center" style="padding: 16px; color: #64748b;">Belum ada data aktivitas follow-up yang tercatat pada periode ini.</td>
+			</tr>
+			<?php endif; ?>
+		</tbody>
+	</table>
+</page>

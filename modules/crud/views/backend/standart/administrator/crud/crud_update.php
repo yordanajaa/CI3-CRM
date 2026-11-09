@@ -6,18 +6,18 @@
    function domo(){
     
       // Binding keys
-      $('*').bind('keydown', 'Ctrl+s', function assets() {
-         $('#btn_save').trigger('click');
+      jQuery('*').bind('keydown', 'Ctrl+s', function assets() {
+         jQuery('#btn_save').trigger('click');
           return false;
       });
    
-      $('*').bind('keydown', 'Ctrl+x', function assets() {
-         $('#btn_cancel').trigger('click');
+      jQuery('*').bind('keydown', 'Ctrl+x', function assets() {
+         jQuery('#btn_cancel').trigger('click');
           return false;
       });
    
-     $('*').bind('keydown', 'Ctrl+d', function assets() {
-         $('.btn_save_back').trigger('click');
+     jQuery('*').bind('keydown', 'Ctrl+d', function assets() {
+         jQuery('.btn_save_back').trigger('click');
           return false;
       });
        

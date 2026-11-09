@@ -211,35 +211,58 @@ class Crud extends Admin
 			$template_crud_path = 'core_template/crud/';
 
 			$builder_list = $this->parser->parse($template_crud_path.'builder_list', $this->data, true);
-			write_file($view_path.$table_name.'_list.php', $builder_list);
-
-			$builder_list = $this->parser->parse($template_crud_path.'builder_controller', $this->data, true);
-			write_file($controller_path.ucwords($table_name).'.php', $builder_list);
-
-			$builder_list = $this->parser->parse($template_crud_path.'builder_model', $this->data, true);
-			write_file($model_path.'Model_'.$table_name.'.php', $builder_list);
-
+			$builder_controller = $this->parser->parse($template_crud_path.'builder_controller', $this->data, true);
+			$builder_model = $this->parser->parse($template_crud_path.'builder_model', $this->data, true);
 			$builder_lang = $this->parser->parse($template_crud_path.'builder_lang', $this->data, true);
+			$builder_add = $this->input->post('create') ? $this->parser->parse($template_crud_path.'builder_add', $this->data, true) : '';
+			$builder_update = $this->input->post('update') ? $this->parser->parse($template_crud_path.'builder_update', $this->data, true) : '';
+			$builder_view = $this->input->post('read') ? $this->parser->parse($template_crud_path.'builder_view', $this->data, true) : '';
+
+			// Modules that contain custom advanced business logic (multi-item transactions, auto-inventory sync, ledger integration)
+			$custom_workflow_modules = ['purchase_order', 'utang_usaha', 'pembayaran_utang'];
+
+			if (!in_array($table_name, $custom_workflow_modules)) {
+				write_file($view_path.$table_name.'_list.php', $builder_list);
+				write_file($controller_path.ucwords($table_name).'.php', $builder_controller);
+				write_file($model_path.'Model_'.$table_name.'.php', $builder_model);
+
+				if ($this->input->post('create')) {
+					write_file($view_path.$table_name.'_add.php', $builder_add);
+				}
+				if ($this->input->post('update')) {
+					write_file($view_path.$table_name.'_update.php', $builder_update);
+				}
+				if ($this->input->post('read')) {
+					write_file($view_path.$table_name.'_view.php', $builder_view);
+				}
+			} else {
+				// For custom workflow modules: save generated template code with .generated suffix for developer review,
+				// ensuring custom business methods, multi-item table UI, and automated inventory sync are preserved
+				write_file($view_path.$table_name.'_list.generated.php', $builder_list);
+				write_file($controller_path.ucwords($table_name).'.generated.php', $builder_controller);
+				write_file($model_path.'Model_'.$table_name.'.generated.php', $builder_model);
+				if ($this->input->post('create')) {
+					write_file($view_path.$table_name.'_add.generated.php', $builder_add);
+				}
+				if ($this->input->post('update')) {
+					write_file($view_path.$table_name.'_update.generated.php', $builder_update);
+				}
+				if ($this->input->post('read')) {
+					write_file($view_path.$table_name.'_view.generated.php', $builder_view);
+				}
+			}
+
 			write_file($lang_path.'web_lang.php', $builder_lang);
 
 			if ($this->input->post('create')) {
-				$builder_list = $this->parser->parse($template_crud_path.'builder_add', $this->data, true);
-				write_file($view_path.$table_name.'_add.php', $builder_list);
 				$this->aauth->create_perm($table_name.'_add');
 			}
-
 			if ($this->input->post('update')) {
-				$builder_list = $this->parser->parse($template_crud_path.'builder_update', $this->data, true);
-				write_file($view_path.$table_name.'_update.php', $builder_list);
 				$this->aauth->create_perm($table_name.'_update');
 			}
-			
 			if ($this->input->post('read')) {
-				$builder_list = $this->parser->parse($template_crud_path.'builder_view', $this->data, true);
-				write_file($view_path.$table_name.'_view.php', $builder_list);
 				$this->aauth->create_perm($table_name.'_view');
 			}
-
 			$this->aauth->create_perm($table_name.'_delete');
 			$this->aauth->create_perm($table_name.'_list');
 

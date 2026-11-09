@@ -86,49 +86,54 @@
 }
 .crm-header-nav .action-tools .btn:hover { transform: translateY(-2px); }
 
-/* Navigation Tab Bar */
+/* Navigation Tab Bar - Touch Scrollable */
 .crm-header-nav .nav-tabs-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 8px;
   padding-top: 14px;
   border-top: 1px solid rgba(255,255,255,0.18);
   position: relative;
   z-index: 2;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.crm-header-nav .nav-tabs-bar::-webkit-scrollbar {
+  display: none;
 }
 .crm-header-nav .nav-tab-btn {
-  padding: 8px 18px;
-  border-radius: 25px;
-  font-size: 12px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 12.5px;
   font-weight: 700;
-  color: #e0e7ff;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  text-decoration: none !important;
+  color: rgba(255,255,255,0.92);
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.22);
+  text-decoration: none;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 .crm-header-nav .nav-tab-btn:hover {
-  background: rgba(255, 255, 255, 0.22);
-  color: #ffffff;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  background: rgba(255,255,255,0.25);
+  color: #fff;
+  transform: translateY(-1px);
 }
 .crm-header-nav .nav-tab-btn.active {
   background: #ffffff !important;
   color: #312e81 !important;
   border-color: #ffffff !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.18) !important;
 }
-.crm-header-nav .nav-tab-btn.active .active-dot {
+.crm-header-nav .nav-tab-btn .active-dot {
   width: 7px;
   height: 7px;
-  background: #6366f1;
   border-radius: 50%;
+  background: #6366f1;
   display: inline-block;
 }
 
@@ -211,7 +216,7 @@
     <div class="header-top-flex">
       <div class="header-title">
         <div class="location-tag">
-          <i class="fa fa-map-marker"></i> CRM & After Sales <i class="fa fa-angle-right"></i> <span>Pengaturan Kategori H+</span>
+          <i class="fa fa-map-marker"></i> CRM & After Sales <i class="fa fa-angle-right"></i> <span>Kelompok Follow-Up</span>
         </div>
         <h2><i class="fa fa-cogs" style="color:#818cf8;"></i> Kelompok & Template Follow-Up</h2>
         <p>Atur kategori H+ custom dan template pesan WhatsApp untuk setiap tahapan follow-up</p>
@@ -241,9 +246,6 @@
       </a>
       <a href="<?= site_url('administrator/crm/followup_setting'); ?>" class="nav-tab-btn active">
         <span class="active-dot"></span> <i class="fa fa-cogs"></i> 6. Kelompok Follow-Up
-      </a>
-      <a href="<?= site_url('administrator/crm/automations'); ?>" class="nav-tab-btn">
-        <i class="fa fa-bolt"></i> 7. Otomasi CRM
       </a>
     </div>
   </div>
@@ -320,8 +322,9 @@
           <div class="row">
             <div class="col-md-6">
               <div class="form-group">
-                <label>Urutan Tampil</label>
-                <input type="number" class="form-control" id="cat-urutan" value="0" min="0">
+                <label>Urutan Tampil <small class="text-muted">(No. Urut)</small></label>
+                <input type="number" class="form-control" id="cat-urutan" value="<?= count($categories) + 1; ?>" min="0">
+                <small class="text-muted">Urutan posisi dalam daftar (0, 1, 2, 3...)</small>
               </div>
             </div>
             <div class="col-md-6">
@@ -389,24 +392,40 @@ $(document).ready(function() {
     $('#cat-id').val($b.data('id'));
     $('#cat-nama').val($b.data('nama'));
     $('#cat-kode').val($b.data('kode'));
-    $('#cat-hari').val($b.data('hari'));
+    var hariVal = $b.data('hari');
+    $('#cat-hari').val(hariVal !== undefined && hariVal !== null ? hariVal : 0);
     $('#cat-template').val($b.data('template'));
     $('#cat-active').val($b.data('active'));
-    $('#cat-urutan').val($b.data('urutan'));
+    var urutanRaw = $b.data('urutan');
+    var urutanVal = (urutanRaw !== undefined && urutanRaw !== null && urutanRaw !== '') ? parseInt(urutanRaw, 10) : 0;
+    $('#cat-urutan').val(!isNaN(urutanVal) ? urutanVal : 0);
     $('#form-title').html('<i class="fa fa-edit"></i> Edit Kategori');
     $('html,body').animate({ scrollTop: $('#form-category').offset().top - 100 }, 400);
   });
 
   // Save
   $('#btn-save-cat').on('click', function() {
+    var rawUrutanInput = $('#cat-urutan').val();
+    var urutanVal = (rawUrutanInput !== '' && rawUrutanInput !== null) ? parseInt(rawUrutanInput, 10) : 0;
+    if (isNaN(urutanVal) || urutanVal < 0) {
+      urutanVal = 0;
+      $('#cat-urutan').val(0);
+    }
+
+    var hariVal = $('#cat-hari').val();
+    if (hariVal === '' || hariVal === null || isNaN(parseInt(hariVal, 10))) {
+      hariVal = 0;
+      $('#cat-hari').val(0);
+    }
+
     var data = {
       id: $('#cat-id').val(),
       nama_kategori: $.trim($('#cat-nama').val()),
       kode_kategori: $.trim($('#cat-kode').val()),
-      jumlah_hari: $('#cat-hari').val(),
+      jumlah_hari: parseInt(hariVal, 10),
       template_pesan_default: $('#cat-template').val(),
       is_active: $('#cat-active').val(),
-      urutan: $('#cat-urutan').val()
+      urutan: urutanVal
     };
 
     if (!data.nama_kategori || !data.kode_kategori) {
@@ -449,14 +468,36 @@ $(document).ready(function() {
     }
   });
 
-  function doDeleteCat(id) {
-    $.post(_BASE + 'administrator/crm/delete_category_ajax', buildPayload({ id: id }), function(res) {
+  function doDeleteCat(id, force) {
+    $.post(_BASE + 'administrator/crm/delete_category_ajax', buildPayload({ id: id, force: force ? 1 : 0 }), function(res) {
       var r = parseRes(res);
       if (r.success) {
         notify('success', r.message || 'Berhasil dihapus');
         setTimeout(function() { location.reload(); }, 800);
       } else {
-        notify('error', r.message || 'Gagal menghapus kategori');
+        if (r.has_history) {
+          if (typeof swal === 'function') {
+            swal({
+              title: 'Kategori Memiliki Riwayat',
+              text: r.message + '\n\nApakah Anda yakin ingin tetap menghapus permanen kategori ini beserta seluruh riwayatnya?',
+              type: 'warning',
+              showCancelButton: true,
+              confirmButtonColor: '#d33',
+              confirmButtonText: 'Ya, Hapus Semua',
+              cancelButtonText: 'Batal'
+            }, function(confirmed) {
+              if (confirmed) {
+                doDeleteCat(id, true);
+              }
+            });
+          } else {
+            if (confirm(r.message + '\n\nTetap hapus semua?')) {
+              doDeleteCat(id, true);
+            }
+          }
+        } else {
+          notify('error', r.message || 'Gagal menghapus kategori');
+        }
       }
     }).fail(function() {
       notify('error', 'Gagal menghubungi server');
@@ -469,7 +510,8 @@ $(document).ready(function() {
   function resetForm() {
     $('#cat-id').val('');
     $('#cat-nama, #cat-kode, #cat-template').val('');
-    $('#cat-hari, #cat-urutan').val(0);
+    $('#cat-hari').val(0);
+    $('#cat-urutan').val(<?= count($categories) + 1; ?>);
     $('#cat-active').val(1);
     $('#form-title').html('<i class="fa fa-plus"></i> Tambah Kategori Baru');
   }

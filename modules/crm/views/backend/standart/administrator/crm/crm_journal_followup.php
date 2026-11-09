@@ -12,15 +12,15 @@
   margin-bottom: 24px;
   box-shadow: 0 12px 30px rgba(30, 27, 75, 0.25);
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 .crm-header-nav::after {
   content: '';
   position: absolute;
-  right: -50px; bottom: -50px;
-  width: 220px; height: 220px;
-  background: rgba(255,255,255,0.04);
-  border-radius: 50%;
+  right: 0; bottom: 0;
+  width: 220px; height: 180px;
+  background: radial-gradient(circle at bottom right, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 70%);
+  border-bottom-right-radius: 16px;
   pointer-events: none;
 }
 .crm-header-nav .header-top-flex {
@@ -31,7 +31,7 @@
   gap: 16px;
   margin-bottom: 18px;
   position: relative;
-  z-index: 2;
+  z-index: 20;
 }
 .crm-header-nav .location-tag {
   display: inline-flex;
@@ -79,6 +79,35 @@
   border: none;
 }
 .crm-header-nav .action-tools .btn:hover { transform: translateY(-2px); }
+
+.crm-header-nav .action-tools .btn-group {
+  position: relative;
+}
+.crm-header-nav .action-tools .btn-group.open {
+  z-index: 1050;
+}
+.crm-header-nav .action-tools .btn-group .dropdown-menu {
+  z-index: 1060 !important;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.25) !important;
+  border: 1px solid rgba(0,0,0,0.08);
+  padding: 8px 0;
+  min-width: 195px;
+}
+.crm-header-nav .action-tools .btn-group .dropdown-menu > li > a {
+  padding: 9px 16px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+.crm-header-nav .action-tools .btn-group .dropdown-menu > li > a:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
 
 /* Navigation Tab Bar - Touch Scrollable */
 .crm-header-nav .nav-tabs-bar {
@@ -227,61 +256,142 @@
 .bh-repeat { background: linear-gradient(135deg, #0284c7, #06b6d4); color: #fff; }
 .bh-done { background: linear-gradient(135deg, #166534, #15803d); color: #fff; }
 
-.table-journal th { background: #f8fafc; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; font-weight: 700; padding: 12px 10px !important; border-bottom: 2px solid #e2e8f0 !important; }
-.table-journal td { font-size: 12.5px; padding: 12px 10px !important; vertical-align: middle !important; color: #1e293b; }
-.table-journal tbody tr { transition: all 0.2s ease; }
+.table-journal { width: 100% !important; margin-bottom: 0 !important; }
+.table-journal th { background: #f8fafc; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; font-weight: 700; padding: 9px 5px !important; border-bottom: 2px solid #e2e8f0 !important; vertical-align: middle !important; }
+.table-journal td { font-size: 12px; padding: 7px 5px !important; vertical-align: middle !important; color: #1e293b; }
+.table-journal tbody tr { transition: all 0.15s ease; }
 .table-journal tbody tr:hover { background: #f8fafc !important; }
 
-/* Keterangan Orange Badge (Exactly as screenshot) */
+/* Keterangan Badges: Green (Sudah Follow-Up), Red (Terlewat / Overdue), Orange (Hari Ini), Muted (Mendatang) */
+.badge-keterangan-green {
+  background: #10b981;
+  color: #ffffff !important;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 3px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  letter-spacing: 0.3px;
+  box-shadow: 0 1px 3px rgba(16, 185, 129, 0.3);
+  white-space: nowrap;
+}
+.badge-keterangan-red {
+  background: #ef4444;
+  color: #ffffff !important;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 3px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  letter-spacing: 0.3px;
+  box-shadow: 0 1px 3px rgba(239, 68, 68, 0.3);
+  white-space: nowrap;
+}
 .badge-keterangan-orange {
   background: #f59e0b;
   color: #ffffff !important;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 800;
-  padding: 3px 8px;
+  font-style: italic;
+  padding: 3px 6px;
   border-radius: 4px;
   display: inline-block;
   letter-spacing: 0.3px;
   box-shadow: 0 1px 3px rgba(245, 158, 11, 0.3);
   white-space: nowrap;
 }
-
-/* Keterangan BC Interactive Buttons Group */
-.btn-group-keterangan-bc {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
-  align-items: center;
-  min-width: 310px;
-}
-.btn-bc-pill {
-  display: inline-block;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
-  border-radius: 4px;
-  color: #475569;
+.badge-keterangan-muted {
+  background: #64748b;
+  color: #ffffff !important;
   font-size: 10.5px;
   font-weight: 700;
-  padding: 3px 7px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  outline: none;
+  font-style: italic;
+  padding: 3px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+/* Keterangan Follow-Up Badge Style (Non-clickable automatic status) */
+.badge-keterangan-green, .badge-keterangan-red, .badge-keterangan-orange, .badge-keterangan-muted {
+  user-select: none;
+}
+
+/* Keterangan BC Milestone Indicators (Indikator Otomatis - Tidak Bisa Diklik) */
+.badge-group-keterangan-bc, .btn-group-keterangan-bc {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 2px;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+.badge-bc-pill, .btn-bc-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  color: #475569;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2.5px 5.5px;
+  cursor: pointer !important;
   user-select: none;
   white-space: nowrap;
-  line-height: 1.2;
+  line-height: 1.25;
+  text-decoration: none !important;
+  transition: all 0.18s ease-in-out;
 }
-.btn-bc-pill:hover {
-  background: #e2e8f0;
-  color: #0f172a;
-  border-color: #cbd5e1;
+.badge-bc-pill:hover, .btn-bc-pill:hover {
   transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+  border-color: #94a3b8;
+  color: #1e293b;
+  text-decoration: none !important;
 }
-.btn-bc-pill.active {
-  background: #2563eb !important;
-  border-color: #1d4ed8 !important;
+.badge-bc-pill.btn-bc-overdue, .btn-bc-pill.btn-bc-overdue {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+  font-weight: 700;
+}
+.badge-bc-pill.btn-bc-overdue:hover, .btn-bc-pill.btn-bc-overdue:hover {
+  background: #fecaca;
+  border-color: #f87171;
+  color: #991b1b;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25);
+  text-decoration: none !important;
+}
+.badge-bc-pill.active, .btn-bc-pill.active {
+  background: #10b981 !important;
+  border-color: #059669 !important;
   color: #ffffff !important;
   font-weight: 800;
-  box-shadow: 0 2px 6px rgba(37,99,235,0.35);
+  box-shadow: 0 1px 3px rgba(16, 185, 129, 0.35);
+}
+.badge-bc-pill.active:hover, .btn-bc-pill.active:hover {
+  background: #059669 !important;
+  border-color: #047857 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.35);
+  text-decoration: none !important;
+}
+
+.tooltip-inner {
+  max-width: 340px !important;
+  padding: 6px 12px !important;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  line-height: 1.45 !important;
+  border-radius: 6px !important;
+  background-color: #0f172a !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25) !important;
+}
+.tooltip.top .tooltip-arrow {
+  border-top-color: #0f172a !important;
 }
 
 .cat-pill { display: inline-flex; align-items: center; gap: 4px; padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; margin: 3px; cursor: pointer; border: 1px solid #e2e8f0; background: #fff; color: #475569; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
@@ -326,28 +436,54 @@
   background: #f8fafc;
   border-radius: 4px;
 }
-.table-responsive::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
+.cat-pill-scroll-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 15px;
 }
 
 @media (max-width: 991px) {
-  .crm-header-nav { padding: 16px 16px 12px 16px; margin-bottom: 12px; }
-  .crm-header-nav .header-top-flex { flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 12px; }
-  .crm-header-nav .action-tools { width: 100%; justify-content: flex-start; gap: 6px; }
-  .crm-header-nav .action-tools .btn, .crm-header-nav .action-tools > a { font-size: 11px; padding: 6px 10px; flex: 1 1 auto; text-align: center; justify-content: center; }
+  .crm-header-nav { padding: 16px 16px 12px 16px; margin-bottom: 12px; overflow: visible; }
+  .crm-header-nav .header-top-flex { flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 12px; z-index: 20; }
+  .crm-header-nav .action-tools { width: 100%; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .crm-header-nav .action-tools .btn,
+  .crm-header-nav .action-tools > a,
+  .crm-header-nav .action-tools .btn-group { font-size: 11px; width: 100% !important; margin: 0 !important; }
+  .crm-header-nav .action-tools .btn-group .btn { width: 100% !important; justify-content: center; }
   .filter-section .col-md-2 { margin-bottom: 8px; }
 }
 
 @media (max-width: 767px) {
   .content { padding: 8px 6px !important; }
-  .crm-header-nav { padding: 14px 12px 10px 12px; border-radius: 12px; margin-bottom: 12px; }
-  .crm-header-nav .header-top-flex { flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 10px; }
+  .crm-header-nav { padding: 14px 12px 10px 12px; border-radius: 12px; margin-bottom: 12px; overflow: visible; }
+  .crm-header-nav .header-top-flex { flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 10px; z-index: 20; }
   .crm-header-nav .header-title h2 { font-size: 18px; }
   .crm-header-nav .header-title p { font-size: 11px; }
-  .crm-header-nav .action-tools { width: 100%; justify-content: flex-start; gap: 6px; }
-  .crm-header-nav .action-tools .btn, .crm-header-nav .action-tools > a { font-size: 10.5px; padding: 6px 10px; flex: 1 1 auto; text-align: center; justify-content: center; }
-  .crm-header-nav .nav-tabs-bar { gap: 6px; padding-top: 10px; }
+  .crm-header-nav .action-tools { width: 100%; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .crm-header-nav .action-tools .btn,
+  .crm-header-nav .action-tools > a,
+  .crm-header-nav .action-tools .btn-group { font-size: 11px; padding: 7px 10px; width: 100% !important; margin: 0 !important; }
+  .crm-header-nav .action-tools .btn-group .btn { width: 100% !important; justify-content: center; }
+  .crm-header-nav .action-tools .btn-group .dropdown-menu {
+    position: absolute;
+    top: 100%;
+    margin-top: 6px;
+    min-width: 185px;
+    max-width: calc(100vw - 32px);
+    z-index: 1060 !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.25) !important;
+  }
+  .crm-header-nav .action-tools .btn-group:nth-child(odd) .dropdown-menu {
+    left: 0 !important;
+    right: auto !important;
+  }
+  .crm-header-nav .action-tools .btn-group:nth-child(even) .dropdown-menu {
+    right: 0 !important;
+    left: auto !important;
+  }
+  .crm-header-nav .nav-tabs-bar { gap: 6px; padding-top: 10px; z-index: 2; }
   .crm-header-nav .nav-tab-btn { font-size: 11.5px; padding: 6px 12px; }
 
   .stat-box { padding: 12px 10px; margin-bottom: 8px; border-radius: 10px; }
@@ -368,9 +504,14 @@
   .cat-pill { padding: 6px 12px; font-size: 11px; margin: 0; flex-shrink: 0 !important; white-space: nowrap !important; }
 
   .filter-section { margin-bottom: 12px; }
-  .filter-section .box-body { padding: 10px; }
-  .filter-section .col-md-2 { margin-bottom: 6px; }
-  .filter-section .form-control { font-size: 12px; height: 38px; }
+  .filter-section .box-body { padding: 12px 14px; }
+  .filter-section .form-control { font-size: 13px; height: 38px; }
+  .crm-filter-flex { display: flex !important; flex-direction: column !important; gap: 8px !important; }
+  .crm-filter-flex > div { width: 100% !important; flex: 1 1 100% !important; }
+  .crm-filter-flex .crm-filter-dates { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 8px !important; width: 100% !important; }
+  .crm-filter-flex .crm-filter-dates > div { width: 100% !important; }
+  .crm-filter-flex .crm-filter-btns { display: grid !important; grid-template-columns: 1fr auto !important; gap: 8px !important; width: 100% !important; }
+  .crm-filter-flex .crm-filter-btns .btn { width: 100% !important; justify-content: center !important; }
 
   .box-header { padding: 10px 12px !important; }
   .box-header .box-title { font-size: 13px; }
@@ -454,14 +595,13 @@
     <div class="header-top-flex">
       <div class="header-title">
         <div class="location-tag">
-          <i class="fa fa-map-marker"></i> CRM & After Sales <i class="fa fa-angle-right"></i> <span>Journal Follow-Up</span>
+          <i class="fa fa-map-marker"></i> Metafora CRM & After Sales <i class="fa fa-angle-right"></i> <span>Journal Follow-Up</span>
         </div>
         <h2><i class="fa fa-tasks" style="color:#818cf8;"></i> Journal Follow-Up After Sales</h2>
         <p>Pantau tahapan after sales — Konfirmasi Pengiriman, H+3 Cek Sampai, H+7 Experience, Custom H+n</p>
       </div>
 
       <div class="action-tools">
-        <button type="button" class="btn" style="background:#0284c7; color:#fff;" id="btn-open-manual-add" title="Tambah Data Follow-Up Manual Baru"><i class="fa fa-plus-circle"></i> Tambah Manual</button>
         <button type="button" class="btn" style="background:#8e44ad; color:#fff;" id="btn-sync-cron" title="Pindai transaksi baru & buat label H+"><i class="fa fa-refresh"></i> Sync Label H+</button>
         
         <div class="btn-group">
@@ -483,7 +623,7 @@
     <!-- Bottom Row: Navigation Tabs Bar -->
     <div class="nav-tabs-bar">
       <a href="<?= site_url('administrator/crm/dashboard'); ?>" class="nav-tab-btn">
-        <i class="fa fa-tachometer"></i> 1. Dashboard CRM
+        <i class="fa fa-tachometer"></i> 1. Dashboard Metafora CRM
       </a>
       <a href="<?= site_url('administrator/crm/journal_followup'); ?>" class="nav-tab-btn active">
         <span class="active-dot"></span> <i class="fa fa-tasks"></i> 2. Journal Follow-Up
@@ -500,10 +640,8 @@
       <a href="<?= site_url('administrator/crm/followup_setting'); ?>" class="nav-tab-btn">
         <i class="fa fa-cogs"></i> 6. Kelompok Follow-Up
       </a>
-      <a href="<?= site_url('administrator/crm/automations'); ?>" class="nav-tab-btn">
-        <i class="fa fa-bolt"></i> 7. Otomasi CRM
-      </a>
     </div>
+
   </div>
 
   <!-- Stats -->
@@ -529,7 +667,7 @@
   </div>
 
   <!-- Category Tabs -->
-  <div class="cat-pill-scroll-container" style="margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+  <div class="cat-pill-scroll-container">
 
     <a href="<?= site_url('administrator/crm/journal_followup'); ?>" class="cat-pill <?= (empty($filters['category_id']) && empty($filters['status_label'])) ? 'active' : ''; ?>">
       <i class="fa fa-list"></i> Semua Data
@@ -559,15 +697,12 @@
   </div>
 
   <!-- Filters -->
-  <div class="box box-default filter-section">
-    <div class="box-body">
+  <div class="box box-default filter-section" style="border-radius:12px; border:1px solid #e2e8f0; box-shadow:0 2px 10px rgba(0,0,0,0.03); margin-bottom:18px;">
+    <div class="box-body" style="padding:14px 18px;">
       <form method="get" action="<?= site_url('administrator/crm/journal_followup'); ?>">
-        <?php if (!empty($filters['category_id'])): ?>
-        <input type="hidden" name="category_id" value="<?= $filters['category_id']; ?>">
-        <?php endif; ?>
-        <div class="row">
-          <div class="col-md-2">
-            <select name="order_source" class="form-control">
+        <div class="crm-filter-flex" style="display:flex; flex-wrap:wrap; align-items:center; gap:8px;">
+          <div style="flex:1 1 130px; min-width:120px;">
+            <select name="order_source" class="form-control" style="border-radius:8px; height:38px; font-size:12px;">
               <option value="">Semua Sumber</option>
               <option value="Toko" <?= ($filters['order_source'] ?? '') == 'Toko' ? 'selected' : ''; ?>>Toko</option>
               <option value="Shopee" <?= ($filters['order_source'] ?? '') == 'Shopee' ? 'selected' : ''; ?>>Shopee</option>
@@ -575,8 +710,8 @@
               <option value="TikTok Shop" <?= ($filters['order_source'] ?? '') == 'TikTok Shop' ? 'selected' : ''; ?>>TikTok Shop</option>
             </select>
           </div>
-          <div class="col-md-2">
-            <select name="status_label" class="form-control">
+          <div style="flex:1 1 140px; min-width:130px;">
+            <select name="status_label" class="form-control" style="border-radius:8px; height:38px; font-size:12px;">
               <option value="">Semua Status</option>
               <option value="belum_direspon" <?= ($filters['status_label'] ?? '') == 'belum_direspon' ? 'selected' : ''; ?>>Belum Direspon (Pending/Dikirim)</option>
               <option value="Pending" <?= ($filters['status_label'] ?? '') == 'Pending' ? 'selected' : ''; ?>>Pending</option>
@@ -587,25 +722,30 @@
               <option value="Selesai" <?= ($filters['status_label'] ?? '') == 'Selesai' ? 'selected' : ''; ?>>Selesai</option>
             </select>
           </div>
-          <div class="col-md-2">
-            <select name="keterangan_bc" class="form-control">
-              <option value="">Semua Keterangan BC</option>
-              <?php foreach (['H+1','H+2','H+3','TNP','Habis','Giveaway','Masuk Grup'] as $b): ?>
-              <option value="<?= $b; ?>" <?= ($filters['keterangan_bc'] ?? '') == $b ? 'selected' : ''; ?>><?= $b; ?></option>
-              <?php endforeach; ?>
+          <div style="flex:1.2 1 160px; min-width:150px;">
+            <select name="category_id" class="form-control" style="border-radius:8px; height:38px; font-size:12px;">
+              <option value="">Semua Kelompok Follow-Up</option>
+              <?php if (!empty($categories)): foreach ($categories as $cat): ?>
+              <option value="<?= $cat->id; ?>" <?= (($filters['category_id'] ?? '') == $cat->id) ? 'selected' : ''; ?>>
+                <?= htmlspecialchars($cat->nama_kategori); ?> (H+<?= $cat->jumlah_hari; ?>)
+              </option>
+              <?php endforeach; endif; ?>
             </select>
           </div>
-          <div class="col-md-2">
-            <input type="date" name="date_from" class="form-control" placeholder="Dari tanggal" value="<?= $filters['date_from'] ?? ''; ?>">
+          <div class="crm-filter-dates" style="display:flex; gap:8px; flex:2 1 250px;">
+            <div style="flex:1 1 120px;">
+              <input type="date" name="date_from" class="form-control" placeholder="Dari tanggal" value="<?= $filters['date_from'] ?? ''; ?>" style="border-radius:8px; height:38px; font-size:12px;" title="Dari Tanggal">
+            </div>
+            <div style="flex:1 1 120px;">
+              <input type="date" name="date_to" class="form-control" placeholder="Sampai tanggal" value="<?= $filters['date_to'] ?? ''; ?>" style="border-radius:8px; height:38px; font-size:12px;" title="Sampai Tanggal">
+            </div>
           </div>
-          <div class="col-md-2">
-            <input type="date" name="date_to" class="form-control" placeholder="Sampai tanggal" value="<?= $filters['date_to'] ?? ''; ?>">
+          <div style="flex:1.2 1 150px; min-width:130px;">
+            <input type="text" name="q" class="form-control" placeholder="Cari nama/HP/resi/pesanan..." value="<?= htmlspecialchars($filters['search'] ?? ''); ?>" style="border-radius:8px; height:38px; font-size:12px;">
           </div>
-          <div class="col-md-2">
-            <input type="text" name="q" class="form-control" placeholder="Cari nama/HP..." value="<?= htmlspecialchars($filters['search'] ?? ''); ?>">
-          </div>
-          <div class="col-md-2">
-            <button type="submit" class="btn btn-primary btn-block"><i class="fa fa-filter"></i> Filter</button>
+          <div class="crm-filter-btns" style="display:flex; gap:6px; align-items:center;">
+            <button type="submit" class="btn btn-primary" style="border-radius:8px; height:38px; font-weight:700; padding:0 16px; font-size:12px; display:inline-flex; align-items:center; gap:6px;"><i class="fa fa-filter"></i> Filter</button>
+            <a href="<?= site_url('administrator/crm/journal_followup'); ?>" class="btn btn-default" style="border-radius:8px; height:38px; font-weight:600; padding:0 12px; font-size:12px; display:inline-flex; align-items:center; gap:4px;" title="Reset Filter"><i class="fa fa-refresh"></i></a>
           </div>
         </div>
       </form>
@@ -625,32 +765,102 @@
       <table class="table table-hover table-journal">
         <thead>
           <tr>
-            <th style="width:30px"><input type="checkbox" id="check-all"></th>
-            <th>Customer</th>
-            <th>No. HP</th>
-            <th>No. Pesanan</th>
-            <th>Sumber</th>
-            <th>Kategori Follow-Up</th>
-            <th style="white-space:nowrap;">Tgl Kirim</th>
-            <th style="text-align:center; white-space:nowrap;">Keterangan</th>
-            <th style="min-width:320px;">Keterangan BC</th>
-            <th>Jadwal Follow-Up</th>
-            <th>Status</th>
-            <th class="text-center">Aksi</th>
+            <th style="width:30px; text-align:center; vertical-align:middle;"><input type="checkbox" id="check-all"></th>
+            <th style="min-width:140px; vertical-align:middle;">Customer</th>
+            <th style="white-space:nowrap; vertical-align:middle;">No. HP</th>
+            <th style="white-space:nowrap; vertical-align:middle;">No. Pesanan</th>
+            <th style="text-align:center; white-space:nowrap; vertical-align:middle;">Sumber</th>
+            <th style="white-space:nowrap; vertical-align:middle;">Kategori Follow-Up</th>
+            <th style="text-align:center; white-space:nowrap; vertical-align:middle;">Tgl Kirim</th>
+            <th style="text-align:center; white-space:nowrap; vertical-align:middle; width:70px;">Keterangan</th>
+            <th style="text-align:center; white-space:nowrap; vertical-align:middle; width:220px; min-width:210px;">Keterangan BC</th>
+            <th class="text-center" style="white-space:nowrap; vertical-align:middle; width:95px; min-width:90px;">Aksi</th>
           </tr>
         </thead>
         <tbody>
           <?php if (empty($entries)): ?>
-          <tr><td colspan="12" class="text-center" style="padding:40px;color:#95a5a6;"><i class="fa fa-check-circle fa-2x text-success"></i><br>Tidak ada follow-up pending saat ini.</td></tr>
-          <?php else: foreach ($entries as $e): ?>
+          <tr><td colspan="10" class="text-center" style="padding:40px;color:#95a5a6;"><i class="fa fa-check-circle fa-2x text-success"></i><br>Tidak ada follow-up pending saat ini.</td></tr>
+          <?php else: 
+          $default_bc_opts = [];
+          $crm_milestones = [];
+          $categories_by_days = [];
+          if (!empty($categories)) {
+            foreach ($categories as $cat) {
+              if (isset($cat->jumlah_hari)) {
+                $clean_cat = preg_replace('/\s*\(H\+\d+\)/i', '', $cat->nama_kategori);
+                $default_bc_opts[] = $clean_cat . ' (H+' . (int)$cat->jumlah_hari . ')';
+                $crm_milestones[] = (int)$cat->jumlah_hari;
+                $categories_by_days[(int)$cat->jumlah_hari] = $cat;
+              }
+            }
+          }
+          $default_bc_opts = array_values(array_unique($default_bc_opts));
+          $crm_milestones = array_values(array_unique($crm_milestones));
+          sort($crm_milestones);
+
+          // Map completed follow-up milestones for orders in current page
+          $order_p_list = [];
+          foreach ($entries as $ent) {
+            if (!empty($ent->no_pesanan) && $ent->no_pesanan !== '-') {
+              $order_p_list[] = $ent->no_pesanan;
+            }
+          }
+          $order_p_list = array_values(array_unique($order_p_list));
+
+          $order_completed_map = []; // [ no_pesanan => [ 'H+0' => true, ... ] ]
+          if (!empty($order_p_list)) {
+            $comp_rows = $this->db->select('tfl.no_pesanan, fc.jumlah_hari, tfl.keterangan_bc, tfl.status_label, tfl.is_broadcast_sent, tfl.waktu_kirim_wa')
+              ->from('crm_transaction_followup_labels tfl')
+              ->join('crm_followup_categories fc', 'tfl.followup_category_id = fc.id')
+              ->where_in('tfl.no_pesanan', $order_p_list)
+              ->group_start()
+                ->where('tfl.status_label !=', 'Pending')
+                ->or_where('tfl.is_broadcast_sent', 1)
+                ->or_where('tfl.waktu_kirim_wa IS NOT NULL', null, false)
+                ->or_where('(tfl.keterangan_bc IS NOT NULL AND tfl.keterangan_bc != "")', null, false)
+              ->group_end()
+              ->get()->result();
+            foreach ($comp_rows as $cr) {
+              $np = $cr->no_pesanan;
+              if (!isset($order_completed_map[$np])) {
+                $order_completed_map[$np] = [];
+              }
+              $order_completed_map[$np]['H+' . (int)$cr->jumlah_hari] = true;
+            }
+
+            // Also check broadcast logs
+            $b_logs = $this->db->select('tfl.no_pesanan, fc.jumlah_hari')
+              ->from('crm_broadcast_logs bl')
+              ->join('crm_transaction_followup_labels tfl', 'bl.followup_label_id = tfl.id')
+              ->join('crm_followup_categories fc', 'tfl.followup_category_id = fc.id')
+              ->where_in('tfl.no_pesanan', $order_p_list)
+              ->get()->result();
+            foreach ($b_logs as $bl) {
+              if (!isset($order_completed_map[$bl->no_pesanan])) {
+                $order_completed_map[$bl->no_pesanan] = [];
+              }
+              $order_completed_map[$bl->no_pesanan]['H+' . (int)$bl->jumlah_hari] = true;
+            }
+          }
+
+          foreach ($entries as $e): 
+          ?>
           <tr>
             <td>
-              <?php if ($e->status_label === 'Pending' && !$e->is_broadcast_sent && !empty($e->customer_phone)): ?>
+              <?php if ($e->status_label === 'Pending' && !$e->is_broadcast_sent && !empty($e->customer_phone) && $e->customer_phone !== '-'): ?>
               <input type="checkbox" class="cb-label" value="<?= $e->id; ?>">
               <?php endif; ?>
             </td>
             <td><strong><?= htmlspecialchars($e->customer_nama); ?></strong></td>
-            <td style="font-size:12px;"><i class="fa fa-phone" style="color:#27ae60;"></i> <?= htmlspecialchars($e->customer_phone); ?></td>
+            <td style="font-size:12px; white-space:nowrap;" id="cell-phone-<?= $e->id; ?>">
+              <?php if (!empty($e->customer_phone) && $e->customer_phone !== '-'): ?>
+                <span class="phone-display" style="font-weight:600; color:#1e293b;"><i class="fa fa-phone" style="color:#27ae60;"></i> <?= htmlspecialchars($e->customer_phone); ?></span>
+                <button type="button" class="btn btn-xs btn-link btn-edit-phone" data-label-id="<?= $e->id; ?>" data-nama="<?= htmlspecialchars($e->customer_nama); ?>" data-order="<?= htmlspecialchars($e->no_pesanan ?: '-'); ?>" data-phone="<?= htmlspecialchars($e->customer_phone); ?>" style="color:#94a3b8; padding:0 3px;" title="Ubah Nomor HP"><i class="fa fa-pencil"></i></button>
+              <?php else: ?>
+                <span class="text-muted"><i class="fa fa-phone-slash text-danger"></i> -</span>
+                <button type="button" class="btn btn-xs btn-default btn-edit-phone" data-label-id="<?= $e->id; ?>" data-nama="<?= htmlspecialchars($e->customer_nama); ?>" data-order="<?= htmlspecialchars($e->no_pesanan ?: '-'); ?>" data-phone="" style="border-radius:6px; font-size:10.5px; font-weight:700; padding:2px 7px; margin-left:4px; color:#4338ca; border-color:#cbd5e1; background:#f8fafc;" title="Label resi marketplace ini tidak mencantumkan nomor HP. Klik untuk melengkapi No. HP agar bisa di-broadcast"><i class="fa fa-plus text-primary"></i> Isi No. HP</button>
+              <?php endif; ?>
+            </td>
             <td style="font-size:12px;">
               <?php 
               $display_no_p = $e->no_pesanan ?: '-';
@@ -659,6 +869,11 @@
               }
               echo htmlspecialchars($display_no_p);
               ?>
+              <?php if (!empty($e->nomor_resi) && $e->nomor_resi !== '-' && $e->nomor_resi !== $display_no_p): ?>
+                <div style="margin-top:2px;">
+                  <span class="label" style="font-family:monospace; color:#0284c7; background:#f0f9ff; border:1px solid #bae6fd; font-size:10px; padding:1px 5px; border-radius:3px; display:inline-flex; align-items:center; gap:3px;" title="Nomor Resi"><i class="fa fa-barcode"></i> <?= htmlspecialchars($e->nomor_resi); ?></span>
+                </div>
+              <?php endif; ?>
             </td>
             <td>
               <?php
@@ -703,133 +918,120 @@
             $today_time = strtotime(date('Y-m-d'));
             $diff_days = (int)round(($today_time - $target_time) / 86400);
 
-            if (!empty($e->tanggal_pengiriman)) {
-              $dt_ship = new DateTime($e->tanggal_pengiriman);
-              $dt_target = new DateTime($target);
-              $selisih_hari = (int)$dt_ship->diff($dt_target)->format('%r%a');
+            $waktu_ref = !empty($e->tanggal_pengiriman) ? $e->tanggal_pengiriman : (!empty($e->created_at) ? date('Y-m-d', strtotime($e->created_at)) : date('Y-m-d'));
+            $dt_ref = new DateTime(date('Y-m-d', strtotime($waktu_ref)));
+            $dt_now = new DateTime(date('Y-m-d'));
+            $diff_h = max(0, (int)$dt_ref->diff($dt_now)->format('%r%a'));
+
+            $cur_bc = isset($e->keterangan_bc) ? trim($e->keterangan_bc) : '';
+            $milestone_day = isset($e->jumlah_hari) ? (int)$e->jumlah_hari : 0;
+            $is_followed_up = !empty($cur_bc) 
+              || (!empty($no_p) && isset($order_completed_map[$no_p]['H+' . $milestone_day]))
+              || (!empty($e->status_label) && $e->status_label !== 'Pending')
+              || ((int)$e->is_broadcast_sent === 1)
+              || !empty($e->waktu_kirim_wa);
+
+            $is_overdue = ($diff_h > $milestone_day);
+            $is_today = ($diff_h === $milestone_day);
+
+            if ($is_followed_up) {
+              $ket_cls = 'badge-keterangan-green';
+              $ket_title = 'Sudah Di-Follow Up: ' . ($cur_bc ?: ($order_completed_map[$no_p]['H+' . $milestone_day] ?? ('H+' . $milestone_day)));
+              $ket_text = '<i class="fa fa-check"></i> H+' . $diff_h;
+            } elseif ($is_overdue) {
+              $ket_cls = 'badge-keterangan-red';
+              $ket_title = 'Terlewat H+' . $diff_h . ' (Belum Di-Follow Up: ' . $e->nama_kategori . ')';
+              $ket_text = 'H+' . $diff_h;
+            } elseif ($is_today) {
+              $ket_cls = 'badge-keterangan-orange';
+              $ket_title = 'Jadwal Hari Ini: ' . $e->nama_kategori . ' (H+' . $milestone_day . ')';
+              $ket_text = 'H+' . $diff_h;
             } else {
-              $selisih_hari = isset($e->jumlah_hari) ? (int)$e->jumlah_hari : 0;
+              $ket_cls = 'badge-keterangan-muted';
+              $ket_title = 'Mendatang: Jadwal ' . $e->nama_kategori . ' (H+' . $milestone_day . ')';
+              $ket_text = 'H+' . $diff_h;
             }
             ?>
-            <!-- 1. Tgl Kirim -->
+            <!-- 1. Tgl Kirim (Tanggal Customer Beli / Dikirim) -->
             <td style="font-size:12px; white-space:nowrap;"><?= $e->tanggal_pengiriman ? date('d/m/Y', strtotime($e->tanggal_pengiriman)) : '-'; ?></td>
 
-            <!-- 2. Keterangan (Orange Badge H+0, H+1, etc. as screenshot) -->
-            <td style="vertical-align:middle; text-align:center;">
-              <span class="badge-keterangan-orange" id="badge-ket-<?= $e->id; ?>">
-                H+<?= max(0, $selisih_hari); ?>
+            <!-- 2. Keterangan (Hijau jika sudah difollowup, Merah jika terlewat/overdue, Orange jika hari ini) -->
+            <td style="vertical-align:middle; text-align:center; white-space:nowrap;">
+              <span class="<?= $ket_cls; ?> btn-open-detail-fu" id="badge-ket-<?= $e->id; ?>" data-label-id="<?= $e->id; ?>" data-diff-h="<?= $diff_h; ?>" data-h-label="H+<?= $diff_h; ?>" data-milestone="<?= $milestone_day; ?>" style="cursor:pointer;" title="<?= $ket_title; ?> &bull; Klik untuk lihat Detail Terakhir Follow-Up">
+                <?= $ket_text; ?>
               </span>
             </td>
 
-            <!-- 3. Keterangan BC (Row of interactive pills) -->
-            <td style="vertical-align:middle;">
-              <div class="btn-group-keterangan-bc" data-label-id="<?= $e->id; ?>">
+            <!-- 3. Keterangan BC (Klik label H+ untuk langsung Follow-Up ke WhatsApp sesuai template kategori) -->
+            <td style="vertical-align:middle; white-space:nowrap; text-align:center;">
+              <div class="badge-group-keterangan-bc">
                 <?php 
-                $bc_opts = ['H+1', 'H+2', 'H+3', 'TNP', 'Habis', 'Giveaway', 'Masuk Grup'];
-                $active_bc = $e->keterangan_bc ?? '';
-                foreach ($bc_opts as $bco):
-                  $is_active = ($active_bc === $bco) ? 'active' : '';
+                $clean_ph = preg_replace('/[^0-9]/', '', (string)$e->customer_phone);
+                $wa_ph = (substr($clean_ph, 0, 1) === '0') ? ('62' . substr($clean_ph, 1)) : $clean_ph;
+                if (!empty($wa_ph) && substr($wa_ph, 0, 2) !== '62') $wa_ph = '62' . $wa_ph;
+
+                $row_bc_opts = $default_bc_opts;
+                foreach ($row_bc_opts as $bco):
+                  $is_h = preg_match('/\(H\+(\d+)\)/i', $bco, $m) || preg_match('/^H\+(\d+)$/i', $bco, $m);
+                  $h_val = $is_h ? (int)$m[1] : null;
+                  $display_text = $is_h ? ('H+' . $h_val) : $bco;
+
+                  $is_act = false;
+                  if ($is_h) {
+                    $is_act = (!empty($no_p) && isset($order_completed_map[$no_p]['H+' . $h_val]))
+                      || (empty($no_p) && $milestone_day === $h_val && $is_followed_up);
+                  } else {
+                    $is_act = ($cur_bc === $bco);
+                  }
+
+                  $btn_cls = '';
+                  $btn_title = 'Jadwal Mendatang: ' . $bco . ' &bull; Klik untuk Follow-Up WhatsApp';
+                  if ($is_act) {
+                    $btn_cls = 'active';
+                    $btn_title = 'Sudah Di-Follow Up: ' . $bco . ' &bull; Klik untuk Kirim Ulang via WhatsApp';
+                  } elseif (!$is_act && $is_h && $diff_h >= $h_val) {
+                    $btn_cls = 'btn-bc-overdue';
+                    $btn_title = 'Terlewat: Belum Follow-Up ' . $bco . ' (Umur Pesanan H+' . $diff_h . ') &bull; Klik untuk Follow-Up WhatsApp';
+                  }
+
+                  $target_cat = ($is_h && isset($categories_by_days[$h_val])) ? $categories_by_days[$h_val] : null;
+                  $target_cat_id = $target_cat ? $target_cat->id : ($e->followup_category_id ?: '');
+                  $target_template = ($target_cat && !empty($target_cat->template_pesan_default)) ? $target_cat->template_pesan_default : $e->template_pesan_default;
+                  $rendered_msg = $this->model_crm->render_template($target_template, $e);
+
+                  $h_wa_url = !empty($wa_ph) 
+                    ? ('https://api.whatsapp.com/send?phone=' . $wa_ph . '&text=' . rawurlencode($rendered_msg))
+                    : 'javascript:void(0);';
                 ?>
-                  <button type="button" class="btn-bc-pill <?= $is_active; ?>" data-val="<?= $bco; ?>" title="Keterangan BC: <?= $bco; ?>"><?= $bco; ?></button>
+                  <a href="<?= $h_wa_url; ?>" 
+                     target="<?= !empty($wa_ph) ? '_blank' : '_self'; ?>"
+                     class="badge-bc-pill <?= $btn_cls; ?> btn-h-followup" 
+                     data-toggle="tooltip"
+                     title="<?= $btn_title; ?>"
+                     data-label-id="<?= $e->id; ?>"
+                     data-h-val="<?= $h_val; ?>"
+                     data-cat-id="<?= $target_cat_id; ?>"
+                     data-bc-val="<?= htmlspecialchars($bco); ?>"
+                     data-order-no="<?= htmlspecialchars($no_p); ?>"
+                     data-nama="<?= htmlspecialchars($e->customer_nama); ?>"
+                     data-phone="<?= htmlspecialchars($wa_ph); ?>">
+                    <?php if ($is_act): ?><i class="fa fa-check"></i> <?php endif; ?><?= htmlspecialchars($display_text); ?>
+                  </a>
                 <?php endforeach; ?>
               </div>
-            </td>
-
-            <!-- 4. Jadwal Follow-Up -->
-            <td style="font-size:12px;" class="cell-target-date" data-label-id="<?= $e->id; ?>" data-target="<?= $e->tanggal_label_muncul; ?>">
-
-              $st = $e->status_label;
-              $bh_cls = 'bh-today';
-              $bh_icon = 'fa-clock-o';
-              $bh_text = '';
-
-              if ($st === 'Pending') {
-                if ($diff_days > 0) {
-                  $bh_cls = 'bh-overdue';
-                  $bh_icon = 'fa-exclamation-triangle';
-                  $bh_text = 'Terlewat ' . $diff_days . ' Hari';
-                } elseif ($diff_days == 0) {
-                  $bh_cls = 'bh-today';
-                  $bh_icon = 'fa-clock-o';
-                  $bh_text = 'Hari Ini';
-                } else {
-                  $bh_cls = 'bh-future';
-                  $bh_icon = 'fa-calendar';
-                  $bh_text = abs($diff_days) . ' Hari Lagi';
-                }
-              } elseif ($st === 'Sudah Dikirim') {
-                $bh_cls = 'bh-sent';
-                $bh_icon = 'fa-whatsapp';
-                $bh_text = 'WA Terkirim';
-              } elseif ($st === 'Direspon') {
-                $bh_cls = 'bh-responded';
-                $bh_icon = 'fa-comments';
-                $bh_text = 'Direspon';
-              } elseif ($st === 'Sudah Konfirmasi Diterima') {
-                $bh_cls = 'bh-confirmed';
-                $bh_icon = 'fa-check-circle';
-                $bh_text = 'Barang Diterima';
-              } elseif ($st === 'Belum Respon') {
-                $bh_cls = 'bh-no-response';
-                $bh_icon = 'fa-hourglass-half';
-                $bh_text = 'Belum Respon';
-              } elseif ($st === 'Komplain') {
-                $bh_cls = 'bh-complaint';
-                $bh_icon = 'fa-warning';
-                $bh_text = 'Komplain';
-              } elseif ($st === 'Tawarkan Repeat Order') {
-                $bh_cls = 'bh-repeat';
-                $bh_icon = 'fa-shopping-cart';
-                $bh_text = 'Repeat Order';
-              } elseif ($st === 'Selesai') {
-                $bh_cls = 'bh-done';
-                $bh_icon = 'fa-check-square-o';
-                $bh_text = 'Selesai';
-              } else {
-                $bh_cls = 'bh-done';
-                $bh_icon = 'fa-info-circle';
-                $bh_text = htmlspecialchars($st);
-              }
-              ?>
-              <div style="display:flex; align-items:center; gap:4px; flex-wrap:wrap; margin-bottom:3px;">
-                <strong style="color:#1e293b;"><?= date('d/m/Y', strtotime($target)); ?></strong>
-                <span class="label-selisih" title="Selisih <?= $selisih_hari; ?> hari dari Tgl Kirim">(H+<?= $selisih_hari; ?>)</span>
-              </div>
-              <span class="badge-h-followup <?= $bh_cls; ?>" id="badge-h-<?= $e->id; ?>" title="Status jadwal follow up">
-                <i class="fa <?= $bh_icon; ?>"></i> <?= $bh_text; ?>
-              </span>
-            </td>
-            <td>
-              <select class="status-select" data-label-id="<?= $e->id; ?>" data-current="<?= $e->status_label; ?>">
-                <?php foreach (['Pending','Sudah Dikirim','Direspon','Sudah Konfirmasi Diterima','Belum Respon','Komplain','Tawarkan Repeat Order','Selesai'] as $st): ?>
-                <option value="<?= $st; ?>" <?= ($e->status_label == $st) ? 'selected' : ''; ?>><?= $st; ?></option>
-                <?php endforeach; ?>
-              </select>
-              <div class="time-log-wa" id="time-log-<?= $e->id; ?>" style="font-size:11px;color:#27ae60;margin-top:4px;font-weight:600;<?= empty($e->waktu_kirim_wa) ? 'display:none;' : ''; ?>">
-                <i class="fa fa-paper-plane" style="color:#25D366;"></i> Terkirim: <span class="time-val"><?= !empty($e->waktu_kirim_wa) ? date('d/m/Y H:i', strtotime($e->waktu_kirim_wa)) : ''; ?></span>
-              </div>
-              <span class="badge label-success badge-wa-count" id="badge-count-<?= $e->id; ?>" data-count="<?= (int)($e->total_wa_sent ?? 0); ?>" style="background:#25D366;font-size:10px;padding:3px 8px;margin-top:3px;display:<?= (!empty($e->total_wa_sent) && $e->total_wa_sent > 0) ? 'inline-block' : 'none'; ?>;border-radius:10px;" title="Total pengiriman WhatsApp ke customer ini">
-                <i class="fa fa-comments"></i> <span class="cnt-val"><?= (int)($e->total_wa_sent ?? 0); ?></span>x Chat WA
-              </span>
             </td>
             <td class="text-center" style="white-space:nowrap;">
               <div style="display:inline-flex; align-items:center; justify-content:center; gap:4px;">
-                <?php if (!empty($e->customer_phone)): 
-                  $clean_ph = preg_replace('/[^0-9]/', '', $e->customer_phone);
-                  $wa_ph = (substr($clean_ph, 0, 1) === '0') ? ('62' . substr($clean_ph, 1)) : $clean_ph;
-                  if (substr($wa_ph, 0, 2) !== '62') $wa_ph = '62' . $wa_ph;
-                  $rendered_msg = $this->model_crm->render_template($e->template_pesan_default, $e);
-                  $direct_wa_followup = 'https://api.whatsapp.com/send?phone=' . $wa_ph . '&text=' . rawurlencode($rendered_msg);
-                ?>
-                <a href="<?= $direct_wa_followup; ?>" target="_blank" class="btn-wa-sm btn-direct-followup <?= $e->is_broadcast_sent ? 'sent-active' : ''; ?>" data-label-id="<?= $e->id; ?>" data-nama="<?= htmlspecialchars($e->customer_nama); ?>" title="Buka WhatsApp Web / Aplikasi untuk Follow-Up Customer ini">
-                  <i class="fa fa-whatsapp"></i> Follow-Up WA
-                </a>
-                <button type="button" class="btn btn-xs btn-default btn-send-wa" data-label-id="<?= $e->id; ?>" title="Pratinjau & Edit Teks Follow-Up Sebelum Kirim" style="border-radius:6px; padding:5px 8px; font-size:11px;">
-                  <i class="fa fa-pencil-square-o"></i> Edit
-                </button>
-                <?php endif; ?>
-                <button class="btn btn-xs btn-default btn-add-note" data-label-id="<?= $e->id; ?>" data-nama="<?= htmlspecialchars($e->customer_nama); ?>" title="Tambah Catatan" style="border-radius:6px; padding:5px 8px; font-size:11px;">
-                  <i class="fa fa-pencil"></i>
+                <button type="button" class="btn btn-xs btn-info btn-add-note" 
+                        data-label-id="<?= $e->id; ?>" 
+                        data-nama="<?= htmlspecialchars($e->customer_nama); ?>" 
+                        data-phone="<?= htmlspecialchars($e->customer_phone ?: '-'); ?>"
+                        data-order="<?= htmlspecialchars($e->no_pesanan ?: '-'); ?>"
+                        data-diff-h="<?= $diff_h; ?>"
+                        data-tgl-kirim="<?= $e->tanggal_pengiriman ? date('d/m/Y', strtotime($e->tanggal_pengiriman)) : '-'; ?>"
+                        title="Klik untuk melihat Detail Kapan Terakhir Follow-Up, Keterlambatan & Riwayat Catatan" 
+                        style="background:#0284c7; border-color:#0284c7; color:#fff; border-radius:6px; padding:4px 10px; font-size:11px; font-weight:600; white-space:nowrap;">
+                  <i class="fa fa-clock-o"></i> Detail FU
                 </button>
               </div>
             </td>
@@ -853,6 +1055,112 @@
 .chat-header .info { flex: 1; }
 .chat-header .info .name { font-size: 15px; font-weight: 700; }
 .chat-header .info .meta { font-size: 11px; opacity: 0.8; }
+
+/* Follow-up info card at top of chat modal */
+.chat-followup-info-card {
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 10px 16px;
+  font-size: 12px;
+}
+.fu-card-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.fu-status-col {
+  flex: 1;
+}
+.fu-label-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 3px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.fu-status-detail {
+  font-size: 12px;
+  color: #1e293b;
+  line-height: 1.4;
+}
+.fu-age-col {
+  flex-shrink: 0;
+  text-align: right;
+}
+.fu-age-badge {
+  display: inline-block;
+  background: #e0f2fe;
+  color: #0369a1;
+  font-weight: 800;
+  font-size: 12px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  border: 1px solid #bae6fd;
+}
+.fu-ship-date {
+  font-size: 10.5px;
+  color: #64748b;
+  margin-top: 3px;
+}
+.fu-milestones-row {
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px dashed #cbd5e1;
+}
+.fu-milestones-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #475569;
+  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.fu-milestones-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+}
+.milestone-journey-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: default;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+.milestone-journey-pill.pill-done {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+.milestone-journey-pill.pill-overdue {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+.milestone-journey-pill.pill-today {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fcd34d;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+}
+.milestone-journey-pill.pill-upcoming {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
 
 .chat-canvas {
   background: #efeae2;
@@ -1222,273 +1530,104 @@
 </style>
 
 <div class="modal fade chat-modal" id="modal-note" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="chat-header">
-        <div class="avatar"><i class="fa fa-user"></i></div>
-        <div class="info">
-          <div class="name" id="note-customer-name">Customer</div>
-          <div class="meta"><i class="fa fa-phone"></i> <span id="chat-phone">-</span> &nbsp;|&nbsp; <i class="fa fa-shopping-bag"></i> <span id="chat-order">-</span></div>
+  <div class="modal-dialog" style="max-width: 580px;">
+    <div class="modal-content" style="border-radius: 14px; overflow: hidden; border: none; box-shadow: 0 20px 60px rgba(0,0,0,0.25);">
+      <!-- Header -->
+      <div class="chat-header" style="background: linear-gradient(135deg, #075e54 0%, #128c7e 100%); color: #fff; padding: 14px 18px; display: flex; align-items: center; gap: 12px;">
+        <div class="avatar" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 700; flex-shrink: 0;"><i class="fa fa-user"></i></div>
+        <div class="info" style="flex: 1;">
+          <div class="name" id="note-customer-name" style="font-size: 15px; font-weight: 700;">Customer</div>
+          <div class="meta" style="font-size: 11.5px; opacity: 0.9; margin-top: 1px;"><i class="fa fa-phone"></i> <span id="chat-phone">-</span> &nbsp;|&nbsp; <i class="fa fa-shopping-bag"></i> <span id="chat-order">-</span></div>
         </div>
-        <button type="button" class="btn-refresh-chat" id="btn-refresh-chat" title="Refresh Chat" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;margin-right:6px;transition:all 0.2s;">
+        <button type="button" class="btn-refresh-chat" id="btn-refresh-chat" title="Refresh Data" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;margin-right:6px;transition:all 0.2s;">
           <i class="fa fa-refresh"></i>
         </button>
-        <button type="button" class="close" data-dismiss="modal" style="color:#fff;opacity:0.8;font-size:22px;">&times;</button>
+        <button type="button" class="close" data-dismiss="modal" style="color:#fff;opacity:0.85;font-size:22px;margin-top:-2px;">&times;</button>
       </div>
 
-      <div class="chat-canvas" id="chat-canvas">
-        <div class="chat-empty">
-          <i class="fa fa-comments-o"></i>
-          Memuat riwayat percakapan...
-        </div>
-      </div>
-
-      <div class="chat-status-bar">
-        <label style="margin:0;font-weight:600;white-space:nowrap;color:#475569;">Status:</label>
-        <select id="note-status">
-          <option value="">-- Tidak ubah --</option>
-          <option value="Direspon">Direspon</option>
-          <option value="Sudah Konfirmasi Diterima">Sudah Konfirmasi Diterima</option>
-          <option value="Belum Respon">Belum Respon</option>
-          <option value="Komplain">Komplain</option>
-          <option value="Tawarkan Repeat Order">Tawarkan Repeat Order</option>
-          <option value="Selesai">Selesai</option>
-        </select>
-      </div>
-
-      <div class="chat-footer wa-chat-footer">
-        <!-- Sender Type Toggle: CS WA Reply vs Internal Note -->
-        <div class="sender-toggle" style="display:flex;gap:6px;margin-bottom:8px;">
-          <button type="button" class="btn-toggle-sender active" data-type="cs_chat" style="flex:1;padding:6px 10px;border:2px solid #00a884;background:#d9fdd3;color:#005c4b;border-radius:20px;font-size:11.5px;font-weight:700;cursor:pointer;transition:all 0.2s;">
-            <i class="fa fa-whatsapp"></i> Balasan CS (WA)
-          </button>
-          <button type="button" class="btn-toggle-sender" data-type="cs" style="flex:1;padding:6px 10px;border:2px solid #e2e8f0;background:#fff;color:#64748b;border-radius:20px;font-size:11.5px;font-weight:700;cursor:pointer;transition:all 0.2s;">
-            <i class="fa fa-bookmark"></i> Catatan Internal
-          </button>
-        </div>
-
-        <!-- Emoji Popover (Banyak Emoji Lengkap) -->
-        <div class="wa-emoji-popover" id="wa-emoji-popover">
-          <div style="font-size:11.5px;font-weight:700;color:#334155;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f1f5f9;padding-bottom:6px;">
-            <span><i class="fa fa-smile-o" style="color:#f59e0b;"></i> Pilih Emoji WhatsApp:</span>
-            <button type="button" id="btn-close-emoji" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:18px;line-height:1;">&times;</button>
-          </div>
-          <div class="wa-emoji-container">
-            <div class="wa-emoji-category-title" style="margin-top:2px;">Ekspresi & Wajah</div>
-            <div class="wa-emoji-grid">
-              <span class="wa-emoji-item">😊</span>
-              <span class="wa-emoji-item">😀</span>
-              <span class="wa-emoji-item">😁</span>
-              <span class="wa-emoji-item">😂</span>
-              <span class="wa-emoji-item">🤣</span>
-              <span class="wa-emoji-item">😃</span>
-              <span class="wa-emoji-item">😄</span>
-              <span class="wa-emoji-item">😅</span>
-              <span class="wa-emoji-item">😆</span>
-              <span class="wa-emoji-item">😉</span>
-              <span class="wa-emoji-item">😋</span>
-              <span class="wa-emoji-item">😎</span>
-              <span class="wa-emoji-item">😍</span>
-              <span class="wa-emoji-item">😘</span>
-              <span class="wa-emoji-item">🥰</span>
-              <span class="wa-emoji-item">😗</span>
-              <span class="wa-emoji-item">😙</span>
-              <span class="wa-emoji-item">😚</span>
-              <span class="wa-emoji-item">☺️</span>
-              <span class="wa-emoji-item">🙂</span>
-              <span class="wa-emoji-item">🤗</span>
-              <span class="wa-emoji-item">🤩</span>
-              <span class="wa-emoji-item">🤔</span>
-              <span class="wa-emoji-item">🤨</span>
-              <span class="wa-emoji-item">😐</span>
-              <span class="wa-emoji-item">😑</span>
-              <span class="wa-emoji-item">😶</span>
-              <span class="wa-emoji-item">🙄</span>
-              <span class="wa-emoji-item">😏</span>
-              <span class="wa-emoji-item">😣</span>
-              <span class="wa-emoji-item">😥</span>
-              <span class="wa-emoji-item">😮</span>
-              <span class="wa-emoji-item">🤐</span>
-              <span class="wa-emoji-item">😯</span>
-              <span class="wa-emoji-item">😪</span>
-              <span class="wa-emoji-item">😫</span>
-              <span class="wa-emoji-item">😴</span>
-              <span class="wa-emoji-item">😌</span>
-              <span class="wa-emoji-item">😛</span>
-              <span class="wa-emoji-item">😜</span>
-              <span class="wa-emoji-item">😝</span>
-              <span class="wa-emoji-item">🤤</span>
-            </div>
-
-            <div class="wa-emoji-category-title">Tangan & Gestur</div>
-            <div class="wa-emoji-grid">
-              <span class="wa-emoji-item">👍</span>
-              <span class="wa-emoji-item">👎</span>
-              <span class="wa-emoji-item">👌</span>
-              <span class="wa-emoji-item">✌️</span>
-              <span class="wa-emoji-item">🤞</span>
-              <span class="wa-emoji-item">🤟</span>
-              <span class="wa-emoji-item">🤘</span>
-              <span class="wa-emoji-item">🤙</span>
-              <span class="wa-emoji-item">👈</span>
-              <span class="wa-emoji-item">👉</span>
-              <span class="wa-emoji-item">👆</span>
-              <span class="wa-emoji-item">👇</span>
-              <span class="wa-emoji-item">☝️</span>
-              <span class="wa-emoji-item">✋</span>
-              <span class="wa-emoji-item">🤚</span>
-              <span class="wa-emoji-item">🖐️</span>
-              <span class="wa-emoji-item">👋</span>
-              <span class="wa-emoji-item">💪</span>
-              <span class="wa-emoji-item">✍️</span>
-              <span class="wa-emoji-item">🙏</span>
-              <span class="wa-emoji-item">🤝</span>
-              <span class="wa-emoji-item">👏</span>
-              <span class="wa-emoji-item">🙌</span>
-              <span class="wa-emoji-item">🤲</span>
-            </div>
-
-            <div class="wa-emoji-category-title">Bisnis, Toko & Pengiriman</div>
-            <div class="wa-emoji-grid">
-              <span class="wa-emoji-item">📦</span>
-              <span class="wa-emoji-item">🚚</span>
-              <span class="wa-emoji-item">🚛</span>
-              <span class="wa-emoji-item">🛍️</span>
-              <span class="wa-emoji-item">🛒</span>
-              <span class="wa-emoji-item">💰</span>
-              <span class="wa-emoji-item">💵</span>
-              <span class="wa-emoji-item">💳</span>
-              <span class="wa-emoji-item">🧾</span>
-              <span class="wa-emoji-item">🏷️</span>
-              <span class="wa-emoji-item">💼</span>
-              <span class="wa-emoji-item">📄</span>
-              <span class="wa-emoji-item">📑</span>
-              <span class="wa-emoji-item">📋</span>
-              <span class="wa-emoji-item">📌</span>
-              <span class="wa-emoji-item">📍</span>
-              <span class="wa-emoji-item">✉️</span>
-              <span class="wa-emoji-item">📧</span>
-              <span class="wa-emoji-item">📞</span>
-              <span class="wa-emoji-item">📱</span>
-              <span class="wa-emoji-item">💬</span>
-              <span class="wa-emoji-item">⏰</span>
-              <span class="wa-emoji-item">⏳</span>
-              <span class="wa-emoji-item">📅</span>
-              <span class="wa-emoji-item">🗓️</span>
-              <span class="wa-emoji-item">🔍</span>
-              <span class="wa-emoji-item">📢</span>
-              <span class="wa-emoji-item">🎁</span>
-            </div>
-
-            <div class="wa-emoji-category-title">Simbol & Bintang</div>
-            <div class="wa-emoji-grid">
-              <span class="wa-emoji-item">⭐</span>
-              <span class="wa-emoji-item">🌟</span>
-              <span class="wa-emoji-item">✨</span>
-              <span class="wa-emoji-item">💫</span>
-              <span class="wa-emoji-item">🔥</span>
-              <span class="wa-emoji-item">💥</span>
-              <span class="wa-emoji-item">💯</span>
-              <span class="wa-emoji-item">❤️</span>
-              <span class="wa-emoji-item">💖</span>
-              <span class="wa-emoji-item">💕</span>
-              <span class="wa-emoji-item">✔️</span>
-              <span class="wa-emoji-item">❌</span>
-              <span class="wa-emoji-item">❗</span>
-              <span class="wa-emoji-item">❓</span>
-              <span class="wa-emoji-item">⚠️</span>
-              <span class="wa-emoji-item">🔴</span>
-              <span class="wa-emoji-item">🟢</span>
-              <span class="wa-emoji-item">🔵</span>
-              <span class="wa-emoji-item">👑</span>
-              <span class="wa-emoji-item">💎</span>
-              <span class="wa-emoji-item">🎉</span>
-              <span class="wa-emoji-item">🎊</span>
-              <span class="wa-emoji-item">💡</span>
-              <span class="wa-emoji-item">⚡</span>
-              <span class="wa-emoji-item">🚀</span>
-              <span class="wa-emoji-item">🏆</span>
-              <span class="wa-emoji-item">🎯</span>
-              <span class="wa-emoji-item">🥇</span>
-            </div>
+      <!-- Main Body Container -->
+      <div style="padding: 16px; background: #f8fafc; max-height: calc(85vh - 70px); overflow-y: auto;">
+        
+        <!-- 1. KOTAK KETERLAMBATAN (Sudah Telat Berapa Lama Tidak Follow-Up) -->
+        <div id="fu-delay-box">
+          <div style="text-align:center; padding:15px; color:#94a3b8; font-size:12px;">
+            <i class="fa fa-spinner fa-spin"></i> Menghitung keterlambatan follow-up...
           </div>
         </div>
 
-        <!-- Attachment Popover Menu -->
-        <div class="wa-attach-popover" id="wa-attach-popover">
-          <div style="font-size:11px;font-weight:700;color:#64748b;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;padding:0 4px;">
-            <span>Lampirkan Berkas:</span>
-            <button type="button" id="btn-close-attach-pop" style="background:none;border:none;color:#94a3b8;cursor:pointer;">&times;</button>
-          </div>
-          <div class="wa-attach-menu-item" id="wa-opt-doc">
-            <div class="wa-attach-icon" style="background:#7f66ff;"><i class="fa fa-file-text-o"></i></div>
-            <div>Dokumen & PDF</div>
-          </div>
-          <div class="wa-attach-menu-item" id="wa-opt-img">
-            <div class="wa-attach-icon" style="background:#007bfc;"><i class="fa fa-picture-o"></i></div>
-            <div>Foto & Gambar</div>
-          </div>
-          <div class="wa-attach-menu-item" id="wa-opt-audio">
-            <div class="wa-attach-icon" style="background:#ff2e74;"><i class="fa fa-microphone"></i></div>
-            <div>Voice Note / Audio</div>
-          </div>
-          <div class="wa-attach-menu-item" id="wa-opt-url">
-            <div class="wa-attach-icon" style="background:#0284c7;"><i class="fa fa-link"></i></div>
-            <div>Tempel URL / Link</div>
+        <!-- 2. KOTAK TERAKHIR FOLLOW-UP (Kapan Terakhir Di-Followup) -->
+        <div id="fu-last-box">
+          <div style="text-align:center; padding:15px; color:#94a3b8; font-size:12px;">
+            <i class="fa fa-spinner fa-spin"></i> Memuat riwayat follow-up terakhir...
           </div>
         </div>
 
-        <!-- URL Input Container (Hidden by default) -->
-        <div id="wa-url-input-container" style="display:none;margin-bottom:8px;">
-          <div style="display:flex;gap:6px;">
-            <input type="url" id="note-file-url" class="form-control" placeholder="Tempelkan URL file (https://...)" style="font-size:12px;border-radius:8px;height:34px;">
-            <button type="button" class="btn btn-sm btn-default" id="btn-close-url-input" style="border-radius:8px;">&times;</button>
+        <!-- 2.5. KOTAK PRODUK YANG DIBELI (Customer Pembelian Barang Apa) -->
+        <div id="fu-products-box">
+          <div style="text-align:center; padding:15px; color:#94a3b8; font-size:12px;">
+            <i class="fa fa-spinner fa-spin"></i> Memuat rincian produk yang dibeli...
           </div>
         </div>
 
-        <!-- Active Attachment Chip -->
-        <div class="wa-attachment-chip" id="wa-attachment-chip">
-          <div style="display:flex;align-items:center;gap:6px;overflow:hidden;">
-            <i class="fa fa-paperclip" style="font-size:14px;"></i>
-            <span id="wa-attach-filename" style="font-weight:700;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;max-width:240px;">file.pdf</span>
-            <span id="wa-upload-spinner" style="display:none;"><i class="fa fa-spin fa-spinner"></i> Mengunggah...</span>
+        <!-- 3. ALUR TAHAPAN FOLLOW-UP (Jadwal H+ Journey) -->
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:12px 14px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+          <div style="font-size:11px; font-weight:700; color:#475569; text-transform:uppercase; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between;">
+            <span><i class="fa fa-road text-primary"></i> Alur Tahapan Follow-Up (Jadwal H+):</span>
+            <span id="fu-ship-date-info" style="font-size:11px; font-weight:600; color:#64748b;">Kirim: -</span>
           </div>
-          <button type="button" id="btn-remove-attachment" style="background:none;border:none;color:#ef4444;cursor:pointer;font-weight:700;font-size:14px;">&times;</button>
+          <div class="fu-milestones-list" id="fu-milestones-list" style="display:flex; flex-wrap:wrap; gap:5px;">
+            <!-- Populated dynamically via JS -->
+          </div>
         </div>
 
-        <!-- Hidden Native File Upload Input -->
-        <input type="file" id="chat-file-upload" style="display:none;" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar">
-
-        <!-- WhatsApp Reply Quote Preview Bar -->
-        <div id="wa-reply-preview-bar" style="display:none;background:#f0fdf4;border-left:4px solid #00a884;padding:6px 12px;margin-bottom:8px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,0.05);position:relative;">
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <div style="font-weight:700;font-size:11.5px;color:#00a884;">
-              <i class="fa fa-reply"></i> Membalas: <span id="wa-reply-sender-name">Nama</span>
-            </div>
-            <button type="button" id="btn-cancel-reply" style="background:none;border:none;color:#ef4444;font-size:14px;font-weight:700;cursor:pointer;padding:0 4px;" title="Batal Balas">&times;</button>
+        <!-- 4. RIWAYAT CATATAN INTERNAL -->
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:12px 14px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+          <div style="font-size:11px; font-weight:700; color:#475569; text-transform:uppercase; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between;">
+            <span><i class="fa fa-bookmark text-warning"></i> Riwayat Catatan Internal CS:</span>
+            <span id="fu-notes-count" class="badge" style="background:#f1f5f9; color:#475569; font-size:10px; font-weight:700;">0 Catatan</span>
           </div>
-          <div id="wa-reply-text-preview" style="font-size:11px;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;max-width:92%;">Pesan...</div>
+          <div id="fu-notes-list" style="max-height: 140px; overflow-y: auto;">
+            <!-- Populated dynamically via JS -->
+          </div>
         </div>
 
-        <!-- WhatsApp Input Bar (Paperclip - Emoji - Input Textarea - Send Button) -->
-        <div class="wa-input-pill-container">
-          <div class="wa-input-pill">
-            <button type="button" class="wa-icon-btn" id="btn-toggle-attach" title="Kirim File / Dokumen / Foto">
-              <i class="fa fa-paperclip"></i>
+        <!-- 5. FORM TAMBAH CATATAN & UPDATE STATUS -->
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+          <div style="font-size:12px; font-weight:700; color:#1e293b; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+            <i class="fa fa-pencil-square-o text-success"></i> Tambah Catatan & Update Status Follow-Up
+          </div>
+          
+          <div class="form-group" style="margin-bottom:10px;">
+            <label style="font-size:11px; font-weight:700; color:#64748b; margin-bottom:4px; display:block;">Status Follow-Up (Keterangan BC):</label>
+            <select id="note-status" class="form-control input-sm" style="border-radius:8px; font-size:12px; font-weight:600; height:34px;">
+              <option value="">-- Tetap / Tidak Ubah --</option>
+              <option value="Direspon">Direspon</option>
+              <option value="Sudah Konfirmasi Diterima">Sudah Konfirmasi Diterima</option>
+              <option value="Belum Respon">Belum Respon</option>
+              <option value="Komplain">Komplain</option>
+              <option value="Tawarkan Repeat Order">Tawarkan Repeat Order</option>
+              <option value="Selesai">Selesai</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="margin-bottom:12px;">
+            <label style="font-size:11px; font-weight:700; color:#64748b; margin-bottom:4px; display:block;">Tulis Catatan Internal Baru:</label>
+            <textarea id="note-text" class="form-control" rows="3" placeholder="Tulis catatan follow-up di sini (misal: customer respon via telp, barang komplit, minta kirim invoice)..." style="border-radius:8px; font-size:12px; resize:vertical; padding:8px 10px;"></textarea>
+          </div>
+
+          <div style="display:flex; gap:8px; align-items:center; justify-content:space-between; padding-top:4px;">
+            <a href="#" target="_blank" id="btn-modal-direct-wa" class="btn btn-sm" style="border-radius:8px; font-weight:700; font-size:11.5px; color:#15803d; border:1px solid #86efac; background:#f0fdf4; padding:6px 12px; text-decoration:none;">
+              <i class="fa fa-whatsapp"></i> Chat WhatsApp
+            </a>
+            <button type="button" id="btn-save-note" class="btn btn-sm btn-primary" style="border-radius:8px; font-weight:700; font-size:12px; padding:6px 18px; background:#0284c7; border:none; box-shadow:0 2px 5px rgba(2,132,199,0.3);">
+              <i class="fa fa-save"></i> Simpan Catatan
             </button>
-            <button type="button" class="wa-icon-btn" id="btn-toggle-emoji" title="Pilih Emoji">
-              <i class="fa fa-smile-o"></i>
-            </button>
-            <textarea id="note-text" class="wa-textarea" rows="1" placeholder="Ketik pesan"></textarea>
           </div>
-          <button type="button" class="wa-send-btn" id="btn-save-note" title="Kirim Pesan (✈️)">
-            <i class="fa fa-paper-plane" id="wa-send-icon"></i>
-          </button>
         </div>
+
       </div>
 
       <input type="hidden" id="note-label-id">
-      <input type="hidden" id="note-sender-type" value="cs_chat">
     </div>
   </div>
 </div>
@@ -1505,6 +1644,16 @@
         <div style="background:#f8fafc;border:1px solid #e2e8f0;padding:12px 16px;border-radius:10px;margin-bottom:15px;font-size:12px;">
           <div style="margin-bottom:4px;"><strong>Penerima:</strong> <span id="wa-preview-name" style="font-weight:700;color:#1e293b;"></span> (<span id="wa-preview-phone" style="color:#2563eb;"></span>)</div>
           <div><strong>No. Pesanan:</strong> <span id="wa-preview-order" style="color:#64748b;"></span></div>
+        </div>
+        <div class="form-group" style="margin-bottom:12px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+            <label style="font-weight:700;font-size:12px;color:#334155; margin-bottom:0;"><i class="fa fa-tags" style="color:#0284c7;"></i> Template Kelompok Follow-Up:</label>
+            <span id="wa-preview-template-badge" class="badge" style="background:#e0f2fe; color:#0369a1; font-size:10.5px; font-weight:700; border:1px solid #bae6fd;">Template Otomatis</span>
+          </div>
+          <select class="form-control input-sm" id="wa-preview-template-select" style="border-radius:8px; font-size:12px; font-weight:600; height:34px;">
+            <option value="">-- Memuat Pilihan Template --</option>
+          </select>
+          <small class="text-muted" style="font-size:11px; margin-top:3px; display:block;"><i class="fa fa-info-circle text-info"></i> Anda dapat mengganti template ke tahapan lain (H+0, H+3, H+7, H+11, H+30) secara instan.</small>
         </div>
         <div class="form-group">
           <label style="font-weight:700;font-size:13px;color:#334155;"><i class="fa fa-pencil-square-o" style="color:#25D366;"></i> Isi Pesan WhatsApp (Bisa Diubah):</label>
@@ -1532,75 +1681,7 @@
   </div>
 </div>
 
-<!-- Modal: Tambah Follow-Up Manual -->
-<div class="modal fade" id="modal-manual-add" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content" style="border-radius:12px;overflow:hidden;border:none;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-      <div class="modal-header" style="background:#0284c7;color:#fff;padding:14px 18px;">
-        <button type="button" class="close" data-dismiss="modal" style="color:#fff;opacity:0.9;">&times;</button>
-        <h4 class="modal-title" style="font-weight:700;font-size:15px;"><i class="fa fa-plus-circle"></i> Tambah Follow-Up Manual Baru</h4>
-      </div>
-      <form id="form-manual-add">
-        <div class="modal-body" style="padding:18px;">
-          <div class="form-group">
-            <label style="font-size:12px;color:#334155;font-weight:600;">Nama Customer <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" name="customer_nama" placeholder="Contoh: Budi Santoso" required style="border-radius:8px;height:38px;">
-          </div>
-          <div class="form-group">
-            <label style="font-size:12px;color:#334155;font-weight:600;">Nomor WhatsApp / Telepon <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" name="customer_phone" placeholder="Contoh: 081234567890" required style="border-radius:8px;height:38px;">
-          </div>
-          <div class="row">
-            <div class="col-md-6">
-              <div class="form-group">
-                <label style="font-size:12px;color:#334155;font-weight:600;">No. Pesanan / Resi (Opsional)</label>
-                <input type="text" class="form-control" name="no_pesanan" placeholder="Contoh: INV-20260901" style="border-radius:8px;height:38px;">
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="form-group">
-                <label style="font-size:12px;color:#334155;font-weight:600;">Sumber Order</label>
-                <select class="form-control" name="order_source" style="border-radius:8px;height:38px;">
-                  <option value="Toko">Toko</option>
-                  <option value="WhatsApp">WhatsApp</option>
-                  <option value="Shopee">Shopee</option>
-                  <option value="Tokopedia">Tokopedia</option>
-                  <option value="TikTok Shop">TikTok Shop</option>
-                  <option value="Lazada">Lazada</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-md-6">
-              <div class="form-group">
-                <label style="font-size:12px;color:#334155;font-weight:600;">Tanggal Kirim / Transaksi</label>
-                <input type="date" class="form-control" name="tanggal_pengiriman" value="<?= date('Y-m-d'); ?>" required style="border-radius:8px;height:38px;">
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="form-group">
-                <label style="font-size:12px;color:#334155;font-weight:600;">Kategori Label</label>
-                <select class="form-control" name="cat_mode" style="border-radius:8px;height:38px;">
-                  <option value="all">Semua Kategori (H+0 s/d H+30)</option>
-                  <?php foreach ($categories as $c): ?>
-                  <option value="<?= $c->id; ?>"><?= htmlspecialchars($c->nama_kategori); ?> (H+<?= $c->jumlah_hari; ?>)</option>
-                  <?php endforeach; ?>
-                </select>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer" style="background:#f8fafc;padding:12px 18px;">
-          <button type="button" class="btn btn-default" data-dismiss="modal" style="border-radius:8px;">Batal</button>
-          <button type="submit" class="btn btn-primary" id="btn-submit-manual-add" style="background:#0284c7;border:none;border-radius:8px;font-weight:700;padding:8px 20px;">
-            <i class="fa fa-save"></i> Simpan Follow-Up
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
+
 
 <!-- Modal Media Lightbox & Document Preview -->
 <div class="modal fade" id="modal-media-lightbox" tabindex="-1" role="dialog" style="z-index: 10050;">
@@ -1693,7 +1774,6 @@ $(document).ready(function() {
   // Move modals to body to prevent container z-index overlay issues
   if ($('#modal-note').length) $('#modal-note').appendTo('body');
   if ($('#modal-wa-preview').length) $('#modal-wa-preview').appendTo('body');
-  if ($('#modal-manual-add').length) $('#modal-manual-add').appendTo('body');
   if ($('#modal-media-lightbox').length) $('#modal-media-lightbox').appendTo('body');
 
   $('.modal-backdrop').remove();
@@ -1703,6 +1783,16 @@ $(document).ready(function() {
     $('.modal-backdrop').remove();
     $('body').removeClass('modal-open').css('padding-right', '');
   });
+
+  // Initialize Bootstrap Tooltip for BC Pills and Badges
+  if ($.fn.tooltip) {
+    $('.btn-bc-pill, .badge-keterangan-green, .badge-keterangan-red, .badge-keterangan-orange, .badge-keterangan-muted, .btn-wa-sm').tooltip({
+      container: 'body',
+      placement: 'top',
+      trigger: 'hover',
+      delay: { show: 150, hide: 50 }
+    });
+  }
 
   function buildPayload(data) {
     if (csrf_name && csrf_hash) data[csrf_name] = csrf_hash;
@@ -1783,7 +1873,77 @@ $(document).ready(function() {
       $badge.attr('class', 'badge-h-followup ' + cls)
             .html('<i class="fa ' + icon + '"></i> ' + text);
     }
+
+    // Update Keterangan Follow-Up badge otomatis (tidak bisa diklik)
+    var $ketBadge = $('#badge-ket-' + label_id);
+    var diffH = parseInt($ketBadge.attr('data-diff-h') || 0);
+    var hLabel = 'H+' + diffH;
+
+    if (['Sudah Dikirim', 'Direspon', 'Sudah Konfirmasi Diterima', 'Selesai'].indexOf(status) !== -1) {
+      // Sudah difollowup: Green
+      $ketBadge.removeClass('badge-keterangan-red badge-keterangan-orange badge-keterangan-muted')
+               .addClass('badge-keterangan-green')
+               .attr('title', 'Sudah Di-Follow Up')
+               .html('<i class="fa fa-check"></i> ' + hLabel);
+
+      // Realtime update row BC pills if responded or completed
+      var $row = $ketBadge.closest('tr');
+      if (['Direspon', 'Sudah Konfirmasi Diterima', 'Selesai'].indexOf(status) !== -1) {
+        $row.find('.badge-bc-pill').each(function() {
+          var $p = $(this);
+          $p.removeClass('btn-bc-overdue').addClass('active');
+          if (!$p.find('.fa-check').length) {
+            $p.prepend('<i class="fa fa-check"></i> ');
+          }
+        });
+      }
+    } else {
+      // Belum difollowup (Pending / Belum Respon)
+      var ketClass = (diffH > 0) ? 'badge-keterangan-red' : 'badge-keterangan-orange';
+      var ketTitle = (diffH > 0) ? 'Terlewat H+' + diffH + ' (Belum Di-Follow Up)' : 'Jadwal Hari Ini (H+0)';
+      $ketBadge.removeClass('badge-keterangan-green badge-keterangan-red badge-keterangan-orange badge-keterangan-muted')
+               .addClass(ketClass)
+               .attr('title', ketTitle)
+               .html(hLabel);
+    }
   }
+
+  // ===== H+ Milestone WhatsApp Follow-Up Click =====
+  $(document).on('click', '.btn-h-followup', function(e) {
+    var $btn = $(this);
+    var phone = $btn.attr('data-phone');
+    if (!phone) {
+      e.preventDefault();
+      notify('error', 'Nomor WhatsApp customer tidak tersedia.');
+      return false;
+    }
+
+    var label_id = $btn.attr('data-label-id');
+    var h_val = $btn.attr('data-h-val');
+    var cat_id = $btn.attr('data-cat-id');
+    var bc_val = $btn.attr('data-bc-val');
+    var nama = $btn.attr('data-nama') || 'Customer';
+
+    // Mark clicked milestone pill as active visually
+    $btn.removeClass('btn-bc-overdue').addClass('active');
+    if (!$btn.find('.fa-check').length) {
+      $btn.prepend('<i class="fa fa-check"></i> ');
+    }
+    $btn.attr('data-original-title', 'Sudah Di-Follow Up: ' + bc_val).tooltip('hide');
+
+    // Also update Keterangan column badge
+    updateBadgeRealtime(label_id, 'Sudah Dikirim');
+
+    notify('success', 'Membuka WhatsApp follow-up ' + ($btn.text().trim()) + ' untuk ' + nama);
+
+    // Kirim pencatatan log ke server di latar belakang
+    $.post(_BASE + 'administrator/crm/log_direct_followup_ajax', buildPayload({
+      label_id: label_id,
+      category_id: cat_id,
+      h_val: h_val,
+      keterangan_bc: bc_val
+    }));
+  });
 
   // ===== Status Change Inline =====
   $(document).on('change', '.status-select', function() {
@@ -1798,40 +1958,6 @@ $(document).ready(function() {
         $sel.data('current', status);
       } else {
         notify('error', r.message || 'Gagal memperbarui status');
-      }
-    }).fail(function() {
-      notify('error', 'Gagal menghubungi server');
-    });
-  });
-
-  // ===== Keterangan BC Quick Pill Selection (Interactive Real-Time Toggle) =====
-  $(document).on('click', '.btn-bc-pill', function(e) {
-    e.preventDefault();
-    var $btn = $(this);
-    var $group = $btn.closest('.btn-group-keterangan-bc');
-    var label_id = $group.attr('data-label-id');
-    var val = $btn.attr('data-val');
-    var isCurrentlyActive = $btn.hasClass('active');
-
-    if (isCurrentlyActive) {
-      $btn.removeClass('active');
-      val = '';
-    } else {
-      $group.find('.btn-bc-pill').removeClass('active');
-      $btn.addClass('active');
-    }
-
-    $.post(_BASE + 'administrator/crm/update_keterangan_bc_ajax', buildPayload({ label_id: label_id, keterangan_bc: val }), function(res) {
-      var r = parseRes(res);
-      if (r.success) {
-        if (!r.keterangan_bc) {
-          $group.find('.btn-bc-pill').removeClass('active');
-          notify('info', 'Keterangan BC direset');
-        } else {
-          notify('success', 'Keterangan BC: ' + r.keterangan_bc);
-        }
-      } else {
-        notify('error', r.message || 'Gagal memperbarui Keterangan BC');
       }
     }).fail(function() {
       notify('error', 'Gagal menghubungi server');
@@ -1855,10 +1981,7 @@ $(document).ready(function() {
     $cntBadge.attr('data-count', currCnt).find('.cnt-val').text(currCnt);
     $cntBadge.css('display', 'inline-block');
 
-    var $statusSel = $('.status-select[data-label-id="' + label_id + '"]');
-    if ($statusSel.length && $statusSel.val() === 'Pending') {
-      $statusSel.val('Sudah Dikirim').trigger('change');
-    }
+
 
     notify('success', 'Membuka WhatsApp Web / Aplikasi untuk ' + nama);
 
@@ -1882,6 +2005,9 @@ $(document).ready(function() {
 
     $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Loading...');
 
+    var currentTemplatesMap = {};
+    $('#wa-preview-template-select').html('<option value="">Memuat template...</option>');
+
     $.get(_BASE + 'administrator/crm/get_wa_link_ajax', { label_id: label_id }, function(res) {
       $btn.prop('disabled', false).html('<i class="fa fa-whatsapp"></i> Kirim WA');
       var r = parseRes(res);
@@ -1895,6 +2021,31 @@ $(document).ready(function() {
         $('#wa-preview-file-url').val('');
         $('#preview-file-status').html('<i class="fa fa-info-circle" style="color:#3b82f6;"></i> Dukungan format: Foto (JPG/PNG), Dokumen (PDF/Word/Excel), ZIP/RAR, & Voice Note (MP3/WAV).');
 
+        // Fetch all templates rendered for this customer so CS can easily switch milestone (H+0 s/d H+30)
+        $.get(_BASE + 'administrator/crm/get_templates_ajax', { label_id: label_id }, function(tRes) {
+          var tr = parseRes(tRes);
+          if (tr.success && tr.templates && tr.templates.length > 0) {
+            var $sel = $('#wa-preview-template-select');
+            $sel.empty();
+            currentTemplatesMap = {};
+            var foundCurrent = false;
+
+            $.each(tr.templates, function(i, t) {
+              currentTemplatesMap[t.id] = t;
+              var isSel = t.is_current ? 'selected' : '';
+              if (t.is_current) {
+                foundCurrent = true;
+                $('#wa-preview-template-badge').text('H+' + t.jumlah_hari);
+              }
+              $sel.append('<option value="' + t.id + '" ' + isSel + '>' + $('<div>').text(t.nama + ' (H+' + t.jumlah_hari + ')').html() + '</option>');
+            });
+
+            if (!foundCurrent && tr.templates.length > 0) {
+              $('#wa-preview-template-badge').text('H+' + tr.templates[0].jumlah_hari);
+            }
+          }
+        });
+
         $('.modal-backdrop').remove();
         $('#modal-wa-preview').modal('show');
         setTimeout(function() { $('#wa-preview-message').focus(); }, 300);
@@ -1905,6 +2056,16 @@ $(document).ready(function() {
       $btn.prop('disabled', false).html('<i class="fa fa-whatsapp"></i> Kirim WA');
       notify('error', 'Gagal menghubungi server');
     });
+  });
+
+  // Switch template on dropdown change
+  $(document).on('change', '#wa-preview-template-select', function() {
+    var catId = $(this).val();
+    if (catId && currentTemplatesMap[catId]) {
+      var t = currentTemplatesMap[catId];
+      $('#wa-preview-message').val(t.template_rendered || '');
+      $('#wa-preview-template-badge').text('H+' + t.jumlah_hari);
+    }
   });
 
   // Modal Preview File Upload Browse & Handler
@@ -1997,9 +2158,9 @@ $(document).ready(function() {
           apiMsg = r.api_results[0].message || '';
         }
         if (apiSuccess) {
-          notify('success', 'Pesan WA sukses terkirim via Fonnte API ke ' + nama + ' (' + rawPhone + ')! Pesan telah masuk antrean pengiriman.');
+          notify('success', 'Pesan WA sukses terkirim via WhatsApp API ke ' + nama + ' (' + rawPhone + ')! Pesan telah masuk antrean pengiriman.');
         } else {
-          notify('error', 'Gagal pengiriman via Fonnte API: ' + apiMsg);
+          notify('error', 'Gagal pengiriman via WhatsApp API: ' + apiMsg);
         }
       } else {
         var phone = rawPhone.replace(/^0/, '62').replace(/[^0-9]/g, '');
@@ -2066,7 +2227,7 @@ $(document).ready(function() {
       var r = parseRes(res);
       if (r.success) {
         if (r.mode === 'wa_gateway') {
-          notify('success', 'Berhasil mengirim ' + r.count + ' pesan WA otomatis via Fonnte Gateway API!');
+          notify('success', 'Berhasil mengirim ' + r.count + ' pesan WA otomatis via WhatsApp Gateway API!');
           setTimeout(function() { location.reload(); }, 1500);
         } else if (r.wa_links) {
           var delay = 0;
@@ -2081,100 +2242,500 @@ $(document).ready(function() {
     });
   }
 
-  // ===== Open 2-Way Chat Modal =====
-  var chatPollTimer = null;
-  var currentChatLabelId = null;
-  var lastMessageId = 0;
-  var isFirstLoad = true;
-  var isSendingChat = false;
-
+  // ===== Open Follow-Up Detail & Note Modal =====
   function loadChatTimeline(lid, showSpinner) {
     if (showSpinner) {
-      $('#chat-canvas').html('<div class="chat-empty"><i class="fa fa-spinner fa-spin"></i> Memuat riwayat percakapan...</div>');
-      lastMessageId = 0;
-      isFirstLoad = true;
+      $('#fu-delay-box').html('<div style="text-align:center; padding:15px; color:#94a3b8; font-size:12px;"><i class="fa fa-spinner fa-spin"></i> Menghitung keterlambatan follow-up...</div>');
+      $('#fu-last-box').html('<div style="text-align:center; padding:15px; color:#94a3b8; font-size:12px;"><i class="fa fa-spinner fa-spin"></i> Memuat riwayat follow-up terakhir...</div>');
+      $('#fu-products-box').html('<div style="text-align:center; padding:15px; color:#94a3b8; font-size:12px;"><i class="fa fa-spinner fa-spin"></i> Memuat rincian produk yang dibeli...</div>');
+      $('#fu-notes-list').html('<div style="text-align:center; padding:15px; color:#94a3b8; font-size:12px;"><i class="fa fa-spinner fa-spin"></i> Memuat catatan internal...</div>');
     }
 
-    // First load: get full timeline from get_chat_timeline_ajax
-    // Subsequent loads: use optimized get_new_messages_ajax with last_id
-    if (isFirstLoad) {
-      $.get(_BASE + 'administrator/crm/get_chat_timeline_ajax', { label_id: lid }, function(res) {
-        var r = parseRes(res);
-        if (r.success) {
-          if (r.label) {
-            $('#chat-phone').text(r.label.customer_phone || '-');
-            $('#chat-order').text(r.label.no_pesanan || '-');
+    $.get(_BASE + 'administrator/crm/get_chat_timeline_ajax', { label_id: lid }, function(res) {
+      var r = parseRes(res);
+      if (r.success) {
+        if (r.label) {
+          $('#chat-phone').text(r.label.customer_phone || '-');
+          $('#chat-order').text(r.label.no_pesanan || '-');
+          if (r.label.status_label) {
+            $('#note-status').val(r.label.status_label);
           }
-          renderChatTimeline(r.timeline || []);
-          // Track max ID from timeline for subsequent polling
-          if (r.timeline && r.timeline.length > 0) {
-            for (var i = 0; i < r.timeline.length; i++) {
-              var tid = parseInt(r.timeline[i].id || 0);
-              if (tid > lastMessageId) lastMessageId = tid;
-            }
+        }
+        if (r.followup_info) {
+          renderFollowUpSummary(r.followup_info);
+          if (r.followup_info.direct_wa_url) {
+            $('#btn-modal-direct-wa').attr('href', r.followup_info.direct_wa_url);
           }
-          isFirstLoad = false;
-        } else if (showSpinner) {
-          $('#chat-canvas').html('<div class="chat-empty"><i class="fa fa-exclamation-circle"></i> Gagal memuat percakapan.</div>');
         }
-      }).fail(function() {
-        if (showSpinner) {
-          $('#chat-canvas').html('<div class="chat-empty"><i class="fa fa-exclamation-circle"></i> Gagal menghubungi server.</div>');
+        renderInternalNotes(r.internal_notes || []);
+      } else {
+        $('#fu-delay-box').html('<div style="text-align:center; padding:15px; color:#ef4444; font-size:12px;"><i class="fa fa-exclamation-circle"></i> Gagal memuat data follow-up.</div>');
+      }
+    }).fail(function() {
+      $('#fu-delay-box').html('<div style="text-align:center; padding:15px; color:#ef4444; font-size:12px;"><i class="fa fa-exclamation-circle"></i> Gagal menghubungi server.</div>');
+    });
+  }
+
+  // Render follow-up info: Kapan terakhir di-followup & Sudah telat berapa lama tidak followup
+  function renderFollowUpSummary(info) {
+    if (!info) return;
+
+    var ageLabel = info.diff_h_label || ('H+' + (info.diff_h || 0));
+    $('#fu-ship-date-info').html('Kirim: <strong>' + (info.tanggal_pengiriman_formatted || '-') + '</strong> (Umur: ' + ageLabel + ')');
+
+    // 1. KOTAK KETERLAMBATAN (Sudah telat berapa lama tidak followup)
+    var $delayCard = $('#fu-delay-box');
+    var d = info.delay_info || {};
+    var delayHtml = '';
+
+    if (d.delay_status === 'delayed') {
+      var overdueStagesHtml = '';
+      if (d.overdue_milestones && d.overdue_milestones.length > 0) {
+        overdueStagesHtml = '<div style="margin-top:10px; padding-top:8px; border-top:1px dashed #fca5a5; display:flex; flex-direction:column; gap:5px;">';
+        overdueStagesHtml += '<div style="font-size:10.5px; font-weight:700; color:#991b1b; text-transform:uppercase;"><i class="fa fa-exclamation-circle"></i> Rincian Jadwal yang Terlewat:</div>';
+        $.each(d.overdue_milestones, function(idx, om) {
+          overdueStagesHtml += '<div style="font-size:11.5px; color:#7f1d1d; display:flex; align-items:center; justify-content:space-between; background:#fff; padding:4px 8px; border-radius:6px; border:1px solid #fecaca;">' +
+            '<span><strong style="color:#b91c1c;">&bull; ' + $('<div>').text(om.h_label).html() + '</strong> (' + $('<div>').text(om.category).html() + ')</span>' +
+            '<span class="badge" style="background:#fee2e2; color:#991b1b; font-size:10.5px; border:1px solid #fca5a5; font-weight:700;">Telat ' + om.overdue_days + ' Hari</span>' +
+          '</div>';
+        });
+        overdueStagesHtml += '</div>';
+      }
+
+      delayHtml = '<div style="background:#fef2f2; border:1.5px solid #fecaca; border-radius:12px; padding:12px 16px; margin-bottom:12px;">' +
+        '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">' +
+          '<div style="font-size:11px; font-weight:700; color:#991b1b; text-transform:uppercase; letter-spacing:0.5px;"><i class="fa fa-clock-o"></i> Keterlambatan Follow-Up:</div>' +
+          '<span style="background:#ef4444; color:#fff; font-weight:800; font-size:12px; padding:4px 12px; border-radius:20px; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 6px rgba(239,68,68,0.3);"><i class="fa fa-exclamation-triangle"></i> ' + $('<div>').text(d.delay_badge || 'Telat').html() + '</span>' +
+        '</div>' +
+        '<div style="font-size:14px; font-weight:800; color:#7f1d1d;">' + $('<div>').text(d.delay_title || '').html() + '</div>' +
+        '<div style="font-size:12px; color:#450a0a; margin-top:3px; line-height:1.4;">' + $('<div>').text(d.delay_desc || '').html() + '</div>' +
+        overdueStagesHtml +
+      '</div>';
+
+    } else if (d.delay_status === 'due_today') {
+      delayHtml = '<div style="background:#fffbeb; border:1.5px solid #fde68a; border-radius:12px; padding:12px 16px; margin-bottom:12px;">' +
+        '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">' +
+          '<div style="font-size:11px; font-weight:700; color:#92400e; text-transform:uppercase; letter-spacing:0.5px;"><i class="fa fa-bell"></i> Status Jadwal Hari Ini:</div>' +
+          '<span style="background:#f59e0b; color:#fff; font-weight:800; font-size:12px; padding:4px 12px; border-radius:20px; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 6px rgba(245,158,11,0.3);"><i class="fa fa-calendar-check-o"></i> ' + $('<div>').text(d.delay_badge || 'Hari Ini').html() + '</span>' +
+        '</div>' +
+        '<div style="font-size:14px; font-weight:800; color:#78350f;">' + $('<div>').text(d.delay_title || '').html() + '</div>' +
+        '<div style="font-size:12px; color:#92400e; margin-top:3px; line-height:1.4;">' + $('<div>').text(d.delay_desc || '').html() + '</div>' +
+      '</div>';
+
+    } else if (d.delay_status === 'responded') {
+      delayHtml = '<div style="background:#f5f3ff; border:1.5px solid #ddd6fe; border-radius:12px; padding:12px 16px; margin-bottom:12px;">' +
+        '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">' +
+          '<div style="font-size:11px; font-weight:700; color:#6d28d9; text-transform:uppercase; letter-spacing:0.5px;"><i class="fa fa-comments"></i> Status Interaksi Pelanggan:</div>' +
+          '<span style="background:#7c3aed; color:#fff; font-weight:800; font-size:12px; padding:4px 12px; border-radius:20px; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 6px rgba(124,58,237,0.3);"><i class="fa fa-check-circle"></i> ' + $('<div>').text(d.delay_badge || 'Sudah Direspon').html() + '</span>' +
+        '</div>' +
+        '<div style="font-size:14px; font-weight:800; color:#5b21b6;">' + $('<div>').text(d.delay_title || '').html() + '</div>' +
+        '<div style="font-size:12px; color:#6d28d9; margin-top:3px; line-height:1.4;">' + $('<div>').text(d.delay_desc || '').html() + '</div>' +
+      '</div>';
+
+    } else if (d.delay_status === 'completed') {
+      delayHtml = '<div style="background:#f0fdf4; border:1.5px solid #bbf7d0; border-radius:12px; padding:12px 16px; margin-bottom:12px;">' +
+        '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">' +
+          '<div style="font-size:11px; font-weight:700; color:#166534; text-transform:uppercase; letter-spacing:0.5px;"><i class="fa fa-check-circle"></i> Status Tahapan Selesai:</div>' +
+          '<span style="background:#10b981; color:#fff; font-weight:800; font-size:12px; padding:4px 12px; border-radius:20px; display:inline-flex; align-items:center; gap:5px;"><i class="fa fa-check"></i> ' + $('<div>').text(d.delay_badge || 'Selesai').html() + '</span>' +
+        '</div>' +
+        '<div style="font-size:14px; font-weight:800; color:#14532d;">' + $('<div>').text(d.delay_title || '').html() + '</div>' +
+        '<div style="font-size:12px; color:#166534; margin-top:3px; line-height:1.4;">' + $('<div>').text(d.delay_desc || '').html() + '</div>' +
+      '</div>';
+
+    } else {
+      // on_track (Tepat Waktu)
+      delayHtml = '<div style="background:#ecfdf5; border:1.5px solid #a7f3d0; border-radius:12px; padding:12px 16px; margin-bottom:12px;">' +
+        '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">' +
+          '<div style="font-size:11px; font-weight:700; color:#065f46; text-transform:uppercase; letter-spacing:0.5px;"><i class="fa fa-clock-o"></i> Status Keterlambatan:</div>' +
+          '<span style="background:#059669; color:#fff; font-weight:800; font-size:12px; padding:4px 12px; border-radius:20px; display:inline-flex; align-items:center; gap:5px;"><i class="fa fa-check-circle"></i> ' + $('<div>').text(d.delay_badge || 'Tepat Waktu').html() + '</span>' +
+        '</div>' +
+        '<div style="font-size:14px; font-weight:800; color:#064e3b;">' + $('<div>').text(d.delay_title || '').html() + '</div>' +
+        '<div style="font-size:12px; color:#065f46; margin-top:3px; line-height:1.4;">' + $('<div>').text(d.delay_desc || '').html() + '</div>' +
+      '</div>';
+    }
+    $delayCard.html(delayHtml);
+
+    // 2. KOTAK KAPAN TERAKHIR DI-FOLLOWUP
+    var $lastCard = $('#fu-last-box');
+    var lastHtml = '';
+    if (info.latest_followup && info.latest_followup.time_formatted && info.latest_followup.time_formatted !== '-') {
+      var fu = info.latest_followup;
+      var rawBy = fu.handled_by || 'Petugas CS';
+      var byText = rawBy.split(' ').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(' ');
+      byText = $('<div>').text(byText).html();
+      lastHtml = '<div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:12px 16px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,0.04);">' +
+        '<div style="font-size:11px; font-weight:700; color:#475569; text-transform:uppercase; margin-bottom:6px; display:flex; align-items:center; justify-content:space-between;">' +
+          '<span><i class="fa fa-calendar-check-o text-success"></i> Terakhir Di-Followup:</span>' +
+          '<span class="badge" style="background:#dcfce7; color:#15803d; font-weight:700; font-size:11px; border:1px solid #86efac;"><i class="fa fa-check"></i> Sudah Di-Followup</span>' +
+        '</div>' +
+        '<div style="display:flex; align-items:flex-start; gap:10px; margin-top:6px;">' +
+          '<div style="width:34px; height:34px; border-radius:50%; background:#dcfce7; color:#15803d; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0;">' +
+            '<i class="fa fa-check"></i>' +
+          '</div>' +
+          '<div style="flex:1;">' +
+            '<div style="font-size:13px; font-weight:800; color:#0f172a;">' + $('<div>').text(fu.category || fu.h_label || '').html() + '</div>' +
+            '<div style="font-size:12px; color:#475569; margin-top:2px;">' +
+              '<i class="fa fa-clock-o text-muted"></i> Kapan: <strong style="color:#1e293b;">' + $('<div>').text(fu.time_formatted).html() + ' WIB</strong>' +
+              ' &nbsp;&bull;&nbsp; <i class="fa fa-user text-muted"></i> Oleh: <strong style="color:#1e293b;">' + byText + '</strong>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    } else {
+      lastHtml = '<div style="background:#fff; border:1px solid #fed7aa; border-radius:12px; padding:12px 16px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,0.04);">' +
+        '<div style="font-size:11px; font-weight:700; color:#9a3412; text-transform:uppercase; margin-bottom:6px; display:flex; align-items:center; justify-content:space-between;">' +
+          '<span><i class="fa fa-history text-warning"></i> Terakhir Di-Followup:</span>' +
+          '<span class="badge" style="background:#fee2e2; color:#dc2626; font-weight:700; font-size:11px; border:1px solid #fca5a5;"><i class="fa fa-exclamation-circle"></i> Belum Pernah</span>' +
+        '</div>' +
+        '<div style="display:flex; align-items:flex-start; gap:10px; margin-top:6px;">' +
+          '<div style="width:34px; height:34px; border-radius:50%; background:#fee2e2; color:#dc2626; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0;">' +
+            '<i class="fa fa-exclamation"></i>' +
+          '</div>' +
+          '<div style="flex:1;">' +
+            '<div style="font-size:13px; font-weight:800; color:#991b1b;">Belum Pernah Di-Followup</div>' +
+            '<div style="font-size:12px; color:#64748b; margin-top:2px;">Pesanan ini belum pernah menerima pesan broadcast atau follow-up dari CS sejak pengiriman.</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }
+    $lastCard.html(lastHtml);
+
+    // 2.5. KOTAK PRODUK YANG DIBELI (Customer Pembelian Barang Apa)
+    var $prodCard = $('#fu-products-box');
+    var items = info.purchased_items || [];
+    var meta = info.order_meta || {};
+    var prodHtml = '';
+
+    var totalQty = meta.total_qty || 0;
+    var badgeItemsCount = items.length + ' Produk' + (totalQty > 0 ? (' (' + totalQty + ' item)') : '');
+
+    var itemsListHtml = '';
+    if (items.length > 0) {
+      itemsListHtml = '<div style="display:flex; flex-direction:column; gap:8px; max-height:200px; overflow-y:auto; padding-right:2px;">';
+      $.each(items, function(idx, item) {
+        var imgThumb = '';
+        if (item.gambar_url) {
+          imgThumb = '<img src="' + $('<div>').text(item.gambar_url).html() + '" style="width:38px; height:38px; object-fit:cover; border-radius:8px; border:1px solid #e2e8f0; flex-shrink:0;">';
+        } else {
+          imgThumb = '<div style="width:38px; height:38px; border-radius:8px; background:#eff6ff; color:#2563eb; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; border:1px solid #bfdbfe;"><i class="fa fa-cube"></i></div>';
         }
+
+        var skuBadge = item.kode_produk && item.kode_produk !== '-' ? ('<span style="background:#f1f5f9; color:#475569; font-size:10px; padding:2px 6px; border-radius:4px; font-weight:600; font-family:monospace; border:1px solid #e2e8f0;">' + $('<div>').text(item.kode_produk).html() + '</span>') : '';
+        var noteBadge = item.catatan && item.catatan !== item.nama_produk ? ('<span style="font-size:11px; color:#64748b; font-style:italic;">' + $('<div>').text(item.catatan).html() + '</span>') : '';
+
+        itemsListHtml += '<div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:8px 10px; display:flex; align-items:center; gap:10px;">' +
+          imgThumb +
+          '<div style="flex:1; min-width:0;">' +
+            '<div style="font-size:12.5px; font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="' + $('<div>').text(item.nama_produk).html() + '">' +
+              $('<div>').text(item.nama_produk).html() +
+            '</div>' +
+            '<div style="display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-top:3px;">' +
+              skuBadge +
+              '<span class="badge" style="background:#dbeafe; color:#1e40af; font-size:10.5px; font-weight:700; border:1px solid #bfdbfe;">' + $('<div>').text(item.qty_formatted + ' ' + item.satuan).html() + '</span>' +
+              '<span style="font-size:11px; color:#64748b;">@ ' + $('<div>').text(item.harga_satuan_formatted).html() + '</span>' +
+              noteBadge +
+            '</div>' +
+          '</div>' +
+          '<div style="text-align:right; flex-shrink:0;">' +
+            '<div style="font-size:9.5px; color:#94a3b8; font-weight:700; text-transform:uppercase;">Subtotal</div>' +
+            '<div style="font-size:12.5px; font-weight:800; color:#0f172a;">' + $('<div>').text(item.subtotal_formatted).html() + '</div>' +
+          '</div>' +
+        '</div>';
+      });
+      itemsListHtml += '</div>';
+
+      // Meta order footer (Kurir, Resi, Total Belanja)
+      var metaFooter = '<div style="margin-top:10px; padding-top:8px; border-top:1px dashed #cbd5e1; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">' +
+        '<div style="display:flex; align-items:center; gap:10px; font-size:11.5px; color:#475569;">';
+      if (meta.kurir) {
+        metaFooter += '<span><i class="fa fa-truck text-muted"></i> <strong>' + $('<div>').text(meta.kurir).html() + '</strong></span>';
+      }
+      if (meta.resi && meta.resi !== '-') {
+        metaFooter += '<span><i class="fa fa-barcode text-muted"></i> <span style="font-family:monospace; background:#fff; padding:2px 6px; border-radius:4px; border:1px solid #cbd5e1; font-weight:600;">' + $('<div>').text(meta.resi).html() + '</span></span>';
+      }
+      if (!meta.kurir && (!meta.resi || meta.resi === '-')) {
+        metaFooter += '<span style="color:#94a3b8;"><i class="fa fa-shopping-bag text-muted"></i> Transaksi Follow-Up</span>';
+      }
+      metaFooter += '</div>' +
+        '<div style="text-align:right;">' +
+          '<span style="font-size:11.5px; color:#64748b;">Total Belanja: </span>' +
+          '<strong style="font-size:13.5px; color:#059669; font-weight:800;">' + $('<div>').text(meta.order_total_formatted || '-').html() + '</strong>' +
+        '</div>' +
+      '</div>';
+      itemsListHtml += metaFooter;
+
+    } else {
+      itemsListHtml = '<div style="text-align:center; padding:12px; color:#94a3b8; font-size:11.5px; background:#f8fafc; border-radius:8px; border:1px dashed #cbd5e1;">' +
+        '<i class="fa fa-info-circle text-muted" style="margin-right:4px;"></i> Data rincian barang belum terhubung atau tidak ditemukan untuk transaksi ini.' +
+      '</div>';
+    }
+
+    prodHtml = '<div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:12px 14px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,0.03);">' +
+      '<div style="font-size:11px; font-weight:700; color:#475569; text-transform:uppercase; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between;">' +
+        '<span><i class="fa fa-shopping-bag" style="color:#0284c7;"></i> Produk yang Dibeli Customer:</span>' +
+        (items.length > 0 ? ('<span class="badge" style="background:#e0f2fe; color:#0369a1; font-size:10.5px; font-weight:700; border:1px solid #bae6fd;">' + $('<div>').text(badgeItemsCount).html() + '</span>') : '') +
+      '</div>' +
+      itemsListHtml +
+    '</div>';
+
+    $prodCard.html(prodHtml);
+
+    // 3. TAHAPAN MILESTONE JOURNEY (Daftar H+)
+    var $milestonesList = $('#fu-milestones-list');
+    $milestonesList.empty();
+    if (info.milestones && info.milestones.length > 0) {
+      $.each(info.milestones, function(idx, m) {
+        var cls = 'pill-upcoming';
+        var icon = 'fa-clock-o';
+        var badgeText = m.h_label;
+        var tooltip = m.category;
+
+        if (m.is_completed || m.status === 'completed') {
+          cls = 'pill-done';
+          icon = 'fa-check';
+          badgeText = m.h_label + ' Selesai';
+          tooltip = m.category + ' | Sudah difollowup: ' + (m.completed_at || '-') + (m.handled_by ? (' (Oleh ' + m.handled_by + ')') : '');
+        } else if (m.status === 'overdue') {
+          cls = 'pill-overdue';
+          icon = 'fa-times';
+          badgeText = m.h_label + ' Terlewat';
+          tooltip = m.category + ' | Terlewat (Jadwal ' + m.h_label + ', Umur pesanan saat ini ' + ageLabel + ')';
+        } else if (m.status === 'today') {
+          cls = 'pill-today';
+          icon = 'fa-bell';
+          badgeText = m.h_label + ' Hari Ini';
+          tooltip = m.category + ' | Jadwal follow-up jatuh HARI INI!';
+        } else {
+          cls = 'pill-upcoming';
+          icon = 'fa-calendar-o';
+          badgeText = m.h_label;
+          tooltip = m.category + ' | Belum jatuh tempo (' + m.h_label + ')';
+        }
+
+        var pillHtml = '<span class="milestone-journey-pill ' + cls + '" title="' + $('<div>').text(tooltip).html() + '">' +
+                       '<i class="fa ' + icon + '"></i> ' + $('<div>').text(badgeText).html() +
+                       '</span>';
+        $milestonesList.append(pillHtml);
       });
     } else {
-      // Optimized polling: only get new messages after lastMessageId
-      $.get(_BASE + 'administrator/crm/get_new_messages_ajax', { label_id: lid, last_id: lastMessageId }, function(res) {
+      $milestonesList.html('<span style="color:#94a3b8; font-size:11px;">Tidak ada konfigurasi tahapan follow-up.</span>');
+    }
+  }
+
+  // Render Riwayat Catatan Internal CS
+  function renderInternalNotes(notes) {
+    var $box = $('#fu-notes-list');
+    $('#fu-notes-count').text((notes ? notes.length : 0) + ' Catatan');
+
+    if (!notes || notes.length === 0) {
+      $box.html('<div style="text-align:center; padding:14px 10px; color:#94a3b8; font-size:12px; background:#f8fafc; border-radius:8px; border:1px dashed #cbd5e1;">' +
+        '<i class="fa fa-sticky-note-o" style="font-size:18px; display:block; margin-bottom:4px; color:#cbd5e1;"></i>' +
+        'Belum ada catatan internal untuk pesanan ini.<br><small style="color:#94a3b8;">Gunakan form di bawah untuk menulis catatan follow-up.</small>' +
+      '</div>');
+      return;
+    }
+
+    var html = '<div style="display:flex; flex-direction:column; gap:6px;">';
+    $.each(notes, function(i, n) {
+      var author = n.author || 'Petugas CS';
+      var time = n.created_at_formatted || n.created_at || '-';
+      var statusTag = n.status_manual ? ('<span class="badge" style="background:#e0f2fe; color:#0369a1; font-size:10px; font-weight:600; margin-left:6px;">' + $('<div>').text(n.status_manual).html() + '</span>') : '';
+      var cleanCatatan = $('<div>').text(n.catatan || '').html().replace(/\n/g, '<br>');
+      var noteId = n.id;
+      var noteType = n.type || (String(noteId).indexOf('ch_') === 0 ? 'chat' : 'note');
+      var rawId = n.raw_id || String(noteId).replace('ch_', '');
+      var rawAttr = $('<div>').text(n.catatan || '').html().replace(/"/g, '&quot;');
+
+      html += '<div class="internal-note-item" id="note-item-' + noteId + '" data-id="' + noteId + '" style="background:#f8fafc; border:1px solid #e2e8f0; border-left:3px solid #f59e0b; border-radius:6px; padding:8px 10px; font-size:12px; transition:all 0.2s;">' +
+        '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; gap:8px;">' +
+          '<div style="font-weight:700; color:#334155; display:flex; align-items:center; flex-wrap:wrap; gap:4px;">' +
+            '<i class="fa fa-user-circle text-muted"></i> ' + $('<div>').text(author).html() + statusTag +
+          '</div>' +
+          '<div style="display:flex; align-items:center; gap:5px; flex-shrink:0;">' +
+            '<span style="font-size:10.5px; color:#94a3b8;"><i class="fa fa-clock-o"></i> ' + $('<div>').text(time).html() + '</span>' +
+            '<button type="button" class="btn btn-xs btn-edit-internal-note" data-id="' + noteId + '" data-type="' + noteType + '" data-raw-id="' + rawId + '" title="Edit Catatan" style="padding:1px 7px; font-size:11px; font-weight:600; color:#2563eb; border:1px solid #bfdbfe; background:#eff6ff; border-radius:4px; line-height:1.3; cursor:pointer;">' +
+              '<i class="fa fa-pencil"></i> Edit' +
+            '</button>' +
+            '<button type="button" class="btn btn-xs btn-delete-internal-note" data-id="' + noteId + '" data-type="' + noteType + '" data-raw-id="' + rawId + '" title="Hapus Catatan" style="padding:1px 7px; font-size:11px; font-weight:600; color:#dc2626; border:1px solid #fecaca; background:#fef2f2; border-radius:4px; line-height:1.3; cursor:pointer;">' +
+              '<i class="fa fa-trash"></i> Hapus' +
+            '</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="note-content-display" id="note-text-display-' + noteId + '" data-raw-text="' + rawAttr + '" style="color:#1e293b; line-height:1.4;">' + cleanCatatan + '</div>' +
+        '<div class="note-edit-box" id="note-edit-box-' + noteId + '" style="display:none; margin-top:6px;">' +
+          '<textarea class="form-control input-sm note-edit-textarea" id="note-edit-textarea-' + noteId + '" rows="2" style="font-size:12px; resize:vertical; border-radius:6px; border:1.5px solid #3b82f6;"></textarea>' +
+          '<div style="display:flex; justify-content:flex-end; gap:6px; margin-top:5px;">' +
+            '<button type="button" class="btn btn-xs btn-default btn-cancel-edit-note" data-id="' + noteId + '" style="font-size:11px; padding:2px 8px; border-radius:4px;">Batal</button>' +
+            '<button type="button" class="btn btn-xs btn-primary btn-save-edit-note" data-id="' + noteId + '" data-type="' + noteType + '" data-raw-id="' + rawId + '" style="font-size:11px; padding:2px 10px; font-weight:700; background:#2563eb; border-radius:4px;"><i class="fa fa-check"></i> Simpan</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    });
+    html += '</div>';
+
+    $box.html(html);
+  }
+
+  // ===== EDIT & DELETE INTERNAL NOTES EVENT HANDLERS =====
+  $(document).on('click', '.btn-edit-internal-note', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    var noteId = $(this).attr('data-id');
+    var $display = $('#note-text-display-' + noteId);
+    var rawText = $display.attr('data-raw-text');
+    if (typeof rawText === 'undefined' || rawText === null) {
+      rawText = $display.text();
+    }
+    $('#note-edit-textarea-' + noteId).val(rawText);
+    $display.hide();
+    $('#note-edit-box-' + noteId).slideDown(150);
+    setTimeout(function() {
+      $('#note-edit-textarea-' + noteId).focus();
+    }, 160);
+  });
+
+  $(document).on('click', '.btn-cancel-edit-note', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    var noteId = $(this).attr('data-id');
+    $('#note-edit-box-' + noteId).hide();
+    $('#note-text-display-' + noteId).show();
+  });
+
+  $(document).on('click', '.btn-save-edit-note', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    var $btn = $(this);
+    var noteId = $btn.attr('data-id');
+    var rawId = $btn.attr('data-raw-id');
+    var type = $btn.attr('data-type');
+    var newText = $.trim($('#note-edit-textarea-' + noteId).val());
+
+    if (!newText) {
+      notify('warning', 'Isi catatan tidak boleh kosong');
+      return;
+    }
+
+    $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Menyimpan...');
+
+    $.ajax({
+      url: _BASE + 'administrator/crm/update_internal_note_ajax',
+      type: 'POST',
+      data: buildPayload({
+        note_id: noteId,
+        raw_id: rawId,
+        type: type,
+        catatan: newText
+      }),
+      success: function(res) {
         var r = parseRes(res);
-        if (r.success && r.messages && r.messages.length > 0) {
-          appendNewMessages(r.messages);
-          // Update lastMessageId
-          for (var i = 0; i < r.messages.length; i++) {
-            var mid = parseInt(r.messages[i].id || 0);
-            if (mid > lastMessageId) lastMessageId = mid;
+        if (r.success) {
+          notify('success', r.message || 'Catatan berhasil diperbarui');
+          var cleanHtml = $('<div>').text(newText).html().replace(/\n/g, '<br>');
+          var escapedAttr = $('<div>').text(newText).html().replace(/"/g, '&quot;');
+          $('#note-text-display-' + noteId).attr('data-raw-text', escapedAttr).html(cleanHtml).show();
+          $('#note-edit-box-' + noteId).hide();
+          
+          var lid = $('#note-label-id').val();
+          if (lid) loadChatTimeline(lid, false);
+        } else {
+          notify('error', r.message || 'Gagal memperbarui catatan');
+        }
+      },
+      error: function() {
+        notify('error', 'Gagal menghubungi server');
+      },
+      complete: function() {
+        $btn.prop('disabled', false).html('<i class="fa fa-check"></i> Simpan');
+      }
+    });
+  });
+
+  $(document).on('click', '.btn-delete-internal-note', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    var noteId = $(this).attr('data-id');
+    var rawId = $(this).attr('data-raw-id');
+    var type = $(this).attr('data-type');
+
+    var doDelete = function() {
+      var $item = $('#note-item-' + noteId);
+      $item.css('opacity', '0.4');
+
+      $.ajax({
+        url: _BASE + 'administrator/crm/delete_internal_note_ajax',
+        type: 'POST',
+        data: buildPayload({
+          note_id: noteId,
+          raw_id: rawId,
+          type: type
+        }),
+        success: function(res) {
+          var r = parseRes(res);
+          if (r.success) {
+            notify('success', r.message || 'Catatan berhasil dihapus');
+            $item.slideUp(200, function() {
+              $(this).remove();
+              var count = $('.internal-note-item').length;
+              $('#fu-notes-count').text(count + ' Catatan');
+              if (count === 0) {
+                $('#fu-notes-list').html('<div style="text-align:center; padding:14px 10px; color:#94a3b8; font-size:12px; background:#f8fafc; border-radius:8px; border:1px dashed #cbd5e1;">' +
+                  '<i class="fa fa-sticky-note-o" style="font-size:18px; display:block; margin-bottom:4px; color:#cbd5e1;"></i>' +
+                  'Belum ada catatan internal untuk pesanan ini.<br><small style="color:#94a3b8;">Gunakan form di bawah untuk menulis catatan follow-up.</small>' +
+                '</div>');
+              }
+            });
+
+            var lid = $('#note-label-id').val();
+            if (lid) loadChatTimeline(lid, false);
+          } else {
+            $item.css('opacity', '1');
+            notify('error', r.message || 'Gagal menghapus catatan');
           }
+        },
+        error: function() {
+          $item.css('opacity', '1');
+          notify('error', 'Gagal menghubungi server');
         }
       });
-    }
-  }
+    };
 
-  function startChatPolling(lid) {
-    stopChatPolling();
-    currentChatLabelId = lid;
-    chatPollTimer = setInterval(function() {
-      if (isSendingChat) return; // Skip polling while sending
-      if ($('#modal-note').hasClass('in') || $('#modal-note').hasClass('show')) {
-        loadChatTimeline(lid, false);
-      } else {
-        stopChatPolling();
+    if (typeof swal === 'function') {
+      swal({
+        title: 'Hapus Catatan?',
+        text: 'Apakah Anda yakin ingin menghapus catatan internal ini?',
+        type: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal',
+        closeOnConfirm: true
+      }, function(confirmed) {
+        if (confirmed) doDelete();
+      });
+    } else {
+      if (confirm('Apakah Anda yakin ingin menghapus catatan internal ini?')) {
+        doDelete();
       }
-    }, 1500); // Auto-refresh setiap 1.5 detik
-  }
-
-  function stopChatPolling() {
-    if (chatPollTimer) {
-      clearInterval(chatPollTimer);
-      chatPollTimer = null;
     }
-  }
+  });
 
-  $(document).on('click', '.btn-add-note', function() {
-    var lid = $(this).attr('data-label-id');
-    var nama = $(this).attr('data-nama');
+  $(document).on('click', '.btn-add-note, .btn-open-detail-fu', function() {
+    var lid = $(this).attr('data-label-id') || $(this).attr('id').replace('badge-ket-', '');
+    var $btnRef = $('.btn-add-note[data-label-id="' + lid + '"]');
+    var nama = $btnRef.attr('data-nama') || $(this).attr('data-nama');
+    var phone = $btnRef.attr('data-phone') || $(this).attr('data-phone') || '-';
+    var order = $btnRef.attr('data-order') || $(this).attr('data-order') || '-';
+
     $('#note-label-id').val(lid);
     $('#note-customer-name').text(nama);
+    $('#chat-phone').text(phone);
+    $('#chat-order').text(order);
+
     $('#note-text').val('');
     $('#note-status').val('');
-    
-    // Reset toggle to Balasan CS (WA) mode
-    $('#note-sender-type').val('cs_chat');
-    $('.btn-toggle-sender').css({ border: '2px solid #e2e8f0', background: '#fff', color: '#64748b' }).removeClass('active');
-    $('.btn-toggle-sender[data-type="cs_chat"]').css({ border: '2px solid #25D366', background: '#d9fdd3', color: '#15803d' }).addClass('active');
-    $('#note-text').attr('placeholder', 'Ketik balasan CS ke WhatsApp customer...').css('background', '#fff');
-    $('.btn-send-chat').css('background', '#25D366');
 
     loadChatTimeline(lid, true);
-    startChatPolling(lid);
 
     $('.modal-backdrop').remove();
     $('#modal-note').modal('show');
@@ -2186,18 +2747,13 @@ $(document).ready(function() {
     var $icon = $(this).find('i');
     $icon.addClass('fa-spin');
     var lid = $('#note-label-id').val();
-    isFirstLoad = true; // Force full reload
     loadChatTimeline(lid, false);
-    setTimeout(function() { $icon.removeClass('fa-spin'); }, 1000);
-  });
-
-  // Stop polling when modal closes
-  $(document).on('hidden.bs.modal', '#modal-note', function() {
-    stopChatPolling();
+    setTimeout(function() { $icon.removeClass('fa-spin'); }, 800);
   });
 
   function renderChatTimeline(timeline) {
     var canvas = $('#chat-canvas');
+    if (!canvas.length) return;
     if (!timeline || timeline.length === 0) {
       canvas.html('<div class="chat-empty"><i class="fa fa-comments-o"></i> Belum ada percakapan.<br><small style="color:#94a3b8;">Kirim pesan WhatsApp atau tulis catatan untuk memulai.</small></div>');
       return;
@@ -2213,11 +2769,12 @@ $(document).ready(function() {
 
     canvas.html(html);
     // Scroll to bottom
-    canvas.scrollTop(canvas[0].scrollHeight);
+    if (canvas[0]) canvas.scrollTop(canvas[0].scrollHeight);
   }
 
   function appendNewMessages(messages) {
     var canvas = $('#chat-canvas');
+    if (!canvas.length) return;
     // If canvas shows empty state, clear it first
     if (canvas.find('.chat-empty').length) {
       canvas.html('');
@@ -2260,16 +2817,16 @@ $(document).ready(function() {
       var isVideo = /\.(mp4|avi|mov|mkv|3gp|webm)(\?.*)?$/i.test(cleanUrl);
       var isDoc = /\.(pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar|txt|csv|mp3|ogg|wav|m4a|aac)(\?.*)?$/i.test(cleanUrl);
 
-      // Fallback: use context label if extension not detected (e.g. Fonnte storage URL)
+      // Fallback: use context label if extension not detected
       if (!isImg && !isVideo && !isDoc && contextType) {
         if (contextType === 'image') isImg = true;
         else if (contextType === 'video') isVideo = true;
         else if (contextType === 'pdf' || contextType === 'document') isDoc = true;
       }
 
-      // Fallback 2: detect Fonnte/WA storage URL patterns
+      // Fallback 2: detect WA storage URL patterns
       if (!isImg && !isVideo && !isDoc) {
-        if (/storage\.fonnte\.com/i.test(cleanUrl) || /mmg\.whatsapp\.net/i.test(cleanUrl)) {
+        if (/mmg\.whatsapp\.net/i.test(cleanUrl)) {
           isImg = true;
         }
       }
@@ -2452,7 +3009,7 @@ $(document).ready(function() {
 
     if (item.direction === 'outgoing') {
       // CS sent → right (green bubble)
-      var csSender = item.sender || 'CS Admin';
+      var csSender = item.sender || 'Petugas CS';
 
       // Status icon for sent/failed
       if (item.status_kirim === 'failed') {
@@ -2470,7 +3027,7 @@ $(document).ready(function() {
 
       // Show error message if failed
       if (item.status_kirim === 'failed') {
-        html += '<div style="font-size:10px;color:#ef4444;margin-top:4px;padding:3px 6px;background:#fef2f2;border-radius:4px;border:1px solid #fecaca;"><i class="fa fa-warning"></i> Gagal terkirim via Fonnte API</div>';
+        html += '<div style="font-size:10px;color:#ef4444;margin-top:4px;padding:3px 6px;background:#fef2f2;border-radius:4px;border:1px solid #fecaca;"><i class="fa fa-warning"></i> Gagal terkirim via WhatsApp API</div>';
       }
 
       html += '<div class="bubble-time">';
@@ -2492,7 +3049,7 @@ $(document).ready(function() {
 
     } else {
       // Internal note → center (amber)
-      var noteSender = item.sender || 'CS Admin';
+      var noteSender = item.sender || 'Petugas CS';
       html += '<div class="chat-bubble bubble-note" style="position:relative;">';
       html += '<div class="bubble-sender" style="font-weight:700;color:#92400e;margin-bottom:3px;display:flex;align-items:center;justify-content:space-between;">' +
                 '<span><i class="fa fa-bookmark"></i> Catatan Internal (' + $('<div>').text(noteSender).html() + ')</span>' +
@@ -2827,7 +3384,7 @@ $(document).ready(function() {
     stopAndSendMicRecording();
   });
 
-  // ===== Save Note / Chat Message (via send_message_ajax) =====
+  // ===== Save Note / Update Status =====
   $(document).on('click', '#btn-save-note', function(e) {
     e.preventDefault();
     e.stopPropagation();
@@ -2839,126 +3396,63 @@ $(document).ready(function() {
 
     var lid = $('#note-label-id').val();
     var catatan = $.trim($('#note-text').val());
-    var fileUrl = $.trim($('#note-file-url').val());
     var status = $('#note-status').val();
-    var senderType = $('#note-sender-type').val() || 'cs_chat';
     
-    if (!catatan && !fileUrl && !status) { 
-      notify('warning', 'Ketik pesan, pilih lampiran file, atau pilih status terlebih dahulu');
+    if (!catatan && !status) { 
+      notify('warning', 'Tulis catatan atau pilih status terlebih dahulu');
       return; 
     }
 
-    // If only status change (no message/file), use the old update_status_ajax
-    if (!catatan && !fileUrl && status) {
-      $btn.prop('disabled', true).addClass('is-sending');
-      $.post(_BASE + 'administrator/crm/update_status_ajax', buildPayload({
-        label_id: lid,
-        status: status
-      }), function(res) {
-        var r = parseRes(res);
-        if (r.success) {
-          notify('success', 'Status berhasil diperbarui');
-          if (status) {
+    $btn.prop('disabled', true).addClass('is-sending').html('<i class="fa fa-spinner fa-spin"></i> Menyimpan...');
+
+    var finishCallback = function() {
+      // If status selected, update status
+      if (status) {
+        $.post(_BASE + 'administrator/crm/update_status_ajax', buildPayload({
+          label_id: lid,
+          status: status
+        }), function(res) {
+          var r = parseRes(res);
+          if (r.success) {
             var $inlineSel = $('.status-select[data-label-id="' + lid + '"]');
             if ($inlineSel.length) $inlineSel.val(status).data('current', status);
             updateBadgeRealtime(lid, status);
           }
-          $('#note-status').val('');
-        } else {
-          notify('error', r.message || 'Gagal memperbarui status');
-        }
-      }).always(function() {
-        $btn.prop('disabled', false).removeClass('is-sending');
-      });
-      return;
-    }
-
-    var replySender = $('#wa-reply-preview-bar').is(':visible') ? $.trim($('#wa-reply-sender-name').text()) : '';
-    var replyText = $('#wa-reply-preview-bar').is(':visible') ? $.trim($('#wa-reply-text-preview').text()) : '';
-
-    if (replySender && replyText && catatan) {
-      catatan = '> *Membalas ' + replySender + '*: "' + replyText + '"\n\n' + catatan;
-    }
-
-    var isInternalNote = (senderType === 'cs') ? 1 : 0;
-
-    $btn.prop('disabled', true).addClass('is-sending').html('<i class="fa fa-spin fa-spinner"></i>');
-    isSendingChat = true;
-
-    // Use the send_message_ajax endpoint with optional file_url
-    $.ajax({
-      url: _BASE + 'administrator/crm/send_message_ajax',
-      type: 'POST',
-      data: buildPayload({
-        label_id: lid,
-        message: catatan,
-        file_url: fileUrl,
-        is_internal_note: isInternalNote
-      }),
-      success: function(res) {
-        var r = parseRes(res);
-        $btn.prop('disabled', false).html('<i class="fa fa-paper-plane" id="wa-send-icon"></i>');
-        if (r.success) {
-          // Hide reply preview bar
-          $('#wa-reply-preview-bar').slideUp(100);
-          $('#wa-reply-sender-name').text('');
-          $('#wa-reply-text-preview').text('');
-
-          // Show appropriate notification
-          if (r.send_error) {
-            notify('warning', r.message);
-          } else {
-            notify('success', r.message || 'Pesan berhasil dikirim');
-          }
-
-          // Update status if needed
-          if (status) {
-            var $inlineSel = $('.status-select[data-label-id="' + lid + '"]');
-            if ($inlineSel.length) $inlineSel.val(status).data('current', status);
-            updateBadgeRealtime(lid, status);
-          } else if (!isInternalNote) {
-            var $inlineSel = $('.status-select[data-label-id="' + lid + '"]');
-            if ($inlineSel.length && $inlineSel.val() === 'Pending') {
-              $inlineSel.val('Sudah Dikirim').data('current', 'Sudah Dikirim');
-              updateBadgeRealtime(lid, 'Sudah Dikirim');
-            }
-          }
-
-          // Update badge count
-          if (!isInternalNote) {
-            var $cntBadge = $('#badge-count-' + lid);
-            var currCnt = parseInt($cntBadge.attr('data-count') || 0) + 1;
-            $cntBadge.attr('data-count', currCnt).find('.cnt-val').text(currCnt);
-            $cntBadge.css('display', 'inline-block');
-          }
-
-          // Open wa_link if wa_direct mode
-          if (r.wa_link && !isInternalNote) {
-            window.open(r.wa_link, '_blank');
-          }
-
-          // Clear inputs and reload chat
-          $('#note-text').val('');
-          $('#note-file-url').val('');
-          $('#wa-attachment-chip').hide();
-          $('#wa-url-input-container').slideUp(150);
-          $('#note-status').val('');
-
-          // Force a full timeline reload to show the new message immediately
-          isFirstLoad = true;
-          loadChatTimeline(lid, false);
-        } else {
-          notify('error', r.message || 'Gagal menyimpan');
-        }
-      },
-      error: function(xhr) {
-        notify('error', 'Terjadi kesalahan: ' + (xhr.statusText || 'Error'));
-      },
-      complete: function() {
-        isSendingChat = false;
-        $btn.prop('disabled', false).removeClass('is-sending').html('<i class="fa fa-paper-plane" id="wa-send-icon"></i>');
+        });
       }
-    });
+
+      notify('success', 'Catatan follow-up & status berhasil disimpan');
+      $('#note-text').val('');
+      $btn.prop('disabled', false).removeClass('is-sending').html('<i class="fa fa-save"></i> Simpan Catatan');
+      loadChatTimeline(lid, false);
+    };
+
+    if (catatan) {
+      $.ajax({
+        url: _BASE + 'administrator/crm/send_message_ajax',
+        type: 'POST',
+        data: buildPayload({
+          label_id: lid,
+          message: catatan,
+          is_internal_note: 1
+        }),
+        success: function(res) {
+          var r = parseRes(res);
+          if (r.success) {
+            finishCallback();
+          } else {
+            notify('error', r.message || 'Gagal menyimpan catatan');
+            $btn.prop('disabled', false).removeClass('is-sending').html('<i class="fa fa-save"></i> Simpan Catatan');
+          }
+        },
+        error: function(xhr) {
+          notify('error', 'Terjadi kesalahan: ' + (xhr.statusText || 'Error'));
+          $btn.prop('disabled', false).removeClass('is-sending').html('<i class="fa fa-save"></i> Simpan Catatan');
+        }
+      });
+    } else {
+      finishCallback();
+    }
   });
 
   // Auto-open chat modal if label_id URL query parameter is present (from notification click)
@@ -2977,7 +3471,6 @@ $(document).ready(function() {
           $('#chat-phone').text(r.phone || '-');
           $('#chat-order').text(r.no_pesanan || '-');
           loadChatTimeline(targetLabelId, true);
-          startChatPolling(targetLabelId);
           $('.modal-backdrop').remove();
           $('#modal-note').modal('show');
         }
@@ -3010,39 +3503,7 @@ $(document).ready(function() {
     $('#wa-reply-text-preview').text('');
   });
 
-  // ===== Manual Follow-Up Add Event Handlers =====
-  $(document).on('click', '#btn-open-manual-add', function() {
-    $('.modal-backdrop').remove();
-    $('#modal-manual-add').modal('show');
-  });
 
-  $(document).on('submit', '#form-manual-add', function(e) {
-    e.preventDefault();
-    var $btn = $('#btn-submit-manual-add');
-    $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Menyimpan...');
-
-    $.ajax({
-      url: _BASE + 'administrator/crm/add_manual_label_ajax',
-      type: 'POST',
-      data: buildPayload($(this).serialize()),
-      success: function(res) {
-        var r = parseRes(res);
-        $btn.prop('disabled', false).html('<i class="fa fa-save"></i> Simpan Follow-Up');
-        if (r.success) {
-          notify('success', r.message || 'Data follow-up manual berhasil ditambahkan!');
-          $('#modal-manual-add').modal('hide');
-          $('#form-manual-add')[0].reset();
-          setTimeout(function() { location.reload(); }, 1200);
-        } else {
-          notify('error', r.message || 'Gagal menambahkan data');
-        }
-      },
-      error: function(xhr) {
-        $btn.prop('disabled', false).html('<i class="fa fa-save"></i> Simpan Follow-Up');
-        notify('error', 'Terjadi kesalahan: ' + (xhr.statusText || 'Error'));
-      }
-    });
-  });
 
   /* ========================================================
      UNIVERSAL MEDIA LIGHTBOX VIEWER (Foto & Dokumen)
@@ -3196,6 +3657,127 @@ $(document).ready(function() {
     openMediaPreview(url, type, title);
   });
 
+  // Handle click on Edit Phone button
+  $(document).on('click', '.btn-edit-phone', function(e) {
+    e.preventDefault();
+    var lid = $(this).data('label-id');
+    var nama = $(this).data('nama');
+    var order = $(this).data('order');
+    var phone = $(this).data('phone') || '';
+    if (phone === '-') phone = '';
+
+    $('#m-edit-label-id').val(lid);
+    $('#m-edit-cust-name').text(nama);
+    $('#m-edit-order-no').text(order);
+    $('#m-edit-phone-input').val(phone);
+
+    $('#modal-edit-phone').modal('show');
+    setTimeout(function() { $('#m-edit-phone-input').focus(); }, 400);
+  });
+
+  // Save Phone via AJAX
+  $('#btn-save-customer-phone').on('click', function() {
+    var lid = $('#m-edit-label-id').val();
+    var phone = $('#m-edit-phone-input').val().trim();
+
+    if (!phone || phone.replace(/[^0-9]/g, '').length < 9) {
+      if (typeof toastr !== 'undefined') {
+        toastr.warning('Masukkan nomor HP yang valid (minimal 9 digit angka)!');
+      } else {
+        alert('Masukkan nomor HP yang valid (minimal 9 digit angka)!');
+      }
+      $('#m-edit-phone-input').focus();
+      return;
+    }
+
+    var $btn = $(this);
+    $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Menyimpan...');
+
+    $.post(_BASE + 'administrator/crm/update_phone_ajax', {
+      label_id: lid,
+      phone: phone
+    }, function(res) {
+      $btn.prop('disabled', false).html('<i class="fa fa-save"></i> Simpan No. HP');
+      var r = (typeof res === 'object') ? res : JSON.parse(res);
+      if (r.success) {
+        if (typeof toastr !== 'undefined') {
+          toastr.success(r.message);
+        } else {
+          alert(r.message);
+        }
+        $('#modal-edit-phone').modal('hide');
+
+        // Update the phone cell in the row
+        var cleanPhone = r.phone;
+        var cellHtml = '<span class="phone-display" style="font-weight:600; color:#1e293b;"><i class="fa fa-phone" style="color:#27ae60;"></i> ' + cleanPhone + '</span> ' +
+          '<button type="button" class="btn btn-xs btn-link btn-edit-phone" data-label-id="' + lid + '" data-nama="' + $('#m-edit-cust-name').text() + '" data-order="' + $('#m-edit-order-no').text() + '" data-phone="' + cleanPhone + '" style="color:#94a3b8; padding:0 3px;" title="Ubah Nomor HP"><i class="fa fa-pencil"></i></button>';
+        $('#cell-phone-' + lid).html(cellHtml);
+
+        // Also add checkbox if missing in this row
+        var $row = $('#cell-phone-' + lid).closest('tr');
+        var $firstTd = $row.find('td:first');
+        if ($firstTd.find('.cb-label').length === 0) {
+          $firstTd.html('<input type="checkbox" class="cb-label" value="' + lid + '">');
+        }
+
+        // Update WhatsApp pill links in this row
+        var waPhone = cleanPhone.replace(/[^0-9]/g, '');
+        if (waPhone.substr(0, 1) === '0') waPhone = '62' + waPhone.substr(1);
+        if (waPhone.substr(0, 2) !== '62') waPhone = '62' + waPhone;
+        $row.find('.btn-h-followup').each(function() {
+          var curHref = $(this).attr('href');
+          if (curHref.indexOf('api.whatsapp.com') !== -1 || curHref.indexOf('javascript') !== -1) {
+            $(this).attr('href', 'https://api.whatsapp.com/send?phone=' + waPhone);
+            $(this).attr('target', '_blank');
+            $(this).data('phone', waPhone);
+          }
+        });
+      } else {
+        if (typeof toastr !== 'undefined') {
+          toastr.error(r.message || 'Gagal menyimpan nomor HP');
+        } else {
+          alert(r.message || 'Gagal menyimpan nomor HP');
+        }
+      }
+    }).fail(function() {
+      $btn.prop('disabled', false).html('<i class="fa fa-save"></i> Simpan No. HP');
+      alert('Gagal menghubungi server.');
+    });
+  });
+
 });
 </script>
+
+<!-- Modal: Edit / Input No. HP Customer -->
+<div class="modal fade" id="modal-edit-phone" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-sm" role="document" style="max-width:380px;">
+    <div class="modal-content" style="border-radius:14px; overflow:hidden; border:none; box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+      <div class="modal-header" style="background:#1e1b4b; color:#fff; padding:16px 20px;">
+        <button type="button" class="close" data-dismiss="modal" style="color:#fff; opacity:0.8;">&times;</button>
+        <h4 class="modal-title" style="font-weight:800; font-size:15px;"><i class="fa fa-phone text-success"></i> Kelola No. HP Customer</h4>
+      </div>
+      <div class="modal-body" style="padding:20px;">
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; margin-bottom:14px;">
+          <div style="font-size:11px; color:#64748b; font-weight:700; text-transform:uppercase;">Customer</div>
+          <div id="m-edit-cust-name" style="font-weight:800; color:#0f172a; font-size:13.5px;">-</div>
+          <div style="font-size:11px; color:#64748b; margin-top:4px;">No. Pesanan: <span id="m-edit-order-no" style="font-weight:600; color:#334155;">-</span></div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:0;">
+          <label style="font-size:12px; font-weight:700; color:#334155; margin-bottom:6px;">Nomor HP / WhatsApp <span class="text-danger">*</span></label>
+          <div class="input-group">
+            <span class="input-group-addon" style="background:#f1f5f9; font-weight:700; color:#475569;"><i class="fa fa-whatsapp text-success"></i></span>
+            <input type="tel" class="form-control" id="m-edit-phone-input" placeholder="Contoh: 081234567890" style="border-radius:0 8px 8px 0; height:40px; font-size:13px; font-weight:600;">
+          </div>
+          <small class="text-muted" style="display:block; margin-top:4px; font-size:11px;">Nomor HP akan disimpan otomatis ke CRM, data pesanan marketplace, dan direktori pelanggan.</small>
+        </div>
+      </div>
+      <div class="modal-footer" style="background:#f8fafc; border-top:1px solid #e2e8f0; padding:12px 20px;">
+        <input type="hidden" id="m-edit-label-id">
+        <button type="button" class="btn btn-default" data-dismiss="modal" style="border-radius:8px; font-weight:600;">Batal</button>
+        <button type="button" class="btn btn-primary" id="btn-save-customer-phone" style="border-radius:8px; font-weight:700; background:#4338ca; border-color:#4338ca;"><i class="fa fa-save"></i> Simpan No. HP</button>
+      </div>
+    </div>
+  </div>
+</div>
 

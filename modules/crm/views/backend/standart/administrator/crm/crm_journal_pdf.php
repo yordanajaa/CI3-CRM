@@ -1,94 +1,125 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>Laporan Journal Follow-Up CRM</title>
 <style type="text/css">
-body { font-family: sans-serif; font-size: 10px; color: #333; margin: 0; padding: 0; }
-.header { text-align: center; margin-bottom: 15px; border-bottom: 2px solid #2563eb; padding-bottom: 8px; }
-.header h2 { margin: 0; padding: 0; color: #1e293b; font-size: 16px; font-weight: bold; }
-.header p { margin: 3px 0 0 0; color: #64748b; font-size: 10px; }
-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-th { background-color: #1e293b; color: #ffffff; padding: 6px 4px; text-align: left; font-size: 9px; font-weight: bold; text-transform: uppercase; border: 1px solid #1e293b; }
-td { padding: 5px 4px; border: 1px solid #cbd5e1; font-size: 8.5px; vertical-align: middle; }
-tr:nth-child(even) { background-color: #f8fafc; }
-.badge { padding: 2px 4px; border-radius: 3px; font-size: 7.5px; font-weight: bold; color: #ffffff; text-align: center; display: inline-block; }
-.badge-pending { background-color: #d97706; }
-.badge-sudah { background-color: #059669; }
-.badge-overdue { background-color: #dc2626; }
-.badge-batal { background-color: #4b5563; }
-.footer { margin-top: 15px; text-align: right; font-size: 8.5px; color: #94a3b8; }
+	* {
+		font-family: helvetica, arial, sans-serif;
+		font-size: 7.5pt;
+		color: #1e293b;
+	}
+	table.data-table {
+		width: 100%;
+		table-layout: fixed;
+		border-collapse: collapse;
+		margin-top: 8px;
+	}
+	table.data-table thead th {
+		background-color: #1e40af;
+		color: #ffffff;
+		font-weight: bold;
+		padding: 5px 3px;
+		border: 0.5px solid #1e3a8a;
+		text-align: center;
+		font-size: 7.5pt;
+	}
+	table.data-table tbody td {
+		padding: 4px 3px;
+		border: 0.5px solid #cbd5e1;
+		font-size: 7pt;
+		word-wrap: break-word;
+	}
+	.text-center { text-align: center; }
+	.text-right { text-align: right; }
+	.text-left { text-align: left; }
+	tr.even { background-color: #f8fafc; }
+	.badge-pending { color: #d97706; font-weight: bold; }
+	.badge-sudah { color: #059669; font-weight: bold; }
+	.badge-overdue { color: #dc2626; font-weight: bold; }
+	.badge-batal { color: #64748b; font-weight: bold; }
 </style>
-</head>
-<body>
-<div class="header">
-    <h2>LAPORAN JOURNAL FOLLOW-UP CRM & AFTER SALES</h2>
-    <p>METAFORA ERP System — Waktu Ekspor: <?= date('d/m/Y H:i:s'); ?></p>
-</div>
+<page orientation="paysage" format="A4" backtop="8mm" backbottom="8mm" backleft="7mm" backright="7mm">
+	<page_footer>
+		<table style="width: 100%; border: none;">
+			<tr>
+				<td style="width: 50%; font-size: 7pt; color: #64748b;">
+					Dicetak pada: <?= date('d/m/Y H:i'); ?> | Sistem CRM &amp; After Sales IDMETAFORA
+				</td>
+				<td style="width: 50%; text-align: right; font-size: 7pt; color: #64748b;">
+					Halaman [[page_cu]] dari [[page_nb]]
+				</td>
+			</tr>
+		</table>
+	</page_footer>
 
-<table>
-    <thead>
-        <tr>
-            <th width="4%">No</th>
-            <th width="16%">Nama Customer</th>
-            <th width="12%">No. HP</th>
-            <th width="14%">No. Pesanan</th>
-            <th width="10%">Sumber</th>
-            <th width="18%">Kategori Follow-Up</th>
-            <th width="9%">Tgl Kirim</th>
-            <th width="12%">Jadwal Follow-Up</th>
-            <th width="8%">Status</th>
-        </tr>
-    </thead>
-    <tbody>
-        <?php if (!empty($rows)): $no = 1; foreach ($rows as $r): ?>
-        <tr>
-            <td style="text-align:center;"><?= $no++; ?></td>
-            <td><strong><?= htmlspecialchars($r->customer_nama ?? '-'); ?></strong></td>
-            <td><?= htmlspecialchars($r->customer_phone ?? '-'); ?></td>
-            <td><?= htmlspecialchars($r->no_pesanan ?? '-'); ?></td>
-            <td><?= htmlspecialchars($r->order_source ?? 'Direct'); ?></td>
-            <td>
-                <?php
-                $cat_pdf = htmlspecialchars($r->nama_kategori ?? '-');
-                if (stripos($cat_pdf, 'H+') === false && isset($r->jumlah_hari)) {
-                    $cat_pdf .= ' (H+' . $r->jumlah_hari . ')';
-                }
-                echo $cat_pdf;
-                ?>
-            </td>
-            <td><?= !empty($r->tanggal_pengiriman) ? date('d/m/Y', strtotime($r->tanggal_pengiriman)) : '-'; ?></td>
-            <td>
-                <?php
-                $t_str = !empty($r->tanggal_label_muncul) ? date('d/m/Y', strtotime($r->tanggal_label_muncul)) : '-';
-                if (!empty($r->tanggal_pengiriman) && !empty($r->tanggal_label_muncul)) {
-                    $s_days = (int)round((strtotime($r->tanggal_label_muncul) - strtotime($r->tanggal_pengiriman)) / 86400);
-                    $t_str .= ' (+' . $s_days . ' hr)';
-                }
-                echo $t_str;
-                ?>
-            </td>
-            <td>
-                <?php
-                $st = strtolower($r->status_label ?? '');
-                $cls = 'badge-pending';
-                if (strpos($st, 'sudah') !== false) $cls = 'badge-sudah';
-                elseif (strpos($st, 'overdue') !== false) $cls = 'badge-overdue';
-                elseif (strpos($st, 'batal') !== false) $cls = 'badge-batal';
-                ?>
-                <span class="badge <?= $cls; ?>"><?= htmlspecialchars($r->status_label ?? 'Pending'); ?></span>
-            </td>
-        </tr>
-        <?php endforeach; else: ?>
-        <tr>
-            <td colspan="9" style="text-align:center;padding:15px;color:#94a3b8;">Tidak ada data jurnal follow-up.</td>
-        </tr>
-        <?php endif; ?>
-    </tbody>
-</table>
+	<table style="width: 100%; border-bottom: 2px solid #1e40af; padding-bottom: 6px;">
+		<tr>
+			<td style="width: 70%;">
+				<h2 style="margin: 0; font-size: 13pt; color: #1e40af; font-weight: bold;">LAPORAN JURNAL FOLLOW-UP CRM &amp; AFTER SALES</h2>
+				<p style="margin: 2px 0 0 0; font-size: 7.5pt; color: #64748b;">
+					Daftar Penjadwalan &amp; Eksekusi Milestone Follow-Up Pelanggan
+				</p>
+			</td>
+			<td style="width: 30%; text-align: right; vertical-align: middle;">
+				<table align="right" style="border-collapse: collapse; font-size: 7.5pt; color: #475569;">
+					<tr>
+						<td style="text-align: right; padding: 1px 0; color: #334155;">Total Data</td>
+						<td style="width: 10px; text-align: center; padding: 1px 0; color: #334155;">:</td>
+						<td style="text-align: left; padding: 1px 0; color: #334155;"><strong><?= count($rows ?? []); ?> Baris</strong></td>
+					</tr>
+					<tr>
+						<td style="text-align: right; padding: 1px 0; color: #64748b; font-size: 7pt;">Tanggal</td>
+						<td style="text-align: center; padding: 1px 0; color: #64748b; font-size: 7pt;">:</td>
+						<td style="text-align: left; padding: 1px 0; color: #64748b; font-size: 7pt;"><?= date('d M Y'); ?></td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+	</table>
 
-<div class="footer">
-    Dokumen ini dihasilkan secara otomatis oleh Modul CRM & After Sales Metafora ERP.
-</div>
-</body>
-</html>
+	<table class="data-table">
+		<thead>
+			<tr>
+				<th style="width: 3%;">No</th>
+				<th style="width: 15%;">Nama Customer</th>
+				<th style="width: 9%;">No. HP</th>
+				<th style="width: 12%;">No. Pesanan</th>
+				<th style="width: 7%;">Sumber</th>
+				<th style="width: 14%;">Kategori Follow-Up</th>
+				<th style="width: 7%;">Tgl Kirim</th>
+				<th style="width: 11%;">Keterangan</th>
+				<th style="width: 14%;">Keterangan BC</th>
+				<th style="width: 8%;">Status</th>
+			</tr>
+		</thead>
+		<tbody>
+			<?php if (!empty($rows)): $no = 1; foreach ($rows as $r): 
+				$is_even = ($no % 2 == 0);
+				$st = strtolower($r->display_status ?? '');
+				$cls = 'badge-pending';
+				if (strpos($st, 'sudah') !== false || strpos($st, 'direspon') !== false) $cls = 'badge-sudah';
+				elseif (strpos($st, 'overdue') !== false || strpos($st, 'terlewat') !== false) $cls = 'badge-overdue';
+				elseif (strpos($st, 'batal') !== false) $cls = 'badge-batal';
+
+				$ket_cls = 'badge-pending';
+				if (!empty($r->is_followed_up)) $ket_cls = 'badge-sudah';
+				elseif (!empty($r->is_overdue)) $ket_cls = 'badge-overdue';
+			?>
+			<tr class="<?= $is_even ? 'even' : ''; ?>">
+				<td class="text-center" style="width: 3%;"><?= $no++; ?></td>
+				<td class="text-left" style="width: 15%;"><strong><?= htmlspecialchars($r->display_customer_nama ?? '-', ENT_QUOTES); ?></strong></td>
+				<td class="text-center" style="width: 9%;"><?= htmlspecialchars($r->display_phone ?? '-', ENT_QUOTES); ?></td>
+				<td class="text-center" style="width: 12%;"><?= htmlspecialchars($r->display_no_pesanan ?? '-', ENT_QUOTES); ?></td>
+				<td class="text-center" style="width: 7%;"><?= htmlspecialchars($r->display_sumber ?? 'Direct', ENT_QUOTES); ?></td>
+				<td class="text-left" style="width: 14%;"><?= htmlspecialchars($r->display_kategori ?? '-', ENT_QUOTES); ?></td>
+				<td class="text-center" style="width: 7%;"><?= htmlspecialchars($r->display_tgl_kirim ?? '-', ENT_QUOTES); ?></td>
+				<td class="text-center <?= $ket_cls; ?>" style="width: 11%;"><?= htmlspecialchars($r->display_keterangan ?? '-', ENT_QUOTES); ?></td>
+				<td class="text-left" style="width: 14%;"><?= htmlspecialchars($r->display_keterangan_bc ?? '-', ENT_QUOTES); ?></td>
+				<td class="text-center <?= $cls; ?>" style="width: 8%;">
+					<?= htmlspecialchars(ucfirst($r->display_status ?? 'Pending'), ENT_QUOTES); ?>
+				</td>
+			</tr>
+			<?php endforeach; else: ?>
+			<tr>
+				<td colspan="10" class="text-center" style="padding: 12px; color: #64748b;">Tidak ada data jurnal follow-up.</td>
+			</tr>
+			<?php endif; ?>
+		</tbody>
+	</table>
+</page>

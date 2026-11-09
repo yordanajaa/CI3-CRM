@@ -30,7 +30,8 @@ class Model_dashboard extends CI_Model {
 			'total_so'        => $this->db->count_all_results('sales_order'),
 			'total_pelanggan' => $this->db->where('status', 'aktif')->count_all_results('pelanggan'),
 			'total_produk'    => $this->db->where('status', 'aktif')->count_all_results('produk'),
-			'total_gudang'    => $this->db->where('status', 'aktif')->count_all_results('gudang'),
+			'total_kategori'  => $this->db->count_all_results('kategori_produk'),
+			'total_satuan'    => $this->db->count_all_results('satuan'),
 		];
 	}
 
@@ -41,14 +42,16 @@ class Model_dashboard extends CI_Model {
 	{
 		$total_stok = $this->db->query("SELECT COALESCE(SUM(qty), 0) as total FROM stok")->row()->total;
 		
-		$masuk_hari_ini = $this->db->query("
-			SELECT COALESCE(SUM(pbi.qty_terima), 0) as total 
-			FROM penerimaan_barang_item pbi 
-			JOIN penerimaan_barang pb ON pb.id = pbi.penerimaan_id 
-			WHERE pb.status = 'confirmed' AND pb.tanggal_terima = CURDATE()
+		// Total barang terjual (akumulasi dari seluruh Sales Order aktif / non-cancelled)
+		$total_terjual = $this->db->query("
+			SELECT COALESCE(SUM(soi.qty), 0) as total 
+			FROM sales_order_item soi 
+			JOIN sales_order so ON so.id = soi.so_id 
+			WHERE so.status NOT IN ('draft','cancelled')
 		")->row()->total;
 
-		$keluar_hari_ini = $this->db->query("
+		// Barang terjual hari ini
+		$terjual_hari_ini = $this->db->query("
 			SELECT COALESCE(SUM(soi.qty), 0) as total 
 			FROM sales_order_item soi 
 			JOIN sales_order so ON so.id = soi.so_id 
@@ -56,9 +59,9 @@ class Model_dashboard extends CI_Model {
 		")->row()->total;
 
 		return [
-			'total_stok'      => $total_stok,
-			'masuk_hari_ini'  => $masuk_hari_ini,
-			'keluar_hari_ini' => $keluar_hari_ini
+			'total_stok'       => $total_stok,
+			'total_terjual'    => $total_terjual,
+			'terjual_hari_ini' => $terjual_hari_ini
 		];
 	}
 
@@ -67,12 +70,12 @@ class Model_dashboard extends CI_Model {
 	 */
 	public function get_recent_returs($limit = 5)
 	{
-		return $this->db->select('retur_penjualan.*, pelanggan.nama_pelanggan, gudang.nama_gudang')
+		return $this->db->select('retur_penjualan.*, pelanggan.nama_pelanggan')
 			->join('pelanggan', 'pelanggan.id = retur_penjualan.pelanggan_id', 'LEFT')
-			->join('gudang', 'gudang.id = retur_penjualan.gudang_id', 'LEFT')
 			->order_by('retur_penjualan.id', 'DESC')
 			->limit($limit)
-			->get('retur_penjualan')->result();
+			->get('retur_penjualan')
+			->result();
 	}
 
 }

@@ -60,12 +60,12 @@
                             ]); ?>
                          
                                                 <div class="form-group ">
-                            <label for="id" class="col-sm-2 control-label">Id 
+                            <label for="kode_kategori" class="col-sm-2 control-label">Kode Kategori 
                             </label>
                             <div class="col-sm-8">
-                                <input type="number" class="form-control" name="id" id="id" placeholder="Id" value="<?= set_value('id', $kategori_produk->id); ?>">
+                                <input type="text" class="form-control" name="kode_kategori" id="kode_kategori" placeholder="Kode Kategori" value="<?= set_value('kode_kategori', $kategori_produk->kode_kategori ?? ('KAT-' . strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $kategori_produk->nama_kategori), 0, 6)))); ?>">
                                 <small class="info help-block">
-                                </small>
+                                <b>Kode Kategori</b> Pengenal unik kategori barang.</small>
                             </div>
                         </div>
                                                  
@@ -92,12 +92,11 @@
                         </div>
                                                  
                                                 <div class="form-group ">
-                            <label for="created_at" class="col-sm-2 control-label">Created At 
-                            <i class="required">*</i>
+                            <label for="created_at" class="col-sm-2 control-label">Tanggal Dibuat 
                             </label>
                             <div class="col-sm-6">
                             <div class="input-group date col-sm-8">
-                              <input type="text" class="form-control pull-right datetimepicker" name="created_at"  placeholder="Created At" id="created_at" value="<?= set_value('created_at', $kategori_produk->created_at); ?>">
+                              <input type="text" class="form-control pull-right datetimepicker" name="created_at" placeholder="Tanggal Dibuat" id="created_at" value="<?= set_value('created_at', $kategori_produk->created_at ?: date('Y-m-d H:i:s')); ?>">
                             </div>
                             <small class="info help-block">
                             </small>

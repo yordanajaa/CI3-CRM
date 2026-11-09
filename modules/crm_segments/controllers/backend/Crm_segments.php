@@ -27,6 +27,7 @@ class Crm_segments extends Admin
 			$year = '2026';
 		}
 		$period = $this->input->get('period') ?: '';
+		$mode   = $this->input->get('mode') ?: 'cumulative';
 
 		$categories_list = $this->model_crm_segments->get_distinct_categories_list();
 		$available_years = $this->model_crm_segments->get_distinct_years_list();
@@ -44,7 +45,7 @@ class Crm_segments extends Admin
 			}
 		}
 
-		$matrix_data = $this->model_crm_segments->get_product_rfm_matrix($product, $year, $period, $category);
+		$matrix_data = $this->model_crm_segments->get_product_rfm_matrix($product, $year, $period, $category, $mode);
 
 		$this->data['products_list'] = $products_list;
 		$this->data['categories_list'] = $categories_list;
@@ -56,6 +57,7 @@ class Crm_segments extends Admin
 		$this->data['selected_year'] = $year;
 		$this->data['selected_period'] = $period;
 		$this->data['selected_category'] = $category;
+		$this->data['selected_mode'] = $mode;
 		$this->data['matrix_data'] = $matrix_data;
 
 		$this->template->title('Analisis RFM — Tren Segmen Produk');
@@ -71,6 +73,7 @@ class Crm_segments extends Admin
 		$category = $this->input->get_post('category') ?: '';
 		$segment  = $this->input->get_post('segment');
 		$period   = $this->input->get_post('period');
+		$mode     = $this->input->get_post('mode') ?: 'cumulative';
 
 		if (empty($segment) || empty($period)) {
 			return $this->output
@@ -82,7 +85,7 @@ class Crm_segments extends Admin
 				]));
 		}
 
-		$customers = $this->model_crm_segments->get_drilldown_customers($product, $segment, $period, $category);
+		$customers = $this->model_crm_segments->get_drilldown_customers($product, $segment, $period, $category, $mode);
 
 		return $this->output
 			->set_content_type('application/json')
@@ -92,6 +95,7 @@ class Crm_segments extends Admin
 				'category'  => $category,
 				'segment'   => $segment,
 				'period'    => $period,
+				'mode'      => $mode,
 				'count'     => count($customers),
 				'customers' => $customers
 			]));
@@ -102,26 +106,35 @@ class Crm_segments extends Admin
 	 */
 	public function export_csv()
 	{
-		$product = $this->input->get('product');
-		$year = $this->input->get('year') ?: '2026';
-		$period = $this->input->get('period') ?: '';
+		$product  = $this->input->get('product');
+		$year     = $this->input->get('year') ?: '2026';
+		$period   = $this->input->get('period') ?: '';
 		$category = $this->input->get('kategori') ?: '';
+		$mode     = $this->input->get('mode') ?: 'cumulative';
 
-		$matrix_data = $this->model_crm_segments->get_product_rfm_matrix($product, $year, $period, $category);
+		$matrix_data = $this->model_crm_segments->get_product_rfm_matrix($product, $year, $period, $category, $mode);
 
-		$filename = 'Tren_RFM_' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $matrix_data['product_name']) . '_' . date('Ymd_His') . '.csv';
+		$filename = 'Tren_RFM_' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $matrix_data['product_name']) . '_' . $mode . '_' . date('Ymd_His') . '.csv';
+
+		if (ob_get_length()) { ob_end_clean(); }
 
 		header('Content-Type: text/csv; charset=utf-8');
 		header('Content-Disposition: attachment; filename="' . $filename . '"');
+		header('Pragma: no-cache');
+		header('Expires: 0');
+
+		// UTF-8 BOM for perfect Excel compatibility on Windows & Hostinger
+		echo "\xEF\xBB\xBF";
 
 		$output = fopen('php://output', 'w');
+
 
 		// Header row
 		$headers = ['Segmen RFM'];
 		foreach ($matrix_data['months'] as $ym => $label) {
 			$headers[] = $label;
 		}
-		$headers[] = 'Jumlah Pelanggan';
+		$headers[] = ($mode === 'cumulative') ? 'Total Basis Pelanggan' : 'Jumlah Pelanggan';
 		$headers[] = 'Tren (%)';
 		fputcsv($output, $headers);
 
@@ -132,12 +145,13 @@ class Crm_segments extends Admin
 				$line[] = $row['counts'][$ym] ?? 0;
 			}
 			$line[] = $row['total_cust'];
-			$line[] = ($row['trend_pct'] >= 0 ? '+' : '') . $row['trend_pct'] . '%';
+			$has_data = array_sum($row['counts'] ?? []) > 0;
+			$line[] = $has_data ? (($row['trend_pct'] > 0 ? '+' : '') . $row['trend_pct'] . '%') : '0%';
 			fputcsv($output, $line);
 		}
 
 		// Total Row
-		$total_line = ['Total Pelanggan'];
+		$total_line = [($mode === 'cumulative') ? 'Total Basis Pelanggan Kumulatif' : 'Total Pelanggan'];
 		foreach ($matrix_data['months'] as $ym => $label) {
 			$total_line[] = $matrix_data['totals_row']['counts'][$ym] ?? 0;
 		}

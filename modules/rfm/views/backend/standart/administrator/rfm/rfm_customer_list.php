@@ -287,17 +287,43 @@
   .rfm-header-nav .action-tools .btn { font-size: 11px; padding: 6px 10px; flex: 1 1 auto; min-width: 110px; }
   .rfm-header-nav .nav-tabs-bar { padding-top: 10px; gap: 6px; }
   .rfm-header-nav .nav-tab-btn { padding: 7px 12px; font-size: 11.5px; }
-  .stat-card { padding: 12px 14px; height: auto; margin-bottom: 10px; text-align: center; }
-  .stat-card .stat-num { font-size: 18px; }
-  .stat-card .stat-label { font-size: 9.5px; }
-  .filter-bar { padding: 14px; }
+  .stats-row {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  .stats-row::before, .stats-row::after {
+    display: none !important;
+    content: none !important;
+  }
+  .stats-row > div {
+    width: 100% !important;
+    max-width: 100% !important;
+    float: none !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin: 0 !important;
+  }
+  .stat-card {
+    padding: 10px 12px !important;
+    height: 100% !important;
+    margin-bottom: 0 !important;
+    text-align: center !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    border-radius: 10px !important;
+  }
+  .stat-card .stat-num { font-size: 15px !important; line-height: 1.2 !important; }
+  .stat-card .stat-label { font-size: 9px !important; margin-top: 3px !important; line-height: 1.2 !important; }
+  .filter-bar { padding: 14px 12px !important; }
+  .filter-bar .row > div { width: 100% !important; margin-bottom: 8px !important; }
+  .filter-bar .row > div:last-child { display: flex !important; gap: 8px !important; }
+  .filter-bar .row > div:last-child .btn { flex: 1 !important; }
   .table-rfm th { font-size: 10px; padding: 8px 6px !important; }
   .table-rfm td { font-size: 11.5px; padding: 8px 6px !important; }
-}
-
-@media (max-width: 575px) {
-  .filter-bar .row > div { width: 100%; margin-bottom: 8px; }
-  .filter-bar .row > div:last-child { display: flex; gap: 8px; }
 }
 </style>
 
@@ -336,8 +362,8 @@
     <a href="<?= site_url('administrator/rfm' . $nav_qs); ?>" class="nav-tab-btn active">
       <span class="active-dot"></span> <i class="fa fa-users"></i> 2. Daftar Customer
     </a>
-    <a href="<?= site_url('administrator/rfm/tracking' . $nav_qs); ?>" class="nav-tab-btn">
-      <i class="fa fa-line-chart"></i> 3. Tracking RFM Bulanan
+    <a href="<?= site_url('administrator/rfm/tracking'); ?>" class="nav-tab-btn">
+      <i class="fa fa-line-chart"></i> 3. Tracking RFM
     </a>
     <a href="<?= site_url('administrator/rfm/cohort' . $nav_qs); ?>" class="nav-tab-btn">
       <i class="fa fa-th"></i> 4. Analisis Kohort
@@ -366,7 +392,7 @@
   }
   $active_filters_count = (!empty($filter) ? 1 : 0) + (!empty($rfm_segment) ? 1 : 0) + (!empty($product_filter) ? 1 : 0) + (!empty($period_filter) ? 1 : 0) + (!empty($category_filter) ? 1 : 0);
 ?>
-<div class="row">
+<div class="row stats-row">
   <div class="col-md-3 col-sm-6 col-xs-6">
     <div class="stat-card" role="button" tabindex="0" onclick="window.location.href='<?= site_url('administrator/rfm'); ?>';" title="Klik untuk menampilkan seluruh pelanggan tanpa filter" style="border-left-color:#6366f1;">
       <div class="stat-num"><?= number_format($customer_counts); ?></div>
@@ -374,13 +400,13 @@
     </div>
   </div>
   <div class="col-md-3 col-sm-6 col-xs-6">
-    <div class="stat-card" role="button" tabindex="0" onclick="window.location.href='<?= site_url('administrator/rfm/tracking' . $nav_qs); ?>';" title="Klik untuk melihat riwayat frekuensi transaksi di Tracking Bulanan" style="border-left-color:#16a34a;">
+    <div class="stat-card" role="button" tabindex="0" onclick="window.location.href='<?= site_url('administrator/rfm/tracking'); ?>';" title="Klik untuk melihat riwayat frekuensi transaksi di Tracking Bulanan" style="border-left-color:#16a34a;">
       <div class="stat-num"><?= number_format($display_orders); ?>x</div>
       <div class="stat-label">Total Frekuensi Transaksi &rarr;</div>
     </div>
   </div>
   <div class="col-md-3 col-sm-6 col-xs-6">
-    <div class="stat-card" role="button" tabindex="0" onclick="window.location.href='<?= site_url('administrator/rfm/tracking' . $nav_qs); ?>';" title="Klik untuk melihat riwayat total omset di Tracking Bulanan" style="border-left-color:#059669;">
+    <div class="stat-card" role="button" tabindex="0" onclick="window.location.href='<?= site_url('administrator/rfm/tracking'); ?>';" title="Klik untuk melihat riwayat total omset di Tracking Bulanan" style="border-left-color:#059669;">
       <div class="stat-num" style="font-size:18px;">Rp <?= number_format($display_spend, 0, ',', '.'); ?></div>
       <div class="stat-label">Total Omset Penjualan &rarr;</div>
     </div>
@@ -415,7 +441,7 @@
         <label style="font-size:11px; font-weight:700; color:#475569; margin-bottom:3px; display:block;">Pencarian:</label>
         <div class="input-group">
           <span class="input-group-addon" style="border-radius:8px 0 0 8px; background:#f8fafc;"><i class="fa fa-search"></i></span>
-          <input type="text" name="q" class="form-control" placeholder="Cari nama / no. HP..." value="<?= htmlspecialchars($filter ?? ''); ?>" style="border-radius:0 8px 8px 0; height:38px; font-size:12px;">
+          <input type="text" name="q" class="form-control" placeholder="Cari nama / no. HP / resi / platform..." value="<?= htmlspecialchars($filter ?? ''); ?>" style="border-radius:0 8px 8px 0; height:38px; font-size:12px;">
         </div>
       </div>
       <div class="col-md-2 col-sm-6 col-xs-12" style="padding-left:5px; padding-right:5px; margin-bottom:8px;">
@@ -434,9 +460,19 @@
         <label style="font-size:11px; font-weight:700; color:#475569; margin-bottom:3px; display:block;">Kategori Produk:</label>
         <select name="kategori" class="form-control" style="border-radius:8px; height:38px; font-size:12px; font-weight:600;">
           <option value="">— Semua Kategori —</option>
-          <?php if (!empty($categories_list)): foreach ($categories_list as $kat): ?>
-          <option value="<?= htmlspecialchars($kat->nama_kategori); ?>" <?= ($category_filter ?? '') === $kat->nama_kategori ? 'selected' : ''; ?>><?= htmlspecialchars($kat->nama_kategori); ?></option>
-          <?php endforeach; endif; ?>
+          <?php 
+          if (!empty($categories_list)) {
+            foreach ($categories_list as $kat) {
+              $k_name = is_object($kat) ? $kat->nama_kategori : (string)$kat;
+              $is_resi = (stripos($k_name, 'Resi') !== false);
+          ?>
+          <option value="<?= htmlspecialchars($k_name); ?>" <?= ($category_filter ?? '') === $k_name ? 'selected' : ''; ?>>
+            <?= ($is_resi ? '📦 ' : '📁 ') . htmlspecialchars($k_name); ?>
+          </option>
+          <?php 
+            }
+          } 
+          ?>
         </select>
       </div>
       <div class="col-md-3 col-sm-6 col-xs-12" style="padding-left:5px; padding-right:5px; margin-bottom:8px;">
@@ -453,23 +489,39 @@
               $grouped_cust_prods[$kat_name][] = $p_name;
             }
           }
+          if (!empty($grouped_cust_prods)) {
+            foreach ($grouped_cust_prods as $kat_title => $items) {
           ?>
-          <?php if (!empty($grouped_cust_prods)): foreach ($grouped_cust_prods as $kat_title => $items): ?>
             <optgroup label="📂 <?= htmlspecialchars($kat_title); ?>">
               <?php foreach ($items as $p_item): ?>
                 <option value="<?= htmlspecialchars($p_item); ?>" <?= ($product_filter ?? '') === $p_item ? 'selected' : ''; ?>><?= htmlspecialchars($p_item); ?></option>
               <?php endforeach; ?>
             </optgroup>
-          <?php endforeach; endif; ?>
+          <?php 
+            }
+          } 
+          ?>
         </select>
       </div>
       <div class="col-md-2 col-sm-6 col-xs-12" style="padding-left:5px; padding-right:5px; margin-bottom:8px;">
         <label style="font-size:11px; font-weight:700; color:#475569; margin-bottom:3px; display:block;">Periode / Bulan:</label>
         <select name="period" class="form-control" style="border-radius:8px; height:38px; font-size:12px; font-weight:600;">
           <option value="">— Semua Periode —</option>
-          <?php if (!empty($months_list)): foreach ($months_list as $m): ?>
-          <option value="<?= htmlspecialchars($m->ym_val); ?>" <?= ($period_filter ?? '') === $m->ym_val ? 'selected' : ''; ?>>📅 <?= htmlspecialchars($m->ym_label); ?></option>
-          <?php endforeach; endif; ?>
+          <?php 
+          $period_found = false;
+          if (!empty($months_list)) {
+            foreach ($months_list as $m) {
+              $is_curr_sel = (!empty($period_filter) && $period_filter === $m->ym_val);
+              if ($is_curr_sel) $period_found = true;
+          ?>
+          <option value="<?= htmlspecialchars($m->ym_val); ?>" <?= $is_curr_sel ? 'selected' : ''; ?>>📅 <?= htmlspecialchars($m->ym_label); ?></option>
+          <?php 
+            }
+          }
+          if (!empty($period_filter) && !$period_found) {
+          ?>
+          <option value="<?= htmlspecialchars($period_filter); ?>" selected>📅 <?= htmlspecialchars($period_filter); ?> (Filter Aktif)</option>
+          <?php } ?>
         </select>
       </div>
       <div class="col-md-1 col-sm-6 col-xs-12" style="padding-left:5px; padding-right:5px; display:flex; flex-direction:column; justify-content:flex-end; margin-bottom:8px;">
@@ -572,7 +624,20 @@
         </thead>
         <tbody>
           <?php if (empty($customers)): ?>
-          <tr><td colspan="9" class="text-center" style="padding:40px !important; color:#94a3b8; font-size:14px;"><i class="fa fa-inbox" style="font-size:32px; display:block; margin-bottom:8px;"></i>Tidak ada data customer ditemukan</td></tr>
+          <tr>
+            <td colspan="9" class="text-center" style="padding:45px 20px !important; color:#64748b; font-size:14px;">
+              <i class="fa fa-inbox" style="font-size:38px; color:#cbd5e1; display:block; margin-bottom:12px;"></i>
+              <strong style="color:#1e293b; font-size:15px; display:block; margin-bottom:6px;">Tidak ada data customer ditemukan</strong>
+              <?php if ($active_filters_count > 0): ?>
+                <span style="font-size:12.5px; color:#64748b;">Filter yang Anda pilih saat ini tidak memiliki transaksi yang cocok.</span><br>
+                <a href="<?= site_url('administrator/rfm'); ?>" class="btn btn-warning btn-sm" style="margin-top:14px; border-radius:8px; font-weight:700; padding:7px 16px;">
+                  <i class="fa fa-refresh"></i> Reset Semua Filter &amp; Tampilkan Seluruh Data Pelanggan
+                </a>
+              <?php else: ?>
+                <span style="font-size:12.5px; color:#94a3b8;">Belum ada riwayat transaksi penjualan di database.</span>
+              <?php endif; ?>
+            </td>
+          </tr>
           <?php else: ?>
           <?php
           $offset_val = isset($_GET['offset']) ? (int)$_GET['offset'] : (isset($this->uri->segments[4]) ? (int)$this->uri->segments[4] : 0);
@@ -674,6 +739,7 @@
   <div class="modal-dialog" role="document" style="max-width:560px; margin:40px auto;">
     <div class="modal-content" style="border-radius:16px; border:none; box-shadow:0 20px 40px rgba(0,0,0,0.15); overflow:hidden;">
       <form method="POST" action="<?= site_url('administrator/rfm/import_excel'); ?>" enctype="multipart/form-data" id="form-import-excel" onsubmit="document.getElementById('btn-submit-import').disabled=true; document.getElementById('btn-submit-import').innerHTML='<i class=\'fa fa-spinner fa-spin\'></i> Mengimport Data...';">
+        <input type="hidden" name="<?= $this->security->get_csrf_token_name(); ?>" value="<?= $this->security->get_csrf_hash(); ?>">
         <div class="modal-header" style="background:linear-gradient(135deg, #1e1b4b, #312e81, #4338ca); color:#fff; padding:18px 24px; border:none; position:relative;">
           <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color:#fff; opacity:0.8; font-size:24px; position:absolute; right:20px; top:18px;">&times;</button>
           <h4 class="modal-title" id="modalImportExcelLabel" style="font-weight:700; font-size:17px; margin:0; display:flex; align-items:center; gap:10px;">
@@ -693,7 +759,7 @@
             <label style="font-weight:700; color:#1e1b4b; font-size:13px; margin-bottom:6px; display:block;">Tipe Data Import:</label>
             <select name="import_type" class="form-control" style="border-radius:8px; border:1px solid #cbd5e1; height:40px; font-weight:600; font-size:13px;">
               <option value="auto">✨ Deteksi Otomatis (Rekomendasi)</option>
-              <option value="transactions">🛒 Data Transaksi / Sales Order (Format Shopee, Tokopedia, Excel)</option>
+              <option value="transactions">🛒 Data Transaksi Penjualan (Format Shopee, Tokopedia, Excel)</option>
               <option value="matrix">📊 Aturan Matriks RFM & Segmentasi (File Matriks 125 Aturan)</option>
             </select>
           </div>

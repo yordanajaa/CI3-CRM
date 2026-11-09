@@ -21,9 +21,8 @@ class Model_invoice extends MY_Model {
 
 	public function join_available()
 	{
-		$this->db->select('invoice.*, pelanggan.nama_pelanggan, pelanggan.kode_pelanggan, pelanggan.alamat as alamat_pelanggan, pelanggan.telepon as telp_pelanggan, gudang.nama_gudang, sales_order.nomor_so');
+		$this->db->select('invoice.*, pelanggan.nama_pelanggan, pelanggan.kode_pelanggan, pelanggan.alamat as alamat_pelanggan, pelanggan.telepon as telp_pelanggan, sales_order.nomor_so, sales_order.source as so_source');
 		$this->db->join('pelanggan', 'pelanggan.id = invoice.pelanggan_id', 'LEFT');
-		$this->db->join('gudang', 'gudang.id = invoice.gudang_id', 'LEFT');
 		$this->db->join('sales_order', 'sales_order.id = invoice.so_id', 'LEFT');
 		return $this;
 	}
@@ -80,14 +79,17 @@ class Model_invoice extends MY_Model {
 			$where .= ($where ? ' AND ' : '') . "invoice.pelanggan_id = " . intval($pelanggan_id);
 		}
 
-		$gudang_id = $this->input->get('gudang_id');
-		if (!empty($gudang_id)) {
-			$where .= ($where ? ' AND ' : '') . "invoice.gudang_id = " . intval($gudang_id);
-		}
 
 		$status = $this->input->get('status');
 		if (!empty($status)) {
 			$where .= ($where ? ' AND ' : '') . "invoice.status = " . $this->db->escape($status);
+		}
+
+		$tipe = $this->input->get('tipe');
+		if ($tipe === 'pos') {
+			$where .= ($where ? ' AND ' : '') . "(sales_order.source = 'pos' OR invoice.catatan LIKE '%POS Cepat%')";
+		} elseif ($tipe === 'so') {
+			$where .= ($where ? ' AND ' : '') . "((sales_order.source != 'pos' OR sales_order.source IS NULL) AND (invoice.catatan NOT LIKE '%POS Cepat%' OR invoice.catatan IS NULL))";
 		}
 
 		return $where;
@@ -173,20 +175,6 @@ class Model_invoice extends MY_Model {
 		$invoice = $this->find($invoice_id);
 		$items   = $this->get_items($invoice_id);
 
-		$gudang_id = !empty($invoice->gudang_id) ? $invoice->gudang_id : null;
-		if (empty($gudang_id) && !empty($invoice->so_id)) {
-			$so_rec = $this->db->get_where('sales_order', ['id' => $invoice->so_id])->row();
-			if ($so_rec && !empty($so_rec->gudang_id)) {
-				$gudang_id = $so_rec->gudang_id;
-				$this->db->update('invoice', ['gudang_id' => $gudang_id], ['id' => $invoice_id]);
-			}
-		}
-		if (empty($gudang_id)) {
-			$first_g = $this->db->get('gudang')->row();
-			$gudang_id = $first_g ? $first_g->id : 1;
-			$this->db->update('invoice', ['gudang_id' => $gudang_id], ['id' => $invoice_id]);
-		}
-
 		foreach ($items as $item) {
 			$produk = $this->db->get_where('produk', ['id' => $item->produk_id])->row();
 			$metode = ($produk && !empty($produk->metode_stok)) ? strtoupper($produk->metode_stok) : 'FIFO';
@@ -194,15 +182,14 @@ class Model_invoice extends MY_Model {
 			// Tentukan urutan pengambilan berdasarkan FIFO atau FEFO
 			$order_by = ($metode == 'FEFO') ? 'expired_date ASC, created_at ASC' : 'created_at ASC';
 
-			// Update stok total di gudang
-			$stok = $this->db->get_where('stok', ['produk_id' => $item->produk_id, 'gudang_id' => $gudang_id])->row();
+			// Update stok total
+			$stok = $this->db->get_where('stok', ['produk_id' => $item->produk_id])->row();
 			if ($stok) {
 				$new_qty = max(0, $stok->qty - $item->qty);
 				$this->db->update('stok', ['qty' => $new_qty, 'updated_at' => date('Y-m-d H:i:s')], ['id' => $stok->id]);
 			} else {
 				$this->db->insert('stok', [
 					'produk_id'  => $item->produk_id,
-					'gudang_id'  => $gudang_id,
 					'qty'        => 0,
 					'qty_rusak'  => 0,
 					'updated_at' => date('Y-m-d H:i:s'),
@@ -211,7 +198,6 @@ class Model_invoice extends MY_Model {
 
 			// Ambil batch teratas sesuai alur FIFO / FEFO dari log penerimaan
 			$batch = $this->db->where('produk_id', $item->produk_id)
-				->where('gudang_id', $gudang_id)
 				->where('jenis', 'masuk')
 				->order_by($order_by)
 				->limit(1)
@@ -223,7 +209,6 @@ class Model_invoice extends MY_Model {
 			// Catat log pengeluaran stok dengan informasi metode & batch
 			$this->db->insert('stok_log', [
 				'produk_id'      => $item->produk_id,
-				'gudang_id'      => $gudang_id,
 				'batch_no'       => $batch_no,
 				'expired_date'   => $expired_date,
 				'jenis'          => 'keluar',
@@ -241,6 +226,5 @@ class Model_invoice extends MY_Model {
 	}
 
 }
-
 /* End of file Model_invoice.php */
 /* Location: ./modules/invoice/models/Model_invoice.php */

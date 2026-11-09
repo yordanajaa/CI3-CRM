@@ -612,6 +612,185 @@ class User extends Admin
 
 		$this->model_user->pdf('aauth_users', 'User');
 	}
+
+	/**
+	* Approval Page for Calon Customer Testing
+	*/
+	public function approval()
+	{
+		$this->is_allowed('user_list');
+
+		$status = $this->input->get('status') ?: 'pending';
+		$q      = $this->input->get('q');
+
+		$group_demo = $this->db->get_where('aauth_groups', ['name' => 'Calon Customer (Demo)'])->row();
+		$gid = $group_demo ? (int)$group_demo->id : 7;
+
+		$this->db->select('u.*, COALESCE(MAX(CASE WHEN g.id = ' . $gid . ' THEN g.name ELSE NULL END), MAX(g.name)) as group_name')
+			->from('aauth_users u')
+			->join('aauth_user_to_group utg', 'utg.user_id = u.id', 'left')
+			->join('aauth_groups g', 'g.id = utg.group_id', 'left')
+			->where('(utg.group_id = ' . $gid . ' OR u.approval_status = "pending")')
+			->where_not_in('u.id', '(SELECT user_id FROM aauth_user_to_group WHERE group_id IN (1, 6))', false);
+
+		if ($status !== 'all') {
+			$this->db->where('u.approval_status', $status);
+		}
+
+		if (!empty($q)) {
+			$this->db->group_start()
+				->like('u.full_name', $q)
+				->or_like('u.username', $q)
+				->or_like('u.email', $q)
+				->or_like('u.company_name', $q)
+				->or_like('u.phone', $q)
+			->group_end();
+		}
+
+		$this->db->group_by('u.id');
+		$this->db->order_by('u.id', 'DESC');
+		$users = $this->db->get()->result();
+
+		// Count Calon Customer accounts per status
+		$get_status_count = function($appr_status) use ($gid) {
+			$row = $this->db->query("SELECT COUNT(DISTINCT u.id) as cnt 
+				FROM aauth_users u 
+				LEFT JOIN aauth_user_to_group utg ON utg.user_id = u.id 
+				WHERE (utg.group_id = ? OR u.approval_status = 'pending')
+				  AND u.id NOT IN (SELECT user_id FROM aauth_user_to_group WHERE group_id IN (1, 6))
+				  AND u.approval_status = ?", [$gid, $appr_status])->row();
+			return $row ? (int)$row->cnt : 0;
+		};
+
+		$pending_count  = $get_status_count('pending');
+		$approved_count = $get_status_count('approved');
+		$rejected_count = $get_status_count('rejected');
+
+		$this->data['users']          = $users;
+		$this->data['status_filter']  = $status;
+		$this->data['search_q']       = $q;
+		$this->data['pending_count']  = $pending_count;
+		$this->data['approved_count'] = $approved_count;
+		$this->data['rejected_count'] = $rejected_count;
+
+		$this->template->title('Approval Calon Customer');
+		$this->render('backend/standart/administrator/user/user_approval', $this->data);
+	}
+
+	/**
+	* Approve Calon Customer
+	*/
+	public function action_approve($id)
+	{
+		$this->is_allowed('user_update');
+
+		$user = $this->db->get_where('aauth_users', ['id' => $id])->row();
+		if (!$user) {
+			if ($this->input->is_ajax_request()) {
+				echo json_encode(['success' => false, 'message' => 'User calon customer tidak ditemukan.']);
+				return;
+			}
+			set_message('User tidak ditemukan.', 'error');
+			$this->_redirect_back();
+			return;
+		}
+
+		// Security: Cegah mengubah akun Super Admin atau diri sendiri
+		if ($id == get_user_data('id') || $id == 1 || $id == 38) {
+			if ($this->input->is_ajax_request()) {
+				echo json_encode(['success' => false, 'message' => 'Akun administrator utama tidak dapat diubah di sini.']);
+				return;
+			}
+			set_message('Akun administrator tidak dapat diubah.', 'error');
+			$this->_redirect_back();
+			return;
+		}
+
+		// Update user to approved and unban
+		$this->db->where('id', $id)->update('aauth_users', [
+			'approval_status' => 'approved',
+			'banned'          => 0,
+			'approved_at'     => date('Y-m-d H:i:s'),
+			'approved_by'     => get_user_data('id')
+		]);
+
+		// Assign to Group 7: Calon Customer (Demo)
+		$group_demo = $this->db->get_where('aauth_groups', ['name' => 'Calon Customer (Demo)'])->row();
+		$gid = $group_demo ? (int)$group_demo->id : 7;
+
+		// Clean up groups and assign specifically to Calon Customer Demo
+		$this->db->delete('aauth_user_to_group', ['user_id' => $id]);
+		$this->db->insert('aauth_user_to_group', [
+			'user_id'  => $id,
+			'group_id' => $gid
+		]);
+
+		$msg = 'Akun calon customer <strong>' . htmlspecialchars($user->full_name ?: $user->username) . '</strong> berhasil diaktifkan / disetujui (Approved)!';
+		if ($this->input->is_ajax_request()) {
+			echo json_encode(['success' => true, 'message' => $msg]);
+			return;
+		}
+
+		set_message($msg, 'success');
+		$this->_redirect_back();
+	}
+
+	/**
+	* Reject Calon Customer
+	*/
+	public function action_reject($id)
+	{
+		$this->is_allowed('user_update');
+
+		$user = $this->db->get_where('aauth_users', ['id' => $id])->row();
+		if (!$user) {
+			if ($this->input->is_ajax_request()) {
+				echo json_encode(['success' => false, 'message' => 'User calon customer tidak ditemukan.']);
+				return;
+			}
+			set_message('User tidak ditemukan.', 'error');
+			$this->_redirect_back();
+			return;
+		}
+
+		// Security: Cegah menonaktifkan Super Admin atau diri sendiri
+		if ($id == get_user_data('id') || $id == 1 || $id == 38) {
+			if ($this->input->is_ajax_request()) {
+				echo json_encode(['success' => false, 'message' => 'Akun administrator utama tidak dapat dinonaktifkan di sini.']);
+				return;
+			}
+			set_message('Akun administrator tidak dapat dinonaktifkan.', 'error');
+			$this->_redirect_back();
+			return;
+		}
+
+		$this->db->where('id', $id)->update('aauth_users', [
+			'approval_status' => 'rejected',
+			'banned'          => 1
+		]);
+
+		$msg = 'Akun calon customer <strong>' . htmlspecialchars($user->full_name ?: $user->username) . '</strong> telah dinonaktifkan / ditolak.';
+		if ($this->input->is_ajax_request()) {
+			echo json_encode(['success' => true, 'message' => $msg]);
+			return;
+		}
+
+		set_message($msg, 'warning');
+		$this->_redirect_back();
+	}
+
+	/**
+	* Helper redirect back to current approval filter URL
+	*/
+	private function _redirect_back()
+	{
+		$ref = $this->input->server('HTTP_REFERER');
+		if ($ref && strpos($ref, 'administrator/user/approval') !== false) {
+			redirect($ref);
+		} else {
+			redirect('administrator/user/approval');
+		}
+	}
 }
 
 /* End of file User.php */

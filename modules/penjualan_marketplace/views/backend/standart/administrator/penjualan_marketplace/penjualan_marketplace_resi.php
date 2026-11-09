@@ -112,7 +112,7 @@ $penerima_addr = !empty($so->alamat_pengiriman) ? $so->alamat_pengiriman : ($so-
 $penerima_city = !empty($so->kota_kabupaten) ? $so->kota_kabupaten : 'KOTA SURABAYA';
 $penerima_prov = !empty($so->provinsi) ? $so->provinsi : 'JAWA TIMUR';
 
-$sender_name   = !empty($so->nama_gudang) ? $so->nama_gudang : 'Nila Bariul Nikmah';
+$sender_name   = 'Nila Bariul Nikmah';
 $sender_phone  = '6281246501239';
 $sender_city   = 'KAB. TULUNGAGUNG';
 
@@ -477,9 +477,9 @@ $hub_code_val  = get_dynamic_hub($penerima_city);
                      <?php foreach($items as $idx => $item): ?>
                      <tr>
                         <td><?= $idx+1; ?></td>
-                        <td><strong><?= _ent($item->catatan ?: ($so->nama_produk_marketplace ?: $item->nama_produk)); ?></strong></td>
-                        <td><?= _ent($so->sku_induk ?: ($item->kode_produk ?: 'PRD-SPR-003')); ?></td>
-                        <td><?= _ent($so->nama_variasi ?: 'Default'); ?></td>
+                        <td><strong><?= _ent($item->catatan ?: ($item->nama_produk ?: ($so->nama_produk_marketplace ?: 'Produk'))); ?></strong></td>
+                        <td><?= _ent((!empty($item->sku) && $item->sku !== '-') ? $item->sku : (!empty($so->sku_induk) && $so->sku_induk !== '-' ? $so->sku_induk : ($item->kode_produk ?: '-'))); ?></td>
+                        <td><?= _ent((!empty($item->nama_variasi) && strtolower($item->nama_variasi) !== 'default' && $item->nama_variasi !== '-') ? $item->nama_variasi : (!empty($so->nama_variasi) && strtolower($so->nama_variasi) !== 'default' ? $so->nama_variasi : 'Default')); ?></td>
                         <td style="text-align:center; font-weight:bold;"><?= number_format((float)$item->qty, 0); ?></td>
                      </tr>
                      <?php endforeach; ?>

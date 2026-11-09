@@ -29,7 +29,6 @@ class Sales_order extends Admin
 		$this->data['so_counts'] = $this->model_sales_order->count_all($filter, $field);
 		$this->data['stats']     = $this->model_sales_order->get_stats();
 		$this->data['pelanggans']= $this->db->order_by('nama_pelanggan', 'ASC')->get('pelanggan')->result();
-		$this->data['gudangs']   = $this->db->get('gudang')->result();
 
 		$config = [
 			'base_url'    => 'administrator/sales_order/index/',
@@ -39,7 +38,7 @@ class Sales_order extends Admin
 		];
 		$this->data['pagination'] = $this->pagination($config);
 
-		$this->template->title('Sales Order');
+		$this->template->title('Transaksi Penjualan');
 		$this->render('backend/standart/administrator/sales_order/sales_order_list', $this->data);
 	}
 
@@ -49,27 +48,25 @@ class Sales_order extends Admin
 		$this->data['nomor_baru']      = $this->model_sales_order->generate_nomor();
 		$this->data['nomor_ref_baru']  = $this->model_sales_order->generate_nomor_referensi();
 		$this->data['pelanggans']      = $this->db->where('status', 'aktif')->order_by('nama_pelanggan', 'ASC')->get('pelanggan')->result();
-		$this->data['gudangs']     = $this->db->where('status', 'aktif')->get('gudang')->result();
-		$default_gudang_id         = isset($this->data['gudangs'][0]) ? (int)$this->data['gudangs'][0]->id : 1;
 		$this->data['produks']     = $this->db->select('produk.*, satuan.singkatan as nama_satuan, COALESCE(stok.qty, 0) as stok_qty')
 			->join('satuan', 'satuan.id = produk.satuan_id', 'LEFT')
-			->join('stok', 'stok.produk_id = produk.id AND stok.gudang_id = ' . $default_gudang_id, 'LEFT')
+			->join('stok', 'stok.produk_id = produk.id', 'LEFT')
 			->where('produk.status', 'aktif')
 			->order_by('produk.id', 'ASC')
 			->get('produk')->result();
 
-		// Rekap 5 transaksi terakhir (SO Cepat / POS)
+		// Rekap 5 transaksi terakhir khusus POS Kasir Asli
 		$this->data['last_transactions'] = $this->db
-			->select('so.id, so.nomor_so, so.tanggal_so, so.total as grand_total, p.nama_pelanggan, so.created_at')
+			->select('so.id, so.nomor_so, so.tanggal_so, so.total as grand_total, COALESCE(NULLIF(so.nama_penerima, ""), p.nama_pelanggan, "Pelanggan Umum") as nama_pelanggan, so.created_at')
 			->from('sales_order so')
 			->join('pelanggan p', 'p.id = so.pelanggan_id', 'LEFT')
-			->where_in('so.status', ['delivered', 'selesai', 'paid', 'completed'])
+			->where("(so.source = 'pos' OR so.catatan LIKE '%[POS CEPAT%')")
 			->where('so.status !=', 'cancelled')
 			->order_by('so.id', 'DESC')
 			->limit(5)
 			->get()->result();
 
-		$this->template->title('Sales Order Cepat (POS Kasir)');
+		$this->template->title('Penjualan Cepat (POS Kasir)');
 		$this->render('backend/standart/administrator/sales_order/sales_order_cepat', $this->data);
 	}
 
@@ -133,7 +130,6 @@ class Sales_order extends Admin
 		}
 
 		$this->form_validation->set_rules('pelanggan_id', 'Pelanggan', 'trim|required');
-		$this->form_validation->set_rules('gudang_id', 'Gudang', 'trim|required');
 		$this->form_validation->set_rules('tanggal_so', 'Tanggal Penjualan', 'trim|required');
 
 		if ($this->form_validation->run()) {
@@ -224,11 +220,10 @@ class Sales_order extends Admin
 					$kota_kabupaten    = $cust_kota_post;
 				}
 			}
-			$gudang_id = $this->input->post('gudang_id');
 			$nomor_so = $this->model_sales_order->generate_nomor();
 
 			$metode_bayar = $this->input->post('metode_pembayaran') ?: 'tunai';
-			$akun_kas     = $this->input->post('akun_kas_bank') ?: ($metode_bayar == 'tunai' ? 'Kas Tunai Kasir' : 'Bank BCA');
+			$akun_kas     = $this->input->post('akun_kas_bank') ?: ($metode_bayar == 'tunai' ? 'Cash' : 'Transfer Bank');
 			$no_ref       = trim($this->input->post('nomor_referensi')) ?: $this->model_sales_order->generate_nomor_referensi();
 			$catatan_raw  = trim($this->input->post('catatan') ?: '');
 			$catatan_bayar= $this->input->post('catatan_bayar') ?: ('Pembayaran Lunas Kasir SO ' . $nomor_so);
@@ -242,7 +237,6 @@ class Sales_order extends Admin
 				'alamat_pengiriman'     => $alamat_pengiriman,
 				'kota_kabupaten'        => $kota_kabupaten,
 				'source'                => 'pos',
-				'gudang_id'             => $gudang_id,
 				'tanggal_so'            => $this->input->post('tanggal_so') ?: date('Y-m-d'),
 				'tanggal_estimasi_kirim'=> date('Y-m-d'),
 				'diskon'                => (float) $this->input->post('diskon_persen_total'),
@@ -263,7 +257,7 @@ class Sales_order extends Admin
 				return;
 			}
 
-			// Validasi stok gudang secara agregat per produk
+			// Validasi stok secara agregat per produk
 			$qty_per_produk = [];
 			foreach ($items as $item) {
 				if (empty($item['produk_id'])) continue;
@@ -278,7 +272,7 @@ class Sales_order extends Admin
 			}
 
 			foreach ($qty_per_produk as $pid => $total_qty_item) {
-				$stok_row = $this->db->get_where('stok', ['produk_id' => $pid, 'gudang_id' => $gudang_id])->row();
+				$stok_row = $this->db->get_where('stok', ['produk_id' => $pid])->row();
 				$stok_avail = $stok_row ? (float)$stok_row->qty : 0;
 
 				if ($total_qty_item > $stok_avail) {
@@ -286,7 +280,7 @@ class Sales_order extends Admin
 					$prod_name = $prod ? $prod->nama_produk : 'Produk';
 					$this->response([
 						'success' => false,
-						'message' => "Gagal Simpan: Jumlah pesanan untuk ({$prod_name}) sejumlah {$total_qty_item} unit melebihi stok gudang yang tersedia ({$stok_avail} unit)!"
+						'message' => "Gagal Simpan: Jumlah pesanan untuk ({$prod_name}) sejumlah {$total_qty_item} unit melebihi stok yang tersedia ({$stok_avail} unit)!"
 					]);
 					return;
 				}
@@ -334,7 +328,6 @@ class Sales_order extends Admin
 				'nomor_invoice'       => $nomor_inv,
 				'so_id'               => $so_id,
 				'pelanggan_id'        => $pelanggan_id,
-				'gudang_id'           => $gudang_id,
 				'tanggal_invoice'     => date('Y-m-d'),
 				'tanggal_jatuh_tempo' => date('Y-m-d'),
 				'subtotal'            => $so->subtotal,
@@ -366,7 +359,7 @@ class Sales_order extends Admin
 				]);
 			}
 
-			// 2. Potong Stok Gudang (FIFO/FEFO Log)
+			// 2. Potong Stok (FIFO/FEFO Log)
 			$this->model_invoice->kurangi_stok($invoice_id, get_user_data('username'));
 
 			// 3. Catat Piutang Usaha (Status: Lunas, Sisa: 0)
@@ -446,7 +439,7 @@ class Sales_order extends Admin
 			}
 			$kembalian_post = max(0, $uang_diterima_post - (float)$so->total);
 
-			set_message("⚡ Transaksi Sales Order Cepat Berhasil Disimpan & LUNAS! SO: {$nomor_so}, Faktur: {$nomor_inv}, Kas (BKM): {$nomor_bkm}. Stok gudang otomatis terpotong.", 'success');
+			set_message("⚡ Transaksi Penjualan Cepat Berhasil Disimpan & LUNAS! No. Transaksi: {$nomor_so}, Faktur: {$nomor_inv}, Kas (BKM): {$nomor_bkm}. Stok otomatis terpotong.", 'success');
 			$this->data['success']       = true;
 			$this->data['message']       = "Transaksi {$nomor_so} Berhasil Disimpan & LUNAS!";
 			$this->data['so_id']         = $so_id;
@@ -489,15 +482,13 @@ class Sales_order extends Admin
 		$this->is_allowed('sales_order_add');
 		$this->data['nomor_baru']  = $this->model_sales_order->generate_nomor();
 		$this->data['pelanggans']  = $this->db->where('status', 'aktif')->order_by('nama_pelanggan', 'ASC')->get('pelanggan')->result();
-		$this->data['gudangs']     = $this->db->where('status', 'aktif')->get('gudang')->result();
-		$default_gudang_id         = isset($this->data['gudangs'][0]) ? (int)$this->data['gudangs'][0]->id : 1;
 		$this->data['produks']     = $this->db->select('produk.*, satuan.singkatan as nama_satuan, COALESCE(stok.qty, 0) as stok_qty')
 			->join('satuan', 'satuan.id = produk.satuan_id', 'LEFT')
-			->join('stok', 'stok.produk_id = produk.id AND stok.gudang_id = ' . $default_gudang_id, 'LEFT')
+			->join('stok', 'stok.produk_id = produk.id', 'LEFT')
 			->where('produk.status', 'aktif')
 			->order_by('produk.id', 'ASC')
 			->get('produk')->result();
-		$this->template->title('Buat Sales Order');
+		$this->template->title('Buat Transaksi Penjualan');
 		$this->render('backend/standart/administrator/sales_order/sales_order_add', $this->data);
 	}
 
@@ -508,7 +499,6 @@ class Sales_order extends Admin
 		}
 
 		$this->form_validation->set_rules('pelanggan_id', 'Pelanggan', 'trim|required');
-		$this->form_validation->set_rules('gudang_id', 'Gudang', 'trim|required');
 		$this->form_validation->set_rules('tanggal_so', 'Tanggal Penjualan', 'trim|required');
 
 		if ($this->form_validation->run()) {
@@ -518,20 +508,23 @@ class Sales_order extends Admin
 
 			$status_pembayaran = $this->input->post('status_pembayaran') ?: 'tempo';
 			$save_action = $this->input->post('save_action');
-			if (empty($save_action) || $save_action == 'confirm') {
-				$save_action = $status_pembayaran;
+			if (empty($save_action) || $save_action == 'confirm' || $save_action == 'draft') {
+				$save_action = ($status_pembayaran == 'lunas' || $status_pembayaran == 'pay_lunas') ? 'lunas' : 'tempo';
+			}
+			if ($save_action != 'lunas' && $save_action != 'pay_lunas') {
+				$save_action = 'tempo';
 			}
 
 			$syarat_bayar  = $this->input->post('syarat_pembayaran') ?: 'net_30';
 			$tgl_tempo     = $this->input->post('tanggal_jatuh_tempo') ?: date('Y-m-d', strtotime('+30 days'));
 			$tgl_tempo_fmt = date('d/m/Y', strtotime($tgl_tempo));
 
-			$status_so = 'draft';
+			$status_so = 'confirmed';
 			$catatan_tambahan = '';
 			if ($save_action == 'pay_lunas' || $save_action == 'lunas') {
 				$status_so = 'delivered';
 				$catatan_tambahan = ' [LUNAS ' . strtoupper($this->input->post('metode_pembayaran') ?: 'TUNAI') . ']';
-			} elseif ($save_action == 'tempo') {
+			} else {
 				$status_so = 'confirmed';
 				$catatan_tambahan = ' [TEMPO ' . strtoupper(str_replace('_', ' ', $syarat_bayar)) . ' - Jatuh Tempo: ' . $tgl_tempo_fmt . ']';
 			}
@@ -545,14 +538,13 @@ class Sales_order extends Admin
 				'alamat_pengiriman'     => $pelanggan ? $pelanggan->alamat : '',
 				'kota_kabupaten'        => $pelanggan ? $pelanggan->kota : '',
 				'source'                => 'manual',
-				'gudang_id'             => $this->input->post('gudang_id'),
 				'tanggal_so'            => $this->input->post('tanggal_so'),
 				'tanggal_estimasi_kirim'=> $tgl_tempo,
 				'diskon'                => (float) $this->input->post('diskon_persen_total'),
 				'diskon_total'          => str_replace(['.', ','], '', (string)$this->input->post('diskon_total')) ?: 0,
 				'pajak_persen'          => $this->input->post('pajak_persen') ?: 0,
 				'status'                => $status_so,
-				'status_pesanan'        => ($save_action == 'pay_lunas' || $save_action == 'lunas') ? 'selesai' : (($save_action == 'tempo') ? 'proses' : 'draft'),
+				'status_pesanan'        => ($save_action == 'pay_lunas' || $save_action == 'lunas') ? 'selesai' : 'proses',
 				'status_kirim'          => ($save_action == 'pay_lunas' || $save_action == 'lunas') ? 'terkirim' : 'pending',
 				'waktu_pembayaran'      => ($save_action == 'pay_lunas' || $save_action == 'lunas') ? date('Y-m-d H:i:s') : null,
 				'catatan'               => trim(($this->input->post('catatan') ?: '') . $catatan_tambahan),
@@ -563,13 +555,12 @@ class Sales_order extends Admin
 			$so_id = $this->model_sales_order->store($data);
 
 			if ($so_id && $this->input->post('items')) {
-				$gudang_id = $this->input->post('gudang_id');
 
 				// Backend Stock Check
 				foreach ($this->input->post('items') as $item) {
 					if (empty($item['produk_id'])) continue;
 					$qty = max(1, (int) round($item['qty']));
-					$stok_row = $this->db->get_where('stok', ['produk_id' => $item['produk_id'], 'gudang_id' => $gudang_id])->row();
+					$stok_row = $this->db->get_where('stok', ['produk_id' => $item['produk_id']])->row();
 					$stok_avail = $stok_row ? (float)$stok_row->qty : 0;
 
 					if ($qty > $stok_avail) {
@@ -578,7 +569,7 @@ class Sales_order extends Admin
 						$this->db->delete('sales_order', ['id' => $so_id]);
 						$this->response([
 							'success' => false,
-							'message' => "Gagal Simpan: Jumlah pesanan untuk ({$prod_name}) sejumlah {$qty} unit melebihi stok gudang yang tersedia ({$stok_avail} unit)!"
+							'message' => "Gagal Simpan: Jumlah pesanan untuk ({$prod_name}) sejumlah {$qty} unit melebihi stok yang tersedia ({$stok_avail} unit)!"
 						]);
 						return;
 					}
@@ -613,7 +604,7 @@ class Sales_order extends Admin
 			if ($save_action == 'pay_lunas' || $save_action == 'lunas') {
 				$so = $this->model_sales_order->find($so_id);
 				$metode_bayar = $this->input->post('metode_pembayaran') ?: 'tunai';
-				$akun_kas     = $this->input->post('akun_kas_bank') ?: ($metode_bayar == 'tunai' ? 'Kas Tunai Kasir' : 'Bank BCA');
+				$akun_kas     = $this->input->post('akun_kas_bank') ?: ($metode_bayar == 'tunai' ? 'Cash' : 'Transfer Bank');
 				$no_ref       = $this->input->post('nomor_referensi') ?: '';
 				$catatan_bayar= $this->input->post('catatan_bayar') ?: ('Pembayaran Lunas Kasir SO ' . $nomor_so);
 
@@ -627,7 +618,6 @@ class Sales_order extends Admin
 					'nomor_invoice'       => $nomor_inv,
 					'so_id'               => $so_id,
 					'pelanggan_id'        => $pelanggan_id,
-					'gudang_id'           => $gudang_id,
 					'tanggal_invoice'     => $this->input->post('tanggal_so') ?: date('Y-m-d'),
 					'tanggal_jatuh_tempo' => date('Y-m-d'),
 					'subtotal'            => $so->subtotal,
@@ -659,7 +649,7 @@ class Sales_order extends Admin
 					]);
 				}
 
-				// 2. Potong Stok Gudang dengan FIFO / FEFO Log
+				// 2. Potong Stok dengan FIFO / FEFO Log
 				$this->model_invoice->kurangi_stok($invoice_id, get_user_data('username'));
 
 				// 3. Catat Piutang Usaha (Status: Lunas, Sisa: 0)
@@ -708,7 +698,7 @@ class Sales_order extends Admin
 					'created_at'        => date('Y-m-d H:i:s'),
 				]);
 
-				set_message("Transaksi LUNAS Berhasil! SO: {$nomor_so}, Faktur: {$nomor_inv}, Kas (BKM): {$nomor_bkm}. Stok otomatis terpotong.", 'success');
+				set_message("Transaksi LUNAS Berhasil! No. Transaksi: {$nomor_so}, Faktur: {$nomor_inv}, Kas (BKM): {$nomor_bkm}. Stok otomatis terpotong.", 'success');
 				$this->data['success']  = true;
 				$this->data['redirect'] = base_url('administrator/sales_order/view/' . $so_id);
 			} elseif ($save_action == 'tempo') {
@@ -723,7 +713,6 @@ class Sales_order extends Admin
 					'nomor_invoice'       => $nomor_inv,
 					'so_id'               => $so_id,
 					'pelanggan_id'        => $pelanggan_id,
-					'gudang_id'           => $gudang_id,
 					'tanggal_invoice'     => $this->input->post('tanggal_so') ?: date('Y-m-d'),
 					'tanggal_jatuh_tempo' => $tgl_tempo,
 					'subtotal'            => $so->subtotal,
@@ -755,7 +744,7 @@ class Sales_order extends Admin
 					]);
 				}
 
-				// 2. Potong Stok Gudang dengan FIFO / FEFO Log
+				// 2. Potong Stok dengan FIFO / FEFO Log
 				$this->model_invoice->kurangi_stok($invoice_id, get_user_data('username'));
 
 				// 3. Catat Piutang Usaha (Status: belum_bayar, Sisa: total, Terbayar: 0)
@@ -783,17 +772,17 @@ class Sales_order extends Admin
 					'sisa'                => $so->total,
 					'tanggal_jatuh_tempo' => $tgl_tempo,
 					'status'              => 'belum_bayar',
-					'catatan'             => 'Tagihan Piutang Penjualan Tempo (' . strtoupper(str_replace('_', ' ', $syarat_bayar)) . ') SO ' . $nomor_so,
+					'catatan'             => 'Tagihan Piutang Penjualan Tempo (' . strtoupper(str_replace('_', ' ', $syarat_bayar)) . ') No. Transaksi ' . $nomor_so,
 					'created_at'          => date('Y-m-d H:i:s'),
 				]);
 
 				$tgl_tempo_fmt = date('d/m/Y', strtotime($tgl_tempo));
 				$tot_fmt = number_format($so->total, 0, ',', '.');
-				set_message("Penjualan Tempo Berhasil Diterbitkan! SO: {$nomor_so}, Faktur: {$nomor_inv}, Piutang: {$nomor_piu} senilai Rp {$tot_fmt} (Jatuh Tempo: {$tgl_tempo_fmt}). Tagihan otomatis masuk ke Piutang Usaha.", 'success');
+				set_message("Penjualan Tempo Berhasil Diterbitkan! No. Transaksi: {$nomor_so}, Faktur: {$nomor_inv}, Piutang: {$nomor_piu} senilai Rp {$tot_fmt} (Jatuh Tempo: {$tgl_tempo_fmt}). Tagihan otomatis masuk ke Piutang Usaha.", 'success');
 				$this->data['success']  = true;
 				$this->data['redirect'] = base_url('administrator/sales_order/view/' . $so_id);
 			} else {
-				set_message('Sales Order berhasil dibuat sebagai Draft.', 'success');
+				set_message('Transaksi Penjualan berhasil dibuat sebagai Draft.', 'success');
 				$this->data['success']  = true;
 				$this->data['redirect'] = base_url('administrator/sales_order/view/' . $so_id);
 			}
@@ -809,7 +798,7 @@ class Sales_order extends Admin
 		$this->is_allowed('sales_order_view');
 		$this->data['so']    = $this->model_sales_order->find_with_detail($id);
 		$this->data['items'] = $this->model_sales_order->get_items($id);
-		$this->template->title('Detail Sales Order');
+		$this->template->title('Detail Transaksi Penjualan');
 		$this->render('backend/standart/administrator/sales_order/sales_order_view', $this->data);
 	}
 
@@ -827,10 +816,10 @@ class Sales_order extends Admin
 				$this->db->update('sales_order', ['status' => 'confirmed', 'updated_at' => date('Y-m-d H:i:s')], ['id' => $id]);
 				$this->load->model('crm/model_crm');
 				$this->model_crm->generate_labels_for_order('sales_order', $id);
-				set_message('Sales Order berhasil dikonfirmasi.', 'success');
+				set_message('Transaksi Penjualan berhasil dikonfirmasi.', 'success');
 			}
 		} else {
-			set_message('SO sudah dikonfirmasi sebelumnya.', 'warning');
+			set_message('Transaksi Penjualan sudah dikonfirmasi sebelumnya.', 'warning');
 		}
 		redirect('administrator/sales_order/view/' . $id);
 	}
@@ -846,15 +835,14 @@ class Sales_order extends Admin
 	{
 		$this->is_allowed('sales_order_update');
 		$this->data['so'] = $this->model_sales_order->find($id);
-		if (!$this->data['so'] || $this->data['so']->status != 'draft') {
-			set_message('Hanya data berstatus Draft yang bisa diedit.', 'error');
+		if (!$this->data['so'] || $this->data['so']->status == 'cancelled') {
+			set_message('Pesanan yang dibatalkan tidak bisa diedit.', 'error');
 			redirect('administrator/sales_order');
 		}
 		$this->data['pelanggans'] = $this->db->where('status', 'aktif')->order_by('nama_pelanggan', 'ASC')->get('pelanggan')->result();
-		$this->data['gudangs']    = $this->db->where('status', 'aktif')->get('gudang')->result();
 		$this->data['produks']    = $this->db->where('status', 'aktif')->get('produk')->result();
 		$this->data['items']      = $this->model_sales_order->get_items($id);
-		$this->template->title('Edit Sales Order');
+		$this->template->title('Edit Transaksi Penjualan');
 		$this->render('backend/standart/administrator/sales_order/sales_order_update', $this->data);
 	}
 
@@ -865,8 +853,8 @@ class Sales_order extends Admin
 		}
 
 		$existing = $this->model_sales_order->find($id);
-		if (!$existing || $existing->status != 'draft') {
-			$this->response(['success' => false, 'message' => 'Hanya data berstatus Draft yang bisa diedit.']); return;
+		if (!$existing || $existing->status == 'cancelled') {
+			$this->response(['success' => false, 'message' => 'Pesanan yang dibatalkan tidak bisa diedit.']); return;
 		}
 
 		$pelanggan_id = $this->input->post('pelanggan_id');
@@ -878,11 +866,10 @@ class Sales_order extends Admin
 			'updated_by'            => get_user_data('username'),
 			'pelanggan_id'          => $pelanggan_id,
 			'nama_penerima'         => $pelanggan ? $pelanggan->nama_pelanggan : '',
-			'no_telepon'            => $pelanggan ? ($pelanggan->no_telp ?: $pelanggan->telepon) : '',
+			'no_telepon'            => $pelanggan ? ($pelanggan->no_telp ?? $pelanggan->telepon ?? '') : '',
 			'alamat_pengiriman'     => $pelanggan ? $pelanggan->alamat : '',
 			'kota_kabupaten'        => $pelanggan ? $pelanggan->kota : '',
-			'source'                => 'manual',
-			'gudang_id'             => $this->input->post('gudang_id'),
+			'source'                => $existing->source ?: 'manual',
 			'tanggal_so'            => $this->input->post('tanggal_so'),
 			'tanggal_estimasi_kirim'=> $this->input->post('tanggal_estimasi_kirim') ?: null,
 			'diskon'                => (float) $this->input->post('diskon_persen_total'),
@@ -923,14 +910,17 @@ class Sales_order extends Admin
 
 		$status_pembayaran = $this->input->post('status_pembayaran') ?: 'tempo';
 		$save_action = $this->input->post('save_action') ?: $status_pembayaran;
-		if ($save_action == 'confirm') {
-			$save_action = $status_pembayaran;
+		if (empty($save_action) || $save_action == 'confirm' || $save_action == 'draft') {
+			$save_action = ($status_pembayaran == 'lunas' || $status_pembayaran == 'pay_lunas') ? 'lunas' : 'tempo';
+		}
+		if ($save_action != 'lunas' && $save_action != 'pay_lunas') {
+			$save_action = 'tempo';
 		}
 
 		if ($save_action == 'pay_lunas' || $save_action == 'lunas') {
 			$so = $this->model_sales_order->find($id);
 			$metode_bayar = $this->input->post('metode_pembayaran') ?: 'tunai';
-			$akun_kas     = $this->input->post('akun_kas_bank') ?: ($metode_bayar == 'tunai' ? 'Kas Tunai Kasir' : 'Bank BCA');
+			$akun_kas     = $this->input->post('akun_kas_bank') ?: ($metode_bayar == 'tunai' ? 'Cash' : 'Transfer Bank');
 			$no_ref       = $this->input->post('nomor_referensi') ?: '';
 			$catatan_bayar= $this->input->post('catatan_bayar') ?: ('Pembayaran Lunas Kasir SO ' . $so->nomor_so);
 
@@ -938,100 +928,142 @@ class Sales_order extends Admin
 				'status'           => 'delivered',
 				'status_pesanan'   => 'selesai',
 				'status_kirim'     => 'terkirim',
-				'waktu_pembayaran' => date('Y-m-d H:i:s'),
+				'waktu_pembayaran' => $so->waktu_pembayaran ?: date('Y-m-d H:i:s'),
 				'total_pembayaran' => $so->total,
 				'updated_at'       => date('Y-m-d H:i:s')
 			], ['id' => $id]);
 
-			// 1. Buat Invoice Otomatis (Status: Paid, Status Kirim: Delivered)
 			$this->load->model('invoice/model_invoice');
-			$nomor_inv = $this->model_invoice->generate_nomor();
-			$data_inv = [
-				'nomor_invoice'       => $nomor_inv,
-				'so_id'               => $id,
-				'pelanggan_id'        => $pelanggan_id,
-				'gudang_id'           => $this->input->post('gudang_id'),
-				'tanggal_invoice'     => $this->input->post('tanggal_so') ?: date('Y-m-d'),
-				'tanggal_jatuh_tempo' => date('Y-m-d'),
-				'subtotal'            => $so->subtotal,
-				'diskon_total'        => $so->diskon_total,
-				'pajak_persen'        => $so->pajak_persen,
-				'pajak_nominal'       => $so->pajak_nominal,
-				'total'               => $so->total,
-				'status'              => 'paid',
-				'status_kirim'        => 'delivered',
-				'catatan'             => 'Faktur Penjualan Langsung Lunas SO ' . $so->nomor_so,
-				'created_by'          => get_user_data('username'),
-				'created_at'          => date('Y-m-d H:i:s'),
-			];
-			$invoice_id = $this->model_invoice->store($data_inv);
+			$existing_inv = $this->db->get_where('invoice', ['so_id' => $id])->row();
+			if ($existing_inv) {
+				$invoice_id = $existing_inv->id;
+				$this->db->update('invoice', [
+					'pelanggan_id'        => $pelanggan_id,
+					'tanggal_invoice'     => $this->input->post('tanggal_so') ?: date('Y-m-d'),
+					'subtotal'            => $so->subtotal,
+					'diskon_total'        => $so->diskon_total,
+					'pajak_persen'        => $so->pajak_persen,
+					'pajak_nominal'       => $so->pajak_nominal,
+					'total'               => $so->total,
+					'status'              => 'paid',
+					'status_kirim'        => 'delivered',
+					'updated_at'          => date('Y-m-d H:i:s'),
+				], ['id' => $invoice_id]);
 
-			// Insert invoice items
-			$so_items = $this->model_sales_order->get_items($id);
-			foreach ($so_items as $si) {
-				$this->db->insert('invoice_item', [
-					'invoice_id'    => $invoice_id,
-					'produk_id'     => $si->produk_id,
-					'so_item_id'    => $si->id,
-					'qty'           => $si->qty,
-					'satuan'        => $si->satuan,
-					'harga_satuan'  => $si->harga_satuan,
-					'diskon_persen' => $si->diskon_persen,
-					'diskon_nominal'=> $si->diskon_nominal,
-					'subtotal'      => $si->subtotal,
+				$this->db->delete('invoice_item', ['invoice_id' => $invoice_id]);
+				$so_items = $this->model_sales_order->get_items($id);
+				foreach ($so_items as $si) {
+					$this->db->insert('invoice_item', [
+						'invoice_id'    => $invoice_id,
+						'produk_id'     => $si->produk_id,
+						'so_item_id'    => $si->id,
+						'qty'           => $si->qty,
+						'satuan'        => $si->satuan,
+						'harga_satuan'  => $si->harga_satuan,
+						'diskon_persen' => $si->diskon_persen,
+						'diskon_nominal'=> $si->diskon_nominal,
+						'subtotal'      => $si->subtotal,
+					]);
+				}
+			} else {
+				$nomor_inv = $this->model_invoice->generate_nomor();
+				$data_inv = [
+					'nomor_invoice'       => $nomor_inv,
+					'so_id'               => $id,
+					'pelanggan_id'        => $pelanggan_id,
+					'tanggal_invoice'     => $this->input->post('tanggal_so') ?: date('Y-m-d'),
+					'tanggal_jatuh_tempo' => date('Y-m-d'),
+					'subtotal'            => $so->subtotal,
+					'diskon_total'        => $so->diskon_total,
+					'pajak_persen'        => $so->pajak_persen,
+					'pajak_nominal'       => $so->pajak_nominal,
+					'total'               => $so->total,
+					'status'              => 'paid',
+					'status_kirim'        => 'delivered',
+					'catatan'             => 'Faktur Penjualan Langsung Lunas SO ' . $so->nomor_so,
+					'created_by'          => get_user_data('username'),
+					'created_at'          => date('Y-m-d H:i:s'),
+				];
+				$invoice_id = $this->model_invoice->store($data_inv);
+
+				$so_items = $this->model_sales_order->get_items($id);
+				foreach ($so_items as $si) {
+					$this->db->insert('invoice_item', [
+						'invoice_id'    => $invoice_id,
+						'produk_id'     => $si->produk_id,
+						'so_item_id'    => $si->id,
+						'qty'           => $si->qty,
+						'satuan'        => $si->satuan,
+						'harga_satuan'  => $si->harga_satuan,
+						'diskon_persen' => $si->diskon_persen,
+						'diskon_nominal'=> $si->diskon_nominal,
+						'subtotal'      => $si->subtotal,
+					]);
+				}
+				$this->model_invoice->kurangi_stok($invoice_id, get_user_data('username'));
+			}
+
+			// Update/Insert piutang
+			$this->load->model('piutang_usaha/model_piutang_usaha');
+			$existing_piu = $this->db->get_where('piutang_usaha', ['so_id' => $id])->row();
+			if ($existing_piu) {
+				$this->db->update('piutang_usaha', [
+					'pelanggan_id'        => $pelanggan_id,
+					'subtotal'            => $so->subtotal,
+					'diskon'              => $so->diskon_total,
+					'pajak'               => $so->pajak_nominal,
+					'total'               => $so->total,
+					'terbayar'            => $so->total,
+					'sisa'                => 0,
+					'status'              => 'lunas',
+					'updated_at'          => date('Y-m-d H:i:s'),
+				], ['id' => $existing_piu->id]);
+			} else {
+				$prefix_piu = 'PIU-' . date('Ym') . '-';
+				$last_p = $this->db->like('nomor_piutang', $prefix_piu, 'after')->order_by('id', 'DESC')->limit(1)->get('piutang_usaha')->row();
+				$num_p = $last_p ? ((int) substr($last_p->nomor_piutang, -4)) + 1 : 1;
+				$nomor_piu = $prefix_piu . str_pad($num_p, 4, '0', STR_PAD_LEFT);
+				while ($this->db->where('nomor_piutang', $nomor_piu)->get('piutang_usaha')->num_rows() > 0) {
+					$num_p++;
+					$nomor_piu = $prefix_piu . str_pad($num_p, 4, '0', STR_PAD_LEFT);
+				}
+
+				$this->db->insert('piutang_usaha', [
+					'nomor_piutang'       => $nomor_piu,
+					'pelanggan_id'        => $pelanggan_id,
+					'tanggal_piutang'     => $this->input->post('tanggal_so') ?: date('Y-m-d'),
+					'invoice_id'          => $invoice_id,
+					'so_id'               => $id,
+					'subtotal'            => $so->subtotal,
+					'diskon'              => $so->diskon_total,
+					'pajak'               => $so->pajak_nominal,
+					'total'               => $so->total,
+					'terbayar'            => $so->total,
+					'sisa'                => 0,
+					'tanggal_jatuh_tempo' => date('Y-m-d'),
+					'status'              => 'lunas',
+					'catatan'             => 'Pelunasan Langsung (POS) SO ' . $so->nomor_so,
+					'created_at'          => date('Y-m-d H:i:s'),
+				]);
+				$piutang_id = $this->db->insert_id();
+
+				$nomor_bkm = $this->model_piutang_usaha->generate_bkm();
+				$this->db->insert('pembayaran_piutang', [
+					'nomor_bkm'         => $nomor_bkm,
+					'piutang_id'        => $piutang_id,
+					'pelanggan_id'      => $pelanggan_id,
+					'tanggal_bayar'     => date('Y-m-d'),
+					'akun_kas_bank'     => $akun_kas,
+					'metode_pembayaran' => $metode_bayar,
+					'nomor_referensi'   => $no_ref,
+					'nominal'           => $so->total,
+					'catatan'           => $catatan_bayar,
+					'created_by'        => get_user_data('username'),
+					'created_at'        => date('Y-m-d H:i:s'),
 				]);
 			}
 
-			// 2. Potong Stok Gudang dengan FIFO / FEFO Log
-			$this->model_invoice->kurangi_stok($invoice_id, get_user_data('username'));
-
-			// 3. Catat Piutang Usaha (Status: Lunas, Sisa: 0)
-			$this->load->model('piutang_usaha/model_piutang_usaha');
-			$prefix_piu = 'PIU-' . date('Ym') . '-';
-			$last_p = $this->db->like('nomor_piutang', $prefix_piu, 'after')->order_by('id', 'DESC')->limit(1)->get('piutang_usaha')->row();
-			$num_p = $last_p ? ((int) substr($last_p->nomor_piutang, -4)) + 1 : 1;
-			$nomor_piu = $prefix_piu . str_pad($num_p, 4, '0', STR_PAD_LEFT);
-			while ($this->db->where('nomor_piutang', $nomor_piu)->get('piutang_usaha')->num_rows() > 0) {
-				$num_p++;
-				$nomor_piu = $prefix_piu . str_pad($num_p, 4, '0', STR_PAD_LEFT);
-			}
-
-			$this->db->insert('piutang_usaha', [
-				'nomor_piutang'       => $nomor_piu,
-				'pelanggan_id'        => $pelanggan_id,
-				'tanggal_piutang'     => $this->input->post('tanggal_so') ?: date('Y-m-d'),
-				'invoice_id'          => $invoice_id,
-				'so_id'               => $id,
-				'subtotal'            => $so->subtotal,
-				'diskon'              => $so->diskon_total,
-				'pajak'               => $so->pajak_nominal,
-				'total'               => $so->total,
-				'terbayar'            => $so->total,
-				'sisa'                => 0,
-				'tanggal_jatuh_tempo' => date('Y-m-d'),
-				'status'              => 'lunas',
-				'catatan'             => 'Pelunasan Langsung (POS) SO ' . $so->nomor_so,
-				'created_at'          => date('Y-m-d H:i:s'),
-			]);
-			$piutang_id = $this->db->insert_id();
-
-			// 4. Terbitkan Bukti Kas Masuk (BKM)
-			$nomor_bkm = $this->model_piutang_usaha->generate_bkm();
-			$this->db->insert('pembayaran_piutang', [
-				'nomor_bkm'         => $nomor_bkm,
-				'piutang_id'        => $piutang_id,
-				'pelanggan_id'      => $pelanggan_id,
-				'tanggal_bayar'     => date('Y-m-d'),
-				'akun_kas_bank'     => $akun_kas,
-				'metode_pembayaran' => $metode_bayar,
-				'nomor_referensi'   => $no_ref,
-				'nominal'           => $so->total,
-				'catatan'           => $catatan_bayar,
-				'created_by'        => get_user_data('username'),
-				'created_at'        => date('Y-m-d H:i:s'),
-			]);
-
-			set_message("Transaksi LUNAS Berhasil! SO: {$so->nomor_so}, Faktur: {$nomor_inv}, Kas (BKM): {$nomor_bkm}. Stok otomatis terpotong.", 'success');
+			set_message("Perubahan Transaksi Penjualan {$so->nomor_so} (Lunas) berhasil disimpan.", 'success');
 			$this->data['success']  = true;
 			$this->data['redirect'] = base_url('administrator/sales_order/view/' . $id);
 		} elseif ($save_action == 'tempo') {
@@ -1046,84 +1078,119 @@ class Sales_order extends Admin
 				'updated_at'     => date('Y-m-d H:i:s'),
 			], ['id' => $id]);
 
-			// 1. Buat Invoice Otomatis (Status: sent, Status Kirim: processing)
 			$this->load->model('invoice/model_invoice');
-			$nomor_inv = $this->model_invoice->generate_nomor();
-			$data_inv = [
-				'nomor_invoice'       => $nomor_inv,
-				'so_id'               => $id,
-				'pelanggan_id'        => $pelanggan_id,
-				'gudang_id'           => $this->input->post('gudang_id'),
-				'tanggal_invoice'     => $this->input->post('tanggal_so') ?: date('Y-m-d'),
-				'tanggal_jatuh_tempo' => $tgl_tempo,
-				'subtotal'            => $so->subtotal,
-				'diskon_total'        => $so->diskon_total,
-				'pajak_persen'        => $so->pajak_persen,
-				'pajak_nominal'       => $so->pajak_nominal,
-				'total'               => $so->total,
-				'status'              => 'sent',
-				'status_kirim'        => 'processing',
-				'catatan'             => 'Faktur Tagihan Penjualan Tempo (' . strtoupper(str_replace('_', ' ', $syarat_bayar)) . ') SO ' . $so->nomor_so,
-				'created_by'          => get_user_data('username'),
-				'created_at'          => date('Y-m-d H:i:s'),
-			];
-			$invoice_id = $this->model_invoice->store($data_inv);
+			$existing_inv = $this->db->get_where('invoice', ['so_id' => $id])->row();
+			if ($existing_inv) {
+				$invoice_id = $existing_inv->id;
+				$this->db->update('invoice', [
+					'pelanggan_id'        => $pelanggan_id,
+					'tanggal_invoice'     => $this->input->post('tanggal_so') ?: date('Y-m-d'),
+					'tanggal_jatuh_tempo' => $tgl_tempo,
+					'subtotal'            => $so->subtotal,
+					'diskon_total'        => $so->diskon_total,
+					'pajak_persen'        => $so->pajak_persen,
+					'pajak_nominal'       => $so->pajak_nominal,
+					'total'               => $so->total,
+					'updated_at'          => date('Y-m-d H:i:s'),
+				], ['id' => $invoice_id]);
 
-			// Insert invoice items
-			$so_items = $this->model_sales_order->get_items($id);
-			foreach ($so_items as $si) {
-				$this->db->insert('invoice_item', [
-					'invoice_id'    => $invoice_id,
-					'produk_id'     => $si->produk_id,
-					'so_item_id'    => $si->id,
-					'qty'           => $si->qty,
-					'satuan'        => $si->satuan,
-					'harga_satuan'  => $si->harga_satuan,
-					'diskon_persen' => $si->diskon_persen,
-					'diskon_nominal'=> $si->diskon_nominal,
-					'subtotal'      => $si->subtotal,
+				$this->db->delete('invoice_item', ['invoice_id' => $invoice_id]);
+				$so_items = $this->model_sales_order->get_items($id);
+				foreach ($so_items as $si) {
+					$this->db->insert('invoice_item', [
+						'invoice_id'    => $invoice_id,
+						'produk_id'     => $si->produk_id,
+						'so_item_id'    => $si->id,
+						'qty'           => $si->qty,
+						'satuan'        => $si->satuan,
+						'harga_satuan'  => $si->harga_satuan,
+						'diskon_persen' => $si->diskon_persen,
+						'diskon_nominal'=> $si->diskon_nominal,
+						'subtotal'      => $si->subtotal,
+					]);
+				}
+			} else {
+				$nomor_inv = $this->model_invoice->generate_nomor();
+				$data_inv = [
+					'nomor_invoice'       => $nomor_inv,
+					'so_id'               => $id,
+					'pelanggan_id'        => $pelanggan_id,
+					'tanggal_invoice'     => $this->input->post('tanggal_so') ?: date('Y-m-d'),
+					'tanggal_jatuh_tempo' => $tgl_tempo,
+					'subtotal'            => $so->subtotal,
+					'diskon_total'        => $so->diskon_total,
+					'pajak_persen'        => $so->pajak_persen,
+					'pajak_nominal'       => $so->pajak_nominal,
+					'total'               => $so->total,
+					'status'              => 'sent',
+					'status_kirim'        => 'processing',
+					'catatan'             => 'Faktur Tagihan Penjualan Tempo (' . strtoupper(str_replace('_', ' ', $syarat_bayar)) . ') SO ' . $so->nomor_so,
+					'created_by'          => get_user_data('username'),
+					'created_at'          => date('Y-m-d H:i:s'),
+				];
+				$invoice_id = $this->model_invoice->store($data_inv);
+
+				$so_items = $this->model_sales_order->get_items($id);
+				foreach ($so_items as $si) {
+					$this->db->insert('invoice_item', [
+						'invoice_id'    => $invoice_id,
+						'produk_id'     => $si->produk_id,
+						'so_item_id'    => $si->id,
+						'qty'           => $si->qty,
+						'satuan'        => $si->satuan,
+						'harga_satuan'  => $si->harga_satuan,
+						'diskon_persen' => $si->diskon_persen,
+						'diskon_nominal'=> $si->diskon_nominal,
+						'subtotal'      => $si->subtotal,
+					]);
+				}
+				$this->model_invoice->kurangi_stok($invoice_id, get_user_data('username'));
+			}
+
+			// Update/Insert piutang usaha
+			$this->load->model('piutang_usaha/model_piutang_usaha');
+			$existing_piu = $this->db->get_where('piutang_usaha', ['so_id' => $id])->row();
+			if ($existing_piu) {
+				$this->db->update('piutang_usaha', [
+					'pelanggan_id'        => $pelanggan_id,
+					'subtotal'            => $so->subtotal,
+					'diskon'              => $so->diskon_total,
+					'pajak'               => $so->pajak_nominal,
+					'total'               => $so->total,
+					'sisa'                => max(0, $so->total - (float)$existing_piu->terbayar),
+					'tanggal_jatuh_tempo' => $tgl_tempo,
+					'updated_at'          => date('Y-m-d H:i:s'),
+				], ['id' => $existing_piu->id]);
+			} else {
+				$prefix_piu = 'PIU-' . date('Ym') . '-';
+				$last_p = $this->db->like('nomor_piutang', $prefix_piu, 'after')->order_by('id', 'DESC')->limit(1)->get('piutang_usaha')->row();
+				$num_p = $last_p ? ((int) substr($last_p->nomor_piutang, -4)) + 1 : 1;
+				$nomor_piu = $prefix_piu . str_pad($num_p, 4, '0', STR_PAD_LEFT);
+				while ($this->db->where('nomor_piutang', $nomor_piu)->get('piutang_usaha')->num_rows() > 0) {
+					$num_p++;
+					$nomor_piu = $prefix_piu . str_pad($num_p, 4, '0', STR_PAD_LEFT);
+				}
+
+				$this->db->insert('piutang_usaha', [
+					'nomor_piutang'       => $nomor_piu,
+					'pelanggan_id'        => $pelanggan_id,
+					'tanggal_piutang'     => $this->input->post('tanggal_so') ?: date('Y-m-d'),
+					'invoice_id'          => $invoice_id,
+					'so_id'               => $id,
+					'subtotal'            => $so->subtotal,
+					'diskon'              => $so->diskon_total,
+					'pajak'               => $so->pajak_nominal,
+					'total'               => $so->total,
+					'terbayar'            => 0,
+					'sisa'                => $so->total,
+					'tanggal_jatuh_tempo' => $tgl_tempo,
+					'status'              => 'belum_bayar',
+					'catatan'             => 'Tagihan Piutang Penjualan Tempo (' . strtoupper(str_replace('_', ' ', $syarat_bayar)) . ') SO ' . $so->nomor_so,
+					'created_at'          => date('Y-m-d H:i:s'),
 				]);
 			}
 
-			// 2. Potong Stok Gudang dengan FIFO / FEFO Log
-			$this->model_invoice->kurangi_stok($invoice_id, get_user_data('username'));
-
-			// 3. Catat Piutang Usaha (Status: belum_bayar, Sisa: total, Terbayar: 0)
-			$this->load->model('piutang_usaha/model_piutang_usaha');
-			$prefix_piu = 'PIU-' . date('Ym') . '-';
-			$last_p = $this->db->like('nomor_piutang', $prefix_piu, 'after')->order_by('id', 'DESC')->limit(1)->get('piutang_usaha')->row();
-			$num_p = $last_p ? ((int) substr($last_p->nomor_piutang, -4)) + 1 : 1;
-			$nomor_piu = $prefix_piu . str_pad($num_p, 4, '0', STR_PAD_LEFT);
-			while ($this->db->where('nomor_piutang', $nomor_piu)->get('piutang_usaha')->num_rows() > 0) {
-				$num_p++;
-				$nomor_piu = $prefix_piu . str_pad($num_p, 4, '0', STR_PAD_LEFT);
-			}
-
-			$this->db->insert('piutang_usaha', [
-				'nomor_piutang'       => $nomor_piu,
-				'pelanggan_id'        => $pelanggan_id,
-				'tanggal_piutang'     => $this->input->post('tanggal_so') ?: date('Y-m-d'),
-				'invoice_id'          => $invoice_id,
-				'so_id'               => $id,
-				'subtotal'            => $so->subtotal,
-				'diskon'              => $so->diskon_total,
-				'pajak'               => $so->pajak_nominal,
-				'total'               => $so->total,
-				'terbayar'            => 0,
-				'sisa'                => $so->total,
-				'tanggal_jatuh_tempo' => $tgl_tempo,
-				'status'              => 'belum_bayar',
-				'catatan'             => 'Tagihan Piutang Penjualan Tempo (' . strtoupper(str_replace('_', ' ', $syarat_bayar)) . ') SO ' . $so->nomor_so,
-				'created_at'          => date('Y-m-d H:i:s'),
-			]);
-
-			$tgl_tempo_fmt = date('d/m/Y', strtotime($tgl_tempo));
-			$tot_fmt = number_format($so->total, 0, ',', '.');
-			set_message("Penjualan Tempo Berhasil Diterbitkan! SO: {$so->nomor_so}, Faktur: {$nomor_inv}, Piutang: {$nomor_piu} senilai Rp {$tot_fmt} (Jatuh Tempo: {$tgl_tempo_fmt}). Tagihan otomatis masuk ke Piutang Usaha.", 'success');
-			$this->data['success']  = true;
-			$this->data['redirect'] = base_url('administrator/sales_order/view/' . $id);
-		} else {
-			set_message('Sales Order berhasil diupdate sebagai Draft.', 'success');
+			set_message("Perubahan Transaksi Penjualan {$so->nomor_so} (Tempo) berhasil disimpan.", 'success');
 			$this->data['success']  = true;
 			$this->data['redirect'] = base_url('administrator/sales_order/view/' . $id);
 		}
@@ -1164,14 +1231,14 @@ class Sales_order extends Admin
 			$status_labels = [
 				'draft'        => 'Draft (Pesanan Baru)',
 				'confirmed'    => 'Terkonfirmasi (Stok Ready)',
-				'packing'      => 'Sedang Dikemas (Packing Gudang)',
+				'packing'      => 'Sedang Dikemas (Packing)',
 				'shipped'      => 'Dalam Pengiriman (Shipped)',
 				'delivered'    => 'Pesanan Selesai (Delivered)',
 				'cancelled'    => 'Dibatalkan'
 			];
 
 			$lbl = isset($status_labels[$status]) ? $status_labels[$status] : strtoupper($status);
-			set_message('Status Sales Order <strong>' . $so->nomor_so . '</strong> berhasil diperbarui ke: <strong>' . $lbl . '</strong>', 'success');
+			set_message('Status Transaksi Penjualan <strong>' . $so->nomor_so . '</strong> berhasil diperbarui ke: <strong>' . $lbl . '</strong>', 'success');
 		}
 
 		redirect('administrator/sales_order');
@@ -1184,9 +1251,9 @@ class Sales_order extends Admin
 		if ($so && $so->status == 'draft') {
 			$this->db->delete('sales_order_item', ['so_id' => $id]);
 			$this->model_sales_order->remove($id);
-			set_message('SO berhasil dihapus.', 'success');
+			set_message('Transaksi Penjualan berhasil dihapus.', 'success');
 		} else {
-			set_message('Hanya SO berstatus Draft yang bisa dihapus.', 'error');
+			set_message('Hanya Transaksi Penjualan berstatus Draft yang bisa dihapus.', 'error');
 		}
 		redirect('administrator/sales_order');
 	}
@@ -1194,29 +1261,130 @@ class Sales_order extends Admin
 	public function export()
 	{
 		$this->is_allowed('sales_order_export');
-		$this->model_sales_order->export('sales_order', 'sales_order');
+
+		$q     = $this->input->get('q');
+		$field = $this->input->get('f');
+
+		// Ambil semua record SO sesuai filter tanpa pagination
+		$sos = $this->model_sales_order->get($q, $field, 0, 0);
+
+		$filename = 'Laporan_Transaksi_Penjualan_' . date('Y-m-d') . '.xls';
+
+		if (ob_get_length()) { ob_end_clean(); }
+
+		header('Content-Type: application/vnd.ms-excel; charset=utf-8');
+		header('Content-Disposition: attachment; filename="' . $filename . '"');
+		header('Cache-Control: max-age=0');
+		header('Pragma: public');
+
+		echo "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n";
+		echo "<style>
+			th { background-color: #1E40AF; color: #ffffff; font-weight: bold; padding: 10px 8px; border: 1px solid #1E3A8A; text-align: center; font-family: Arial, sans-serif; font-size: 10.5pt; }
+			td { padding: 6px 8px; border: 1px solid #cbd5e1; font-family: Arial, sans-serif; font-size: 9.5pt; vertical-align: middle; }
+			.zebra { background-color: #F8FAFC; }
+			.num { mso-number-format:\"\\#\\,\\#\\#0\"; text-align: right; }
+			.currency { mso-number-format:\"\\\"Rp\\\"\\ \\#\\,\\#\\#0\"; text-align: right; font-weight: bold; }
+			.text { mso-number-format:\"\\@\"; }
+			.center { text-align: center; }
+		</style>\n</head>\n<body>\n";
+
+		$headers = [
+			'No',
+			'No. Transaksi Penjualan',
+			'No. Pesanan',
+			'Tanggal Transaksi Penjualan',
+			'Pelanggan',
+			'No. Telepon',
+			'Tipe Pelanggan',
+			'Saluran',
+			'Subtotal (Rp)',
+			'Diskon (Rp)',
+			'Pajak (Rp)',
+			'Total Nilai (Rp)',
+			'Status Order',
+			'Status Bayar'
+		];
+
+		echo "<table border=\"1\" cellpadding=\"4\" cellspacing=\"0\">\n<thead>\n<tr>\n";
+		foreach ($headers as $h) {
+			echo '<th>' . htmlspecialchars($h) . "</th>\n";
+		}
+		echo "</tr>\n</thead>\n<tbody>\n";
+
+		$no = 1;
+		foreach ($sos as $s) {
+			$pelanggan = $s->nama_pelanggan ?: ($s->nama_penerima ?: 'Pelanggan Umum');
+			if (!empty($s->username_pembeli)) {
+				$pelanggan .= ' (' . $s->username_pembeli . ')';
+			}
+
+			$telp_val = !empty($s->no_telepon) && $s->no_telepon !== '-' 
+				? (string)$s->no_telepon 
+				: (!empty($s->telp_pelanggan) && $s->telp_pelanggan !== '-' 
+					? (string)$s->telp_pelanggan 
+					: (!empty($s->no_telepon_pengirim) && $s->no_telepon_pengirim !== '-' 
+						? (string)$s->no_telepon_pengirim 
+						: '-'));
+
+			$source = 'Transaksi Offline';
+			if ($s->source == 'pos' || strpos((string)$s->catatan, '[POS CEPAT') !== false) {
+				$source = 'POS Kasir';
+			} elseif ($s->source == 'excel_import' || (!empty($s->no_pesanan) && $s->source != 'manual')) {
+				$source = 'Marketplace';
+			}
+
+			$is_paid = (!empty($s->waktu_pembayaran) || ($s->inv_status_db ?? '') == 'paid');
+			$pay_status = $is_paid ? 'LUNAS' : 'TEMPO';
+			$cls_row    = ($no % 2 === 0) ? ' class="zebra"' : '';
+
+			echo "<tr{$cls_row}>\n";
+			echo "<td class=\"center\">" . ($no++) . "</td>\n";
+			echo "<td class=\"text center\">" . htmlspecialchars($s->nomor_so) . "</td>\n";
+			echo "<td class=\"text center\">" . htmlspecialchars($s->no_pesanan ?: '-') . "</td>\n";
+			echo "<td class=\"center text\">" . date('d/m/Y', strtotime($s->tanggal_so)) . "</td>\n";
+			echo "<td>" . htmlspecialchars($pelanggan) . "</td>\n";
+			echo "<td class=\"text center\">" . htmlspecialchars($telp_val) . "</td>\n";
+			echo "<td class=\"center\">" . htmlspecialchars(strtoupper($s->tipe_pelanggan ?: '-')) . "</td>\n";
+			echo "<td class=\"center\">" . htmlspecialchars($source) . "</td>\n";
+			echo "<td class=\"currency\">" . (float)$s->subtotal . "</td>\n";
+			echo "<td class=\"currency\">" . (float)($s->diskon_total ?: $s->diskon) . "</td>\n";
+			echo "<td class=\"currency\">" . (float)$s->pajak_nominal . "</td>\n";
+			echo "<td class=\"currency\">" . (float)$s->total . "</td>\n";
+			echo "<td class=\"center\">" . htmlspecialchars(strtoupper($s->status)) . "</td>\n";
+			echo "<td class=\"center\">" . htmlspecialchars($pay_status) . "</td>\n";
+			echo "</tr>\n";
+		}
+
+		echo "</tbody>\n</table>\n</body>\n</html>";
+		exit;
 	}
-
-	
-
-	
 
 	public function cetak($id)
 	{
 		$this->is_allowed('sales_order_view');
 		$this->data['so'] = $this->model_sales_order->join_available()->find($id);
+		if (!$this->data['so']) {
+			show_404();
+			return;
+		}
 		$this->data['items'] = $this->model_sales_order->get_items($id);
 		
+		@ini_set('memory_limit', '512M');
+		@set_time_limit(180);
+
 		$this->load->library('HtmlPdf');
 		$this->htmlpdf->initialize(['orientation' => 'P', 'format' => 'A4', 'marges' => [5, 5, 5, 5]]);
-		$content = $this->load->view('backend/standart/administrator/sales_order/sales_order_pdf', $this->data, true);
+		$content = $this->load->view('sales_order/backend/standart/administrator/sales_order/sales_order_pdf', $this->data, true);
 		
 		$this->htmlpdf->writeHTML($content);
 		$so = $this->data['so'];
 		$doc_num = preg_replace('/[^a-zA-Z0-9_-]/', '_', $so->nomor_so ?? $id);
-		$filename = 'sales_order_' . $doc_num . '.pdf';
-		if (ob_get_length()) { ob_clean(); }
-		$this->htmlpdf->Output($filename, 'D');
+		$filename = 'transaksi_penjualan_' . $doc_num . '.pdf';
+		if (ob_get_length()) { ob_end_clean(); }
+		
+		$mode = ($this->input->get('download') == '1' || $this->input->get('mode') === 'download') ? 'D' : 'I';
+		$this->htmlpdf->Output($filename, $mode);
+		exit;
 	}
 
 	public function cetak_struk($id)
@@ -1244,7 +1412,7 @@ class Sales_order extends Admin
 		$this->data['bkm']      = $bkm;
 		$this->data['template'] = $this->input->get('template') ?: 'thermal';
 
-		$this->load->view('backend/standart/administrator/sales_order/sales_order_struk', $this->data);
+		$this->load->view('sales_order/backend/standart/administrator/sales_order/sales_order_struk', $this->data);
 	}
 
 	public function cetak_nota_lebar($id)
@@ -1254,17 +1422,11 @@ class Sales_order extends Admin
 		$this->cetak_struk($id);
 	}
 
-	public function get_produk_by_gudang()
+	public function get_produk()
 	{
-		$gudang_id = (int) $this->input->get('gudang_id');
-		if (!$gudang_id) {
-			$this->response(['success' => false, 'data' => []]);
-			return;
-		}
-		
 		$produks = $this->db->select('produk.id, produk.kode_produk, produk.nama_produk, produk.harga_jual, produk.harga_jual_grosir, produk.harga_jual_distributor, produk.harga_jual_vip, COALESCE(stok.qty, 0) as qty, satuan.singkatan as nama_satuan')
 			->from('produk')
-			->join('stok', 'stok.produk_id = produk.id AND stok.gudang_id = ' . $gudang_id, 'LEFT')
+			->join('stok', 'stok.produk_id = produk.id', 'LEFT')
 			->join('satuan', 'satuan.id = produk.satuan_id', 'LEFT')
 			->where('produk.status', 'aktif')
 			->order_by('produk.id', 'ASC')
@@ -1273,11 +1435,75 @@ class Sales_order extends Admin
 		$this->response(['success' => true, 'data' => $produks]);
 	}
 
+	public function get_produk_by_gudang()
+	{
+		return $this->get_produk();
+	}
+
 	public function export_pdf()
 	{
 		$this->is_allowed('sales_order_export');
-		$this->model_sales_order->pdf('sales_order', 'sales_order');
+
+		@ini_set('memory_limit', '512M');
+		@set_time_limit(180);
+
+		$q     = $this->input->get('q');
+		$field = $this->input->get('f');
+
+		// Ambil seluruh data sales order realtime dari database sesuai filter aktif
+		$sos = $this->model_sales_order->get($q, $field, 0, 0);
+
+		$pelanggan_nama = '';
+		$pelanggan_id = (int) $this->input->get('pelanggan_id');
+		if ($pelanggan_id) {
+			$p = $this->db->get_where('pelanggan', ['id' => $pelanggan_id])->row();
+			if ($p) $pelanggan_nama = $p->nama_pelanggan;
+		}
+
+		$total_omset = 0;
+		$total_lunas = 0;
+		$total_tempo = 0;
+		foreach ($sos as $s) {
+			$total_omset += (float)$s->total;
+			$is_paid = (!empty($s->waktu_pembayaran) || ($s->inv_status_db ?? '') == 'paid');
+			if ($is_paid) {
+				$total_lunas += (float)$s->total;
+			} else {
+				$total_tempo += (float)$s->total;
+			}
+		}
+
+		$this->load->library('HtmlPdf');
+
+		$config = [
+			'orientation' => 'l',
+			'format'      => 'a4',
+			'marges'      => [8, 8, 8, 8]
+		];
+
+		$this->htmlpdf->initialize($config);
+
+		$content = $this->load->view('sales_order/backend/standart/administrator/sales_order/sales_order_rekap_pdf', [
+			'results'        => $sos,
+			'status_sel'     => $this->input->get('status'),
+			'source_sel'     => $this->input->get('source'),
+			'pelanggan_nama' => $pelanggan_nama,
+			'search_q'       => $q,
+			'summary'        => [
+				'total_omset' => $total_omset,
+				'total_lunas' => $total_lunas,
+				'total_tempo' => $total_tempo,
+			]
+		], true);
+
+		$this->htmlpdf->writeHTML($content);
+
+		if (ob_get_length()) { ob_end_clean(); }
+
+		$this->htmlpdf->Output('Laporan_Rekap_Transaksi_Penjualan_' . date('Y-m-d') . '.pdf', 'I');
+		exit;
 	}
+
 
 	public function download_template_shopee()
 	{
@@ -1329,6 +1555,10 @@ class Sales_order extends Admin
 			"Waktu Pesanan Selesai"
 		];
 
+		if (ob_get_length()) {
+			ob_end_clean();
+		}
+
 		header('Content-Type: text/csv; charset=utf-8');
 		header('Content-Disposition: attachment; filename=template_shoppe_18_08_2026.csv');
 		$output = fopen('php://output', 'w');
@@ -1348,8 +1578,41 @@ class Sales_order extends Admin
 			"Alamat Pengiriman", "Kota/Kabupaten", "Provinsi"
 		];
 
+		if (ob_get_length()) {
+			ob_end_clean();
+		}
+
 		header('Content-Type: text/csv; charset=utf-8');
 		header('Content-Disposition: attachment; filename=template_import_tokopedia_sales.csv');
+		$output = fopen('php://output', 'w');
+		fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
+		fputcsv($output, $headers);
+		fclose($output);
+		exit;
+	}
+
+	public function download_template_tiktok()
+	{
+		$headers = [
+			"Order ID", "Order Status", "Order Substatus", "Cancelation/Return Type", "Normal or Pre-order",
+			"SKU ID", "Seller SKU", "Product Name", "Variation", "Quantity",
+			"Sku Quantity of return", "SKU Unit Original Price", "SKU Subtotal Before Discount", "SKU Platform Discount", "SKU Seller Discount",
+			"SKU Subtotal After Discount", "Shipping Fee After Discount", "Original Shipping Fee", "Shipping Fee Seller Discount", "Shipping Fee Platform Discount",
+			"Taxes", "Order Amount", "Order Refund Amount", "Created Time", "Paid Time",
+			"RTS Time", "Shipped Time", "Delivered Time", "Cancelled Time", "Cancel By",
+			"Cancel Reason", "Fulfillment Type", "Warehouse Name", "Tracking ID", "Delivery Option",
+			"Shipping Provider Name", "Buyer Message", "Buyer Username", "Recipient", "Phone #",
+			"Zipcode", "Country", "Province", "Regency and City", "Districts",
+			"Villages", "Detail Address", "Additional address information", "Payment Method", "Weight(kg)",
+			"Product Category", "Package ID", "Seller Note", "Checked Status", "Checked Marked by"
+		];
+
+		if (ob_get_length()) {
+			ob_end_clean();
+		}
+
+		header('Content-Type: text/csv; charset=utf-8');
+		header('Content-Disposition: attachment; filename=template-tiktokshop-' . date('d-m-Y') . '.csv');
 		$output = fopen('php://output', 'w');
 		fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
 		fputcsv($output, $headers);
@@ -1446,9 +1709,7 @@ class Sales_order extends Admin
 
 		$default_pelanggan = $this->db->get_where('pelanggan', ['kode_pelanggan' => 'CUS-MARKETPLACE'])->row() 
 			?: $this->db->get('pelanggan')->row();
-		$default_gudang = $this->db->get_where('gudang', ['status' => 'aktif'])->row();
 		$pelanggan_id = $default_pelanggan ? $default_pelanggan->id : 1;
-		$gudang_id = $default_gudang ? $default_gudang->id : 1;
 
 		// Pre-fetch all customers into array for O(1) matching by phone or name
 		$all_pelanggan = $this->db->select('id, kode_pelanggan, nama_pelanggan, telepon, no_telp')->get('pelanggan')->result();
@@ -1588,7 +1849,6 @@ class Sales_order extends Admin
 				'no_pesanan'                  => $no_pesanan,
 				'source'                      => 'shopee',
 				'pelanggan_id'                => $row_pelanggan_id,
-				'gudang_id'                   => $gudang_id,
 				'tanggal_so'                  => $tanggal_so,
 				'status'                      => $status,
 				'status_pesanan'              => $status_pesanan,
@@ -1762,9 +2022,7 @@ class Sales_order extends Admin
 
 		$default_pelanggan = $this->db->get_where('pelanggan', ['kode_pelanggan' => 'CUS-MARKETPLACE'])->row() 
 			?: $this->db->get('pelanggan')->row();
-		$default_gudang = $this->db->get_where('gudang', ['status' => 'aktif'])->row();
 		$pelanggan_id = $default_pelanggan ? $default_pelanggan->id : 1;
-		$gudang_id = $default_gudang ? $default_gudang->id : 1;
 
 		// Pre-fetch all customers into array for O(1) matching by phone or name
 		$all_pelanggan = $this->db->select('id, kode_pelanggan, nama_pelanggan, telepon, no_telp')->get('pelanggan')->result();
@@ -1896,7 +2154,6 @@ class Sales_order extends Admin
 				'no_pesanan'          => $no_pesanan,
 				'source'              => 'tokopedia',
 				'pelanggan_id'        => $row_pelanggan_id,
-				'gudang_id'           => $gudang_id,
 				'tanggal_so'          => $tanggal_so,
 				'status'              => $status,
 				'status_pesanan'      => $status_pesanan,

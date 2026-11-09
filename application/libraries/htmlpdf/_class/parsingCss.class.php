@@ -611,7 +611,11 @@ class HTML2PDF_parsingCss
             {
                 case 'font-family':
                     $val = explode(',', $val);
-                    $val = trim($val[0]);
+                    $val = trim(trim($val[0]), '\'"');
+                    $vl = strtolower($val);
+                    if ($vl === 'monospace') { $val = 'courier'; }
+                    elseif ($vl === 'sans-serif') { $val = 'helvetica'; }
+                    elseif ($vl === 'serif') { $val = 'times'; }
                     if ($val) $this->value['font-family'] = $val;
                     break;
 

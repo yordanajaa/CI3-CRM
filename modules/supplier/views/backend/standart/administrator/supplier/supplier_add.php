@@ -118,7 +118,7 @@ $page_title = $is_edit ? 'Edit Supplier' : 'Tambah Supplier';
 
                <div class="form-group">
                   <label>Alamat Lengkap Supplier</label>
-                  <textarea class="form-control" name="alamat" rows="2" placeholder="Alamat kantor / gudang supplier..."><?= $is_edit ? _ent($supplier->alamat) : ''; ?></textarea>
+                  <textarea class="form-control" name="alamat" rows="2" placeholder="Alamat kantor / lokasi supplier..."><?= $is_edit ? _ent($supplier->alamat) : ''; ?></textarea>
                </div>
 
                <!-- Section 2: Data Keuangan & Rekening -->

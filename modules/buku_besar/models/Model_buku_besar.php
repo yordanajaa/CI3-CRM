@@ -8,18 +8,18 @@ class Model_buku_besar extends MY_Model {
 		parent::__construct();
 	}
 
-	public function get_ledger_entries($date_start = '', $date_end = '', $category = '', $search = '', $limit = 0, $offset = 0)
+	public function get_ledger_entries($date_start = '', $date_end = '', $category = '', $search = '', $limit = 0, $offset = 0, $type = '')
 	{
-		$query = $this->build_union_query($date_start, $date_end, $category, $search);
+		$query = $this->build_union_query($date_start, $date_end, $category, $search, true, $type);
 		if ($limit > 0) {
 			$query .= " LIMIT " . (int)$offset . ", " . (int)$limit;
 		}
 		return $this->db->query($query)->result();
 	}
 
-	public function count_ledger_entries($date_start = '', $date_end = '', $category = '', $search = '')
+	public function count_ledger_entries($date_start = '', $date_end = '', $category = '', $search = '', $type = '')
 	{
-		$query = "SELECT COUNT(*) as total FROM (" . $this->build_union_query($date_start, $date_end, $category, $search, false) . ") as combined";
+		$query = "SELECT COUNT(*) as total FROM (" . $this->build_union_query($date_start, $date_end, $category, $search, false, $type) . ") as combined";
 		$row = $this->db->query($query)->row();
 		return $row ? (int)$row->total : 0;
 	}
@@ -45,7 +45,7 @@ class Model_buku_besar extends MY_Model {
 		];
 	}
 
-	private function build_union_query($date_start = '', $date_end = '', $category = '', $search = '', $include_order = true)
+	private function build_union_query($date_start = '', $date_end = '', $category = '', $search = '', $include_order = true, $type = '')
 	{
 		$queries = [];
 
@@ -77,21 +77,7 @@ class Model_buku_besar extends MY_Model {
 					  FROM purchase_order po
 					  LEFT JOIN supplier s ON s.id = po.supplier_id";
 
-		// 3. Penerimaan Barang (GRN)
-		$queries[] = "SELECT 
-						pb.tanggal_terima as tanggal,
-						pb.nomor_penerimaan as nomor_ref,
-						'pembelian' as modul_code,
-						'Penerimaan Barang (GRN)' as modul_label,
-						COALESCE(s.nama_supplier, '-') as entitas,
-						CONCAT('Penerimaan Fisik Barang dari Supplier (Surat Jalan: ', COALESCE(pb.nomor_surat_jalan, '-'), ')') as deskripsi,
-						0 as debit,
-						0 as kredit,
-						pb.created_at
-					  FROM penerimaan_barang pb
-					  LEFT JOIN supplier s ON s.id = pb.supplier_id";
-
-		// 4. Utang Usaha (AP) - Kewajiban
+		// 3. Utang Usaha (AP) - Kewajiban
 		$queries[] = "SELECT 
 						DATE(u.created_at) as tanggal,
 						u.nomor_utang as nomor_ref,
@@ -175,34 +161,20 @@ class Model_buku_besar extends MY_Model {
 					  FROM retur_penjualan rj
 					  LEFT JOIN pelanggan p ON p.id = rj.pelanggan_id";
 
-		// 10. Stock Opname (Warehouse)
-		$queries[] = "SELECT 
-						op.tanggal_opname as tanggal,
-						op.nomor_opname as nomor_ref,
-						'warehouse' as modul_code,
-						'Stock Opname' as modul_label,
-						COALESCE(g.nama_gudang, '-') as entitas,
-						CONCAT('Penghitungan Stok Fisik Gudang (Jadwal: ', UPPER(op.jadwal), ')') as deskripsi,
-						0 as debit,
-						0 as kredit,
-						op.created_at
-					  FROM stock_opname op
-					  LEFT JOIN gudang g ON g.id = op.gudang_id";
-
-		// 11. Transfer Stok (Warehouse)
-		$queries[] = "SELECT 
-						tr.tanggal_transfer as tanggal,
-						tr.nomor_transfer as nomor_ref,
-						'warehouse' as modul_code,
-						'Transfer Stok' as modul_label,
-						CONCAT(COALESCE(ga.nama_gudang, '-'), ' -> ', COALESCE(gt.nama_gudang, '-')) as entitas,
-						CONCAT('Mutasi Stok Antar Gudang (No Resi: ', COALESCE(tr.nomor_bukti_kirim, '-'), ')') as deskripsi,
-						0 as debit,
-						0 as kredit,
-						tr.created_at
-					  FROM transfer_stok tr
-					  LEFT JOIN gudang ga ON ga.id = tr.gudang_asal_id
-					  LEFT JOIN gudang gt ON gt.id = tr.gudang_tujuan_id";
+		// 10. Stock Opname
+		if ($this->db->table_exists('stock_opname')) {
+			$queries[] = "SELECT 
+							op.tanggal_opname as tanggal,
+							op.nomor_opname as nomor_ref,
+							'stok' as modul_code,
+							'Stock Opname' as modul_label,
+							'Stok Fisik' as entitas,
+							CONCAT('Penghitungan Stok Fisik (Jadwal: ', UPPER(op.jadwal), ')') as deskripsi,
+							0 as debit,
+							0 as kredit,
+							op.created_at
+						  FROM stock_opname op";
+		}
 
 		$full_union = implode(" UNION ALL ", $queries);
 
@@ -220,6 +192,13 @@ class Model_buku_besar extends MY_Model {
 		if (!empty($search)) {
 			$s = $this->db->escape_like_str($search);
 			$where_clauses[] = "(nomor_ref LIKE '%{$s}%' OR entitas LIKE '%{$s}%' OR deskripsi LIKE '%{$s}%')";
+		}
+		if ($type === 'debit') {
+			$where_clauses[] = "debit > 0";
+		} elseif ($type === 'kredit') {
+			$where_clauses[] = "kredit > 0";
+		} elseif ($type === 'cash') {
+			$where_clauses[] = "modul_code IN ('kas_masuk', 'kas_keluar')";
 		}
 
 		$sql = "SELECT * FROM ({$full_union}) as master_ledger";

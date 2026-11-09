@@ -226,9 +226,23 @@ class Model_crm extends CI_Model
 			$product_so_where = '';
 			$product_pm_where = '';
 			if (!empty($product_filter)) {
-				$pf = $this->db->escape(trim($product_filter));
-				$product_so_where .= " AND (TRIM(p.nama_produk) = " . $pf . " OR TRIM(soi.catatan) = " . $pf . ")";
-				$product_pm_where .= " AND (TRIM(p.nama_produk) = " . $pf . " OR TRIM(pmi.catatan) = " . $pf . " OR TRIM(pm.nama_produk_marketplace) = " . $pf . ")";
+				$clean_pf = trim(preg_replace('/\s*\([^)]*\)$/', '', $product_filter));
+				$pf_esc = $this->db->escape(trim($product_filter));
+				$clean_pf_esc = $this->db->escape($clean_pf);
+				$like_pf = $this->db->escape_like_str($clean_pf);
+
+				$product_so_where .= " AND (
+					TRIM(REGEXP_REPLACE(soi.catatan, '\\\\s*\\\\([^)]*\\\\)$', '')) = {$clean_pf_esc}
+					OR soi.catatan = {$pf_esc}
+					OR soi.catatan LIKE '{$like_pf}%'
+					OR ((soi.catatan IS NULL OR soi.catatan = '' OR soi.catatan LIKE '%Produk%') AND p.id > 1 AND p.nama_produk = {$clean_pf_esc})
+				)";
+				$product_pm_where .= " AND (
+					TRIM(REGEXP_REPLACE(pmi.catatan, '\\\\s*\\\\([^)]*\\\\)$', '')) = {$clean_pf_esc}
+					OR pmi.catatan = {$pf_esc}
+					OR pmi.catatan LIKE '{$like_pf}%'
+					OR ((pmi.catatan IS NULL OR pmi.catatan = '' OR pmi.catatan LIKE '%Produk%') AND p.id > 1 AND p.nama_produk = {$clean_pf_esc})
+				)";
 			}
 			if (!empty($category_filter)) {
 				$cf = $this->db->escape(trim($category_filter));
@@ -244,7 +258,7 @@ class Model_crm extends CI_Model
 					SUM(c_data.subtotal) as total_spend
 				FROM (
 					SELECT 
-						so.no_telepon, 
+						CAST(COALESCE(NULLIF(NULLIF(so.no_telepon, '-'), ''), CONCAT('RESI_', COALESCE(NULLIF(so.nomor_resi, ''), NULLIF(so.no_pesanan, ''), so.id))) AS CHAR) COLLATE utf8mb4_unicode_ci as no_telepon, 
 						so.tanggal_so as last_date, 
 						CONCAT('so_', so.id) as order_id, 
 						soi.subtotal 
@@ -252,14 +266,15 @@ class Model_crm extends CI_Model
 					JOIN sales_order so ON soi.so_id = so.id
 					LEFT JOIN produk p ON soi.produk_id = p.id
 					LEFT JOIN kategori_produk kp ON kp.id = p.kategori_id
-					WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
+					WHERE ((so.no_telepon IS NOT NULL AND so.no_telepon != '' AND so.no_telepon != '-') OR (so.nomor_resi IS NOT NULL AND so.nomor_resi != '' AND so.nomor_resi != '-') OR (so.no_pesanan IS NOT NULL AND so.no_pesanan != '' AND so.no_pesanan != '-'))
+					  AND (so.source = 'excel_import' OR (so.source NOT IN ('shopee', 'tokopedia', 'tiktok', 'tiktokshop', 'lazada', 'marketplace') AND (so.no_pesanan IS NULL OR so.no_pesanan = '' OR so.no_pesanan = so.nomor_so)))
 					  AND (so.status_pesanan IS NULL OR (LOWER(so.status_pesanan) NOT LIKE '%batal%' AND LOWER(so.status_pesanan) NOT LIKE '%cancel%'))
 					" . $product_so_where . "
 
 					UNION ALL
 
 					SELECT 
-						pm.no_telepon, 
+						CAST(COALESCE(NULLIF(NULLIF(pm.no_telepon, '-'), ''), CONCAT('RESI_', COALESCE(NULLIF(pm.nomor_resi, ''), NULLIF(pm.no_pesanan, ''), pm.id))) AS CHAR) COLLATE utf8mb4_unicode_ci as no_telepon, 
 						pm.tanggal_so as last_date, 
 						CONCAT('pm_', pm.id) as order_id, 
 						pmi.subtotal 
@@ -267,7 +282,7 @@ class Model_crm extends CI_Model
 					JOIN penjualan_marketplace pm ON pmi.penjualan_marketplace_id = pm.id
 					LEFT JOIN produk p ON pmi.produk_id = p.id
 					LEFT JOIN kategori_produk kp ON kp.id = p.kategori_id
-					WHERE pm.no_telepon IS NOT NULL AND pm.no_telepon != ''
+					WHERE ((pm.no_telepon IS NOT NULL AND pm.no_telepon != '' AND pm.no_telepon != '-') OR (pm.nomor_resi IS NOT NULL AND pm.nomor_resi != '' AND pm.nomor_resi != '-') OR (pm.no_pesanan IS NOT NULL AND pm.no_pesanan != '' AND pm.no_pesanan != '-'))
 					  AND (pm.status_pesanan IS NULL OR (LOWER(pm.status_pesanan) NOT LIKE '%batal%' AND LOWER(pm.status_pesanan) NOT LIKE '%cancel%'))
 					" . $product_pm_where . "
 				) c_data
@@ -281,16 +296,25 @@ class Model_crm extends CI_Model
 					COUNT(DISTINCT c_data.order_id) as total_orders,
 					SUM(c_data.total) as total_spend
 				FROM (
-					SELECT no_telepon, tanggal_so as last_date, CONCAT('so_', id) as order_id, total 
+					SELECT 
+						CAST(COALESCE(NULLIF(NULLIF(no_telepon, '-'), ''), CONCAT('RESI_', COALESCE(NULLIF(nomor_resi, ''), NULLIF(no_pesanan, ''), id))) AS CHAR) COLLATE utf8mb4_unicode_ci as no_telepon, 
+						tanggal_so as last_date, 
+						CONCAT('so_', id) as order_id, 
+						total 
 					FROM sales_order 
-					WHERE no_telepon IS NOT NULL AND no_telepon != ''
+					WHERE ((no_telepon IS NOT NULL AND no_telepon != '' AND no_telepon != '-') OR (nomor_resi IS NOT NULL AND nomor_resi != '' AND nomor_resi != '-') OR (no_pesanan IS NOT NULL AND no_pesanan != '' AND no_pesanan != '-'))
+					  AND (source = 'excel_import' OR (source NOT IN ('shopee', 'tokopedia', 'tiktok', 'tiktokshop', 'lazada', 'marketplace') AND (no_pesanan IS NULL OR no_pesanan = '' OR no_pesanan = nomor_so)))
 					  AND (status_pesanan IS NULL OR (LOWER(status_pesanan) NOT LIKE '%batal%' AND LOWER(status_pesanan) NOT LIKE '%cancel%'))
 					
 					UNION ALL
 					
-					SELECT no_telepon, tanggal_so as last_date, CONCAT('pm_', id) as order_id, total 
+					SELECT 
+						CAST(COALESCE(NULLIF(NULLIF(no_telepon, '-'), ''), CONCAT('RESI_', COALESCE(NULLIF(nomor_resi, ''), NULLIF(no_pesanan, ''), id))) AS CHAR) COLLATE utf8mb4_unicode_ci as no_telepon, 
+						tanggal_so as last_date, 
+						CONCAT('pm_', id) as order_id, 
+						total 
 					FROM penjualan_marketplace 
-					WHERE no_telepon IS NOT NULL AND no_telepon != ''
+					WHERE ((no_telepon IS NOT NULL AND no_telepon != '' AND no_telepon != '-') OR (nomor_resi IS NOT NULL AND nomor_resi != '' AND nomor_resi != '-') OR (no_pesanan IS NOT NULL AND no_pesanan != '' AND no_pesanan != '-'))
 					  AND (status_pesanan IS NULL OR (LOWER(status_pesanan) NOT LIKE '%batal%' AND LOWER(status_pesanan) NOT LIKE '%cancel%'))
 				) c_data
 				GROUP BY c_data.no_telepon
@@ -344,7 +368,7 @@ class Model_crm extends CI_Model
 		$m_p60 = $calc_p($m_vals, 60);
 		$m_p80 = $calc_p($m_vals, 80);
 
-		$cached_thresholds = [
+		$cached_thresholds[$cache_key] = [
 			'r' => [
 				20 => $r_p20 ?: 30,
 				40 => max($r_p40, ($r_p20 ?: 30) + 1),
@@ -365,7 +389,7 @@ class Model_crm extends CI_Model
 			]
 		];
 
-		return $cached_thresholds;
+		return $cached_thresholds[$cache_key];
 	}
 
 	/**
@@ -480,9 +504,23 @@ class Model_crm extends CI_Model
 			$product_so_where = '';
 			$product_pm_where = '';
 			if (!empty($product_filter)) {
-				$pf = $this->db->escape(trim($product_filter));
-				$product_so_where .= " AND (TRIM(p.nama_produk) = " . $pf . " OR TRIM(soi.catatan) = " . $pf . ")";
-				$product_pm_where .= " AND (TRIM(p.nama_produk) = " . $pf . " OR TRIM(pmi.catatan) = " . $pf . " OR TRIM(pm.nama_produk_marketplace) = " . $pf . ")";
+				$clean_pf = trim(preg_replace('/\s*\([^)]*\)$/', '', $product_filter));
+				$pf_esc = $this->db->escape(trim($product_filter));
+				$clean_pf_esc = $this->db->escape($clean_pf);
+				$like_pf = $this->db->escape_like_str($clean_pf);
+
+				$product_so_where .= " AND (
+					TRIM(REGEXP_REPLACE(soi.catatan, '\\\\s*\\\\([^)]*\\\\)$', '')) = {$clean_pf_esc}
+					OR soi.catatan = {$pf_esc}
+					OR soi.catatan LIKE '{$like_pf}%'
+					OR ((soi.catatan IS NULL OR soi.catatan = '' OR soi.catatan LIKE '%Produk%') AND p.id > 1 AND p.nama_produk = {$clean_pf_esc})
+				)";
+				$product_pm_where .= " AND (
+					TRIM(REGEXP_REPLACE(pmi.catatan, '\\\\s*\\\\([^)]*\\\\)$', '')) = {$clean_pf_esc}
+					OR pmi.catatan = {$pf_esc}
+					OR pmi.catatan LIKE '{$like_pf}%'
+					OR ((pmi.catatan IS NULL OR pmi.catatan = '' OR pmi.catatan LIKE '%Produk%') AND p.id > 1 AND p.nama_produk = {$clean_pf_esc})
+				)";
 			}
 			if (!empty($category_filter)) {
 				$cf = $this->db->escape(trim($category_filter));
@@ -491,26 +529,56 @@ class Model_crm extends CI_Model
 			}
 
 			$sql = "SELECT 
-				phone as customer_phone,
-				COALESCE(NULLIF(MAX(nama), ''), 'Customer') as customer_nama,
+				COALESCE(NULLIF(NULLIF(MAX(phone), '-'), ''), '-') as customer_phone,
+				cust_group_key,
+				COALESCE(NULLIF(NULLIF(MAX(nama), '-'), ''), 'Customer') as customer_nama,
 				COUNT(DISTINCT order_id) as total_orders,
 				SUM(total) as total_spend,
 				MAX(tanggal) as last_order_date,
-				GROUP_CONCAT(DISTINCT source ORDER BY source SEPARATOR ', ') as sumber_penjualan
+				MAX(created_at) as last_created_at,
+				GROUP_CONCAT(DISTINCT source ORDER BY source SEPARATOR ', ') as sumber_penjualan,
+				MAX(NULLIF(raw_resi, '')) as nomor_resi,
+				MAX(NULLIF(pesanan, '')) as no_pesanan,
+				MAX(NULLIF(kurir, '')) as kurir_ekspedisi
 			FROM (
 				SELECT 
-					CAST(COALESCE(NULLIF(so.no_telepon, ''), p_cust.no_telp, p_cust.telepon) AS CHAR) COLLATE utf8mb4_unicode_ci as phone, 
-					CAST(COALESCE(NULLIF(so.nama_penerima, ''), p_cust.nama_pelanggan, 'Customer') AS CHAR) COLLATE utf8mb4_unicode_ci as nama, 
+					CAST(COALESCE(NULLIF(NULLIF(so.no_telepon, '-'), ''), NULLIF(NULLIF(p_cust.no_telp, '-'), ''), NULLIF(NULLIF(p_cust.telepon, '-'), ''), NULLIF(NULLIF(so.no_telepon_pengirim, '-'), ''), '-') AS CHAR) COLLATE utf8mb4_unicode_ci as phone, 
+					CAST(COALESCE(NULLIF(NULLIF(so.nama_penerima, '-'), ''), p_cust.nama_pelanggan, 'Customer') AS CHAR) COLLATE utf8mb4_unicode_ci as nama, 
 					CAST(CONCAT('so_', so.id) AS CHAR) COLLATE utf8mb4_unicode_ci as order_id, 
-					soi.subtotal as total, 
-					CAST(so.tanggal_so AS DATETIME) as tanggal, 
-					'Toko' COLLATE utf8mb4_unicode_ci as source 
+					COALESCE(NULLIF(soi.subtotal, 0), NULLIF(soi.qty * soi.harga_satuan, 0), NULLIF(so.total, 0), NULLIF(so.subtotal, 0), NULLIF(so.total_pembayaran, 0), 0) as total, 
+					CAST(COALESCE(so.waktu_pembayaran, so.created_at, so.tanggal_so) AS DATETIME) as tanggal, 
+					COALESCE(so.created_at, so.tanggal_so) as created_at,
+					'Toko' COLLATE utf8mb4_unicode_ci as source,
+					CAST(CASE WHEN so.nomor_resi IS NOT NULL AND so.nomor_resi != '' THEN CONCAT('resi kurir ', so.nomor_resi) ELSE '' END AS CHAR) COLLATE utf8mb4_unicode_ci as resi,
+					CAST(COALESCE(so.nomor_resi, '') AS CHAR) COLLATE utf8mb4_unicode_ci as raw_resi,
+					CAST(COALESCE(so.no_pesanan, '') AS CHAR) COLLATE utf8mb4_unicode_ci as pesanan,
+					CAST(COALESCE(so.catatan, '') AS CHAR) COLLATE utf8mb4_unicode_ci as catatan,
+					CAST(COALESCE(so.kurir_ekspedisi, '') AS CHAR) COLLATE utf8mb4_unicode_ci as kurir,
+					CAST(CASE 
+						WHEN (so.no_telepon IS NOT NULL AND so.no_telepon != '' AND so.no_telepon != '-' AND so.no_telepon NOT LIKE '%*%')
+							THEN RIGHT(REPLACE(REPLACE(REPLACE(REPLACE(so.no_telepon, ' ', ''), '-', ''), '+', ''), '628', '08'), 10)
+						WHEN (p_cust.no_telp IS NOT NULL AND p_cust.no_telp != '' AND p_cust.no_telp != '-' AND p_cust.no_telp NOT LIKE '%*%')
+							THEN RIGHT(REPLACE(REPLACE(REPLACE(REPLACE(p_cust.no_telp, ' ', ''), '-', ''), '+', ''), '628', '08'), 10)
+						WHEN (so.no_telepon_pengirim IS NOT NULL AND so.no_telepon_pengirim != '' AND so.no_telepon_pengirim != '-' AND so.no_telepon_pengirim NOT LIKE '%*%' AND LENGTH(so.no_telepon_pengirim) >= 8)
+							THEN RIGHT(REPLACE(REPLACE(REPLACE(REPLACE(so.no_telepon_pengirim, ' ', ''), '-', ''), '+', ''), '628', '08'), 10)
+						WHEN so.nomor_resi IS NOT NULL AND so.nomor_resi != '' AND so.nomor_resi != '-'
+							THEN CONCAT('RESI_', so.nomor_resi)
+						WHEN so.no_pesanan IS NOT NULL AND so.no_pesanan != '' AND so.no_pesanan != '-'
+							THEN CONCAT('ORD_', so.no_pesanan)
+						ELSE CONCAT('CUST_SO_', so.id)
+					END AS CHAR) COLLATE utf8mb4_unicode_ci as cust_group_key
 				FROM sales_order_item soi
 				JOIN sales_order so ON soi.so_id = so.id
 				LEFT JOIN pelanggan p_cust ON so.pelanggan_id = p_cust.id
 				LEFT JOIN produk p ON soi.produk_id = p.id
 				LEFT JOIN kategori_produk kp ON kp.id = p.kategori_id
-				WHERE (so.no_telepon IS NOT NULL AND so.no_telepon != '' OR p_cust.telepon IS NOT NULL AND p_cust.telepon != '' OR p_cust.no_telp IS NOT NULL AND p_cust.no_telp != '')
+				WHERE ((so.no_telepon IS NOT NULL AND so.no_telepon != '' AND so.no_telepon != '-') 
+					OR (p_cust.telepon IS NOT NULL AND p_cust.telepon != '' AND p_cust.telepon != '-') 
+					OR (p_cust.no_telp IS NOT NULL AND p_cust.no_telp != '' AND p_cust.no_telp != '-')
+					OR (so.no_telepon_pengirim IS NOT NULL AND so.no_telepon_pengirim != '' AND so.no_telepon_pengirim != '-')
+					OR (so.nomor_resi IS NOT NULL AND so.nomor_resi != '' AND so.nomor_resi != '-')
+					OR (so.no_pesanan IS NOT NULL AND so.no_pesanan != '' AND so.no_pesanan != '-'))
+				  AND (so.source = 'excel_import' OR (so.source NOT IN ('shopee', 'tokopedia', 'tiktok', 'tiktokshop', 'lazada', 'marketplace') AND (so.no_pesanan IS NULL OR so.no_pesanan = '' OR so.no_pesanan = so.nomor_so)))
 				  AND so.tanggal_so IS NOT NULL 
 				  AND CAST(so.tanggal_so AS CHAR) NOT LIKE '0000%' 
 				  AND so.tanggal_so > '1970-01-01'
@@ -520,29 +588,51 @@ class Model_crm extends CI_Model
 				UNION ALL
 
 				SELECT 
-					CAST(pm.no_telepon AS CHAR) COLLATE utf8mb4_unicode_ci as phone, 
-					CAST(COALESCE(NULLIF(TRIM(pm.nama_penerima), ''), NULLIF(TRIM(pm.username_pembeli), ''), 'Customer') AS CHAR) COLLATE utf8mb4_unicode_ci as nama, 
+					CAST(COALESCE(NULLIF(NULLIF(pm.no_telepon, '-'), ''), NULLIF(NULLIF(p_pm.no_telp, '-'), ''), NULLIF(NULLIF(p_pm.telepon, '-'), ''), NULLIF(NULLIF(pm.no_telepon_pengirim, '-'), ''), '-') AS CHAR) COLLATE utf8mb4_unicode_ci as phone, 
+					CAST(COALESCE(NULLIF(NULLIF(TRIM(pm.nama_penerima), '-'), ''), NULLIF(NULLIF(TRIM(pm.username_pembeli), '-'), ''), NULLIF(NULLIF(TRIM(p_pm.nama_pelanggan), '-'), ''), 'Customer Marketplace') AS CHAR) COLLATE utf8mb4_unicode_ci as nama, 
 					CAST(CONCAT('pm_', pm.id) AS CHAR) COLLATE utf8mb4_unicode_ci as order_id, 
-					pmi.subtotal as total, 
-					CAST(pm.tanggal_so AS DATETIME) as tanggal, 
-					CAST(COALESCE(
-						lbl.order_source,
-						CASE 
-							WHEN LOWER(pm.source) LIKE '%tokopedia%' THEN 'Tokopedia'
-							WHEN LOWER(pm.source) LIKE '%tiktok%' THEN 'TikTok Shop'
-							WHEN LOWER(pm.source) LIKE '%shopee%' THEN 'Shopee'
-							WHEN LOWER(pm.no_pesanan) LIKE '%shp%' THEN 'Shopee'
-							WHEN LOWER(pm.no_pesanan) LIKE '%tkp%' THEN 'Tokopedia'
-							WHEN LOWER(pm.no_pesanan) LIKE '%ttk%' THEN 'TikTok Shop'
-							ELSE 'Shopee'
-						END
-					) AS CHAR) COLLATE utf8mb4_unicode_ci as source 
+					COALESCE(NULLIF(pmi.subtotal, 0), NULLIF(pmi.qty * pmi.harga_satuan, 0), NULLIF(pm.total, 0), NULLIF(pm.subtotal, 0), 0) as total, 
+					CAST(COALESCE(pm.waktu_pembayaran, pm.created_at, pm.tanggal_so) AS DATETIME) as tanggal, 
+					COALESCE(pm.created_at, pm.tanggal_so) as created_at,
+					CAST(CASE 
+						WHEN LOWER(pm.source) LIKE '%tokopedia%' THEN 'Tokopedia'
+						WHEN LOWER(pm.source) LIKE '%tiktok%' THEN 'TikTok Shop'
+						WHEN LOWER(pm.source) LIKE '%shopee%' THEN 'Shopee'
+						WHEN LOWER(pm.source) LIKE '%resi%' THEN 'Resi Marketplace'
+						WHEN LOWER(pm.no_pesanan) LIKE '%shp%' THEN 'Shopee'
+						WHEN LOWER(pm.no_pesanan) LIKE '%tkp%' THEN 'Tokopedia'
+						WHEN LOWER(pm.no_pesanan) LIKE '%ttk%' THEN 'TikTok Shop'
+						ELSE 'Shopee'
+					END AS CHAR) COLLATE utf8mb4_unicode_ci as source,
+					CAST(CASE WHEN pm.nomor_resi IS NOT NULL AND pm.nomor_resi != '' THEN CONCAT('resi kurir ', pm.nomor_resi) ELSE '' END AS CHAR) COLLATE utf8mb4_unicode_ci as resi,
+					CAST(COALESCE(pm.nomor_resi, '') AS CHAR) COLLATE utf8mb4_unicode_ci as raw_resi,
+					CAST(COALESCE(pm.no_pesanan, '') AS CHAR) COLLATE utf8mb4_unicode_ci as pesanan,
+					CAST(COALESCE(pm.catatan, '') AS CHAR) COLLATE utf8mb4_unicode_ci as catatan,
+					CAST(COALESCE(pm.kurir_ekspedisi, '') AS CHAR) COLLATE utf8mb4_unicode_ci as kurir,
+					CAST(CASE 
+						WHEN (pm.no_telepon IS NOT NULL AND pm.no_telepon != '' AND pm.no_telepon != '-' AND pm.no_telepon NOT LIKE '%*%' AND LENGTH(pm.no_telepon) >= 8)
+							THEN RIGHT(REPLACE(REPLACE(REPLACE(REPLACE(pm.no_telepon, ' ', ''), '-', ''), '+', ''), '628', '08'), 10)
+						WHEN (p_pm.no_telp IS NOT NULL AND p_pm.no_telp != '' AND p_pm.no_telp != '-' AND p_pm.no_telp NOT LIKE '%*%' AND LENGTH(p_pm.no_telp) >= 8)
+							THEN RIGHT(REPLACE(REPLACE(REPLACE(REPLACE(p_pm.no_telp, ' ', ''), '-', ''), '+', ''), '628', '08'), 10)
+						WHEN (pm.no_telepon_pengirim IS NOT NULL AND pm.no_telepon_pengirim != '' AND pm.no_telepon_pengirim != '-' AND pm.no_telepon_pengirim NOT LIKE '%*%' AND LENGTH(pm.no_telepon_pengirim) >= 8)
+							THEN RIGHT(REPLACE(REPLACE(REPLACE(REPLACE(pm.no_telepon_pengirim, ' ', ''), '-', ''), '+', ''), '628', '08'), 10)
+						WHEN pm.nomor_resi IS NOT NULL AND pm.nomor_resi != '' AND pm.nomor_resi != '-'
+							THEN CONCAT('RESI_', pm.nomor_resi)
+						WHEN pm.no_pesanan IS NOT NULL AND pm.no_pesanan != '' AND pm.no_pesanan != '-'
+							THEN CONCAT('ORD_', pm.no_pesanan)
+						ELSE CONCAT('CUST_PM_', pm.id)
+					END AS CHAR) COLLATE utf8mb4_unicode_ci as cust_group_key
 				FROM penjualan_marketplace_item pmi
 				JOIN penjualan_marketplace pm ON pmi.penjualan_marketplace_id = pm.id
+				LEFT JOIN pelanggan p_pm ON pm.pelanggan_id = p_pm.id
 				LEFT JOIN produk p ON pmi.produk_id = p.id
 				LEFT JOIN kategori_produk kp ON kp.id = p.kategori_id
-				LEFT JOIN crm_transaction_followup_labels lbl ON lbl.order_id = pm.id AND lbl.order_table = 'penjualan_marketplace'
-				WHERE pm.no_telepon IS NOT NULL AND pm.no_telepon != ''
+				WHERE ((pm.no_telepon IS NOT NULL AND pm.no_telepon != '' AND pm.no_telepon != '-' AND LENGTH(pm.no_telepon) >= 8)
+					OR (p_pm.no_telp IS NOT NULL AND p_pm.no_telp != '' AND p_pm.no_telp != '-')
+					OR (p_pm.telepon IS NOT NULL AND p_pm.telepon != '' AND p_pm.telepon != '-')
+					OR (pm.no_telepon_pengirim IS NOT NULL AND pm.no_telepon_pengirim != '' AND pm.no_telepon_pengirim != '-' AND LENGTH(pm.no_telepon_pengirim) >= 8)
+					OR (pm.nomor_resi IS NOT NULL AND pm.nomor_resi != '' AND pm.nomor_resi != '-')
+					OR (pm.no_pesanan IS NOT NULL AND pm.no_pesanan != '' AND pm.no_pesanan != '-'))
 				  AND pm.tanggal_so IS NOT NULL 
 				  AND CAST(pm.tanggal_so AS CHAR) NOT LIKE '0000%' 
 				  AND pm.tanggal_so > '1970-01-01'
@@ -551,24 +641,54 @@ class Model_crm extends CI_Model
 			) u";
 		} else {
 			$sql = "SELECT 
-				phone as customer_phone,
-				COALESCE(NULLIF(MAX(nama), ''), 'Customer') as customer_nama,
+				COALESCE(NULLIF(NULLIF(MAX(phone), '-'), ''), '-') as customer_phone,
+				cust_group_key,
+				COALESCE(NULLIF(NULLIF(MAX(nama), '-'), ''), 'Customer') as customer_nama,
 				COUNT(DISTINCT order_id) as total_orders,
 				SUM(total) as total_spend,
 				MAX(tanggal) as last_order_date,
-				GROUP_CONCAT(DISTINCT source ORDER BY source SEPARATOR ', ') as sumber_penjualan
+				MAX(created_at) as last_created_at,
+				GROUP_CONCAT(DISTINCT source ORDER BY source SEPARATOR ', ') as sumber_penjualan,
+				MAX(NULLIF(raw_resi, '')) as nomor_resi,
+				MAX(NULLIF(pesanan, '')) as no_pesanan,
+				MAX(NULLIF(kurir, '')) as kurir_ekspedisi
 			FROM (
 				SELECT 
-					CAST(COALESCE(NULLIF(so.no_telepon, ''), p_cust.no_telp, p_cust.telepon) AS CHAR) COLLATE utf8mb4_unicode_ci as phone, 
-					CAST(COALESCE(NULLIF(so.nama_penerima, ''), p_cust.nama_pelanggan, 'Customer') AS CHAR) COLLATE utf8mb4_unicode_ci as nama, 
+					CAST(COALESCE(NULLIF(NULLIF(so.no_telepon, '-'), ''), NULLIF(NULLIF(p_cust.no_telp, '-'), ''), NULLIF(NULLIF(p_cust.telepon, '-'), ''), NULLIF(NULLIF(so.no_telepon_pengirim, '-'), ''), '-') AS CHAR) COLLATE utf8mb4_unicode_ci as phone, 
+					CAST(COALESCE(NULLIF(NULLIF(so.nama_penerima, '-'), ''), p_cust.nama_pelanggan, 'Customer') AS CHAR) COLLATE utf8mb4_unicode_ci as nama, 
 					CAST(CONCAT('so_', so.id) AS CHAR) COLLATE utf8mb4_unicode_ci as order_id, 
-					soi.subtotal as total, 
-					CAST(so.tanggal_so AS DATETIME) as tanggal, 
-					'Toko' COLLATE utf8mb4_unicode_ci as source 
+					COALESCE(NULLIF(soi.subtotal, 0), NULLIF(soi.qty * soi.harga_satuan, 0), NULLIF(so.total, 0), NULLIF(so.subtotal, 0), NULLIF(so.total_pembayaran, 0), 0) as total, 
+					CAST(COALESCE(so.waktu_pembayaran, so.created_at, so.tanggal_so) AS DATETIME) as tanggal, 
+					COALESCE(so.created_at, so.tanggal_so) as created_at,
+					'Toko' COLLATE utf8mb4_unicode_ci as source,
+					CAST(CASE WHEN so.nomor_resi IS NOT NULL AND so.nomor_resi != '' THEN CONCAT('resi kurir ', so.nomor_resi) ELSE '' END AS CHAR) COLLATE utf8mb4_unicode_ci as resi,
+					CAST(COALESCE(so.nomor_resi, '') AS CHAR) COLLATE utf8mb4_unicode_ci as raw_resi,
+					CAST(COALESCE(so.no_pesanan, '') AS CHAR) COLLATE utf8mb4_unicode_ci as pesanan,
+					CAST(COALESCE(so.catatan, '') AS CHAR) COLLATE utf8mb4_unicode_ci as catatan,
+					CAST(COALESCE(so.kurir_ekspedisi, '') AS CHAR) COLLATE utf8mb4_unicode_ci as kurir,
+					CAST(CASE 
+						WHEN (so.no_telepon IS NOT NULL AND so.no_telepon != '' AND so.no_telepon != '-' AND so.no_telepon NOT LIKE '%*%')
+							THEN RIGHT(REPLACE(REPLACE(REPLACE(REPLACE(so.no_telepon, ' ', ''), '-', ''), '+', ''), '628', '08'), 10)
+						WHEN (p_cust.no_telp IS NOT NULL AND p_cust.no_telp != '' AND p_cust.no_telp != '-' AND p_cust.no_telp NOT LIKE '%*%')
+							THEN RIGHT(REPLACE(REPLACE(REPLACE(REPLACE(p_cust.no_telp, ' ', ''), '-', ''), '+', ''), '628', '08'), 10)
+						WHEN (so.no_telepon_pengirim IS NOT NULL AND so.no_telepon_pengirim != '' AND so.no_telepon_pengirim != '-' AND so.no_telepon_pengirim NOT LIKE '%*%' AND LENGTH(so.no_telepon_pengirim) >= 8)
+							THEN RIGHT(REPLACE(REPLACE(REPLACE(REPLACE(so.no_telepon_pengirim, ' ', ''), '-', ''), '+', ''), '628', '08'), 10)
+						WHEN so.nomor_resi IS NOT NULL AND so.nomor_resi != '' AND so.nomor_resi != '-'
+							THEN CONCAT('RESI_', so.nomor_resi)
+						WHEN so.no_pesanan IS NOT NULL AND so.no_pesanan != '' AND so.no_pesanan != '-'
+							THEN CONCAT('ORD_', so.no_pesanan)
+						ELSE CONCAT('CUST_SO_', so.id)
+					END AS CHAR) COLLATE utf8mb4_unicode_ci as cust_group_key
 				FROM sales_order_item soi
 				JOIN sales_order so ON soi.so_id = so.id
 				LEFT JOIN pelanggan p_cust ON so.pelanggan_id = p_cust.id
-				WHERE (so.no_telepon IS NOT NULL AND so.no_telepon != '' OR p_cust.telepon IS NOT NULL AND p_cust.telepon != '' OR p_cust.no_telp IS NOT NULL AND p_cust.no_telp != '')
+				WHERE ((so.no_telepon IS NOT NULL AND so.no_telepon != '' AND so.no_telepon != '-') 
+					OR (p_cust.telepon IS NOT NULL AND p_cust.telepon != '' AND p_cust.telepon != '-') 
+					OR (p_cust.no_telp IS NOT NULL AND p_cust.no_telp != '' AND p_cust.no_telp != '-')
+					OR (so.no_telepon_pengirim IS NOT NULL AND so.no_telepon_pengirim != '' AND so.no_telepon_pengirim != '-')
+					OR (so.nomor_resi IS NOT NULL AND so.nomor_resi != '' AND so.nomor_resi != '-')
+					OR (so.no_pesanan IS NOT NULL AND so.no_pesanan != '' AND so.no_pesanan != '-'))
+				  AND (so.source = 'excel_import' OR (so.source NOT IN ('shopee', 'tokopedia', 'tiktok', 'tiktokshop', 'lazada', 'marketplace') AND (so.no_pesanan IS NULL OR so.no_pesanan = '' OR so.no_pesanan = so.nomor_so)))
 				  AND so.tanggal_so IS NOT NULL 
 				  AND CAST(so.tanggal_so AS CHAR) NOT LIKE '0000%' 
 				  AND so.tanggal_so > '1970-01-01'
@@ -577,27 +697,49 @@ class Model_crm extends CI_Model
 				UNION ALL
 
 				SELECT 
-					CAST(pm.no_telepon AS CHAR) COLLATE utf8mb4_unicode_ci as phone, 
-					CAST(COALESCE(NULLIF(TRIM(pm.nama_penerima), ''), NULLIF(TRIM(pm.username_pembeli), ''), 'Customer') AS CHAR) COLLATE utf8mb4_unicode_ci as nama, 
+					CAST(COALESCE(NULLIF(NULLIF(pm.no_telepon, '-'), ''), NULLIF(NULLIF(p_pm.no_telp, '-'), ''), NULLIF(NULLIF(p_pm.telepon, '-'), ''), NULLIF(NULLIF(pm.no_telepon_pengirim, '-'), ''), '-') AS CHAR) COLLATE utf8mb4_unicode_ci as phone, 
+					CAST(COALESCE(NULLIF(NULLIF(TRIM(pm.nama_penerima), '-'), ''), NULLIF(NULLIF(TRIM(pm.username_pembeli), '-'), ''), NULLIF(NULLIF(TRIM(p_pm.nama_pelanggan), '-'), ''), 'Customer Marketplace') AS CHAR) COLLATE utf8mb4_unicode_ci as nama, 
 					CAST(CONCAT('pm_', pm.id) AS CHAR) COLLATE utf8mb4_unicode_ci as order_id, 
-					pmi.subtotal as total, 
-					CAST(pm.tanggal_so AS DATETIME) as tanggal, 
-					CAST(COALESCE(
-						lbl.order_source,
-						CASE 
-							WHEN LOWER(pm.source) LIKE '%tokopedia%' THEN 'Tokopedia'
-							WHEN LOWER(pm.source) LIKE '%tiktok%' THEN 'TikTok Shop'
-							WHEN LOWER(pm.source) LIKE '%shopee%' THEN 'Shopee'
-							WHEN LOWER(pm.no_pesanan) LIKE '%shp%' THEN 'Shopee'
-							WHEN LOWER(pm.no_pesanan) LIKE '%tkp%' THEN 'Tokopedia'
-							WHEN LOWER(pm.no_pesanan) LIKE '%ttk%' THEN 'TikTok Shop'
-							ELSE 'Shopee'
-						END
-					) AS CHAR) COLLATE utf8mb4_unicode_ci as source 
+					COALESCE(NULLIF(pmi.subtotal, 0), NULLIF(pmi.qty * pmi.harga_satuan, 0), NULLIF(pm.total, 0), NULLIF(pm.subtotal, 0), 0) as total, 
+					CAST(COALESCE(pm.waktu_pembayaran, pm.created_at, pm.tanggal_so) AS DATETIME) as tanggal, 
+					COALESCE(pm.created_at, pm.tanggal_so) as created_at,
+					CAST(CASE 
+						WHEN LOWER(pm.source) LIKE '%tokopedia%' THEN 'Tokopedia'
+						WHEN LOWER(pm.source) LIKE '%tiktok%' THEN 'TikTok Shop'
+						WHEN LOWER(pm.source) LIKE '%shopee%' THEN 'Shopee'
+						WHEN LOWER(pm.source) LIKE '%resi%' THEN 'Resi Marketplace'
+						WHEN LOWER(pm.no_pesanan) LIKE '%shp%' THEN 'Shopee'
+						WHEN LOWER(pm.no_pesanan) LIKE '%tkp%' THEN 'Tokopedia'
+						WHEN LOWER(pm.no_pesanan) LIKE '%ttk%' THEN 'TikTok Shop'
+						ELSE 'Shopee'
+					END AS CHAR) COLLATE utf8mb4_unicode_ci as source,
+					CAST(CASE WHEN pm.nomor_resi IS NOT NULL AND pm.nomor_resi != '' THEN CONCAT('resi kurir ', pm.nomor_resi) ELSE '' END AS CHAR) COLLATE utf8mb4_unicode_ci as resi,
+					CAST(COALESCE(pm.nomor_resi, '') AS CHAR) COLLATE utf8mb4_unicode_ci as raw_resi,
+					CAST(COALESCE(pm.no_pesanan, '') AS CHAR) COLLATE utf8mb4_unicode_ci as pesanan,
+					CAST(COALESCE(pm.catatan, '') AS CHAR) COLLATE utf8mb4_unicode_ci as catatan,
+					CAST(COALESCE(pm.kurir_ekspedisi, '') AS CHAR) COLLATE utf8mb4_unicode_ci as kurir,
+					CAST(CASE 
+						WHEN (pm.no_telepon IS NOT NULL AND pm.no_telepon != '' AND pm.no_telepon != '-' AND pm.no_telepon NOT LIKE '%*%' AND LENGTH(pm.no_telepon) >= 8)
+							THEN RIGHT(REPLACE(REPLACE(REPLACE(REPLACE(pm.no_telepon, ' ', ''), '-', ''), '+', ''), '628', '08'), 10)
+						WHEN (p_pm.no_telp IS NOT NULL AND p_pm.no_telp != '' AND p_pm.no_telp != '-' AND p_pm.no_telp NOT LIKE '%*%' AND LENGTH(p_pm.no_telp) >= 8)
+							THEN RIGHT(REPLACE(REPLACE(REPLACE(REPLACE(p_pm.no_telp, ' ', ''), '-', ''), '+', ''), '628', '08'), 10)
+						WHEN (pm.no_telepon_pengirim IS NOT NULL AND pm.no_telepon_pengirim != '' AND pm.no_telepon_pengirim != '-' AND pm.no_telepon_pengirim NOT LIKE '%*%' AND LENGTH(pm.no_telepon_pengirim) >= 8)
+							THEN RIGHT(REPLACE(REPLACE(REPLACE(REPLACE(pm.no_telepon_pengirim, ' ', ''), '-', ''), '+', ''), '628', '08'), 10)
+						WHEN pm.nomor_resi IS NOT NULL AND pm.nomor_resi != '' AND pm.nomor_resi != '-'
+							THEN CONCAT('RESI_', pm.nomor_resi)
+						WHEN pm.no_pesanan IS NOT NULL AND pm.no_pesanan != '' AND pm.no_pesanan != '-'
+							THEN CONCAT('ORD_', pm.no_pesanan)
+						ELSE CONCAT('CUST_PM_', pm.id)
+					END AS CHAR) COLLATE utf8mb4_unicode_ci as cust_group_key
 				FROM penjualan_marketplace_item pmi
 				JOIN penjualan_marketplace pm ON pmi.penjualan_marketplace_id = pm.id
-				LEFT JOIN crm_transaction_followup_labels lbl ON lbl.order_id = pm.id AND lbl.order_table = 'penjualan_marketplace'
-				WHERE pm.no_telepon IS NOT NULL AND pm.no_telepon != ''
+				LEFT JOIN pelanggan p_pm ON pm.pelanggan_id = p_pm.id
+				WHERE ((pm.no_telepon IS NOT NULL AND pm.no_telepon != '' AND pm.no_telepon != '-' AND LENGTH(pm.no_telepon) >= 8)
+					OR (p_pm.no_telp IS NOT NULL AND p_pm.no_telp != '' AND p_pm.no_telp != '-')
+					OR (p_pm.telepon IS NOT NULL AND p_pm.telepon != '' AND p_pm.telepon != '-')
+					OR (pm.no_telepon_pengirim IS NOT NULL AND pm.no_telepon_pengirim != '' AND pm.no_telepon_pengirim != '-' AND LENGTH(pm.no_telepon_pengirim) >= 8)
+					OR (pm.nomor_resi IS NOT NULL AND pm.nomor_resi != '' AND pm.nomor_resi != '-')
+					OR (pm.no_pesanan IS NOT NULL AND pm.no_pesanan != '' AND pm.no_pesanan != '-'))
 				  AND pm.tanggal_so IS NOT NULL 
 				  AND CAST(pm.tanggal_so AS CHAR) NOT LIKE '0000%' 
 				  AND pm.tanggal_so > '1970-01-01'
@@ -608,7 +750,7 @@ class Model_crm extends CI_Model
 		$where_conditions = [];
 		if (!empty($filter)) {
 			$f_esc = $this->db->escape_like_str($filter);
-			$where_conditions[] = "(nama LIKE '%" . $f_esc . "%' OR phone LIKE '%" . $f_esc . "%')";
+			$where_conditions[] = "(nama LIKE '%" . $f_esc . "%' OR phone LIKE '%" . $f_esc . "%' OR source LIKE '%" . $f_esc . "%' OR resi LIKE '%" . $f_esc . "%' OR raw_resi LIKE '%" . $f_esc . "%' OR pesanan LIKE '%" . $f_esc . "%' OR catatan LIKE '%" . $f_esc . "%')";
 		}
 		if (!empty($period_filter)) {
 			$period_esc = $this->db->escape_str($period_filter);
@@ -618,7 +760,7 @@ class Model_crm extends CI_Model
 			$sql .= " WHERE " . implode(" AND ", $where_conditions);
 		}
 
-		$sql .= " GROUP BY phone ORDER BY last_order_date DESC";
+		$sql .= " GROUP BY cust_group_key ORDER BY MAX(created_at) DESC, last_order_date DESC";
 		
 		$all_rows = $this->db->query($sql)->result();
 
@@ -653,6 +795,41 @@ class Model_crm extends CI_Model
 
 		$count = count($enhanced_rows);
 		$paged_rows = array_slice($enhanced_rows, $offset, $limit);
+
+		// Attach pending followups count for paged rows (handles both phone and resi matching)
+		if (!empty($paged_rows)) {
+			foreach ($paged_rows as $pr) {
+				$pr->pending_followups = 0;
+			}
+			$phones = array_filter(array_map(function($r) { return ($r->customer_phone && $r->customer_phone !== '-') ? $r->customer_phone : null; }, $paged_rows));
+			$resis = array_filter(array_map(function($r) { return (!empty($r->nomor_resi) && $r->nomor_resi !== '-') ? $r->nomor_resi : null; }, $paged_rows));
+			if (!empty($phones) || !empty($resis)) {
+				$this->db->select('customer_phone, nomor_resi, COUNT(*) as cnt')
+					->from('crm_transaction_followup_labels')
+					->where('status_label', 'Pending');
+				$this->db->group_start();
+				if (!empty($phones)) {
+					$this->db->where_in('customer_phone', array_values(array_unique($phones)));
+				}
+				if (!empty($resis)) {
+					if (!empty($phones)) {
+						$this->db->or_where_in('nomor_resi', array_values(array_unique($resis)));
+					} else {
+						$this->db->where_in('nomor_resi', array_values(array_unique($resis)));
+					}
+				}
+				$this->db->group_end();
+				$this->db->group_by(['customer_phone', 'nomor_resi']);
+				$pending_counts = $this->db->get()->result();
+				foreach ($pending_counts as $pc) {
+					foreach ($paged_rows as $pr) {
+						if (($pc->customer_phone && $pr->customer_phone === $pc->customer_phone) || ($pc->nomor_resi && $pr->nomor_resi === $pc->nomor_resi)) {
+							$pr->pending_followups += (int)$pc->cnt;
+						}
+					}
+				}
+			}
+		}
 
 		return [
 			'rows' => $paged_rows, 
@@ -726,7 +903,154 @@ class Model_crm extends CI_Model
 		$sixty_esc = $this->db->escape_str($sixty_format);
 		$tail_esc = $this->db->escape_str($raw_tail);
 
-		return "(" . $column . " = '" . $phone_esc . "' OR " . $column . " = '" . $zero_esc . "' OR " . $column . " = '" . $sixty_esc . "' OR (LENGTH(" . $column . ") >= 9 AND RIGHT(" . $column . ", 9) = '" . $tail_esc . "'))";
+		$clean_col = "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(" . $column . ", ' ', ''), '-', ''), '+', ''), '(', ''), ')', '')";
+
+		return "(" . $column . " = '" . $phone_esc . "' OR " . $column . " = '" . $zero_esc . "' OR " . $column . " = '" . $sixty_esc . "' OR " . $clean_col . " = '" . $zero_esc . "' OR " . $clean_col . " = '" . $sixty_esc . "' OR (LENGTH(" . $clean_col . ") >= 9 AND RIGHT(" . $clean_col . ", 9) = '" . $tail_esc . "'))";
+	}
+
+	/**
+	 * Build SQL conditions and resolve customer identities across pelanggan, SO, and PM
+	 */
+	public function resolve_customer_criteria($phone)
+	{
+		$phone_str = trim((string)$phone);
+		$clean_digits = preg_replace('/[^0-9]/', '', $phone_str);
+		$tail9 = strlen($clean_digits) >= 9 ? substr($clean_digits, -9) : '';
+
+		$pelanggan_ids = [];
+		$customer_name = '';
+		$customer_phone = $phone_str;
+
+		if (strpos($phone_str, 'RESI_') === 0) {
+			$resi_esc = $this->db->escape_str(substr($phone_str, 5));
+			$where_so = "(so.nomor_resi = '" . $resi_esc . "' OR so.no_pesanan = '" . $resi_esc . "')";
+			$where_pm = "(pm.nomor_resi = '" . $resi_esc . "' OR pm.no_pesanan = '" . $resi_esc . "')";
+			$where_lbl = "(customer_phone = '" . $resi_esc . "' OR nomor_resi = '" . $resi_esc . "' OR no_pesanan = '" . $resi_esc . "')";
+			
+			$pm_match = $this->db->query("SELECT pelanggan_id, nama_penerima, no_telepon FROM penjualan_marketplace WHERE nomor_resi = '" . $resi_esc . "' OR no_pesanan = '" . $resi_esc . "' LIMIT 1")->row();
+			if ($pm_match) {
+				if (!empty($pm_match->pelanggan_id)) $pelanggan_ids[] = (int)$pm_match->pelanggan_id;
+				if (!empty($pm_match->nama_penerima)) $customer_name = $pm_match->nama_penerima;
+				if (!empty($pm_match->no_telepon) && $pm_match->no_telepon !== '-' && strpos($pm_match->no_telepon, '*') === false) $customer_phone = $pm_match->no_telepon;
+			}
+			$so_match = $this->db->query("SELECT pelanggan_id, nama_penerima, no_telepon FROM sales_order WHERE nomor_resi = '" . $resi_esc . "' OR no_pesanan = '" . $resi_esc . "' LIMIT 1")->row();
+			if ($so_match) {
+				if (!empty($so_match->pelanggan_id)) $pelanggan_ids[] = (int)$so_match->pelanggan_id;
+				if (empty($customer_name) && !empty($so_match->nama_penerima)) $customer_name = $so_match->nama_penerima;
+				if ((empty($customer_phone) || strpos($customer_phone, 'RESI_') === 0) && !empty($so_match->no_telepon)) $customer_phone = $so_match->no_telepon;
+			}
+		} elseif (strpos($phone_str, 'ORD_') === 0) {
+			$ord_esc = $this->db->escape_str(substr($phone_str, 4));
+			$where_so = "(so.no_pesanan = '" . $ord_esc . "' OR so.nomor_resi = '" . $ord_esc . "')";
+			$where_pm = "(pm.no_pesanan = '" . $ord_esc . "' OR pm.nomor_resi = '" . $ord_esc . "')";
+			$where_lbl = "(customer_phone = '" . $ord_esc . "' OR no_pesanan = '" . $ord_esc . "' OR nomor_resi = '" . $ord_esc . "')";
+
+			$pm_match = $this->db->query("SELECT pelanggan_id, nama_penerima, no_telepon FROM penjualan_marketplace WHERE no_pesanan = '" . $ord_esc . "' OR nomor_resi = '" . $ord_esc . "' LIMIT 1")->row();
+			if ($pm_match) {
+				if (!empty($pm_match->pelanggan_id)) $pelanggan_ids[] = (int)$pm_match->pelanggan_id;
+				if (!empty($pm_match->nama_penerima)) $customer_name = $pm_match->nama_penerima;
+				if (!empty($pm_match->no_telepon) && $pm_match->no_telepon !== '-' && strpos($pm_match->no_telepon, '*') === false) $customer_phone = $pm_match->no_telepon;
+			}
+		} elseif (strpos($phone_str, 'CUST_PM_') === 0) {
+			$pm_id = (int)substr($phone_str, 8);
+			$where_so = "1=0";
+			$where_pm = "pm.id = " . $pm_id;
+			$where_lbl = "order_table = 'penjualan_marketplace' AND order_id = " . $pm_id;
+			$pm_match = $this->db->get_where('penjualan_marketplace', ['id' => $pm_id])->row();
+			if ($pm_match) {
+				if (!empty($pm_match->pelanggan_id)) $pelanggan_ids[] = (int)$pm_match->pelanggan_id;
+				if (!empty($pm_match->nama_penerima)) $customer_name = $pm_match->nama_penerima;
+				if (!empty($pm_match->no_telepon)) $customer_phone = $pm_match->no_telepon;
+			}
+		} elseif (strpos($phone_str, 'CUST_SO_') === 0) {
+			$so_id = (int)substr($phone_str, 8);
+			$where_so = "so.id = " . $so_id;
+			$where_pm = "1=0";
+			$where_lbl = "order_table = 'sales_order' AND order_id = " . $so_id;
+			$so_match = $this->db->get_where('sales_order', ['id' => $so_id])->row();
+			if ($so_match) {
+				if (!empty($so_match->pelanggan_id)) $pelanggan_ids[] = (int)$so_match->pelanggan_id;
+				if (!empty($so_match->nama_penerima)) $customer_name = $so_match->nama_penerima;
+				if (!empty($so_match->no_telepon)) $customer_phone = $so_match->no_telepon;
+			}
+		} else {
+			$raw_esc = $this->db->escape_str($phone_str);
+			$is_direct_resi = false;
+			$pm_resi_match = $this->db->query("SELECT id, pelanggan_id, nama_penerima, no_telepon FROM penjualan_marketplace WHERE nomor_resi = '{$raw_esc}' OR no_pesanan = '{$raw_esc}' LIMIT 1")->row();
+			$so_resi_match = !$pm_resi_match ? $this->db->query("SELECT id, pelanggan_id, nama_penerima, no_telepon FROM sales_order WHERE nomor_resi = '{$raw_esc}' OR no_pesanan = '{$raw_esc}' LIMIT 1")->row() : null;
+
+			if ($pm_resi_match || $so_resi_match) {
+				$is_direct_resi = true;
+				$target_match = $pm_resi_match ?: $so_resi_match;
+				if (!empty($target_match->pelanggan_id)) $pelanggan_ids[] = (int)$target_match->pelanggan_id;
+				if (!empty($target_match->nama_penerima)) $customer_name = $target_match->nama_penerima;
+				if (!empty($target_match->no_telepon) && $target_match->no_telepon !== '-' && strpos($target_match->no_telepon, '*') === false) $customer_phone = $target_match->no_telepon;
+
+				$where_lbl = "(customer_phone = '{$raw_esc}' OR nomor_resi = '{$raw_esc}' OR no_pesanan = '{$raw_esc}')";
+			} else {
+				$where_lbl = $this->get_phone_where_clause('customer_phone', $phone_str);
+			}
+
+			$pel_cond = [];
+			if (!empty($tail9)) {
+				$clean_col_telp = "REPLACE(REPLACE(REPLACE(REPLACE(telepon, ' ', ''), '-', ''), '+', ''), '(', '')";
+				$clean_col_no_telp = "REPLACE(REPLACE(REPLACE(REPLACE(no_telp, ' ', ''), '-', ''), '+', ''), '(', '')";
+				$pel_cond[] = "(LENGTH({$clean_col_telp}) >= 9 AND RIGHT({$clean_col_telp}, 9) = '{$tail9}')";
+				$pel_cond[] = "(LENGTH({$clean_col_no_telp}) >= 9 AND RIGHT({$clean_col_no_telp}, 9) = '{$tail9}')";
+			}
+			if (strpos($phone_str, 'CUST-') === 0) {
+				$pel_cond[] = "kode_pelanggan = " . $this->db->escape($phone_str);
+			} elseif (is_numeric($phone_str) && strlen($phone_str) <= 6) {
+				$pel_cond[] = "id = " . (int)$phone_str;
+			} elseif (strlen($phone_str) >= 3 && empty($tail9)) {
+				$pel_cond[] = "LOWER(nama_pelanggan) = " . $this->db->escape(strtolower($phone_str));
+			}
+
+			if (!empty($pel_cond)) {
+				$pel_rows = $this->db->query("SELECT id, nama_pelanggan, telepon, no_telp FROM pelanggan WHERE " . implode(' OR ', $pel_cond))->result();
+				foreach ($pel_rows as $pr) {
+					$pelanggan_ids[] = (int)$pr->id;
+					if (empty($customer_name) && !empty($pr->nama_pelanggan) && $pr->nama_pelanggan !== '-') {
+						$customer_name = $pr->nama_pelanggan;
+					}
+					if (!empty($pr->telepon) && $pr->telepon !== '-' && strpos($pr->telepon, '*') === false) {
+						$customer_phone = $pr->telepon;
+					} elseif (!empty($pr->no_telp) && $pr->no_telp !== '-' && strpos($pr->no_telp, '*') === false) {
+						$customer_phone = $pr->no_telp;
+					}
+				}
+			}
+
+			$pel_extra_so = !empty($pelanggan_ids) ? " OR so.pelanggan_id IN (" . implode(',', array_unique($pelanggan_ids)) . ")" : "";
+			$pel_extra_pm = !empty($pelanggan_ids) ? " OR pm.pelanggan_id IN (" . implode(',', array_unique($pelanggan_ids)) . ")" : "";
+
+			if ($is_direct_resi) {
+				$cond_so_base = "(so.nomor_resi = '{$raw_esc}' OR so.no_pesanan = '{$raw_esc}')";
+				$cond_pm_base = "(pm.nomor_resi = '{$raw_esc}' OR pm.no_pesanan = '{$raw_esc}')";
+			} else {
+				$cond_so_base = $this->get_phone_where_clause('so.no_telepon', $phone_str);
+				$cond_pm_base = $this->get_phone_where_clause('pm.no_telepon', $phone_str);
+			}
+
+			$where_so = "(" . $cond_so_base . $pel_extra_so . ") AND (so.source = 'excel_import' OR (so.source NOT IN ('shopee', 'tokopedia', 'tiktok', 'tiktokshop', 'lazada', 'marketplace') AND (so.no_pesanan IS NULL OR so.no_pesanan = '' OR so.no_pesanan = so.nomor_so)))";
+			$where_pm = "(" . $cond_pm_base . $pel_extra_pm . ")";
+		}
+
+		if (empty($customer_name) && !empty($pelanggan_ids)) {
+			$p_row = $this->db->query("SELECT nama_pelanggan FROM pelanggan WHERE id IN (" . implode(',', array_unique($pelanggan_ids)) . ") AND nama_pelanggan IS NOT NULL AND nama_pelanggan != '-' LIMIT 1")->row();
+			if ($p_row && !empty($p_row->nama_pelanggan)) {
+				$customer_name = $p_row->nama_pelanggan;
+			}
+		}
+
+		return [
+			'where_so'        => $where_so,
+			'where_pm'        => $where_pm,
+			'where_lbl'       => $where_lbl,
+			'pelanggan_ids'   => array_unique($pelanggan_ids),
+			'customer_name'   => $customer_name,
+			'customer_phone'  => $customer_phone,
+		];
 	}
 
 	/**
@@ -734,9 +1058,12 @@ class Model_crm extends CI_Model
 	 */
 	public function get_customer_summary($phone, $product_filter = '')
 	{
-		$where_so = $this->get_phone_where_clause('so.no_telepon', $phone);
-		$where_pm = $this->get_phone_where_clause('pm.no_telepon', $phone);
-		$where_lbl = $this->get_phone_where_clause('customer_phone', $phone);
+		$crit = $this->resolve_customer_criteria($phone);
+		$where_so = $crit['where_so'];
+		$where_pm = $crit['where_pm'];
+		$where_lbl = $crit['where_lbl'];
+		$display_phone = $crit['customer_phone'];
+		$fallback_name = $crit['customer_name'];
 
 		// Product filter: JOIN to item tables and filter by product name
 		$so_join = '';
@@ -744,11 +1071,25 @@ class Model_crm extends CI_Model
 		$pm_join = '';
 		$pm_product_where = '';
 		if (!empty($product_filter)) {
-			$pf = $this->db->escape($product_filter);
+			$clean_pf = trim(preg_replace('/\s*\([^)]*\)$/', '', $product_filter));
+			$pf_esc = $this->db->escape(trim($product_filter));
+			$clean_pf_esc = $this->db->escape($clean_pf);
+			$like_pf = $this->db->escape_like_str($clean_pf);
+
 			$so_join = "INNER JOIN sales_order_item soi ON soi.so_id = so.id LEFT JOIN produk p ON soi.produk_id = p.id";
-			$so_product_where = " AND (p.nama_produk = " . $pf . " OR soi.catatan = " . $pf . ")";
+			$so_product_where = " AND (
+				TRIM(REGEXP_REPLACE(soi.catatan, '\\\\s*\\\\([^)]*\\\\)$', '')) = {$clean_pf_esc}
+				OR soi.catatan = {$pf_esc}
+				OR soi.catatan LIKE '{$like_pf}%'
+				OR ((soi.catatan IS NULL OR soi.catatan = '' OR soi.catatan LIKE '%Produk%') AND p.id > 1 AND p.nama_produk = {$clean_pf_esc})
+			)";
 			$pm_join = "INNER JOIN penjualan_marketplace_item pmi ON pmi.penjualan_marketplace_id = pm.id LEFT JOIN produk p2 ON pmi.produk_id = p2.id";
-			$pm_product_where = " AND (p2.nama_produk = " . $pf . " OR pmi.catatan = " . $pf . " OR pm.nama_produk_marketplace = " . $pf . ")";
+			$pm_product_where = " AND (
+				TRIM(REGEXP_REPLACE(pmi.catatan, '\\\\s*\\\\([^)]*\\\\)$', '')) = {$clean_pf_esc}
+				OR pmi.catatan = {$pf_esc}
+				OR pmi.catatan LIKE '{$like_pf}%'
+				OR ((pmi.catatan IS NULL OR pmi.catatan = '' OR pmi.catatan LIKE '%Produk%') AND p2.id > 1 AND p2.nama_produk = {$clean_pf_esc})
+			)";
 
 			// Get total spend from SO item subtotal for this product
 			$so_spend = $this->get_query_sum("SELECT COALESCE(SUM(soi.subtotal),0) as t FROM sales_order so " . $so_join . " WHERE " . $where_so . $so_product_where);
@@ -790,11 +1131,19 @@ class Model_crm extends CI_Model
 		}
 
 		$name = '-';
-		if ($dates_so && !empty($dates_so->nama)) $name = $dates_so->nama;
-		elseif ($dates_pm && !empty($dates_pm->nama)) $name = $dates_pm->nama;
-		else {
-			$name_lbl = $this->db->query("SELECT customer_nama FROM crm_transaction_followup_labels WHERE " . $where_lbl . " LIMIT 1")->row();
-			if ($name_lbl) $name = $name_lbl->customer_nama;
+		if ($dates_so && !empty($dates_so->nama) && $dates_so->nama !== '-' && $dates_so->nama !== 'Customer') {
+			$name = $dates_so->nama;
+		} elseif ($dates_pm && !empty($dates_pm->nama) && $dates_pm->nama !== '-' && $dates_pm->nama !== 'Customer' && $dates_pm->nama !== 'Customer Marketplace') {
+			$name = $dates_pm->nama;
+		} elseif (!empty($fallback_name) && $fallback_name !== '-') {
+			$name = $fallback_name;
+		} else {
+			$name_lbl = $this->db->query("SELECT customer_nama FROM crm_transaction_followup_labels WHERE (" . $where_lbl . ") AND customer_nama IS NOT NULL AND customer_nama != '-' AND customer_nama != '' LIMIT 1")->row();
+			if ($name_lbl && !empty($name_lbl->customer_nama)) {
+				$name = $name_lbl->customer_nama;
+			} elseif (!empty($fallback_name)) {
+				$name = $fallback_name;
+			}
 		}
 
 		$total_spend = (float)$so_spend + (float)$mp_spend;
@@ -805,7 +1154,7 @@ class Model_crm extends CI_Model
 
 		return [
 			'nama' => $name,
-			'phone' => $phone,
+			'phone' => !empty($display_phone) ? $display_phone : $phone,
 			'total_spend_toko' => (float)$so_spend,
 			'total_spend_online' => (float)$mp_spend,
 			'total_spend' => $total_spend,
@@ -825,9 +1174,10 @@ class Model_crm extends CI_Model
 	 */
 	public function get_customer_transactions($phone, $product_filter = '')
 	{
-		$where_so = $this->get_phone_where_clause('so.no_telepon', $phone);
-		$where_pm = $this->get_phone_where_clause('pm.no_telepon', $phone);
-		$where_lbl = $this->get_phone_where_clause('lbl.customer_phone', $phone);
+		$crit = $this->resolve_customer_criteria($phone);
+		$where_so = $crit['where_so'];
+		$where_pm = $crit['where_pm'];
+		$where_lbl = str_replace('customer_phone', 'lbl.customer_phone', $crit['where_lbl']);
 
 		// Product filter JOINs
 		$so_join = '';
@@ -835,12 +1185,31 @@ class Model_crm extends CI_Model
 		$pm_join_extra = '';
 		$pm_product_where = '';
 		if (!empty($product_filter)) {
-			$pf = $this->db->escape($product_filter);
+			$clean_pf = trim(preg_replace('/\s*\([^)]*\)$/', '', $product_filter));
+			$pf_esc = $this->db->escape(trim($product_filter));
+			$clean_pf_esc = $this->db->escape($clean_pf);
+			$like_pf = $this->db->escape_like_str($clean_pf);
+
 			$so_join = "INNER JOIN sales_order_item soi_f ON soi_f.so_id = so.id LEFT JOIN produk p_f ON soi_f.produk_id = p_f.id";
-			$so_product_where = " AND (p_f.nama_produk = " . $pf . " OR soi_f.catatan = " . $pf . ")";
+			$so_product_where = " AND (
+				TRIM(REGEXP_REPLACE(soi_f.catatan, '\\\\s*\\\\([^)]*\\\\)$', '')) = {$clean_pf_esc}
+				OR soi_f.catatan = {$pf_esc}
+				OR soi_f.catatan LIKE '{$like_pf}%'
+				OR ((soi_f.catatan IS NULL OR soi_f.catatan = '' OR soi_f.catatan LIKE '%Produk%') AND p_f.id > 1 AND p_f.nama_produk = {$clean_pf_esc})
+			)";
 			$pm_join_extra = "INNER JOIN penjualan_marketplace_item pmi_f ON pmi_f.penjualan_marketplace_id = pm.id LEFT JOIN produk p2_f ON pmi_f.produk_id = p2_f.id";
-			$pm_product_where = " AND (p2_f.nama_produk = " . $pf . " OR pmi_f.catatan = " . $pf . " OR pm.nama_produk_marketplace = " . $pf . ")";
+			$pm_product_where = " AND (
+				TRIM(REGEXP_REPLACE(pmi_f.catatan, '\\\\s*\\\\([^)]*\\\\)$', '')) = {$clean_pf_esc}
+				OR pmi_f.catatan = {$pf_esc}
+				OR pmi_f.catatan LIKE '{$like_pf}%'
+				OR ((pmi_f.catatan IS NULL OR pmi_f.catatan = '' OR pmi_f.catatan LIKE '%Produk%') AND p2_f.id > 1 AND p2_f.nama_produk = {$clean_pf_esc})
+			)";
 		}
+
+		$so_spend_col = !empty($product_filter) ? "COALESCE(SUM(soi_f.subtotal), so.total)" : "so.total";
+		$pm_spend_col = !empty($product_filter) ? "COALESCE(SUM(pmi_f.subtotal), pm.total)" : "pm.total";
+		$so_group_clause = !empty($product_filter) ? "GROUP BY so.id" : "";
+		$pm_group_clause = !empty($product_filter) ? "GROUP BY pm.id" : "";
 
 		$sql = "
 			(SELECT DISTINCT
@@ -848,7 +1217,7 @@ class Model_crm extends CI_Model
 				so.id, 
 				CAST(so.nomor_so AS CHAR) COLLATE utf8mb4_unicode_ci as nomor_so, 
 				CAST(so.no_pesanan AS CHAR) COLLATE utf8mb4_unicode_ci as no_pesanan, 
-				so.tanggal_so as tanggal,
+				COALESCE(so.waktu_pembayaran, so.created_at, so.tanggal_so) as tanggal,
 				COALESCE(so.tanggal_kirim, so.tanggal_so) as tanggal_kirim,
 				CAST('Toko' AS CHAR) COLLATE utf8mb4_unicode_ci as sumber_penjualan,
 				CAST(so.status AS CHAR) COLLATE utf8mb4_unicode_ci as status, 
@@ -858,25 +1227,27 @@ class Model_crm extends CI_Model
 				CAST(so.nama_penerima AS CHAR) COLLATE utf8mb4_unicode_ci as nama_penerima, 
 				CAST(so.no_telepon AS CHAR) COLLATE utf8mb4_unicode_ci as no_telepon, 
 				CAST(so.alamat_pengiriman AS CHAR) COLLATE utf8mb4_unicode_ci as alamat_pengiriman,
-				so.total, 
+				{$so_spend_col} as total, 
 				CAST(COALESCE(
+					" . (!empty($product_filter) ? $this->db->escape($product_filter) . ", " : "") . "
 					NULLIF(so.nama_produk_marketplace, ''),
 					(SELECT COALESCE(NULLIF(soi.catatan, ''), p.nama_produk) FROM sales_order_item soi LEFT JOIN produk p ON soi.produk_id = p.id WHERE soi.so_id = so.id ORDER BY soi.id ASC LIMIT 1),
 					'Produk SO'
 				) AS CHAR) COLLATE utf8mb4_unicode_ci as produk_ringkasan
 			FROM sales_order so 
 			" . $so_join . "
-			WHERE " . $where_so . $so_product_where . ")
+			WHERE " . $where_so . " AND (so.source = 'excel_import' OR (so.source NOT IN ('shopee', 'tokopedia', 'tiktok', 'tiktokshop', 'lazada', 'marketplace') AND (so.no_pesanan IS NULL OR so.no_pesanan = '' OR so.no_pesanan = so.nomor_so)))" . $so_product_where . "
+			{$so_group_clause})
 			UNION ALL
 			(SELECT DISTINCT
 				CAST('penjualan_marketplace' AS CHAR) COLLATE utf8mb4_unicode_ci as tbl, 
 				pm.id, 
 				CAST(pm.nomor_so AS CHAR) COLLATE utf8mb4_unicode_ci as nomor_so, 
 				CAST(pm.no_pesanan AS CHAR) COLLATE utf8mb4_unicode_ci as no_pesanan, 
-				pm.tanggal_so as tanggal,
+				COALESCE(pm.waktu_pembayaran, pm.created_at, pm.tanggal_so) as tanggal,
 				pm.tanggal_so as tanggal_kirim,
 				CAST(COALESCE(
-					lbl.order_source,
+					(SELECT order_source FROM crm_transaction_followup_labels WHERE order_id = pm.id AND order_table = 'penjualan_marketplace' LIMIT 1),
 					CASE 
 						WHEN LOWER(pm.source) LIKE '%tokopedia%' THEN 'Tokopedia'
 						WHEN LOWER(pm.source) LIKE '%tiktok%' THEN 'TikTok Shop'
@@ -894,16 +1265,17 @@ class Model_crm extends CI_Model
 				CAST(pm.nama_penerima AS CHAR) COLLATE utf8mb4_unicode_ci as nama_penerima, 
 				CAST(pm.no_telepon AS CHAR) COLLATE utf8mb4_unicode_ci as no_telepon, 
 				CAST(pm.alamat_pengiriman AS CHAR) COLLATE utf8mb4_unicode_ci as alamat_pengiriman,
-				pm.total, 
+				{$pm_spend_col} as total, 
 				CAST(COALESCE(
+					" . (!empty($product_filter) ? $this->db->escape($product_filter) . ", " : "") . "
 					NULLIF(pm.nama_produk_marketplace, ''),
 					(SELECT COALESCE(NULLIF(pmi.catatan, ''), p.nama_produk) FROM penjualan_marketplace_item pmi LEFT JOIN produk p ON pmi.produk_id = p.id WHERE pmi.penjualan_marketplace_id = pm.id ORDER BY pmi.id ASC LIMIT 1),
 					'Produk Marketplace'
 				) AS CHAR) COLLATE utf8mb4_unicode_ci as produk_ringkasan
 			FROM penjualan_marketplace pm 
 			" . $pm_join_extra . "
-			LEFT JOIN crm_transaction_followup_labels lbl ON lbl.order_id = pm.id AND lbl.order_table = 'penjualan_marketplace'
-			WHERE " . $where_pm . $pm_product_where . ")";
+			WHERE " . $where_pm . $pm_product_where . "
+			{$pm_group_clause})";
 
 		if (empty($product_filter)) {
 			$sql .= " UNION ALL
@@ -928,7 +1300,7 @@ class Model_crm extends CI_Model
 			WHERE " . $where_lbl . " AND (lbl.order_id = 0 OR lbl.order_id IS NULL))";
 		}
 
-		$sql .= " ORDER BY tanggal DESC";
+		$sql .= " ORDER BY tanggal DESC, id DESC";
 
 		return $this->db->query($sql)->result();
 	}
@@ -960,14 +1332,15 @@ class Model_crm extends CI_Model
 	 */
 	public function get_customer_product_rfm($phone)
 	{
-		$where_so = $this->get_phone_where_clause('so.no_telepon', $phone);
-		$where_pm = $this->get_phone_where_clause('pm.no_telepon', $phone);
+		$crit = $this->resolve_customer_criteria($phone);
+		$where_so = $crit['where_so'];
+		$where_pm = $crit['where_pm'];
 
 		$sql = "
 			SELECT 
-				item_data.produk_id,
+				MAX(item_data.produk_id) as produk_id,
 				item_data.nama_produk,
-				item_data.kode_produk,
+				MAX(item_data.kode_produk) as kode_produk,
 				MAX(item_data.tanggal_transaksi) as last_bought_date,
 				DATEDIFF(CURRENT_DATE(), MAX(item_data.tanggal_transaksi)) as recency_days,
 				COUNT(DISTINCT item_data.order_id) as order_count,
@@ -976,7 +1349,10 @@ class Model_crm extends CI_Model
 			FROM (
 				SELECT 
 					soi.produk_id,
-					COALESCE(NULLIF(soi.catatan, ''), p.nama_produk, 'Produk SO') as nama_produk,
+					CASE 
+						WHEN soi.catatan IS NOT NULL AND TRIM(soi.catatan) != '' THEN TRIM(REGEXP_REPLACE(soi.catatan, '\\\\s*\\\\([^)]*\\\\)$', ''))
+						ELSE COALESCE(p.nama_produk, 'Produk SO')
+					END as nama_produk,
 					COALESCE(p.kode_produk, '-') as kode_produk,
 					so.tanggal_so as tanggal_transaksi,
 					CONCAT('so_', so.id) as order_id,
@@ -991,8 +1367,15 @@ class Model_crm extends CI_Model
 
 				SELECT 
 					pmi.produk_id,
-					COALESCE(NULLIF(pmi.catatan, ''), p.nama_produk, 'Produk Marketplace') as nama_produk,
-					COALESCE(p.kode_produk, '-') as kode_produk,
+					CASE 
+						WHEN pmi.catatan IS NOT NULL AND TRIM(pmi.catatan) != '' THEN TRIM(REGEXP_REPLACE(pmi.catatan, '\\\\s*\\\\([^)]*\\\\)$', ''))
+						ELSE COALESCE(p.nama_produk, 'Produk Marketplace')
+					END as nama_produk,
+					CASE
+						WHEN p.id > 1 AND p.kode_produk IS NOT NULL THEN p.kode_produk
+						WHEN pmi.sku IS NOT NULL AND pmi.sku != '' THEN pmi.sku
+						ELSE '-'
+					END as kode_produk,
 					pm.tanggal_so as tanggal_transaksi,
 					CONCAT('pm_', pm.id) as order_id,
 					pmi.qty,
@@ -1002,7 +1385,7 @@ class Model_crm extends CI_Model
 				LEFT JOIN produk p ON pmi.produk_id = p.id
 				WHERE " . $where_pm . "
 			) item_data
-			GROUP BY item_data.nama_produk, item_data.kode_produk, item_data.produk_id
+			GROUP BY item_data.nama_produk
 			ORDER BY total_spend DESC, last_bought_date DESC
 		";
 
@@ -1024,7 +1407,10 @@ class Model_crm extends CI_Model
 		$sql = "
 			SELECT DISTINCT u.item_name, u.nama_kategori, u.kategori_id FROM (
 				SELECT 
-					COALESCE(NULLIF(soi.catatan, ''), p.nama_produk) as item_name,
+					CASE 
+						WHEN soi.catatan IS NOT NULL AND TRIM(soi.catatan) != '' THEN TRIM(REGEXP_REPLACE(soi.catatan, '\\\\s*\\\\([^)]*\\\\)$', ''))
+						ELSE COALESCE(p.nama_produk, 'Produk SO')
+					END as item_name,
 					COALESCE(kp.nama_kategori, 'Tanpa Kategori') as nama_kategori,
 					p.kategori_id
 				FROM sales_order_item soi 
@@ -1035,7 +1421,10 @@ class Model_crm extends CI_Model
 				UNION
 
 				SELECT 
-					COALESCE(NULLIF(pmi.catatan, ''), p.nama_produk) as item_name,
+					CASE 
+						WHEN pmi.catatan IS NOT NULL AND TRIM(pmi.catatan) != '' THEN TRIM(REGEXP_REPLACE(pmi.catatan, '\\\\s*\\\\([^)]*\\\\)$', ''))
+						ELSE COALESCE(p.nama_produk, 'Produk Marketplace')
+					END as item_name,
 					COALESCE(kp.nama_kategori, 'Tanpa Kategori') as nama_kategori,
 					p.kategori_id
 				FROM penjualan_marketplace_item pmi 
@@ -1057,7 +1446,12 @@ class Model_crm extends CI_Model
 		$sql = "
 			SELECT DISTINCT kp.id, kp.nama_kategori 
 			FROM kategori_produk kp
-			JOIN produk p ON p.kategori_id = kp.id
+			WHERE kp.nama_kategori IS NOT NULL AND TRIM(kp.nama_kategori) != ''
+			  AND (
+				EXISTS (SELECT 1 FROM produk p WHERE p.kategori_id = kp.id)
+				OR kp.nama_kategori LIKE '%Resi%'
+				OR kp.nama_kategori LIKE '%Marketplace%'
+			  )
 			ORDER BY kp.nama_kategori ASC
 		";
 		return $this->db->query($sql)->result();
@@ -1148,6 +1542,8 @@ class Model_crm extends CI_Model
 				SUM(t_data.subtotal) as total_spend,
 				SUM(t_data.subtotal - t_data.total_hpp) as total_profit,
 				SUM(t_data.total_hpp) as total_hpp,
+				COUNT(DISTINCT t_data.nama_produk) as total_products,
+				ROUND(COALESCE(SUM(t_data.subtotal) / NULLIF(COUNT(DISTINCT t_data.order_id), 0), 0), 2) as avg_order_value,
 				ROUND(AVG(DATEDIFF(CURRENT_DATE(), t_data.tanggal_so)), 0) as avg_recency_days
 			FROM (
 				SELECT 
@@ -1165,6 +1561,7 @@ class Model_crm extends CI_Model
 				LEFT JOIN produk p ON soi.produk_id = p.id
 				LEFT JOIN kategori_produk kp ON kp.id = p.kategori_id
 				WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
+				  AND (so.source = 'excel_import' OR (so.source NOT IN ('shopee', 'tokopedia', 'tiktok', 'tiktokshop', 'lazada', 'marketplace') AND (so.no_pesanan IS NULL OR so.no_pesanan = '' OR so.no_pesanan = so.nomor_so)))
 				  AND so.tanggal_so IS NOT NULL 
 				  AND CAST(so.tanggal_so AS CHAR) NOT LIKE '0000%' 
 				  AND so.tanggal_so > '1970-01-01'
@@ -1211,6 +1608,10 @@ class Model_crm extends CI_Model
 			$all_rows[$i]->total_profit = (float)$all_rows[$i]->total_profit;
 			$all_rows[$i]->total_hpp = (float)$all_rows[$i]->total_hpp;
 			$all_rows[$i]->avg_recency_days = (int)$all_rows[$i]->avg_recency_days;
+			$all_rows[$i]->product_label = !empty($product_filter) ? $product_filter : 'Semua Produk';
+			$all_rows[$i]->avg_order_value = $all_rows[$i]->total_orders > 0 
+				? round($all_rows[$i]->total_spend / $all_rows[$i]->total_orders, 2) 
+				: (float)($all_rows[$i]->avg_order_value ?? 0.0);
 
 			$prev_spend = isset($all_rows[$i + 1]) ? (float)$all_rows[$i + 1]->total_spend : 0;
 			$prev_profit = isset($all_rows[$i + 1]) ? (float)$all_rows[$i + 1]->total_profit : 0;
@@ -1282,6 +1683,7 @@ class Model_crm extends CI_Model
 				JOIN sales_order so ON soi.so_id = so.id
 				LEFT JOIN produk p ON soi.produk_id = p.id
 				WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
+				  AND (so.source = 'excel_import' OR (so.source NOT IN ('shopee', 'tokopedia', 'tiktok', 'tiktokshop', 'lazada', 'marketplace') AND (so.no_pesanan IS NULL OR so.no_pesanan = '' OR so.no_pesanan = so.nomor_so)))
 				  AND so.tanggal_so IS NOT NULL 
 				  AND CAST(so.tanggal_so AS CHAR) NOT LIKE '0000%' 
 				  AND so.tanggal_so > '1970-01-01'
@@ -1343,6 +1745,7 @@ class Model_crm extends CI_Model
 				JOIN sales_order so ON soi.so_id = so.id
 				LEFT JOIN produk p ON soi.produk_id = p.id
 				WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
+				  AND (so.source = 'excel_import' OR (so.source NOT IN ('shopee', 'tokopedia', 'tiktok', 'tiktokshop', 'lazada', 'marketplace') AND (so.no_pesanan IS NULL OR so.no_pesanan = '' OR so.no_pesanan = so.nomor_so)))
 				  AND so.tanggal_so IS NOT NULL 
 				  AND CAST(so.tanggal_so AS CHAR) NOT LIKE '0000%' 
 				  AND so.tanggal_so > '1970-01-01'
@@ -1437,6 +1840,7 @@ class Model_crm extends CI_Model
 				LEFT JOIN produk p ON soi.produk_id = p.id
 				LEFT JOIN kategori_produk kp ON p.kategori_id = kp.id
 				WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
+				  AND (so.source = 'excel_import' OR (so.source NOT IN ('shopee', 'tokopedia', 'tiktok', 'tiktokshop', 'lazada', 'marketplace') AND (so.no_pesanan IS NULL OR so.no_pesanan = '' OR so.no_pesanan = so.nomor_so)))
 				  AND so.tanggal_so IS NOT NULL AND CAST(so.tanggal_so AS CHAR) NOT LIKE '0000%' AND so.tanggal_so > '1970-01-01'
 				  AND (so.status_pesanan IS NULL OR (LOWER(so.status_pesanan) NOT LIKE '%batal%' AND LOWER(so.status_pesanan) NOT LIKE '%cancel%'))
 				  AND DATE_FORMAT(so.tanggal_so, '%Y-%m') = '" . $this->db->escape_str($ym) . "'
@@ -1630,6 +2034,7 @@ class Model_crm extends CI_Model
 				LEFT JOIN produk p ON soi.produk_id = p.id
 				LEFT JOIN kategori_produk kp ON p.kategori_id = kp.id
 				WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
+				  AND (so.source = 'excel_import' OR (so.source NOT IN ('shopee', 'tokopedia', 'tiktok', 'tiktokshop', 'lazada', 'marketplace') AND (so.no_pesanan IS NULL OR so.no_pesanan = '' OR so.no_pesanan = so.nomor_so)))
 				  AND so.tanggal_so IS NOT NULL AND CAST(so.tanggal_so AS CHAR) NOT LIKE '0000%' AND so.tanggal_so > '1970-01-01'
 				  AND (so.status_pesanan IS NULL OR (LOWER(so.status_pesanan) NOT LIKE '%batal%' AND LOWER(so.status_pesanan) NOT LIKE '%cancel%'))
 				  AND YEAR(so.tanggal_so) = '" . $this->db->escape_str($year) . "'
@@ -1815,7 +2220,7 @@ class Model_crm extends CI_Model
 			$sql = "
 				SELECT phone, nama, DATE(tanggal) as order_period, subtotal
 				FROM (
-					SELECT CAST(so.no_telepon AS CHAR) as phone, 
+					SELECT CAST(COALESCE(NULLIF(NULLIF(so.no_telepon, '-'), ''), NULLIF(NULLIF(pel.no_telp, '-'), ''), NULLIF(NULLIF(pel.telepon, '-'), ''), NULLIF(NULLIF(so.no_telepon_pengirim, '-'), ''), '-') AS CHAR) as phone, 
 						CAST(COALESCE(NULLIF(TRIM(so.nama_penerima), ''), NULLIF(TRIM(so.username_pembeli), ''), NULLIF(TRIM(pel.nama_pelanggan), ''), 'Customer') AS CHAR) as nama, 
 						so.tanggal_so as tanggal, 
 						COALESCE(soi.subtotal, (soi.qty * soi.harga_satuan), 0) as subtotal, 
@@ -1827,14 +2232,18 @@ class Model_crm extends CI_Model
 					LEFT JOIN pelanggan pel ON so.pelanggan_id = pel.id
 					LEFT JOIN produk p ON soi.produk_id = p.id
 					LEFT JOIN kategori_produk kp ON p.kategori_id = kp.id
-					WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
+					WHERE ((so.no_telepon IS NOT NULL AND so.no_telepon != '' AND so.no_telepon != '-')
+						OR (pel.no_telp IS NOT NULL AND pel.no_telp != '' AND pel.no_telp != '-')
+						OR (pel.telepon IS NOT NULL AND pel.telepon != '' AND pel.telepon != '-')
+						OR (so.no_telepon_pengirim IS NOT NULL AND so.no_telepon_pengirim != '' AND so.no_telepon_pengirim != '-'))
+					  AND (so.source = 'excel_import' OR (so.source NOT IN ('shopee', 'tokopedia', 'tiktok', 'tiktokshop', 'lazada', 'marketplace') AND (so.no_pesanan IS NULL OR so.no_pesanan = '' OR so.no_pesanan = so.nomor_so)))
 					  AND so.tanggal_so IS NOT NULL AND CAST(so.tanggal_so AS CHAR) NOT LIKE '0000%' AND so.tanggal_so > '1970-01-01'
 					  AND (so.status_pesanan IS NULL OR (LOWER(so.status_pesanan) NOT LIKE '%batal%' AND LOWER(so.status_pesanan) NOT LIKE '%cancel%'))
 					  AND DATE_FORMAT(so.tanggal_so, '%Y-%m') = '" . $this->db->escape_str($year_month) . "'
 
 					UNION ALL
 
-					SELECT CAST(pm.no_telepon AS CHAR) as phone, 
+					SELECT CAST(COALESCE(NULLIF(NULLIF(pm.no_telepon, '-'), ''), NULLIF(NULLIF(pel2.no_telp, '-'), ''), NULLIF(NULLIF(pel2.telepon, '-'), ''), NULLIF(NULLIF(pm.no_telepon_pengirim, '-'), ''), '-') AS CHAR) as phone, 
 						CAST(COALESCE(NULLIF(TRIM(pm.nama_penerima), ''), NULLIF(TRIM(pm.username_pembeli), ''), NULLIF(TRIM(pel2.nama_pelanggan), ''), 'Customer') AS CHAR) as nama, 
 						pm.tanggal_so as tanggal, 
 						COALESCE(pmi.subtotal, (pmi.qty * pmi.harga_satuan), 0) as subtotal, 
@@ -1846,7 +2255,10 @@ class Model_crm extends CI_Model
 					LEFT JOIN pelanggan pel2 ON pm.pelanggan_id = pel2.id
 					LEFT JOIN produk p2 ON pmi.produk_id = p2.id
 					LEFT JOIN kategori_produk kp2 ON p2.kategori_id = kp2.id
-					WHERE pm.no_telepon IS NOT NULL AND pm.no_telepon != ''
+					WHERE ((pm.no_telepon IS NOT NULL AND pm.no_telepon != '' AND pm.no_telepon != '-')
+						OR (pel2.no_telp IS NOT NULL AND pel2.no_telp != '' AND pel2.no_telp != '-')
+						OR (pel2.telepon IS NOT NULL AND pel2.telepon != '' AND pel2.telepon != '-')
+						OR (pm.no_telepon_pengirim IS NOT NULL AND pm.no_telepon_pengirim != '' AND pm.no_telepon_pengirim != '-'))
 					  AND pm.tanggal_so IS NOT NULL AND CAST(pm.tanggal_so AS CHAR) NOT LIKE '0000%' AND pm.tanggal_so > '1970-01-01'
 					  AND (pm.status_pesanan IS NULL OR (LOWER(pm.status_pesanan) NOT LIKE '%batal%' AND LOWER(pm.status_pesanan) NOT LIKE '%cancel%'))
 					  AND DATE_FORMAT(pm.tanggal_so, '%Y-%m') = '" . $this->db->escape_str($year_month) . "'
@@ -1859,7 +2271,7 @@ class Model_crm extends CI_Model
 			$sql = "
 				SELECT phone, nama, DATE_FORMAT(tanggal, '%Y-%m') as order_period, subtotal
 				FROM (
-					SELECT CAST(so.no_telepon AS CHAR) as phone, 
+					SELECT CAST(COALESCE(NULLIF(NULLIF(so.no_telepon, '-'), ''), NULLIF(NULLIF(pel.no_telp, '-'), ''), NULLIF(NULLIF(pel.telepon, '-'), ''), NULLIF(NULLIF(so.no_telepon_pengirim, '-'), ''), '-') AS CHAR) as phone, 
 						CAST(COALESCE(NULLIF(TRIM(so.nama_penerima), ''), NULLIF(TRIM(so.username_pembeli), ''), NULLIF(TRIM(pel.nama_pelanggan), ''), 'Customer') AS CHAR) as nama, 
 						so.tanggal_so as tanggal, 
 						COALESCE(soi.subtotal, (soi.qty * soi.harga_satuan), 0) as subtotal, 
@@ -1871,14 +2283,17 @@ class Model_crm extends CI_Model
 					LEFT JOIN pelanggan pel ON so.pelanggan_id = pel.id
 					LEFT JOIN produk p ON soi.produk_id = p.id
 					LEFT JOIN kategori_produk kp ON p.kategori_id = kp.id
-					WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
+					WHERE ((so.no_telepon IS NOT NULL AND so.no_telepon != '' AND so.no_telepon != '-')
+						OR (pel.no_telp IS NOT NULL AND pel.no_telp != '' AND pel.no_telp != '-')
+						OR (pel.telepon IS NOT NULL AND pel.telepon != '' AND pel.telepon != '-')
+						OR (so.no_telepon_pengirim IS NOT NULL AND so.no_telepon_pengirim != '' AND so.no_telepon_pengirim != '-'))
 					  AND so.tanggal_so IS NOT NULL AND CAST(so.tanggal_so AS CHAR) NOT LIKE '0000%' AND so.tanggal_so > '1970-01-01'
 					  AND (so.status_pesanan IS NULL OR (LOWER(so.status_pesanan) NOT LIKE '%batal%' AND LOWER(so.status_pesanan) NOT LIKE '%cancel%'))
 					  AND YEAR(so.tanggal_so) = '" . $this->db->escape_str($year) . "'
 
 					UNION ALL
 
-					SELECT CAST(pm.no_telepon AS CHAR) as phone, 
+					SELECT CAST(COALESCE(NULLIF(NULLIF(pm.no_telepon, '-'), ''), NULLIF(NULLIF(pel2.no_telp, '-'), ''), NULLIF(NULLIF(pel2.telepon, '-'), ''), NULLIF(NULLIF(pm.no_telepon_pengirim, '-'), ''), '-') AS CHAR) as phone, 
 						CAST(COALESCE(NULLIF(TRIM(pm.nama_penerima), ''), NULLIF(TRIM(pm.username_pembeli), ''), NULLIF(TRIM(pel2.nama_pelanggan), ''), 'Customer') AS CHAR) as nama, 
 						pm.tanggal_so as tanggal, 
 						COALESCE(pmi.subtotal, (pmi.qty * pmi.harga_satuan), 0) as subtotal, 
@@ -1890,7 +2305,10 @@ class Model_crm extends CI_Model
 					LEFT JOIN pelanggan pel2 ON pm.pelanggan_id = pel2.id
 					LEFT JOIN produk p2 ON pmi.produk_id = p2.id
 					LEFT JOIN kategori_produk kp2 ON p2.kategori_id = kp2.id
-					WHERE pm.no_telepon IS NOT NULL AND pm.no_telepon != ''
+					WHERE ((pm.no_telepon IS NOT NULL AND pm.no_telepon != '' AND pm.no_telepon != '-')
+						OR (pel2.no_telp IS NOT NULL AND pel2.no_telp != '' AND pel2.no_telp != '-')
+						OR (pel2.telepon IS NOT NULL AND pel2.telepon != '' AND pel2.telepon != '-')
+						OR (pm.no_telepon_pengirim IS NOT NULL AND pm.no_telepon_pengirim != '' AND pm.no_telepon_pengirim != '-'))
 					  AND pm.tanggal_so IS NOT NULL AND CAST(pm.tanggal_so AS CHAR) NOT LIKE '0000%' AND pm.tanggal_so > '1970-01-01'
 					  AND (pm.status_pesanan IS NULL OR (LOWER(pm.status_pesanan) NOT LIKE '%batal%' AND LOWER(pm.status_pesanan) NOT LIKE '%cancel%'))
 					  AND YEAR(pm.tanggal_so) = '" . $this->db->escape_str($year) . "'
@@ -2053,6 +2471,7 @@ class Model_crm extends CI_Model
 				LEFT JOIN produk p ON soi.produk_id = p.id
 				LEFT JOIN kategori_produk kp ON p.kategori_id = kp.id
 				WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
+				  AND (so.source = 'excel_import' OR (so.source NOT IN ('shopee', 'tokopedia', 'tiktok', 'tiktokshop', 'lazada', 'marketplace') AND (so.no_pesanan IS NULL OR so.no_pesanan = '' OR so.no_pesanan = so.nomor_so)))
 				  AND so.tanggal_so IS NOT NULL AND CAST(so.tanggal_so AS CHAR) NOT LIKE '0000%' AND so.tanggal_so > '1970-01-01'
 				  AND (so.status_pesanan IS NULL OR (LOWER(so.status_pesanan) NOT LIKE '%batal%' AND LOWER(so.status_pesanan) NOT LIKE '%cancel%'))
 				  AND YEAR(so.tanggal_so) = '" . $year_esc . "'
@@ -2110,7 +2529,10 @@ class Model_crm extends CI_Model
 				SELECT 
 					so.no_telepon as phone,
 					CONCAT('so_', so.id) as order_id,
-					COALESCE(NULLIF(soi.catatan, ''), p.nama_produk, 'Produk SO') as item_name,
+					CASE 
+						WHEN soi.catatan IS NOT NULL AND TRIM(soi.catatan) != '' THEN TRIM(REGEXP_REPLACE(soi.catatan, '\\\\s*\\\\([^)]*\\\\)$', ''))
+						ELSE COALESCE(p.nama_produk, 'Produk SO')
+					END as item_name,
 					soi.qty,
 					soi.subtotal,
 					so.tanggal_so as tanggal
@@ -2118,13 +2540,17 @@ class Model_crm extends CI_Model
 				JOIN sales_order so ON soi.so_id = so.id
 				LEFT JOIN produk p ON soi.produk_id = p.id
 				WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
+				  AND (so.source = 'excel_import' OR (so.source NOT IN ('shopee', 'tokopedia', 'tiktok', 'tiktokshop', 'lazada', 'marketplace') AND (so.no_pesanan IS NULL OR so.no_pesanan = '' OR so.no_pesanan = so.nomor_so)))
 
 				UNION ALL
 
 				SELECT 
 					pm.no_telepon as phone,
 					CONCAT('pm_', pm.id) as order_id,
-					COALESCE(NULLIF(pmi.catatan, ''), p.nama_produk, 'Produk Marketplace') as item_name,
+					CASE 
+						WHEN pmi.catatan IS NOT NULL AND TRIM(pmi.catatan) != '' THEN TRIM(REGEXP_REPLACE(pmi.catatan, '\\\\s*\\\\([^)]*\\\\)$', ''))
+						ELSE COALESCE(p.nama_produk, 'Produk Marketplace')
+					END as item_name,
 					pmi.qty,
 					pmi.subtotal,
 					pm.tanggal_so as tanggal
@@ -2236,7 +2662,7 @@ class Model_crm extends CI_Model
 		$count = $count_row ? (int)$count_row->total_count : 0;
 
 		// 2. Fast paginated rows query
-		$this->db->select('tfl.*, fc.nama_kategori, fc.kode_kategori, fc.jumlah_hari, 0 AS total_wa_sent');
+		$this->db->select('tfl.*, fc.nama_kategori, fc.kode_kategori, fc.jumlah_hari, fc.template_pesan_default, 0 AS total_wa_sent');
 		$apply_where();
 		$this->db->order_by('tfl.updated_at', 'DESC');
 		$this->db->order_by('tfl.id', 'DESC');
@@ -2261,7 +2687,290 @@ class Model_crm extends CI_Model
 			}
 		}
 
+		// Fallback check: if any paginated row has missing phone, attempt live resolution from mp / pelanggan
+		if (!empty($rows)) {
+			foreach ($rows as &$r) {
+				if (empty($r->customer_phone) || $r->customer_phone === '-') {
+					$resolved_ph = '';
+					if ($r->order_table === 'penjualan_marketplace' && !empty($r->order_id)) {
+						$pm_row = $this->db->select('no_telepon')->get_where('penjualan_marketplace', ['id' => $r->order_id])->row();
+						if ($pm_row && !empty($pm_row->no_telepon) && $pm_row->no_telepon !== '-') {
+							$resolved_ph = $pm_row->no_telepon;
+						}
+					}
+					if (empty($resolved_ph) && !empty($r->customer_pelanggan_id)) {
+						$p_row = $this->db->select('telepon, no_telp')->get_where('pelanggan', ['id' => $r->customer_pelanggan_id])->row();
+						if ($p_row) {
+							$resolved_ph = (!empty($p_row->telepon) && $p_row->telepon !== '-') ? $p_row->telepon : ((!empty($p_row->no_telp) && $p_row->no_telp !== '-') ? $p_row->no_telp : '');
+						}
+					}
+					if (!empty($resolved_ph)) {
+						$r->customer_phone = $resolved_ph;
+						$this->db->where('id', $r->id)->update('crm_transaction_followup_labels', ['customer_phone' => $resolved_ph]);
+					}
+				}
+			}
+		}
+
 		return ['rows' => $rows, 'total' => $count];
+	}
+
+	/**
+	 * Prepare and enrich journal entries for Export (Excel, CSV, PDF)
+	 * Matches the exact display calculation and formatting of the web interface
+	 */
+	public function prepare_journal_entries_for_export($rows)
+	{
+		if (empty($rows)) return [];
+
+		// 1. Gather all order numbers
+		$order_p_list = [];
+		foreach ($rows as $ent) {
+			if (!empty($ent->no_pesanan) && $ent->no_pesanan !== '-') {
+				$order_p_list[] = $ent->no_pesanan;
+			}
+		}
+		$order_p_list = array_values(array_unique($order_p_list));
+
+		// 2. Build order completed milestone map from labels and broadcast logs
+		$order_completed_map = [];
+		if (!empty($order_p_list)) {
+			$comp_rows = $this->db->select('tfl.no_pesanan, fc.jumlah_hari, tfl.keterangan_bc, tfl.status_label, tfl.is_broadcast_sent, tfl.waktu_kirim_wa')
+				->from('crm_transaction_followup_labels tfl')
+				->join('crm_followup_categories fc', 'tfl.followup_category_id = fc.id')
+				->where_in('tfl.no_pesanan', $order_p_list)
+				->group_start()
+					->where('tfl.status_label !=', 'Pending')
+					->or_where('tfl.is_broadcast_sent', 1)
+					->or_where('tfl.waktu_kirim_wa IS NOT NULL', null, false)
+					->or_where('(tfl.keterangan_bc IS NOT NULL AND tfl.keterangan_bc != "")', null, false)
+				->group_end()
+				->get()->result();
+			foreach ($comp_rows as $cr) {
+				$np = $cr->no_pesanan;
+				if (!isset($order_completed_map[$np])) {
+					$order_completed_map[$np] = [];
+				}
+				$order_completed_map[$np]['H+' . (int)$cr->jumlah_hari] = true;
+			}
+
+			// Broadcast logs
+			$b_logs = $this->db->select('tfl.no_pesanan, fc.jumlah_hari')
+				->from('crm_broadcast_logs bl')
+				->join('crm_transaction_followup_labels tfl', 'bl.followup_label_id = tfl.id')
+				->join('crm_followup_categories fc', 'tfl.followup_category_id = fc.id')
+				->where_in('tfl.no_pesanan', $order_p_list)
+				->get()->result();
+			foreach ($b_logs as $bl) {
+				if (!isset($order_completed_map[$bl->no_pesanan])) {
+					$order_completed_map[$bl->no_pesanan] = [];
+				}
+				$order_completed_map[$bl->no_pesanan]['H+' . (int)$bl->jumlah_hari] = true;
+			}
+		}
+
+		// 3. Multi-source Fallback phone map for entries whose phone is empty in tfl
+		$cust_ids_no_phone = [];
+		$pm_ids_no_phone = [];
+		$so_ids_no_phone = [];
+		$cust_names_no_phone = [];
+
+		foreach ($rows as $r) {
+			$cur_ph = trim((string)$r->customer_phone);
+			if (empty($cur_ph) || $cur_ph === '-' || strpos($cur_ph, '*') !== false) {
+				if (!empty($r->customer_pelanggan_id)) {
+					$cust_ids_no_phone[] = (int)$r->customer_pelanggan_id;
+				}
+				if ($r->order_table === 'penjualan_marketplace' && !empty($r->order_id)) {
+					$pm_ids_no_phone[] = (int)$r->order_id;
+				}
+				if ($r->order_table === 'sales_order' && !empty($r->order_id)) {
+					$so_ids_no_phone[] = (int)$r->order_id;
+				}
+				if (!empty($r->customer_nama) && $r->customer_nama !== '-') {
+					$cust_names_no_phone[] = $r->customer_nama;
+				}
+			}
+		}
+
+		$pel_id_map = [];
+		if (!empty($cust_ids_no_phone)) {
+			$p_rows = $this->db->select('id, telepon, no_telp')
+				->from('pelanggan')
+				->where_in('id', array_values(array_unique($cust_ids_no_phone)))
+				->get()->result();
+			foreach ($p_rows as $pr) {
+				$ph = !empty($pr->no_telp) && $pr->no_telp !== '-' ? $pr->no_telp : (!empty($pr->telepon) && $pr->telepon !== '-' ? $pr->telepon : '');
+				if (!empty($ph)) $pel_id_map[$pr->id] = $ph;
+			}
+		}
+
+		$pm_order_map = [];
+		if (!empty($pm_ids_no_phone)) {
+			$pm_rows = $this->db->select('pm.id, pm.no_telepon, pm.no_telepon_pengirim, p.no_telp, p.telepon')
+				->from('penjualan_marketplace pm')
+				->join('pelanggan p', 'pm.pelanggan_id = p.id', 'left')
+				->where_in('pm.id', array_values(array_unique($pm_ids_no_phone)))
+				->get()->result();
+			foreach ($pm_rows as $pm) {
+				$ph = !empty($pm->no_telepon) && $pm->no_telepon !== '-' ? $pm->no_telepon : (!empty($pm->no_telp) && $pm->no_telp !== '-' ? $pm->no_telp : (!empty($pm->telepon) && $pm->telepon !== '-' ? $pm->telepon : (!empty($pm->no_telepon_pengirim) && $pm->no_telepon_pengirim !== '-' ? $pm->no_telepon_pengirim : '')));
+				if (!empty($ph)) $pm_order_map[$pm->id] = $ph;
+			}
+		}
+
+		$so_order_map = [];
+		if (!empty($so_ids_no_phone)) {
+			$so_rows = $this->db->select('so.id, so.no_telepon, so.no_telepon_pengirim, p.no_telp, p.telepon')
+				->from('sales_order so')
+				->join('pelanggan p', 'so.pelanggan_id = p.id', 'left')
+				->where_in('so.id', array_values(array_unique($so_ids_no_phone)))
+				->get()->result();
+			foreach ($so_rows as $so) {
+				$ph = !empty($so->no_telepon) && $so->no_telepon !== '-' ? $so->no_telepon : (!empty($so->no_telp) && $so->no_telp !== '-' ? $so->no_telp : (!empty($so->telepon) && $so->telepon !== '-' ? $so->telepon : (!empty($so->no_telepon_pengirim) && $so->no_telepon_pengirim !== '-' ? $so->no_telepon_pengirim : '')));
+				if (!empty($ph)) $so_order_map[$so->id] = $ph;
+			}
+		}
+
+		$pel_name_map = [];
+		if (!empty($cust_names_no_phone)) {
+			$pel_rows = $this->db->select('nama_pelanggan, telepon, no_telp')
+				->from('pelanggan')
+				->where_in('nama_pelanggan', array_values(array_unique($cust_names_no_phone)))
+				->get()->result();
+			foreach ($pel_rows as $pr) {
+				$ph = !empty($pr->no_telp) && $pr->no_telp !== '-' ? $pr->no_telp : (!empty($pr->telepon) && $pr->telepon !== '-' ? $pr->telepon : '');
+				if (!empty($ph) && !isset($pel_name_map[$pr->nama_pelanggan])) {
+					$pel_name_map[$pr->nama_pelanggan] = $ph;
+				}
+			}
+		}
+
+		// 4. Enrich every row
+		$enriched = [];
+		foreach ($rows as $e) {
+			// Order number
+			$display_no_p = $e->no_pesanan ?: '-';
+			if (stripos($display_no_p, 'WAHA-LIVE') !== false || stripos($display_no_p, 'GROUP') !== false) {
+				$display_no_p = '-';
+			}
+
+			// Phone number resolution with full fallback
+			$ph = trim((string)$e->customer_phone);
+			if (empty($ph) || $ph === '-' || strpos($ph, '*') !== false) {
+				if (!empty($e->customer_pelanggan_id) && isset($pel_id_map[$e->customer_pelanggan_id])) {
+					$ph = $pel_id_map[$e->customer_pelanggan_id];
+				} elseif ($e->order_table === 'penjualan_marketplace' && isset($pm_order_map[$e->order_id])) {
+					$ph = $pm_order_map[$e->order_id];
+				} elseif ($e->order_table === 'sales_order' && isset($so_order_map[$e->order_id])) {
+					$ph = $so_order_map[$e->order_id];
+				} elseif (isset($pel_name_map[$e->customer_nama])) {
+					$ph = $pel_name_map[$e->customer_nama];
+				}
+			}
+			$display_phone = (!empty($ph) && $ph !== '-') ? $ph : '-';
+
+			// Normalized channel / source
+			$src = $e->order_source ?: '';
+			$no_p = $display_no_p !== '-' ? $display_no_p : '';
+			if (stripos($src, 'Shopee') !== false || stripos($no_p, 'SHP') !== false) {
+				$src = 'Shopee';
+			} elseif (stripos($src, 'Tokopedia') !== false || stripos($no_p, 'TKP') !== false) {
+				$src = 'Tokopedia';
+			} elseif (stripos($src, 'TikTok') !== false || stripos($no_p, 'TTK') !== false) {
+				$src = 'TikTok Shop';
+			} elseif (stripos($src, 'WhatsApp') !== false) {
+				$src = 'WhatsApp';
+			} elseif (stripos($src, 'WAHA') !== false || stripos($src, 'Group') !== false) {
+				$src = 'Toko';
+			} else {
+				$src = $src ?: 'Direct / Toko';
+			}
+
+			// Clean category display with (H+n)
+			$cat_name = $e->nama_kategori ?: 'Follow-Up';
+			$milestone_day = isset($e->jumlah_hari) ? (int)$e->jumlah_hari : 0;
+			$clean_cat = preg_replace('/\s*\(H\+\d+\)/i', '', $cat_name);
+			$display_kategori = $clean_cat . ' (H+' . $milestone_day . ')';
+
+			// Dates and calculation
+			$waktu_ref = !empty($e->tanggal_pengiriman) ? $e->tanggal_pengiriman : (!empty($e->created_at) ? date('Y-m-d', strtotime($e->created_at)) : date('Y-m-d'));
+			$dt_ref = new DateTime(date('Y-m-d', strtotime($waktu_ref)));
+			$dt_now = new DateTime(date('Y-m-d'));
+			$diff_h = max(0, (int)$dt_ref->diff($dt_now)->format('%r%a'));
+
+			$cur_bc = isset($e->keterangan_bc) ? trim($e->keterangan_bc) : '';
+			$is_followed_up = !empty($cur_bc) 
+				|| (!empty($no_p) && isset($order_completed_map[$no_p]['H+' . $milestone_day]))
+				|| (!empty($e->status_label) && !in_array($e->status_label, ['Pending', 'belum_direspon']))
+				|| ((int)$e->is_broadcast_sent === 1)
+				|| !empty($e->waktu_kirim_wa);
+
+			$is_overdue = ($diff_h > $milestone_day);
+			$is_today = ($diff_h === $milestone_day);
+
+			// Keterangan (Status Waktu & Umur Pesanan)
+			if ($is_followed_up) {
+				$display_keterangan = 'Sudah Di-Follow Up (✓ H+' . $diff_h . ')';
+			} elseif ($is_overdue) {
+				$display_keterangan = 'Terlewat (H+' . $diff_h . ')';
+			} elseif ($is_today) {
+				$display_keterangan = 'Jadwal Hari Ini (H+' . $diff_h . ')';
+			} else {
+				$display_keterangan = 'Mendatang (H+' . $diff_h . ')';
+			}
+
+			// Keterangan BC (Milestone Progress)
+			if (!empty($cur_bc)) {
+				$display_keterangan_bc = $cur_bc;
+			} elseif (!empty($no_p) && !empty($order_completed_map[$no_p])) {
+				$done_milestones = array_keys($order_completed_map[$no_p]);
+				$display_keterangan_bc = 'Selesai: ' . implode(', ', $done_milestones);
+			} else {
+				$display_keterangan_bc = 'Belum Ada Follow-Up';
+			}
+
+			// Status
+			$raw_status = trim($e->status_label ?? '');
+			if (!empty($raw_status) && $raw_status !== 'Pending') {
+				$display_status = $raw_status;
+			} elseif ($is_followed_up) {
+				$display_status = 'Sudah Dikirim';
+			} elseif ($is_overdue) {
+				$display_status = 'Overdue';
+			} else {
+				$display_status = 'Pending';
+			}
+
+			// Broadcast Terkirim
+			if ($is_followed_up || (int)$e->is_broadcast_sent === 1 || !empty($e->waktu_kirim_wa)) {
+				$display_broadcast = !empty($e->waktu_kirim_wa) ? ('Sudah (' . date('d/m/Y H:i', strtotime($e->waktu_kirim_wa)) . ')') : 'Sudah';
+			} else {
+				$display_broadcast = 'Belum';
+			}
+
+			$display_tgl_kirim = !empty($e->tanggal_pengiriman) ? date('d/m/Y', strtotime($e->tanggal_pengiriman)) : '-';
+			$display_tgl_target = !empty($e->tanggal_label_muncul) ? date('d/m/Y', strtotime($e->tanggal_label_muncul)) : '-';
+
+			$row_obj = clone $e;
+			$row_obj->display_customer_nama = $e->customer_nama ?: '-';
+			$row_obj->display_phone = $display_phone;
+			$row_obj->display_no_pesanan = $display_no_p;
+			$row_obj->display_sumber = $src;
+			$row_obj->display_kategori = $display_kategori;
+			$row_obj->display_tgl_kirim = $display_tgl_kirim;
+			$row_obj->display_tgl_target = $display_tgl_target;
+			$row_obj->display_keterangan = $display_keterangan;
+			$row_obj->display_keterangan_bc = $display_keterangan_bc;
+			$row_obj->display_status = $display_status;
+			$row_obj->display_broadcast = $display_broadcast;
+			$row_obj->diff_h = $diff_h;
+			$row_obj->is_followed_up = $is_followed_up;
+			$row_obj->is_overdue = $is_overdue;
+
+			$enriched[] = $row_obj;
+		}
+
+		return $enriched;
 	}
 
 	/**
@@ -2292,7 +3001,7 @@ class Model_crm extends CI_Model
 		$order_table = 'sales_order';
 		$order_id = 0;
 		$clean_num = preg_replace('/[^0-9]/', '', $phone);
-		$no_pesanan = 'SO-' . date('Ymd') . '-' . (strlen($clean_num) >= 4 ? substr($clean_num, -4) : rand(1000, 9999));
+		$no_pesanan = 'TRX-' . date('Ymd') . '-' . (strlen($clean_num) >= 4 ? substr($clean_num, -4) : rand(1000, 9999));
 
 		if (!$is_jid) {
 			$pm_cust = $this->db->query("SELECT pm.id, pm.no_pesanan, pm.nomor_so, pm.source, pm.nama_penerima as nama FROM penjualan_marketplace pm WHERE " . $this->get_phone_where_clause('pm.no_telepon', $phone) . " ORDER BY pm.id DESC LIMIT 1")->row();
@@ -2474,7 +3183,9 @@ class Model_crm extends CI_Model
 			COALESCE(SUM(so.total), 0) as spend,
 			MAX(so.tanggal_so) as last_date
 		FROM sales_order so
-		WHERE so.no_telepon IS NOT NULL AND so.no_telepon != '' AND (" . $so_where . ")
+		WHERE so.no_telepon IS NOT NULL AND so.no_telepon != ''
+		  AND (so.source = 'excel_import' OR (so.source NOT IN ('shopee', 'tokopedia', 'tiktok', 'tiktokshop', 'lazada', 'marketplace') AND (so.no_pesanan IS NULL OR so.no_pesanan = '' OR so.no_pesanan = so.nomor_so)))
+		  AND (" . $so_where . ")
 		GROUP BY phone_tail";
 
 		// Query 2: penjualan_marketplace summary grouped by phone tail
@@ -2532,6 +3243,7 @@ class Model_crm extends CI_Model
 	 */
 	public function get_categories($active_only = true)
 	{
+		$this->db->order_by('urutan', 'ASC');
 		$this->db->order_by('jumlah_hari', 'ASC');
 		if ($active_only) $this->db->where('is_active', 1);
 		return $this->db->get('crm_followup_categories')->result();
@@ -2553,14 +3265,40 @@ class Model_crm extends CI_Model
 		}
 	}
 
-	public function delete_category($id)
+	public function delete_category($id, $force = false)
 	{
-		// Check if labels exist using this category
-		$count = $this->db->where('followup_category_id', $id)->count_all_results('crm_transaction_followup_labels');
-		if ($count > 0) {
-			return false; // Cannot delete if labels exist
+		// Cek apakah ada label yang sudah berjalan (sudah dikirim / direspon / status selain Pending)
+		$active_count = $this->db->where('followup_category_id', $id)
+			->group_start()
+				->where('is_broadcast_sent', 1)
+				->or_where('status_label !=', 'Pending')
+			->group_end()
+			->count_all_results('crm_transaction_followup_labels');
+
+		if ($active_count > 0 && !$force) {
+			return [
+				'success' => false,
+				'has_history' => true,
+				'active_count' => $active_count,
+				'message' => "Kategori ini memiliki {$active_count} riwayat follow-up yang sudah diproses/terkirim."
+			];
 		}
-		return $this->db->delete('crm_followup_categories', ['id' => $id]);
+
+		// Hapus catatan follow-up dan antrean label transaksi yang terkait kategori ini
+		$label_rows = $this->db->select('id')->where('followup_category_id', $id)->get('crm_transaction_followup_labels')->result_array();
+		if (!empty($label_rows)) {
+			$label_ids = array_column($label_rows, 'id');
+			if (!empty($label_ids)) {
+				$this->db->where_in('followup_label_id', $label_ids)->delete('crm_followup_notes');
+			}
+			$this->db->where('followup_category_id', $id)->delete('crm_transaction_followup_labels');
+		}
+
+		$del = $this->db->delete('crm_followup_categories', ['id' => $id]);
+		return [
+			'success' => (bool)$del,
+			'message' => $del ? 'Kategori & template follow-up berhasil dihapus' : 'Gagal menghapus kategori'
+		];
 	}
 
 	/**
@@ -2578,18 +3316,59 @@ class Model_crm extends CI_Model
 
 	public function update_keterangan_bc($label_id, $keterangan_bc, $handled_by = null)
 	{
+		$label = $this->db->get_where('crm_transaction_followup_labels', ['id' => $label_id])->row();
+		if (!$label) return false;
+
+		$val = !empty($keterangan_bc) ? $keterangan_bc : null;
 		$data = [
-			'keterangan_bc' => $keterangan_bc,
+			'keterangan_bc' => $val,
 			'updated_at'    => date('Y-m-d H:i:s'),
 		];
 		if ($handled_by) $data['handled_by'] = $handled_by;
-		$this->db->where('id', $label_id)->update('crm_transaction_followup_labels', $data);
 
-		// Synchronize to penjualan_marketplace if this label originated from marketplace order
-		$label = $this->db->get_where('crm_transaction_followup_labels', ['id' => $label_id])->row();
-		if ($label && $label->order_table === 'penjualan_marketplace' && !empty($label->order_id)) {
+		$is_h_match = preg_match('/\(H\+(\d+)\)/i', (string)$keterangan_bc, $m) || preg_match('/^H\+(\d+)$/i', (string)$keterangan_bc, $m);
+		$selected_h = $is_h_match ? (int)$m[1] : null;
+
+		if ($selected_h !== null) {
+			// An H+ milestone was selected (e.g. H+0, H+3, etc.)
+			// Update the specific milestone label that matches $selected_h
+			$cat = $this->db->get_where('crm_followup_categories', ['jumlah_hari' => $selected_h])->row();
+			$cat_id = $cat ? $cat->id : $label->followup_category_id;
+
+			$target_label = null;
+			if (!empty($label->order_table) && !empty($label->order_id)) {
+				$target_label = $this->db->get_where('crm_transaction_followup_labels', [
+					'order_table' => $label->order_table,
+					'order_id' => $label->order_id,
+					'followup_category_id' => $cat_id
+				])->row();
+			} elseif (!empty($label->no_pesanan) && $label->no_pesanan !== '-' && trim($label->no_pesanan) !== '') {
+				$target_label = $this->db->get_where('crm_transaction_followup_labels', [
+					'no_pesanan' => $label->no_pesanan,
+					'followup_category_id' => $cat_id
+				])->row();
+			}
+
+			if ($target_label) {
+				$this->db->where('id', $target_label->id)->update('crm_transaction_followup_labels', $data);
+			} else {
+				$this->db->where('id', $label_id)->update('crm_transaction_followup_labels', $data);
+			}
+		} else {
+			// Single label update or reset
+			$this->db->where('id', $label_id)->update('crm_transaction_followup_labels', $data);
+		}
+
+		// Synchronize latest keterangan_bc to penjualan_marketplace
+		if ($label->order_table === 'penjualan_marketplace' && !empty($label->order_id)) {
 			$this->db->where('id', $label->order_id)->update('penjualan_marketplace', [
-				'keterangan_bc' => $keterangan_bc,
+				'keterangan_bc' => $val,
+				'updated_at'    => date('Y-m-d H:i:s')
+			]);
+		}
+		if (!empty($label->no_pesanan) && $label->no_pesanan !== '-' && trim($label->no_pesanan) !== '') {
+			$this->db->where('no_pesanan', $label->no_pesanan)->update('penjualan_marketplace', [
+				'keterangan_bc' => $val,
 				'updated_at'    => date('Y-m-d H:i:s')
 			]);
 		}
@@ -2602,9 +3381,11 @@ class Model_crm extends CI_Model
 	 */
 	public function add_note($label_id, $catatan, $status_manual = null, $sender_type = 'cs')
 	{
+		$author = function_exists('get_user_data') ? (get_user_data('full_name') ?: get_user_data('username')) : null;
+		if (empty($author)) $author = ($sender_type === 'customer' ? 'Customer' : 'Petugas CS');
 		return $this->db->insert('crm_followup_notes', [
 			'followup_label_id' => $label_id,
-			'username' => get_user_data('username') ?: 'system',
+			'username' => $author,
 			'catatan' => $catatan,
 			'status_manual' => $status_manual,
 			'sender_type' => in_array($sender_type, ['cs','customer','system']) ? $sender_type : 'cs',
@@ -2714,7 +3495,7 @@ class Model_crm extends CI_Model
 			$order_id = 0;
 			$order_source = 'Toko';
 			$clean_num = preg_replace('/[^0-9]/', '', $phone);
-			$no_pesanan = 'SO-' . date('Ymd') . '-' . (strlen($clean_num) >= 4 ? substr($clean_num, -4) : rand(1000, 9999));
+			$no_pesanan = 'TRX-' . date('Ymd') . '-' . (strlen($clean_num) >= 4 ? substr($clean_num, -4) : rand(1000, 9999));
 
 			$so_match = $this->db->query("SELECT id, nomor_so, no_pesanan, source, nama_penerima FROM sales_order WHERE no_telepon LIKE ? ORDER BY id DESC LIMIT 1", ["%" . $phone_tail . "%"])->row();
 			$mp_match = $this->db->query("SELECT id, nomor_so, no_pesanan, source, nama_penerima FROM penjualan_marketplace WHERE no_telepon LIKE ? ORDER BY id DESC LIMIT 1", ["%" . $phone_tail . "%"])->row();
@@ -2742,7 +3523,7 @@ class Model_crm extends CI_Model
 				else $order_source = 'Toko';
 			}
 
-			$first_cat = $this->db->query("SELECT id FROM crm_followup_categories WHERE is_active = 1 ORDER BY urutan ASC LIMIT 1")->row();
+			$first_cat = $this->db->query("SELECT id FROM crm_followup_categories WHERE is_active = 1 ORDER BY jumlah_hari ASC, urutan ASC LIMIT 1")->row();
 			$cat_id = $first_cat ? $first_cat->id : 1;
 
 			$new_label_data = [
@@ -2853,7 +3634,7 @@ class Model_crm extends CI_Model
 			]);
 
 			// Auto-create a label in crm_transaction_followup_labels so CS can see & reply in UI
-			$first_cat = $this->db->query("SELECT id FROM crm_followup_categories WHERE is_active = 1 ORDER BY urutan ASC LIMIT 1")->row();
+			$first_cat = $this->db->query("SELECT id FROM crm_followup_categories WHERE is_active = 1 ORDER BY jumlah_hari ASC, urutan ASC LIMIT 1")->row();
 			$cat_id = $first_cat ? $first_cat->id : 1;
 			$cust_name = !empty($sender_name) ? $sender_name : ('Customer (' . $clean_input_phone . ')');
 
@@ -2990,7 +3771,8 @@ class Model_crm extends CI_Model
 			if ($direction === 'incoming') {
 				$sender = !empty($row['sender_name']) ? $row['sender_name'] : $cust_display_name;
 			} else {
-				$sender = !empty($row['sender_cs_name']) ? $row['sender_cs_name'] : (!empty($row['sender_name']) ? $row['sender_name'] : 'CS Admin');
+				$raw_s = !empty($row['sender_cs_name']) ? $row['sender_cs_name'] : (!empty($row['sender_name']) ? $row['sender_name'] : 'Petugas CS');
+				$sender = ucwords(clean_snake_case($raw_s));
 			}
 
 			$timeline[] = [
@@ -3104,7 +3886,8 @@ class Model_crm extends CI_Model
 			if ($direction === 'incoming') {
 				$sender = !empty($row['sender_name']) ? $row['sender_name'] : $cust_display_name;
 			} else {
-				$sender = !empty($row['sender_cs_name']) ? $row['sender_cs_name'] : (!empty($row['sender_name']) ? $row['sender_name'] : 'CS Admin');
+				$raw_s = !empty($row['sender_cs_name']) ? $row['sender_cs_name'] : (!empty($row['sender_name']) ? $row['sender_name'] : 'Petugas CS');
+				$sender = ucwords(clean_snake_case($raw_s));
 			}
 
 			$raw_timeline[] = [
@@ -3126,7 +3909,7 @@ class Model_crm extends CI_Model
 				'id' => 0,
 				'direction' => 'outgoing',
 				'message' => isset($row['message']) ? $row['message'] : '',
-				'sender' => !empty($row['sender']) ? $row['sender'] : 'CS Admin',
+				'sender' => !empty($row['sender']) ? ucwords(clean_snake_case($row['sender'])) : 'Petugas CS',
 				'sender_type' => 'cs',
 				'created_at' => $row['created_at'],
 				'metode_kirim' => isset($row['metode_kirim']) ? $row['metode_kirim'] : '',
@@ -3145,11 +3928,11 @@ class Model_crm extends CI_Model
 				$direction = 'outgoing';
 			}
 
-			$sender = isset($row['sender']) ? $row['sender'] : 'CS Admin';
+			$sender = isset($row['sender']) ? ucwords(clean_snake_case($row['sender'])) : 'Petugas CS';
 			if ($direction === 'incoming') {
 				$sender = $cust_display_name . ' (Balasan)';
 			} elseif (empty($sender)) {
-				$sender = 'CS Admin';
+				$sender = 'Petugas CS';
 			}
 
 			$raw_timeline[] = [
@@ -3203,6 +3986,13 @@ class Model_crm extends CI_Model
 	 */
 	public function render_template($template, $label)
 	{
+		if (empty($template) && is_object($label) && !empty($label->followup_category_id)) {
+			$cat = $this->db->get_where('crm_followup_categories', ['id' => $label->followup_category_id])->row();
+			if ($cat && !empty($cat->template_pesan_default)) {
+				$template = $cat->template_pesan_default;
+			}
+		}
+
 		// Get product info
 		$produk = '-';
 		if ($label->order_table === 'sales_order') {
@@ -3270,11 +4060,15 @@ class Model_crm extends CI_Model
 	/**
 	 * Log broadcast (FB-06)
 	 */
-	public function log_broadcast($label_id, $pesan_final, $metode = 'wa_direct_link')
+	public function log_broadcast($label_id, $pesan_final, $metode = 'wa_direct_link', $author = null)
 	{
+		if (empty($author)) {
+			$author = function_exists('get_user_data') ? (get_user_data('full_name') ?: get_user_data('username')) : null;
+			if (empty($author)) $author = 'system';
+		}
 		$this->db->insert('crm_broadcast_logs', [
 			'followup_label_id' => $label_id,
-			'dikirim_oleh' => get_user_data('username') ?: 'system',
+			'dikirim_oleh' => $author,
 			'isi_pesan_final' => $pesan_final,
 			'waktu_kirim' => date('Y-m-d H:i:s'),
 			'status_kirim' => 'Terkirim',
@@ -3283,8 +4077,10 @@ class Model_crm extends CI_Model
 		// Mark as broadcast sent (FB-10: prevent duplicate)
 		$this->db->where('id', $label_id)->update('crm_transaction_followup_labels', [
 			'is_broadcast_sent' => 1,
+			'waktu_kirim_wa' => date('Y-m-d H:i:s'),
 			'status_label' => 'Sudah Dikirim',
-			'handled_by' => get_user_data('username') ?: 'system',
+			'handled_by' => $author,
+			'updated_at' => date('Y-m-d H:i:s'),
 		]);
 	}
 
@@ -3650,19 +4446,26 @@ class Model_crm extends CI_Model
 	{
 		$config = $this->get_wa_gateway_config();
 
+		$phone = trim((string)$phone);
 		// Normalize phone: 08xx -> 628xx (if not already a JID like group @g.us or @lid)
 		$is_jid = (strpos($phone, '@') !== false);
 		if (!$is_jid) {
-			$phone = preg_replace('/^0/', '62', $phone);
-			$phone = preg_replace('/[^0-9]/', '', $phone);
-			if (substr($phone, 0, 2) !== '62') $phone = '62' . $phone;
+			$digits = preg_replace('/[^0-9]/', '', $phone);
+			if (substr($digits, 0, 1) === '0') {
+				$phone = '62' . substr($digits, 1);
+			} elseif (substr($digits, 0, 2) !== '62') {
+				$phone = '62' . $digits;
+			} else {
+				$phone = $digits;
+			}
 		}
 
 		$provider = strtolower($config->provider ?: 'waha');
 		$api_key = trim($config->api_key ?: '');
 		$api_url = trim($config->api_url ?: 'http://localhost:3000');
+		$base_url = rtrim($api_url ?: 'http://localhost:3000', '/');
 
-		if (empty($api_key) && in_array($provider, ['fonnte', 'wablas', 'starsender'])) {
+		if (empty($api_key) && in_array($provider, ['wablas', 'starsender'])) {
 			return [
 				'success' => false,
 				'message' => 'API Key WhatsApp Gateway belum dikonfigurasi di sistem.',
@@ -3673,53 +4476,11 @@ class Model_crm extends CI_Model
 		$headers = [];
 		$post_data = [];
 
-		if ($provider === 'fonnte') {
-			$headers[] = 'Authorization: ' . $api_key;
-
-			$post_data = [
-				'target' => $phone,
-				'message' => !empty($message) ? $message : ' ',
-			];
-			if (!empty($file_url)) {
-				$post_data['url'] = $file_url;
-				$filename = pathinfo(parse_url($file_url, PHP_URL_PATH), PATHINFO_BASENAME);
-				if (!empty($filename)) {
-					$post_data['filename'] = $filename;
-				}
-
-				// Auto-detect media type for Fonnte API
-				$ext = strtolower(pathinfo(parse_url($file_url, PHP_URL_PATH), PATHINFO_EXTENSION));
-				if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'])) {
-					$post_data['type'] = 'image';
-				} elseif (in_array($ext, ['mp4', 'avi', 'mov', 'mkv', '3gp'])) {
-					$post_data['type'] = 'video';
-				} elseif (in_array($ext, ['mp3', 'ogg', 'wav', 'm4a', 'aac', 'opus', 'amr', 'webm'])) {
-					$post_data['type'] = 'audio';
-				} else {
-					$post_data['type'] = 'document';
-				}
-			}
-			$target_url = (empty($api_url) || strpos($api_url, 'send-message') !== false) ? 'https://api.fonnte.com/send' : $api_url;
-			curl_setopt($ch, CURLOPT_URL, $target_url);
-			curl_setopt($ch, CURLOPT_POST, true);
-			curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post_data));
-		} elseif ($provider === 'wablas') {
-			$headers[] = 'Authorization: ' . $api_key;
-			$headers[] = 'Content-Type: application/json';
-			$payload = [
-				'data' => [
-					['phone' => $phone, 'message' => $message]
-				]
-			];
-			curl_setopt($ch, CURLOPT_URL, $api_url ?: 'https://api.wablas.com/api/v2/send-message');
-			curl_setopt($ch, CURLOPT_POST, true);
-			curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-		} elseif ($provider === 'waha') {
+		if ($provider === 'waha') {
 			$headers[] = 'Content-Type: application/json';
 			if (!empty($api_key)) {
 				$headers[] = 'x-api-key: ' . $api_key;
 			}
-			$base_url = rtrim($api_url ?: 'http://localhost:3000', '/');
 			$dest_chat_id = $is_jid ? $phone : ($phone . '@c.us');
 			if (!empty($file_url)) {
 				$filename = pathinfo(parse_url($file_url, PHP_URL_PATH), PATHINFO_BASENAME) ?: 'document.pdf';
@@ -3750,6 +4511,17 @@ class Model_crm extends CI_Model
 				$url = $base_url . '/api/sendText';
 			}
 			curl_setopt($ch, CURLOPT_URL, $url);
+			curl_setopt($ch, CURLOPT_POST, true);
+			curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+		} elseif ($provider === 'wablas') {
+			$headers[] = 'Authorization: ' . $api_key;
+			$headers[] = 'Content-Type: application/json';
+			$payload = [
+				'data' => [
+					['phone' => $phone, 'message' => $message]
+				]
+			];
+			curl_setopt($ch, CURLOPT_URL, $api_url ?: 'https://api.wablas.com/api/v2/send-message');
 			curl_setopt($ch, CURLOPT_POST, true);
 			curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
 		} elseif ($provider === 'starsender') {
@@ -3796,9 +4568,13 @@ class Model_crm extends CI_Model
 		curl_close($ch);
 
 		if ($err) {
+			$user_tip = '';
+			if (strpos($err, 'Failed to connect') !== false || strpos($err, 'Connection refused') !== false || strpos($err, 'timed out') !== false) {
+				$user_tip = " (Server WAHA di {$base_url} tidak dapat dihubungi. Pastikan service/container WAHA sudah running dan URL gateway benar)";
+			}
 			return [
 				'success' => false,
-				'message' => 'cURL Error: ' . $err,
+				'message' => 'Gagal koneksi ke WAHA: ' . $err . $user_tip,
 				'http_code' => $http_code
 			];
 		}
@@ -3811,13 +4587,21 @@ class Model_crm extends CI_Model
 			if (isset($res_json['status'])) {
 				if ($res_json['status'] === false || $res_json['status'] === 'false' || $res_json['status'] === 0) {
 					$is_ok = false;
-					$reason = !empty($res_json['reason']) ? $res_json['reason'] : (!empty($res_json['detail']) ? $res_json['detail'] : (!empty($res_json['message']) ? $res_json['message'] : 'Gagal terkirim dari Fonnte Gateway'));
-					$err_msg = 'Fonnte Gateway Error: ' . $reason;
+					$reason = !empty($res_json['reason']) ? $res_json['reason'] : (!empty($res_json['detail']) ? $res_json['detail'] : (!empty($res_json['message']) ? $res_json['message'] : 'Gagal terkirim dari WhatsApp Gateway'));
+					$err_msg = 'Gateway Error: ' . (is_array($reason) ? implode(', ', $reason) : $reason);
 				}
 			} elseif (isset($res_json['error']) || isset($res_json['statusCode'])) {
 				if ($http_code >= 400 || !empty($res_json['error'])) {
 					$is_ok = false;
-					$err_msg = 'WAHA Error: ' . (is_string($res_json['error']) ? $res_json['error'] : ($res_json['message'] ?? 'Request failed'));
+					$err_part = is_string($res_json['error'] ?? null) ? $res_json['error'] : '';
+					$msg_part = '';
+					if (!empty($res_json['message'])) {
+						$msg_part = is_array($res_json['message']) ? implode(', ', $res_json['message']) : $res_json['message'];
+					}
+					$err_msg = 'WAHA Error: ' . trim($err_part . ($err_part && $msg_part ? ' - ' : '') . $msg_part);
+					if (trim($err_msg) === 'WAHA Error:') {
+						$err_msg = 'WAHA Error (HTTP ' . $http_code . ')';
+					}
 				}
 			}
 		}
@@ -3921,6 +4705,130 @@ class Model_crm extends CI_Model
 			SET tfl.tanggal_label_muncul = DATE_ADD(tfl.tanggal_pengiriman, INTERVAL fc.jumlah_hari DAY)
 			WHERE tfl.tanggal_label_muncul != DATE_ADD(tfl.tanggal_pengiriman, INTERVAL fc.jumlah_hari DAY)
 		");
+
+		// Two-way synchronization of keterangan_bc between CRM labels and penjualan_marketplace
+		// 1. Sync H+ milestone from mp to matching category label only (preserving uncompleted future milestones)
+		$this->db->query("
+			UPDATE crm_transaction_followup_labels tfl
+			JOIN penjualan_marketplace mp ON (tfl.order_table = 'penjualan_marketplace' AND tfl.order_id = mp.id) OR (tfl.no_pesanan = mp.no_pesanan COLLATE utf8mb4_unicode_ci)
+			JOIN crm_followup_categories fc ON tfl.followup_category_id = fc.id
+			SET tfl.keterangan_bc = mp.keterangan_bc
+			WHERE (mp.keterangan_bc LIKE CONCAT('%(H+', fc.jumlah_hari, ')') OR mp.keterangan_bc = CONCAT('H+', fc.jumlah_hari))
+			  AND (tfl.keterangan_bc IS NULL OR tfl.keterangan_bc = '')
+		");
+
+		// 3. Sync latest completed keterangan_bc from tfl to mp
+		$this->db->query("
+			UPDATE penjualan_marketplace mp
+			JOIN (
+				SELECT tfl.no_pesanan, tfl.keterangan_bc 
+				FROM crm_transaction_followup_labels tfl
+				JOIN crm_followup_categories fc ON tfl.followup_category_id = fc.id
+				WHERE tfl.keterangan_bc IS NOT NULL AND tfl.keterangan_bc != ''
+				ORDER BY fc.jumlah_hari DESC
+			) latest_tfl ON mp.no_pesanan = latest_tfl.no_pesanan COLLATE utf8mb4_unicode_ci
+			SET mp.keterangan_bc = latest_tfl.keterangan_bc
+			WHERE mp.keterangan_bc IS NULL OR mp.keterangan_bc = ''
+		");
+
+		// 4. Synchronize phone numbers from penjualan_marketplace to tfl if missing
+		$this->db->query("
+			UPDATE crm_transaction_followup_labels tfl
+			JOIN penjualan_marketplace mp ON tfl.order_table = 'penjualan_marketplace' AND tfl.order_id = mp.id
+			SET tfl.customer_phone = mp.no_telepon
+			WHERE (tfl.customer_phone = '-' OR tfl.customer_phone = '' OR tfl.customer_phone IS NULL)
+			  AND mp.no_telepon IS NOT NULL AND mp.no_telepon != '' AND mp.no_telepon != '-'
+		");
+
+		// 5. Synchronize phone numbers from sales_order / pelanggan to tfl if missing
+		$this->db->query("
+			UPDATE crm_transaction_followup_labels tfl
+			JOIN sales_order so ON tfl.order_table = 'sales_order' AND tfl.order_id = so.id
+			JOIN pelanggan p ON so.pelanggan_id = p.id
+			SET tfl.customer_phone = COALESCE(NULLIF(NULLIF(p.telepon, '-'), ''), NULLIF(NULLIF(p.no_telp, '-'), ''), NULLIF(NULLIF(so.no_telepon, '-'), ''))
+			WHERE (tfl.customer_phone = '-' OR tfl.customer_phone = '' OR tfl.customer_phone IS NULL)
+			  AND (
+			    (p.telepon IS NOT NULL AND p.telepon != '' AND p.telepon != '-') OR
+			    (p.no_telp IS NOT NULL AND p.no_telp != '' AND p.no_telp != '-') OR
+			    (so.no_telepon IS NOT NULL AND so.no_telepon != '' AND so.no_telepon != '-')
+			  )
+		");
+
+		// 6. Synchronize phone numbers from pelanggan by customer_pelanggan_id if missing
+		$this->db->query("
+			UPDATE crm_transaction_followup_labels tfl
+			JOIN pelanggan p ON tfl.customer_pelanggan_id = p.id
+			SET tfl.customer_phone = COALESCE(NULLIF(NULLIF(p.telepon, '-'), ''), NULLIF(NULLIF(p.no_telp, '-'), ''))
+			WHERE (tfl.customer_phone = '-' OR tfl.customer_phone = '' OR tfl.customer_phone IS NULL)
+			  AND (
+			    (p.telepon IS NOT NULL AND p.telepon != '' AND p.telepon != '-') OR
+			    (p.no_telp IS NOT NULL AND p.no_telp != '' AND p.no_telp != '-')
+			  )
+		");
+	}
+
+	/**
+	 * Update customer phone number across CRM labels, marketplace orders, and pelanggan
+	 */
+	public function update_customer_phone($label_id, $new_phone)
+	{
+		$digits = preg_replace('/[^0-9]/', '', (string)$new_phone);
+		if (strlen($digits) >= 9) {
+			if (substr($digits, 0, 2) === '62') {
+				$digits = '0' . substr($digits, 2);
+			} elseif (substr($digits, 0, 1) === '8') {
+				$digits = '0' . $digits;
+			}
+			$clean_phone = $digits;
+		} else {
+			$clean_phone = trim((string)$new_phone);
+		}
+
+		$label = $this->db->get_where('crm_transaction_followup_labels', ['id' => $label_id])->row();
+		if (!$label) return false;
+
+		// 1. Update all followup labels for this order/customer
+		if (!empty($label->no_pesanan)) {
+			$this->db->where('no_pesanan', $label->no_pesanan)->update('crm_transaction_followup_labels', [
+				'customer_phone' => $clean_phone,
+				'updated_at'     => date('Y-m-d H:i:s')
+			]);
+		} else {
+			$this->db->where('id', $label_id)->update('crm_transaction_followup_labels', [
+				'customer_phone' => $clean_phone,
+				'updated_at'     => date('Y-m-d H:i:s')
+			]);
+		}
+
+		// 2. Update penjualan_marketplace if applicable
+		if ($label->order_table === 'penjualan_marketplace' && !empty($label->order_id)) {
+			$this->db->where('id', $label->order_id)->update('penjualan_marketplace', [
+				'no_telepon' => $clean_phone,
+				'updated_at' => date('Y-m-d H:i:s')
+			]);
+		} elseif (!empty($label->no_pesanan)) {
+			$this->db->where('no_pesanan', $label->no_pesanan)->update('penjualan_marketplace', [
+				'no_telepon' => $clean_phone,
+				'updated_at' => date('Y-m-d H:i:s')
+			]);
+		}
+
+		// 3. Update pelanggan record
+		if (!empty($label->customer_pelanggan_id)) {
+			$this->db->where('id', $label->customer_pelanggan_id)->update('pelanggan', [
+				'telepon'    => $clean_phone,
+				'no_telp'    => $clean_phone,
+				'updated_at' => date('Y-m-d H:i:s')
+			]);
+		} elseif (!empty($label->customer_nama)) {
+			$this->db->where('nama_pelanggan', $label->customer_nama)->update('pelanggan', [
+				'telepon'    => $clean_phone,
+				'no_telp'    => $clean_phone,
+				'updated_at' => date('Y-m-d H:i:s')
+			]);
+		}
+
+		return $clean_phone;
 	}
 
 	/**
@@ -3954,8 +4862,8 @@ class Model_crm extends CI_Model
 					'followup_category_id' => $cat->id
 				])->num_rows();
 
+				$target = date('Y-m-d', strtotime($ship_date . ' + ' . $cat->jumlah_hari . ' days'));
 				if ($exists == 0) {
-					$target = date('Y-m-d', strtotime($ship_date . ' + ' . $cat->jumlah_hari . ' days'));
 					$this->db->insert('crm_transaction_followup_labels', [
 						'order_source' => $source,
 						'order_id' => $so->id,
@@ -3968,19 +4876,39 @@ class Model_crm extends CI_Model
 						'tanggal_pengiriman' => $ship_date,
 						'followup_category_id' => $cat->id,
 						'tanggal_label_muncul' => $target,
+						'created_at' => date('Y-m-d H:i:s'),
+						'updated_at' => date('Y-m-d H:i:s'),
 					]);
 					$generated++;
+				} else {
+					$this->db->where([
+						'order_table' => 'sales_order',
+						'order_id' => $so->id,
+						'followup_category_id' => $cat->id
+					])->update('crm_transaction_followup_labels', [
+						'order_source' => $source,
+						'customer_nama' => $nama,
+						'customer_phone' => $phone,
+						'customer_pelanggan_id' => $so->pelanggan_id,
+						'no_pesanan' => $so->no_pesanan ?: $so->nomor_so,
+						'nomor_resi' => $so->nomor_resi ?: '',
+						'tanggal_pengiriman' => $ship_date,
+						'tanggal_label_muncul' => $target,
+						'updated_at' => date('Y-m-d H:i:s'),
+					]);
 				}
 			}
 		} elseif ($order_table === 'penjualan_marketplace') {
-			$mp = $this->db->get_where('penjualan_marketplace', ['id' => $order_id])->row();
+			$mp = $this->db->query("SELECT mp.*, p.nama_pelanggan, p.telepon, p.no_telp 
+				FROM penjualan_marketplace mp LEFT JOIN pelanggan p ON mp.pelanggan_id = p.id 
+				WHERE mp.id = ?", [$order_id])->row();
 			if (!$mp || in_array($mp->status, ['cancelled', 'dibatalkan', 'returned', 'pengembalian'])) return 0;
 
 			$ship_date = $mp->tanggal_so ?: substr($mp->created_at, 0, 10);
-			$phone = $mp->no_telepon ?: '';
-			$nama = $mp->nama_penerima ?: 'Customer';
+			$phone = $mp->no_telepon ?: ($mp->telepon ?: ($mp->no_telp ?: ''));
+			$nama = $mp->nama_penerima ?: ($mp->nama_pelanggan ?: ($mp->username_pembeli ?: 'Customer Marketplace'));
 			$src = strtolower($mp->source ?: '');
-			$no_p = strtolower($mp->no_pesanan ?: '');
+			$no_p = strtolower(($mp->no_pesanan ?: '') . ' ' . ($mp->nomor_so ?: ''));
 			$source = 'Shopee';
 			if (strpos($src, 'tokopedia') !== false || strpos($no_p, 'tkp') !== false) $source = 'Tokopedia';
 			elseif (strpos($src, 'tiktok') !== false || strpos($no_p, 'ttk') !== false) $source = 'TikTok Shop';
@@ -3993,8 +4921,8 @@ class Model_crm extends CI_Model
 					'followup_category_id' => $cat->id
 				])->num_rows();
 
+				$target = date('Y-m-d', strtotime($ship_date . ' + ' . $cat->jumlah_hari . ' days'));
 				if ($exists == 0) {
-					$target = date('Y-m-d', strtotime($ship_date . ' + ' . $cat->jumlah_hari . ' days'));
 					$this->db->insert('crm_transaction_followup_labels', [
 						'order_source' => $source,
 						'order_id' => $mp->id,
@@ -4007,8 +4935,26 @@ class Model_crm extends CI_Model
 						'tanggal_pengiriman' => $ship_date,
 						'followup_category_id' => $cat->id,
 						'tanggal_label_muncul' => $target,
+						'created_at' => date('Y-m-d H:i:s'),
+						'updated_at' => date('Y-m-d H:i:s'),
 					]);
 					$generated++;
+				} else {
+					$this->db->where([
+						'order_table' => 'penjualan_marketplace',
+						'order_id' => $mp->id,
+						'followup_category_id' => $cat->id
+					])->update('crm_transaction_followup_labels', [
+						'order_source' => $source,
+						'customer_nama' => $nama,
+						'customer_phone' => $phone,
+						'customer_pelanggan_id' => $mp->pelanggan_id,
+						'no_pesanan' => $mp->no_pesanan ?: $mp->nomor_so,
+						'nomor_resi' => $mp->nomor_resi ?: '',
+						'tanggal_pengiriman' => $ship_date,
+						'tanggal_label_muncul' => $target,
+						'updated_at' => date('Y-m-d H:i:s'),
+					]);
 				}
 			}
 		}
@@ -4032,10 +4978,11 @@ class Model_crm extends CI_Model
 			$existing_set[$key] = true;
 		}
 
-		// Process sales_order
+		// Process sales_order (exclude synced marketplace orders to prevent duplicate followup labels)
 		$so_rows = $this->db->query("SELECT so.*, p.nama_pelanggan, p.telepon, p.no_telp 
 			FROM sales_order so LEFT JOIN pelanggan p ON so.pelanggan_id = p.id 
-			WHERE so.status NOT IN ('cancelled','dibatalkan')")->result();
+			WHERE so.status NOT IN ('cancelled','dibatalkan')
+			  AND (so.source = 'excel_import' OR (so.source NOT IN ('shopee', 'tokopedia', 'tiktok', 'tiktokshop', 'lazada', 'marketplace') AND (so.no_pesanan IS NULL OR so.no_pesanan = '' OR so.no_pesanan = so.nomor_so)))")->result();
 
 		foreach ($so_rows as $so) {
 			$ship_date = $so->tanggal_kirim ?: ($so->tanggal_so ?: substr($so->created_at, 0, 10));
@@ -4206,6 +5153,159 @@ class Model_crm extends CI_Model
 			->get()->row();
 	}
 
+	/**
+	 * Get purchased items and order metadata for follow-up detail
+	 * Supports sales_order (Toko/POS/Import) and penjualan_marketplace (Shopee/Tokopedia/TikTok)
+	 * With fallback search by no_pesanan / nomor_so
+	 */
+	public function get_order_purchased_items($label)
+	{
+		if (!$label) return ['items' => [], 'order_meta' => null];
+
+		$items = [];
+		$order_data = null;
+		$order_table = !empty($label->order_table) ? $label->order_table : '';
+		$order_id = !empty($label->order_id) ? (int)$label->order_id : 0;
+		$no_pesanan = !empty($label->no_pesanan) ? trim($label->no_pesanan) : '';
+
+		if ($order_table === 'sales_order' && $order_id > 0) {
+			$order_data = $this->db->where('id', $order_id)->get('sales_order')->row_array();
+			$items = $this->db->select('soi.*, p.nama_produk, p.kode_produk, p.gambar')
+				->from('sales_order_item soi')
+				->join('produk p', 'soi.produk_id = p.id', 'left')
+				->where('soi.so_id', $order_id)
+				->get()->result_array();
+		} elseif ($order_table === 'penjualan_marketplace' && $order_id > 0) {
+			$order_data = $this->db->where('id', $order_id)->get('penjualan_marketplace')->row_array();
+			$items = $this->db->select('pmi.*, p.nama_produk, p.kode_produk, p.gambar')
+				->from('penjualan_marketplace_item pmi')
+				->join('produk p', 'pmi.produk_id = p.id', 'left')
+				->where('pmi.penjualan_marketplace_id', $order_id)
+				->get()->result_array();
+		}
+
+		// Fallback lookup if empty and no_pesanan is present
+		if (empty($items) && !empty($no_pesanan) && $no_pesanan !== '-') {
+			$so = $this->db->group_start()
+				->where('no_pesanan', $no_pesanan)
+				->or_where('nomor_so', $no_pesanan)
+				->group_end()
+				->get('sales_order')->row_array();
+			if ($so) {
+				$order_data = $so;
+				$order_table = 'sales_order';
+				$items = $this->db->select('soi.*, p.nama_produk, p.kode_produk, p.gambar')
+					->from('sales_order_item soi')
+					->join('produk p', 'soi.produk_id = p.id', 'left')
+					->where('soi.so_id', $so['id'])
+					->get()->result_array();
+			} else {
+				$pm = $this->db->group_start()
+					->where('no_pesanan', $no_pesanan)
+					->or_where('nomor_so', $no_pesanan)
+					->group_end()
+					->get('penjualan_marketplace')->row_array();
+				if ($pm) {
+					$order_data = $pm;
+					$order_table = 'penjualan_marketplace';
+					$items = $this->db->select('pmi.*, p.nama_produk, p.kode_produk, p.gambar')
+						->from('penjualan_marketplace_item pmi')
+						->join('produk p', 'pmi.produk_id = p.id', 'left')
+						->where('pmi.penjualan_marketplace_id', $pm['id'])
+						->get()->result_array();
+				}
+			}
+		}
+
+		// Fallback: If still no items, but order_data has marketplace product info
+		if (empty($items) && !empty($order_data) && !empty($order_data['nama_produk_marketplace'])) {
+			$items[] = [
+				'nama_produk' => $order_data['nama_produk_marketplace'],
+				'kode_produk' => !empty($order_data['nomor_referensi_sku']) ? $order_data['nomor_referensi_sku'] : (!empty($order_data['sku_induk']) ? $order_data['sku_induk'] : '-'),
+				'qty' => 1,
+				'satuan' => 'pcs',
+				'harga_satuan' => !empty($order_data['harga_setelah_diskon']) ? $order_data['harga_setelah_diskon'] : (!empty($order_data['subtotal']) ? $order_data['subtotal'] : $order_data['total']),
+				'subtotal' => !empty($order_data['subtotal']) ? $order_data['subtotal'] : $order_data['total'],
+				'catatan' => !empty($order_data['nama_variasi']) ? 'Variasi: ' . $order_data['nama_variasi'] : '',
+				'gambar' => null
+			];
+		}
+
+		$formatted_items = [];
+		$total_qty = 0;
+		foreach ($items as $it) {
+			$qty_num = isset($it['qty']) ? (float)$it['qty'] : 1;
+			$total_qty += $qty_num;
+			$qty_str = (floor($qty_num) == $qty_num) ? number_format($qty_num, 0, ',', '.') : number_format($qty_num, 2, ',', '.');
+			$satuan = !empty($it['satuan']) ? trim($it['satuan']) : 'pcs';
+
+			$nama = '';
+			if ($order_table === 'penjualan_marketplace') {
+				if (!empty($it['catatan']) && strlen(trim($it['catatan'])) > 3) {
+					$nama = trim($it['catatan']);
+				} elseif (!empty($it['nama_produk'])) {
+					$nama = trim($it['nama_produk']);
+				} elseif (!empty($order_data['nama_produk_marketplace'])) {
+					$nama = trim($order_data['nama_produk_marketplace']);
+				} else {
+					$nama = 'Produk Pesanan';
+				}
+			} else {
+				if (!empty($it['nama_produk'])) {
+					$nama = trim($it['nama_produk']);
+				} elseif (!empty($it['catatan'])) {
+					$nama = trim($it['catatan']);
+				} else {
+					$nama = 'Produk Pesanan';
+				}
+			}
+
+			$kode = !empty($it['kode_produk']) ? trim($it['kode_produk']) : (!empty($order_data['nomor_referensi_sku']) ? trim($order_data['nomor_referensi_sku']) : '-');
+			$harga = isset($it['harga_satuan']) ? (float)$it['harga_satuan'] : 0;
+			$subtotal = isset($it['subtotal']) ? (float)$it['subtotal'] : ($harga * $qty_num);
+
+			$img_url = null;
+			if (!empty($it['gambar'])) {
+				$img_path = 'uploads/produk/' . $it['gambar'];
+				if (file_exists(FCPATH . $img_path)) {
+					$img_url = base_url($img_path);
+				}
+			}
+
+			$formatted_items[] = [
+				'nama_produk' => $nama,
+				'kode_produk' => $kode,
+				'qty' => $qty_num,
+				'qty_formatted' => $qty_str,
+				'satuan' => $satuan,
+				'harga_satuan' => $harga,
+				'harga_satuan_formatted' => 'Rp ' . number_format($harga, 0, ',', '.'),
+				'subtotal' => $subtotal,
+				'subtotal_formatted' => 'Rp ' . number_format($subtotal, 0, ',', '.'),
+				'catatan' => !empty($it['catatan']) ? $it['catatan'] : '',
+				'gambar_url' => $img_url
+			];
+		}
+
+		$order_meta = [
+			'order_table' => $order_table,
+			'order_id' => $order_id,
+			'order_total' => $order_data ? (float)$order_data['total'] : null,
+			'order_total_formatted' => $order_data ? ('Rp ' . number_format((float)$order_data['total'], 0, ',', '.')) : null,
+			'subtotal_formatted' => ($order_data && isset($order_data['subtotal'])) ? ('Rp ' . number_format((float)$order_data['subtotal'], 0, ',', '.')) : null,
+			'kurir' => ($order_data && !empty($order_data['kurir_ekspedisi'])) ? $order_data['kurir_ekspedisi'] : null,
+			'resi' => ($order_data && !empty($order_data['nomor_resi'])) ? $order_data['nomor_resi'] : null,
+			'opsi_pengiriman' => ($order_data && !empty($order_data['opsi_pengiriman'])) ? $order_data['opsi_pengiriman'] : null,
+			'total_items_count' => count($formatted_items),
+			'total_qty' => $total_qty
+		];
+
+		return [
+			'items' => $formatted_items,
+			'order_meta' => $order_meta
+		];
+	}
+
 	// ===== DASHBOARD CRM ANALYTICS (Fase 5) =====
 
 	public function get_dashboard_kpis()
@@ -4216,7 +5316,7 @@ class Model_crm extends CI_Model
 		$total_cust = $this->get_query_count("SELECT COUNT(DISTINCT customer_phone) as cnt FROM crm_transaction_followup_labels WHERE customer_phone IS NOT NULL AND customer_phone != ''");
 		
 		// Total spend
-		$so_spend = $this->get_query_sum("SELECT COALESCE(SUM(total),0) as t FROM sales_order");
+		$so_spend = $this->get_query_sum("SELECT COALESCE(SUM(total),0) as t FROM sales_order WHERE (source = 'excel_import' OR (source NOT IN ('shopee', 'tokopedia', 'tiktok', 'tiktokshop', 'lazada', 'marketplace') AND (no_pesanan IS NULL OR no_pesanan = '' OR no_pesanan = nomor_so)))");
 		$mp_spend = $this->get_query_sum("SELECT COALESCE(SUM(total),0) as t FROM penjualan_marketplace");
 		$total_spend = (float)$so_spend + (float)$mp_spend;
 

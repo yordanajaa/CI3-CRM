@@ -21,29 +21,76 @@ class Model_retur_penjualan extends MY_Model {
 
 	public function join_available()
 	{
-		$this->db->select('retur_penjualan.*, pelanggan.nama_pelanggan, invoice.nomor_invoice, gudang.nama_gudang');
-		$this->db->join('pelanggan', 'pelanggan.id = retur_penjualan.pelanggan_id', 'LEFT');
+		$this->db->select('retur_penjualan.*, 
+			COALESCE(NULLIF(pelanggan.nama_pelanggan, ""), NULLIF(inv_pelanggan.nama_pelanggan, ""), NULLIF(so.nama_penerima, ""), "-") as nama_pelanggan,
+			COALESCE(NULLIF(pelanggan.kode_pelanggan, ""), NULLIF(inv_pelanggan.kode_pelanggan, ""), "-") as kode_pelanggan,
+			invoice.nomor_invoice');
 		$this->db->join('invoice', 'invoice.id = retur_penjualan.invoice_id', 'LEFT');
-		$this->db->join('gudang', 'gudang.id = retur_penjualan.gudang_id', 'LEFT');
+		$this->db->join('sales_order as so', 'so.id = invoice.so_id', 'LEFT');
+		$this->db->join('pelanggan', 'pelanggan.id = retur_penjualan.pelanggan_id', 'LEFT');
+		$this->db->join('pelanggan as inv_pelanggan', 'inv_pelanggan.id = invoice.pelanggan_id', 'LEFT');
 		return $this;
 	}
 
-	public function count_all($q = '', $field = '')
+	public function count_all($q = '', $field = '', $filter_extra = [])
 	{
 		$this->join_available();
 		$where = $this->build_where($q, $field);
         $this->db->where($where);
+        $this->apply_extra_filters($filter_extra);
 		return $this->db->get($this->table_name)->num_rows();
 	}
 
-	public function get($q = '', $field = '', $limit = 0, $offset = 0)
+	public function get($q = '', $field = '', $limit = 0, $offset = 0, $filter_extra = [])
 	{
 		$this->join_available();
 		$where = $this->build_where($q, $field);
         $this->db->where($where);
-        $this->db->limit($limit, $offset);
+        $this->apply_extra_filters($filter_extra);
+        if ($limit > 0) {
+            $this->db->limit($limit, $offset);
+        }
         $this->db->order_by('retur_penjualan.'.$this->primary_key, 'DESC');
 		return $this->db->get($this->table_name)->result();
+	}
+
+	private function apply_extra_filters($filters = [])
+	{
+		if (empty($filters) || !is_array($filters)) return;
+
+		if (!empty($filters['date_start'])) {
+			$this->db->where('retur_penjualan.tanggal_retur >=', $filters['date_start']);
+		}
+		if (!empty($filters['date_end'])) {
+			$this->db->where('retur_penjualan.tanggal_retur <=', $filters['date_end']);
+		}
+		if (!empty($filters['tanggal'])) {
+			$this->db->where('retur_penjualan.tanggal_retur', $filters['tanggal']);
+		}
+		if (!empty($filters['bulan'])) {
+			$this->db->where('MONTH(retur_penjualan.tanggal_retur)', (int)$filters['bulan']);
+		}
+		if (!empty($filters['tahun'])) {
+			$this->db->where('YEAR(retur_penjualan.tanggal_retur)', (int)$filters['tahun']);
+		}
+		if (!empty($filters['status'])) {
+			$this->db->where('retur_penjualan.status', $filters['status']);
+		}
+	}
+
+	public function get_available_years()
+	{
+		$res = $this->db->query("SELECT DISTINCT YEAR(tanggal_retur) as thn FROM retur_penjualan WHERE tanggal_retur IS NOT NULL ORDER BY thn DESC")->result();
+		$years = [];
+		foreach ($res as $r) {
+			if (!empty($r->thn)) $years[] = (int)$r->thn;
+		}
+		$current_year = (int)date('Y');
+		if (!in_array($current_year, $years)) {
+			$years[] = $current_year;
+			rsort($years);
+		}
+		return $years;
 	}
 
 	private function build_where($q, $field)
@@ -99,8 +146,7 @@ class Model_retur_penjualan extends MY_Model {
 		$items = $this->get_items($retur_id);
 
 		foreach ($items as $item) {
-			$gudang_id = $retur->gudang_id;
-			$stok = $this->db->get_where('stok', ['produk_id' => $item->produk_id, 'gudang_id' => $gudang_id])->row();
+			$stok = $this->db->get_where('stok', ['produk_id' => $item->produk_id])->row();
 			$produk = $this->db->get_where('produk', ['id' => $item->produk_id])->row();
 			$default_rak_id = $produk ? $produk->default_rak_id : null;
 
@@ -120,7 +166,6 @@ class Model_retur_penjualan extends MY_Model {
 				} else {
 					$this->db->insert('stok', [
 						'produk_id' => $item->produk_id,
-						'gudang_id' => $gudang_id,
 						'rak_id'    => $default_rak_id,
 						'qty'       => $item->qty_retur,
 						'qty_rusak' => 0,
@@ -130,7 +175,6 @@ class Model_retur_penjualan extends MY_Model {
 
 				$this->db->insert('stok_log', [
 					'produk_id' => $item->produk_id,
-					'gudang_id' => $gudang_id,
 					'jenis' => 'masuk',
 					'qty' => $item->qty_retur,
 					'harga_satuan' => $item->harga_satuan,
@@ -154,7 +198,6 @@ class Model_retur_penjualan extends MY_Model {
 				} else {
 					$this->db->insert('stok', [
 						'produk_id' => $item->produk_id,
-						'gudang_id' => $gudang_id,
 						'rak_id'    => $default_rak_id,
 						'qty'       => 0,
 						'qty_rusak' => $item->qty_retur,
@@ -164,7 +207,6 @@ class Model_retur_penjualan extends MY_Model {
 
 				$this->db->insert('stok_log', [
 					'produk_id'      => $item->produk_id,
-					'gudang_id'      => $gudang_id,
 					'jenis'          => 'rusak',
 					'qty'            => $item->qty_retur,
 					'harga_satuan'   => $item->harga_satuan,
@@ -179,19 +221,17 @@ class Model_retur_penjualan extends MY_Model {
 
 		// Proses tindak lanjut: Tukar Barang, Refund, atau Kredit Poin
 		if ($retur->tindak_lanjut == 'tukar_barang') {
-			// Jika tukar barang baru: kurangi stok barang aktif di Gudang Asal/Utama untuk unit baru pengganti yang diberikan ke pelanggan
+			// Jika tukar barang baru: kurangi stok barang aktif untuk unit baru pengganti yang diberikan ke pelanggan
 			$inv_rec = $this->db->get_where('invoice', ['id' => $retur->invoice_id])->row();
-			$gudang_asal_id = ($inv_rec && !empty($inv_rec->gudang_id)) ? $inv_rec->gudang_id : $retur->gudang_id;
 
 			foreach ($items as $item) {
-				$stok = $this->db->get_where('stok', ['produk_id' => $item->produk_id, 'gudang_id' => $gudang_asal_id])->row();
+				$stok = $this->db->get_where('stok', ['produk_id' => $item->produk_id])->row();
 				if ($stok) {
 					$new_active_qty = max(0, $stok->qty - $item->qty_retur);
 					$this->db->update('stok', ['qty' => $new_active_qty, 'updated_at' => date('Y-m-d H:i:s')], ['id' => $stok->id]);
 				}
 				$this->db->insert('stok_log', [
 					'produk_id'      => $item->produk_id,
-					'gudang_id'      => $gudang_asal_id,
 					'jenis'          => 'keluar',
 					'qty'            => $item->qty_retur,
 					'harga_satuan'   => $item->harga_satuan,
@@ -252,10 +292,13 @@ class Model_retur_penjualan extends MY_Model {
 
 	public function get_laporan($produk_id = null, $date_start = null, $date_end = null)
 	{
-		$this->db->select('retur_penjualan_item.*, produk.nama_produk, produk.kode_produk, retur_penjualan.nomor_retur, retur_penjualan.tanggal_retur, retur_penjualan.alasan as alasan_utama, retur_penjualan.catatan as catatan_retur, pelanggan.nama_pelanggan');
+		$this->db->select('retur_penjualan_item.*, produk.nama_produk, produk.kode_produk, retur_penjualan.nomor_retur, retur_penjualan.tanggal_retur, retur_penjualan.alasan as alasan_utama, retur_penjualan.catatan as catatan_retur, COALESCE(NULLIF(pelanggan.nama_pelanggan, ""), NULLIF(inv_pelanggan.nama_pelanggan, ""), NULLIF(so.nama_penerima, ""), "-") as nama_pelanggan');
 		$this->db->join('produk', 'produk.id = retur_penjualan_item.produk_id');
 		$this->db->join('retur_penjualan', 'retur_penjualan.id = retur_penjualan_item.retur_penjualan_id');
-		$this->db->join('pelanggan', 'pelanggan.id = retur_penjualan.pelanggan_id');
+		$this->db->join('invoice', 'invoice.id = retur_penjualan.invoice_id', 'LEFT');
+		$this->db->join('sales_order as so', 'so.id = invoice.so_id', 'LEFT');
+		$this->db->join('pelanggan', 'pelanggan.id = retur_penjualan.pelanggan_id', 'LEFT');
+		$this->db->join('pelanggan as inv_pelanggan', 'inv_pelanggan.id = invoice.pelanggan_id', 'LEFT');
 
 		if ($produk_id) {
 			$this->db->where('retur_penjualan_item.produk_id', $produk_id);

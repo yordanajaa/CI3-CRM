@@ -144,6 +144,9 @@ class Model_crud extends MY_Model {
 	{
 		$crud_field = $this->model_crud->get_crud_field($id);
 		$crud = $this->model_crud->find($id);
+		if (!$crud || empty($crud->table_name) || !$this->db->table_exists($crud->table_name)) {
+			return [];
+		}
 		$all_fields = $this->db->field_data($crud->table_name);
 
 		$all_fields_key = [];

@@ -86,49 +86,54 @@
 }
 .crm-header-nav .action-tools .btn:hover { transform: translateY(-2px); }
 
-/* Navigation Tab Bar */
+/* Navigation Tab Bar - Touch Scrollable */
 .crm-header-nav .nav-tabs-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 8px;
   padding-top: 14px;
   border-top: 1px solid rgba(255,255,255,0.18);
   position: relative;
   z-index: 2;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.crm-header-nav .nav-tabs-bar::-webkit-scrollbar {
+  display: none;
 }
 .crm-header-nav .nav-tab-btn {
-  padding: 8px 18px;
-  border-radius: 25px;
-  font-size: 12px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 12.5px;
   font-weight: 700;
-  color: #e0e7ff;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  text-decoration: none !important;
+  color: rgba(255,255,255,0.92);
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.22);
+  text-decoration: none;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 .crm-header-nav .nav-tab-btn:hover {
-  background: rgba(255, 255, 255, 0.22);
-  color: #ffffff;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  background: rgba(255,255,255,0.25);
+  color: #fff;
+  transform: translateY(-1px);
 }
 .crm-header-nav .nav-tab-btn.active {
   background: #ffffff !important;
   color: #312e81 !important;
   border-color: #ffffff !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.18) !important;
 }
-.crm-header-nav .nav-tab-btn.active .active-dot {
+.crm-header-nav .nav-tab-btn .active-dot {
   width: 7px;
   height: 7px;
-  background: #6366f1;
   border-radius: 50%;
+  background: #6366f1;
   display: inline-block;
 }
 
@@ -169,6 +174,17 @@
 .trophy-silver { color: #94a3b8; font-size: 16px; }
 .trophy-bronze { color: #d97706; font-size: 16px; }
 
+.cs-chart-wrapper {
+  position: relative;
+  width: 100%;
+  height: 280px;
+}
+.cs-pie-wrapper {
+  position: relative;
+  width: 100%;
+  height: 280px;
+}
+
 @media (max-width: 991px) {
   .crm-header-nav { padding: 16px 16px 12px 16px; margin-bottom: 12px; }
   .crm-header-nav .header-top-flex { flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 12px; }
@@ -201,6 +217,9 @@
   .table-cs td { font-size: 10.5px; padding: 6px 4px !important; }
   .table-cs .badge, .table-cs .label { font-size: 9.5px !important; padding: 2px 6px !important; }
   .table-cs td[style*="font-size:14px"] { font-size: 11px !important; }
+
+  .cs-chart-wrapper { height: 290px; }
+  .cs-pie-wrapper { height: 270px; }
 }
 
 @media (max-width: 480px) {
@@ -250,9 +269,6 @@
       </a>
       <a href="<?= site_url('administrator/crm/followup_setting'); ?>" class="nav-tab-btn">
         <i class="fa fa-cogs"></i> 6. Kelompok Follow-Up
-      </a>
-      <a href="<?= site_url('administrator/crm/automations'); ?>" class="nav-tab-btn">
-        <i class="fa fa-bolt"></i> 7. Otomasi CRM
       </a>
     </div>
   </div>
@@ -313,8 +329,10 @@
         <div class="box-header with-border">
           <h3 class="box-title"><i class="fa fa-bar-chart text-emerald"></i> Perbandingan Omset Repeat Order per CS (Rp)</h3>
         </div>
-        <div class="box-body">
-          <canvas id="chart-cs-revenue" height="120"></canvas>
+        <div class="box-body" style="padding: 12px 10px;">
+          <div class="cs-chart-wrapper">
+            <canvas id="chart-cs-revenue"></canvas>
+          </div>
         </div>
       </div>
     </div>
@@ -323,8 +341,10 @@
         <div class="box-header with-border">
           <h3 class="box-title"><i class="fa fa-pie-chart text-purple"></i> Distribusi Handling Follow-Up</h3>
         </div>
-        <div class="box-body">
-          <canvas id="chart-cs-handled" height="250"></canvas>
+        <div class="box-body" style="padding: 12px 10px;">
+          <div class="cs-pie-wrapper">
+            <canvas id="chart-cs-handled"></canvas>
+          </div>
         </div>
       </div>
     </div>
@@ -416,17 +436,81 @@ $(document).ready(function() {
         label: 'Omset Konversi (Rp)',
         data: revenues,
         backgroundColor: '#059669',
+        hoverBackgroundColor: '#047857',
         borderRadius: 6
       }]
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       legend: { display: false },
+      layout: {
+        padding: {
+          left: 5,
+          right: 15,
+          top: 15,
+          bottom: 5
+        }
+      },
+      tooltips: {
+        backgroundColor: '#1e293b',
+        titleFontSize: 12,
+        bodyFontSize: 12,
+        xPadding: 10,
+        yPadding: 8,
+        displayColors: false,
+        callbacks: {
+          label: function(tooltipItem, data) {
+            var val = Number(tooltipItem.yLabel || 0);
+            return 'Omset: Rp ' + val.toLocaleString('id-ID');
+          }
+        }
+      },
       scales: {
+        xAxes: [{
+          gridLines: { display: false },
+          ticks: {
+            autoSkip: false,
+            maxRotation: 45,
+            minRotation: 25,
+            fontSize: 10,
+            fontColor: '#64748b',
+            callback: function(value) {
+              if (typeof value === 'string' && value.length > 13) {
+                return value.substring(0, 11) + '..';
+              }
+              return value;
+            }
+          }
+        }],
         yAxes: [{
+          gridLines: {
+            color: '#f1f5f9',
+            zeroLineColor: '#cbd5e1'
+          },
           ticks: {
             beginAtZero: true,
-            callback: function(value) { return 'Rp ' + (value/1000000).toFixed(1) + 'M'; }
+            maxTicksLimit: 5,
+            autoSkip: true,
+            fontSize: 10,
+            fontColor: '#64748b',
+            padding: 6,
+            callback: function(value) {
+              if (value === 0) return 'Rp 0';
+              if (value >= 1000000000) {
+                var b = value / 1000000000;
+                return 'Rp ' + (b % 1 === 0 ? b.toFixed(0) : b.toFixed(1)) + ' M';
+              }
+              if (value >= 1000000) {
+                var m = value / 1000000;
+                return 'Rp ' + (m % 1 === 0 ? m.toFixed(0) : m.toFixed(1)) + ' Jt';
+              }
+              if (value >= 1000) {
+                var k = value / 1000;
+                return 'Rp ' + (k % 1 === 0 ? k.toFixed(0) : k.toFixed(1)) + ' Rb';
+              }
+              return 'Rp ' + Number(value).toLocaleString('id-ID');
+            }
           }
         }]
       }
@@ -446,7 +530,26 @@ $(document).ready(function() {
     },
     options: {
       responsive: true,
-      legend: { position: 'bottom' }
+      maintainAspectRatio: false,
+      legend: {
+        position: 'bottom',
+        labels: {
+          boxWidth: 12,
+          fontSize: 10.5,
+          padding: 8
+        }
+      },
+      tooltips: {
+        backgroundColor: '#1e293b',
+        callbacks: {
+          label: function(tooltipItem, data) {
+            var idx = tooltipItem.index;
+            var label = data.labels[idx] || '';
+            var val = data.datasets[0].data[idx] || 0;
+            return label + ': ' + Number(val).toLocaleString('id-ID') + ' item';
+          }
+        }
+      }
     }
   });
 });

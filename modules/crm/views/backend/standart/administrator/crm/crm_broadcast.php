@@ -178,6 +178,64 @@
 .btn-indigo { background: #4f46e5; color: #fff; border: none; font-weight: 700; border-radius: 8px; transition: all 0.2s; }
 .btn-indigo:hover { background: #4338ca; color: #fff; }
 
+.filter-broadcast-row {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr 1.15fr 170px;
+  align-items: flex-start;
+  gap: 14px;
+}
+.filter-broadcast-col {
+  min-width: 0;
+}
+.filter-broadcast-btn {
+  width: 100% !important;
+  height: 42px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  border-radius: 9px !important;
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%) !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.28) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  padding: 0 16px !important;
+  white-space: nowrap !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+.filter-broadcast-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.38) !important;
+  background: linear-gradient(135deg, #4338ca 0%, #4f46e5 100%) !important;
+}
+
+@media (max-width: 991px) {
+  .filter-broadcast-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+  .filter-broadcast-col {
+    width: 100% !important;
+  }
+  .filter-broadcast-col.col-action {
+    grid-column: span 2;
+  }
+  .filter-broadcast-btn {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .filter-broadcast-row {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  .filter-broadcast-col.col-action {
+    grid-column: span 1;
+  }
+}
+
 @media (max-width: 991px) {
   .crm-header-nav { padding: 16px 16px 12px 16px; margin-bottom: 12px; }
   .crm-header-nav .header-top-flex { flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 12px; }
@@ -238,7 +296,6 @@
 
       <div class="action-tools">
         <a href="<?= site_url('administrator/crm/journal_followup'); ?>" class="btn" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);"><i class="fa fa-tasks"></i> Journal Follow-Up</a>
-        <a href="<?= site_url('administrator/crm/automations'); ?>" class="btn" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);"><i class="fa fa-cogs"></i> Otomasi Cron</a>
       </div>
     </div>
 
@@ -262,24 +319,31 @@
       <a href="<?= site_url('administrator/crm/followup_setting'); ?>" class="nav-tab-btn">
         <i class="fa fa-cogs"></i> 6. Kelompok Follow-Up
       </a>
-      <a href="<?= site_url('administrator/crm/automations'); ?>" class="nav-tab-btn">
-        <i class="fa fa-bolt"></i> 7. Otomasi CRM
-      </a>
     </div>
   </div>
   <!-- BAGIAN ATAS: Panel Form Kirim Broadcast Baru -->
   <div class="row">
     <div class="col-md-12">
-      <div class="box-clean">
-        <div class="box-header">
-          <h3 class="box-title"><i class="fa fa-paper-plane text-indigo"></i> Kirim Broadcast Baru</h3>
+      <div class="box-clean" style="border-radius:14px; border:1px solid #e2e8f0; box-shadow:0 4px 20px rgba(0,0,0,0.04); background:#ffffff; margin-bottom:24px;">
+        <div class="box-header" style="padding:16px 22px; background:#fafbfc; border-bottom:1px solid #edf2f7; border-top-left-radius:14px; border-top-right-radius:14px; display:flex; align-items:center; justify-content:space-between;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="width:32px; height:32px; border-radius:8px; background:#e0e7ff; color:#4338ca; display:flex; align-items:center; justify-content:center; font-size:14px;">
+              <i class="fa fa-paper-plane"></i>
+            </div>
+            <div>
+              <h3 class="box-title" style="font-size:15px; font-weight:800; color:#0f172a; margin:0;">Kirim Broadcast Baru</h3>
+              <p style="margin:2px 0 0 0; font-size:12px; color:#64748b;">Pilih target kategori label H+ dan filter customer penerima pesan broadcast</p>
+            </div>
+          </div>
         </div>
         <div class="box-body" style="padding:22px;">
-          <div class="row" style="align-items: flex-end;">
-            <div class="col-md-4">
+          <div class="filter-broadcast-row">
+            <div class="filter-broadcast-col col-category">
               <div class="form-group" style="margin-bottom:0;">
-                <label style="font-size:12px; font-weight:700; color:#334155;">Pilih Kategori Label H+ <span class="text-danger">*</span></label>
-                <select class="form-control" id="bc-category" style="border-radius:8px; height:40px; font-size:13px;">
+                <label style="font-size:12px; font-weight:700; color:#334155; margin-bottom:6px; display:flex; align-items:center; gap:4px;">
+                  <i class="fa fa-tag text-indigo"></i> Pilih Kategori Label H+ <span class="text-danger">*</span>
+                </label>
+                <select class="form-control" id="bc-category" style="border-radius:9px; height:42px; font-size:13px; font-weight:500; border:1px solid #cbd5e1;">
                   <option value="">-- Pilih Kategori --</option>
                   <?php foreach ($categories as $cat): ?>
                   <?php
@@ -291,10 +355,13 @@
                 </select>
               </div>
             </div>
-            <div class="col-md-3">
+
+            <div class="filter-broadcast-col col-source">
               <div class="form-group" style="margin-bottom:0;">
-                <label style="font-size:12px; font-weight:700; color:#334155;">Filter Sumber Penjualan</label>
-                <select class="form-control" id="bc-source" style="border-radius:8px; height:40px; font-size:13px;">
+                <label style="font-size:12px; font-weight:700; color:#334155; margin-bottom:6px; display:flex; align-items:center; gap:4px;">
+                  <i class="fa fa-shopping-cart text-indigo"></i> Filter Sumber Penjualan
+                </label>
+                <select class="form-control" id="bc-source" style="border-radius:9px; height:42px; font-size:13px; font-weight:500; border:1px solid #cbd5e1;">
                   <option value="">Semua Sumber (Toko & Online)</option>
                   <option value="Toko">Toko / Offline SO</option>
                   <option value="Shopee">Shopee</option>
@@ -303,10 +370,13 @@
                 </select>
               </div>
             </div>
-            <div class="col-md-3">
+
+            <div class="filter-broadcast-col col-rfm">
               <div class="form-group" style="margin-bottom:0;">
-                <label style="font-size:12px; font-weight:700; color:#334155;">Filter Segmen RFM</label>
-                <select class="form-control" id="bc-rfm-segment" style="border-radius:8px; height:40px; font-size:13px;">
+                <label style="font-size:12px; font-weight:700; color:#334155; margin-bottom:6px; display:flex; align-items:center; gap:4px;">
+                  <i class="fa fa-pie-chart text-indigo"></i> Filter Segmen RFM
+                </label>
+                <select class="form-control" id="bc-rfm-segment" style="border-radius:9px; height:42px; font-size:13px; font-weight:500; border:1px solid #cbd5e1;">
                   <option value="">Semua Segmen Customer</option>
                   <option value="Champions">🏆 Champions (Setia & High Value)</option>
                   <option value="Loyal Customers">⭐ Loyal Customers (Frequent Buyers)</option>
@@ -321,8 +391,16 @@
                 </select>
               </div>
             </div>
-            <div class="col-md-2">
-              <button class="btn btn-indigo btn-block" id="btn-load-recipients" style="height:40px; font-size:13px;"><i class="fa fa-users"></i> Muat Penerima</button>
+
+            <div class="filter-broadcast-col col-action">
+              <div class="form-group" style="margin-bottom:0;">
+                <label style="font-size:12px; font-weight:700; color:#334155; margin-bottom:6px; display:flex; align-items:center; gap:4px;">
+                  <i class="fa fa-bolt text-indigo"></i> Aksi
+                </label>
+                <button class="btn btn-indigo filter-broadcast-btn" id="btn-load-recipients">
+                  <i class="fa fa-users"></i> <span>Muat Penerima</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -512,7 +590,7 @@ $(document).ready(function() {
       var r = parseRes(res);
       if (r.success) {
         if (r.mode === 'wa_gateway') {
-          notify('success', 'Berhasil mengirim ' + r.count + ' pesan WA otomatis via Fonnte Gateway API!');
+          notify('success', 'Berhasil mengirim ' + r.count + ' pesan WA otomatis via WhatsApp Gateway API!');
           setTimeout(function() { location.reload(); }, 1500);
         } else if (r.wa_links) {
           var delay = 0;

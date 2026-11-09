@@ -20,20 +20,6 @@ class Pelanggan extends Admin
 		$this->data['pelanggans']      = $this->model_pelanggan->get($filter, $field, $this->limit_page, $offset);
 		$this->data['pelanggan_counts'] = $this->model_pelanggan->count_all($filter, $field);
 
-		// Aggregate tier stats from database
-		$tier_counts = $this->db->select("
-			COUNT(*) as total,
-			SUM(CASE WHEN LOWER(tipe_pelanggan) = 'distributor' THEN 1 ELSE 0 END) as distributor,
-			SUM(CASE WHEN LOWER(tipe_pelanggan) = 'grosir' THEN 1 ELSE 0 END) as grosir,
-			SUM(CASE WHEN LOWER(tipe_pelanggan) = 'retail' THEN 1 ELSE 0 END) as retail
-		")->get('pelanggan')->row_array();
-
-		$this->data['stats_tier'] = [
-			'total'       => (int)($tier_counts['total'] ?? 0),
-			'distributor' => (int)($tier_counts['distributor'] ?? 0),
-			'grosir'      => (int)($tier_counts['grosir'] ?? 0),
-			'retail'      => (int)($tier_counts['retail'] ?? 0),
-		];
 
 		$config = [
 			'base_url'    => 'administrator/pelanggan/index/',
@@ -86,6 +72,7 @@ class Pelanggan extends Admin
 				'limit_kredit'    => preg_replace('/[^0-9]/', '', (string)$this->input->post('limit_kredit')) ?: 0,
 				'status'          => $this->input->post('status') ?: 'aktif',
 				'catatan'         => $this->input->post('catatan'),
+				'source'          => $this->input->post('source') ?: 'manual',
 				'created_by'      => get_user_data('username'),
 				'created_at'      => date('Y-m-d H:i:s'),
 			];
@@ -98,7 +85,7 @@ class Pelanggan extends Admin
 					$this->data['id']      = $id;
 					$this->data['message'] = 'Pelanggan berhasil disimpan. ' . anchor('administrator/pelanggan/edit/' . $id, 'Edit');
 				} elseif ($this->input->post('save_type') == 'sales_order') {
-					set_message('Pelanggan berhasil disimpan. Silakan buat Sales Order.', 'success');
+					set_message('Pelanggan berhasil disimpan. Silakan buat Transaksi Penjualan.', 'success');
 					$this->data['success']  = true;
 					$this->data['id']       = $id;
 					$this->data['redirect'] = base_url('administrator/sales_order/add?pelanggan_id=' . $id);
@@ -153,6 +140,7 @@ class Pelanggan extends Admin
 				'limit_kredit'    => preg_replace('/[^0-9]/', '', (string)$this->input->post('limit_kredit')) ?: 0,
 				'status'          => $this->input->post('status') ?: 'aktif',
 				'catatan'         => $this->input->post('catatan'),
+				'source'          => $this->input->post('source') ?: 'manual',
 				'updated_at'      => date('Y-m-d H:i:s'),
 			];
 
@@ -184,14 +172,44 @@ class Pelanggan extends Admin
 		$this->is_allowed('pelanggan_view');
 		$this->data['pelanggan'] = $this->model_pelanggan->find($id);
 		
-		// Riwayat transaksi per pelanggan untuk analisis pembelian ulang
-		$this->data['riwayat_so'] = $this->db->order_by('id', 'DESC')->get_where('sales_order', ['pelanggan_id' => $id])->result();
-		$this->data['riwayat_mp'] = $this->db->order_by('id', 'DESC')->get_where('penjualan_marketplace', ['pelanggan_id' => $id])->result();
+		$pelanggan = $this->data['pelanggan'];
+		$p_phone = !empty($pelanggan->telepon) ? preg_replace('/[^0-9]/', '', $pelanggan->telepon) : (!empty($pelanggan->no_telp) ? preg_replace('/[^0-9]/', '', $pelanggan->no_telp) : '');
+
+		// Riwayat transaksi per pelanggan untuk analisis pembelian ulang (terkoneksi pelanggan_id & nomor HP)
+		$this->db->group_start();
+		$this->db->where('pelanggan_id', $id);
+		if (!empty($p_phone)) {
+			$this->db->or_where('no_telepon', $p_phone);
+			$this->db->or_like('no_telepon', substr($p_phone, -9));
+		}
+		$this->db->group_end();
+		$this->data['riwayat_so'] = $this->db->order_by('id', 'DESC')->get('sales_order')->result();
+
+		$this->db->group_start();
+		$this->db->where('pelanggan_id', $id);
+		if (!empty($p_phone)) {
+			$this->db->or_where('no_telepon', $p_phone);
+			$this->db->or_like('no_telepon', substr($p_phone, -9));
+		}
+		$this->db->group_end();
+		$this->data['riwayat_mp'] = $this->db->order_by('id', 'DESC')->get('penjualan_marketplace')->result();
+
 		$this->data['riwayat_invoice'] = $this->db->order_by('id', 'DESC')->get_where('invoice', ['pelanggan_id' => $id])->result();
 		
-		$so_vol = $this->db->select_sum('total')->get_where('sales_order', ['pelanggan_id' => $id])->row()->total ?: 0;
-		$mp_vol = $this->db->select_sum('total')->get_where('penjualan_marketplace', ['pelanggan_id' => $id])->row()->total ?: 0;
-		$this->data['total_volume'] = $so_vol + $mp_vol;
+		// Hitung total volume tanpa double-counting antara sales_order dan penjualan_marketplace yang tersinkron
+		$counted_so_numbers = [];
+		$total_vol = 0;
+		foreach ($this->data['riwayat_so'] as $rso) {
+			$total_vol += (float)$rso->total;
+			if (!empty($rso->nomor_so)) $counted_so_numbers[] = $rso->nomor_so;
+			if (!empty($rso->no_pesanan)) $counted_so_numbers[] = $rso->no_pesanan;
+		}
+		foreach ($this->data['riwayat_mp'] as $rmp) {
+			if (!in_array($rmp->nomor_so, $counted_so_numbers) && !in_array($rmp->no_pesanan, $counted_so_numbers)) {
+				$total_vol += (float)$rmp->total;
+			}
+		}
+		$this->data['total_volume'] = $total_vol;
 
 		$this->template->title('Detail & Analisis Transaksi Pelanggan');
 		$this->render('backend/standart/administrator/pelanggan/pelanggan_view', $this->data);

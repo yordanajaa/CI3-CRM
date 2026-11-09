@@ -29,7 +29,7 @@ if ($so_disc_pct == 0) {
 </style>
 
 <section class="content-header">
-   <h1><i class="fa fa-file-text-o text-primary"></i> <?= $is_edit ? 'Edit Invoice' : 'Buat Invoice Penjualan'; ?> <small><?= $is_edit ? _ent($nomor_inv) : ('dari SO: '._ent($so_obj->nomor_so ?? '')); ?></small></h1>
+   <h1><i class="fa fa-file-text-o text-primary"></i> <?= $is_edit ? 'Edit Invoice' : 'Buat Invoice Penjualan'; ?> <small><?= $is_edit ? _ent($nomor_inv) : ('dari Transaksi Penjualan: '._ent($so_obj->nomor_so ?? '')); ?></small></h1>
    <ol class="breadcrumb">
       <li><a href="<?= base_url('administrator/dashboard'); ?>"><i class="fa fa-dashboard"></i> Home</a></li>
       <li><a href="<?= base_url('administrator/invoice'); ?>">Invoice</a></li>
@@ -79,8 +79,6 @@ if ($so_disc_pct == 0) {
             </div>
 
             <div class="row">
-               <?php $selected_gudang = $so_obj->gudang_id ?? ($inv->gudang_id ?? (isset($gudangs[0]) ? $gudangs[0]->id : 1)); ?>
-               <input type="hidden" name="gudang_id" value="<?= $selected_gudang; ?>">
                <div class="col-md-3">
                   <div class="form-group">
                      <label>Diskon Keseluruhan (%)</label>

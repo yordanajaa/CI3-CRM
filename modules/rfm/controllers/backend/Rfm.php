@@ -76,11 +76,48 @@ class Rfm extends Admin
 		$period_filter = $this->input->get('period');
 		$year_filter = $this->input->get('year');
 		$category_filter = $this->input->get('kategori');
+		$brand_filter = $this->input->get('brand') ?: $category_filter;
+		$specialist_filter = $this->input->get('specialist');
+		$status_rfm_raw = $this->input->get('status_rfm');
+		$status_rfm = [];
+		if (is_array($status_rfm_raw)) {
+			$status_rfm = array_filter($status_rfm_raw);
+		} elseif (!empty($status_rfm_raw)) {
+			$status_rfm = array_filter(explode(',', $status_rfm_raw));
+		}
+
 		$compare_a = $this->input->get('compare_a');
 		$compare_b = $this->input->get('compare_b');
 
+		// Date range filters for RFM tracking (only load data when user has explicitly selected both start & end dates and submitted)
+		$has_filtered = ($this->input->get('filtered') == '1' || $this->input->get('filtered') === 'true');
+		$raw_date_from = trim($this->input->get('date_from') ?: '');
+		$raw_date_to = trim($this->input->get('date_to') ?: '');
+
+		$is_filtered = ($has_filtered && !empty($raw_date_from) && !empty($raw_date_to));
+
+		$date_from = $is_filtered ? $raw_date_from : '';
+		$date_to = $is_filtered ? $raw_date_to : '';
+
+		if (!$is_filtered) {
+			$status_rfm = [];
+			$category_filter = '';
+			$product_filter = '';
+			$brand_filter = '';
+			$specialist_filter = '';
+		}
+
+		$this->data['is_filtered'] = $is_filtered;
+		$this->data['date_from'] = $date_from;
+		$this->data['date_to'] = $date_to;
+
 		$this->data['products_list'] = $this->model_rfm->get_all_products_list($category_filter);
 		$this->data['categories_list'] = $this->model_rfm->get_all_categories_list();
+		$this->data['brands_list'] = $this->data['categories_list'];
+		
+		// Fetch specialist list from aauth_users and sales_order
+		$this->data['specialists_list'] = $this->db->select('username, full_name, email')->get('aauth_users')->result();
+		
 		$this->data['months_list'] = $this->model_rfm->get_distinct_months_list();
 		$this->data['monthly_tracking'] = $this->model_rfm->get_monthly_rfm_tracking_per_product($product_filter, $period_filter, $year_filter, $category_filter);
 		$this->data['all_historical_tracking'] = $this->model_rfm->get_monthly_rfm_tracking_per_product($product_filter, '', $year_filter, $category_filter);
@@ -88,6 +125,9 @@ class Rfm extends Admin
 		$this->data['period_filter'] = $period_filter;
 		$this->data['year_filter'] = $year_filter;
 		$this->data['category_filter'] = $category_filter;
+		$this->data['brand_filter'] = $brand_filter;
+		$this->data['specialist_filter'] = $specialist_filter;
+		$this->data['status_rfm_selected'] = $status_rfm;
 		$this->data['compare_a'] = $compare_a;
 		$this->data['compare_b'] = $compare_b;
 
@@ -127,17 +167,57 @@ class Rfm extends Admin
 			'total_sum_orders' => $total_sum_orders
 		];
 
-		$this->template->title('Analisis RFM — Tracking & Tren Bulanan');
+		// Complete Daily RFM tracking and BC followup summary (only if user filtered)
+		$this->data['daily_tracking'] = $is_filtered ? $this->model_rfm->get_daily_rfm_tracking($date_from, $date_to, $category_filter, $product_filter, $status_rfm, $brand_filter, $specialist_filter) : [];
+		$this->data['bc_summary'] = $is_filtered ? $this->model_rfm->get_daily_bc_summary($date_from, $date_to) : [];
+
+		$this->template->title('RFM Tracking Register All');
 		$this->render('backend/standart/administrator/rfm/rfm_tracking', $this->data);
+	}
+
+	public function tracking_drilldown_ajax()
+	{
+		header('Content-Type: application/json');
+		$date = $this->input->get('date');
+		$segment = $this->input->get('segment') ?: 'all';
+		$category = $this->input->get('kategori');
+		$product = $this->input->get('product');
+		$brand = $this->input->get('brand') ?: $category;
+		$specialist = $this->input->get('specialist');
+
+		if (empty($date)) {
+			echo json_encode(['success' => false, 'message' => 'Parameter tanggal wajib diisi']);
+			return;
+		}
+
+		$data = $this->model_rfm->get_rfm_tracking_drilldown($date, $segment, $category, $product, $brand, $specialist);
+		echo json_encode([
+			'success' => true,
+			'date' => $date,
+			'formatted_date' => date('l, d M Y', strtotime($date)),
+			'segment' => $segment,
+			'count' => count($data),
+			'customers' => $data,
+			'data' => $data
+		]);
 	}
 
 	public function cohort()
 	{
 		$mode = $this->input->get('mode') ?: 'monthly';
-		$year = $this->input->get('year') ?: date('Y');
+		$year = $this->input->get('year');
 		$month = $this->input->get('month') ?: date('m');
 		$product = $this->input->get('product') ?: '';
 		$category = $this->input->get('kategori') ?: '';
+
+		// Get available years from database
+		$available_years = $this->model_rfm->get_distinct_years_list();
+		$this->data['available_years'] = $available_years;
+
+		$avail_yr_values = !empty($available_years) ? array_map(function($y) { return (string)$y->yr; }, $available_years) : [];
+		if (empty($year) || (!empty($avail_yr_values) && !in_array((string)$year, $avail_yr_values))) {
+			$year = !empty($avail_yr_values) ? $avail_yr_values[0] : date('Y');
+		}
 
 		$this->data['cohort'] = $this->model_rfm->get_cohort_analysis($mode, $year, $month, $product, $category);
 		$this->data['cohort_mode'] = $mode;
@@ -145,9 +225,6 @@ class Rfm extends Admin
 		$this->data['cohort_month'] = $month;
 		$this->data['cohort_product'] = $product;
 		$this->data['cohort_category'] = $category;
-
-		// Get available years from database
-		$this->data['available_years'] = $this->model_rfm->get_distinct_years_list();
 
 		// Get category list and filtered product list for dropdown filter
 		$this->data['categories_list'] = $this->model_rfm->get_all_categories_list();
@@ -168,7 +245,7 @@ class Rfm extends Admin
 		$product = $this->input->get('product') ?: '';
 		$category = $this->input->get('kategori') ?: '';
 
-		if (empty($cohort) || empty($target)) {
+		if (empty($cohort) || $target === null || $target === '') {
 			echo json_encode(['success' => false, 'message' => 'Parameter periode tidak lengkap']);
 			return;
 		}
@@ -345,6 +422,26 @@ class Rfm extends Admin
 
 	// ===== Export =====
 
+	/**
+	 * Output a CSV line compatible with Microsoft Excel, LibreOffice Calc, and Google Sheets
+	 * Preserves ="..." text formulas for phone numbers, resi, and dates without escaping double quotes
+	 */
+	protected function write_excel_csv_line($fp, array $fields, $delimiter = ';')
+	{
+		$escaped = [];
+		foreach ($fields as $field) {
+			$field = (string)$field;
+			if (preg_match('/^=".*"$/', $field)) {
+				$escaped[] = $field;
+			} elseif (strpos($field, $delimiter) !== false || strpos($field, '"') !== false || strpos($field, "\n") !== false || strpos($field, "\r") !== false) {
+				$escaped[] = '"' . str_replace('"', '""', $field) . '"';
+			} else {
+				$escaped[] = $field;
+			}
+		}
+		fwrite($fp, implode($delimiter, $escaped) . "\r\n");
+	}
+
 	public function export_customers()
 	{
 		$filter = $this->input->get('q');
@@ -363,6 +460,8 @@ class Rfm extends Admin
 		$filename_parts[] = date('Ymd_His');
 		$filename = implode('_', $filename_parts) . '.csv';
 
+		if (ob_get_length()) { ob_end_clean(); }
+
 		header('Content-Type: text/csv; charset=utf-8');
 		header('Content-Disposition: attachment; filename="' . $filename . '"');
 		
@@ -373,7 +472,7 @@ class Rfm extends Admin
 		fwrite($output, "sep=;\r\n");
 
 		// Header columns (separated by semicolon)
-		fputcsv($output, [
+		$this->write_excel_csv_line($output, [
 			'No', 
 			'Nama Customer', 
 			'No Telepon', 
@@ -396,7 +495,7 @@ class Rfm extends Admin
 			$phone_formatted = !empty($raw_phone) ? '="' . $raw_phone . '"' : '-';
 			$product_label = !empty($product) ? $product : 'Semua Produk';
 			
-			fputcsv($output, [
+			$this->write_excel_csv_line($output, [
 				$no++,
 				$c->customer_nama,
 				$phone_formatted,
@@ -445,6 +544,8 @@ class Rfm extends Admin
 		}
 		$filename_parts[] = date('Ymd_His');
 		$filename = implode('_', $filename_parts) . '.csv';
+
+		if (ob_get_length()) { ob_end_clean(); }
 
 		header('Content-Type: text/csv; charset=utf-8');
 		header('Content-Disposition: attachment; filename="' . $filename . '"');
@@ -592,7 +693,7 @@ class Rfm extends Admin
 		$category = $this->input->get('kategori') ?: '';
 		$filter = $this->input->get('filter') ?: 'all'; // all, retained, churned
 
-		if (empty($cohort) || empty($target)) {
+		if (empty($cohort) || $target === null || $target === '') {
 			show_error('Parameter periode kohort tidak lengkap.');
 			return;
 		}
@@ -600,6 +701,8 @@ class Rfm extends Admin
 		$data = $this->model_rfm->get_cohort_drilldown_customers($cohort, $target, $mode, $product, $category);
 
 		$filename = 'Detail_Customer_Kohort_' . preg_replace('/[^a-zA-Z0-9_]/', '_', $cohort) . '_ke_' . preg_replace('/[^a-zA-Z0-9_]/', '_', $target) . '_' . date('Ymd_His') . '.csv';
+
+		if (ob_get_length()) { ob_end_clean(); }
 
 		header('Content-Type: text/csv; charset=utf-8');
 		header('Content-Disposition: attachment; filename="' . $filename . '"');
@@ -628,7 +731,7 @@ class Rfm extends Admin
 		fputcsv($output, [], ';');
 
 		// Header Table
-		fputcsv($output, [
+		$this->write_excel_csv_line($output, [
 			'No',
 			'Nama Customer',
 			'No Telepon',
@@ -663,7 +766,7 @@ class Rfm extends Admin
 			$wa_link = !empty($wa_num) ? 'https://api.whatsapp.com/send?phone=' . $wa_num : '-';
 			$crm_link = site_url('administrator/crm/customer_detail/' . ($raw_phone ?: ''));
 
-			fputcsv($output, [
+			$this->write_excel_csv_line($output, [
 				$no++,
 				$c['nama'] ?? 'Pelanggan',
 				$phone_formatted,
@@ -682,6 +785,69 @@ class Rfm extends Admin
 	}
 
 	// ===== Import Excel (Large Data & RFM Matrix) =====
+
+	private function _clean_number($val)
+	{
+		if (is_numeric($val)) return (float)$val;
+		$str = trim((string)$val);
+		if (empty($str)) return 0;
+		// Strip currency symbols and spaces
+		$str = preg_replace('/[^\d.,]/', '', $str);
+		// If ends with ,00 or .00, remove decimal zero part
+		$str = preg_replace('/[,.]00$/', '', $str);
+		// If has comma followed by 1 or 2 digits at the end e.g. 50000,50
+		if (preg_match('/,(\d{1,2})$/', $str, $dm)) {
+			$str = preg_replace('/,(\d{1,2})$/', '.$1', $str);
+			$str = str_replace([',', ' '], '', $str);
+			return (float)$str;
+		}
+		// Standard cleanup: remove dots and commas used as thousand separators
+		$str = str_replace(['.', ',', ' '], '', $str);
+		return (float)$str;
+	}
+
+	private function _parse_clean_date($raw)
+	{
+		$raw = trim((string)$raw);
+		if (empty($raw)) return date('Y-m-d H:i:s');
+
+		// Excel serial number (numeric, e.g. 40000 - 55000)
+		if (is_numeric($raw) && $raw > 30000 && $raw < 60000) {
+			$unix = ($raw - 25569) * 86400;
+			return date('Y-m-d H:i:s', (int)$unix);
+		}
+
+		// Replace Indonesian month names if present
+		$bulan_id = [
+			'januari' => 'January', 'februari' => 'February', 'maret' => 'March',
+			'april' => 'April', 'mei' => 'May', 'juni' => 'June',
+			'juli' => 'July', 'agustus' => 'August', 'september' => 'September',
+			'oktober' => 'October', 'november' => 'November', 'desember' => 'December',
+			'ags' => 'Aug', 'okt' => 'Oct', 'des' => 'Dec'
+		];
+		$raw_en = str_ireplace(array_keys($bulan_id), array_values($bulan_id), $raw);
+
+		// Format dd/mm/yyyy or dd-mm-yyyy with optional time
+		if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(.*)$/', $raw_en, $matches)) {
+			$day = str_pad($matches[1], 2, '0', STR_PAD_LEFT);
+			$month = str_pad($matches[2], 2, '0', STR_PAD_LEFT);
+			$year = $matches[3];
+			$time = trim($matches[4]);
+			if (empty($time)) $time = '00:00:00';
+			$normalized = "$year-$month-$day $time";
+			$t = strtotime($normalized);
+			if ($t !== false && $t > 0) {
+				return date('Y-m-d H:i:s', $t);
+			}
+		}
+
+		$t = strtotime($raw_en);
+		if ($t !== false && $t > 0) {
+			return date('Y-m-d H:i:s', $t);
+		}
+
+		return date('Y-m-d H:i:s');
+	}
 
 	public function import_excel()
 	{
@@ -725,7 +891,7 @@ class Rfm extends Admin
 
 		try {
 			if ($ext === 'csv') {
-				// Pure native PHP CSV parser - fast, lightweight, 0 MB overhead, works on all hosting environments without PHPZip/PHPExcel dependencies
+				// Pure native PHP CSV parser - fast, lightweight, 0 MB overhead
 				$handle = fopen($file_tmp, 'r');
 				if ($handle !== false) {
 					// Detect UTF-8 BOM
@@ -742,13 +908,15 @@ class Rfm extends Admin
 						fseek($handle, 3);
 					}
 
-					$delimiter = ';';
-					if (strpos($first_line, ';') !== false) {
+					$count_semi = substr_count($first_line, ';');
+					$count_comma = substr_count($first_line, ',');
+					$count_tab = substr_count($first_line, "\t");
+
+					$delimiter = ',';
+					if ($count_semi > $count_comma && $count_semi > $count_tab) {
 						$delimiter = ';';
-					} elseif (strpos($first_line, "\t") !== false) {
+					} elseif ($count_tab > $count_comma && $count_tab > $count_semi) {
 						$delimiter = "\t";
-					} else {
-						$delimiter = ',';
 					}
 
 					$r_idx = 1;
@@ -766,10 +934,12 @@ class Rfm extends Admin
 					fclose($handle);
 				}
 			} else {
+				$prev_err = error_reporting(E_ALL & ~E_NOTICE & ~E_WARNING & ~E_DEPRECATED);
 				require_once FCPATH . 'application/libraries/Excel/PHPExcel/IOFactory.php';
 				$objPHPExcel = PHPExcel_IOFactory::load($file_tmp);
 				$sheet = $objPHPExcel->getActiveSheet();
 				$rows = $sheet->toArray(null, true, true, true);
+				error_reporting($prev_err);
 			}
 		} catch (Exception $e) {
 			set_message('Gagal membaca file data: ' . $e->getMessage(), 'error');
@@ -791,11 +961,11 @@ class Rfm extends Admin
 			$has_r = false; $has_f = false; $has_m = false; $has_seg = false;
 			foreach ($header_row as $colLetter => $hText) {
 				if (empty($hText)) continue;
-				$hNorm = strtolower(trim(preg_replace('/[^a-zA-Z]/', '', $hText)));
-				if ($hNorm === 'recency') $has_r = true;
-				if ($hNorm === 'frequency') $has_f = true;
-				if ($hNorm === 'monetary') $has_m = true;
-				if ($hNorm === 'segment' || $hNorm === 'segments') $has_seg = true;
+				$hNorm = strtolower(trim(preg_replace('/[^a-zA-Z]/', '', (string)$hText)));
+				if ($hNorm === 'recency' || $hNorm === 'r') $has_r = true;
+				if ($hNorm === 'frequency' || $hNorm === 'f') $has_f = true;
+				if ($hNorm === 'monetary' || $hNorm === 'm') $has_m = true;
+				if ($hNorm === 'segment' || $hNorm === 'segments' || $hNorm === 'segmentasi') $has_seg = true;
 			}
 			$import_type = ($has_r && $has_f && $has_m && $has_seg) ? 'matrix' : 'transactions';
 		}
@@ -814,14 +984,14 @@ class Rfm extends Admin
 
 		foreach ($header_row as $colLetter => $hText) {
 			if (empty($hText)) continue;
-			$hNorm = strtolower(trim(preg_replace('/[^a-zA-Z]/', '', $hText)));
-			if ($hNorm === 'recency') $col_map['r'] = $colLetter;
-			if ($hNorm === 'frequency') $col_map['f'] = $colLetter;
-			if ($hNorm === 'monetary') $col_map['m'] = $colLetter;
-			if ($hNorm === 'rfm') $col_map['rfm'] = $colLetter;
-			if ($hNorm === 'segment' || $hNorm === 'segments') { if (!isset($col_map['segment'])) $col_map['segment'] = $colLetter; }
-			if ($hNorm === 'goals' || $hNorm === 'goal') { if (!isset($col_map['goal'])) $col_map['goal'] = $colLetter; }
-			if ($hNorm === 'actions' || $hNorm === 'action') { if (!isset($col_map['action'])) $col_map['action'] = $colLetter; }
+			$hNorm = strtolower(trim(preg_replace('/[^a-zA-Z]/', '', (string)$hText)));
+			if ($hNorm === 'recency' || $hNorm === 'r') $col_map['r'] = $colLetter;
+			if ($hNorm === 'frequency' || $hNorm === 'f') $col_map['f'] = $colLetter;
+			if ($hNorm === 'monetary' || $hNorm === 'm') $col_map['m'] = $colLetter;
+			if ($hNorm === 'rfm' || $hNorm === 'kode' || $hNorm === 'koderfm') $col_map['rfm'] = $colLetter;
+			if ($hNorm === 'segment' || $hNorm === 'segments' || $hNorm === 'segmentasi') { if (!isset($col_map['segment'])) $col_map['segment'] = $colLetter; }
+			if ($hNorm === 'goals' || $hNorm === 'goal' || $hNorm === 'tujuan') { if (!isset($col_map['goal'])) $col_map['goal'] = $colLetter; }
+			if ($hNorm === 'actions' || $hNorm === 'action' || $hNorm === 'aksi' || $hNorm === 'actionplan') { if (!isset($col_map['action'])) $col_map['action'] = $colLetter; }
 		}
 
 		// Defaults for standard sheet structure if columns not explicitly named
@@ -834,8 +1004,8 @@ class Rfm extends Admin
 		if (!isset($col_map['action'])) $col_map['action'] = 'H';
 
 		$matrix_rules = [];
-		for ($r = 2; $r <= count($rows); $r++) {
-			$row = $rows[$r];
+		foreach ($rows as $r => $row) {
+			if ($r === 1 || empty(array_filter($row))) continue;
 			$r_val = (int)($row[$col_map['r']] ?? 0);
 			$f_val = (int)($row[$col_map['f']] ?? 0);
 			$m_val = (int)($row[$col_map['m']] ?? 0);
@@ -864,7 +1034,7 @@ class Rfm extends Admin
 		$redirect_back = !empty($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : site_url('administrator/rfm/matrix_rules');
 
 		if (empty($matrix_rules)) {
-			set_message('Gagal meng-import aturan RFM. Kolom data tidak valid atau kosong.', 'error');
+			set_message('Gagal meng-import aturan RFM. Kolom data tidak valid atau tidak ditemukan aturan kombinasi.', 'error');
 			redirect($redirect_back);
 			return;
 		}
@@ -893,8 +1063,16 @@ class Rfm extends Admin
 				if (!isset($col_map['username'])) $col_map['username'] = $colLetter;
 			} elseif (in_array($hNorm, ['notelepon', 'telepon', 'nohp', 'hp', 'phone', 'notelp', 'handphone', 'wa', 'whatsapp', 'nomortelepon', 'nomorhp'])) {
 				if (!isset($col_map['phone'])) $col_map['phone'] = $colLetter;
-			} elseif (in_array($hNorm, ['namaproduk', 'skuinduk', 'kodeproduk', 'produk', 'itemname', 'namabarang', 'item', 'product', 'productname'])) {
+			} elseif (in_array($hNorm, ['namaproduk', 'namabarang', 'productname', 'itemname', 'produk', 'item', 'product'])) {
 				if (!isset($col_map['product'])) $col_map['product'] = $colLetter;
+			} elseif (in_array($hNorm, ['skuinduk', 'sku', 'kodeproduk', 'nomorreferensisku', 'kodebarang'])) {
+				if (!isset($col_map['sku'])) $col_map['sku'] = $colLetter;
+			} elseif (in_array($hNorm, ['namavariasi', 'variasi', 'variant'])) {
+				if (!isset($col_map['variasi'])) $col_map['variasi'] = $colLetter;
+			} elseif (in_array($hNorm, ['nomorresi', 'resi', 'trackingnumber', 'awb', 'noresi'])) {
+				if (!isset($col_map['resi'])) $col_map['resi'] = $colLetter;
+			} elseif (in_array($hNorm, ['opsipengiriman', 'kurir', 'ekspedisi', 'courier'])) {
+				if (!isset($col_map['kurir'])) $col_map['kurir'] = $colLetter;
 			} elseif (in_array($hNorm, ['jumlah', 'jumlahprodukdipesan', 'qty', 'quantity', 'kuantitas', 'totalqty'])) {
 				if (!isset($col_map['qty'])) $col_map['qty'] = $colLetter;
 			} elseif (in_array($hNorm, ['totalpembayaran', 'totalhargaproduk', 'hargasetelahdiskon', 'total', 'subtotal', 'monetary', 'grandtotal', 'nominal', 'totalbayar'])) {
@@ -909,19 +1087,25 @@ class Rfm extends Admin
 				if (!isset($col_map['alamat'])) $col_map['alamat'] = $colLetter;
 			} elseif (in_array($hNorm, ['kotakabupaten', 'kota', 'city'])) {
 				if (!isset($col_map['kota'])) $col_map['kota'] = $colLetter;
+			} elseif (in_array($hNorm, ['provinsi', 'province'])) {
+				if (!isset($col_map['provinsi'])) $col_map['provinsi'] = $colLetter;
 			}
 		}
 
 		$default_pelanggan = $this->db->get_where('pelanggan', ['kode_pelanggan' => 'CUS-MARKETPLACE'])->row() ?: $this->db->get('pelanggan')->row();
-		$default_gudang = $this->db->get_where('gudang', ['status' => 'aktif'])->row();
 		$pelanggan_id = $default_pelanggan ? $default_pelanggan->id : 1;
-		$gudang_id = $default_gudang ? $default_gudang->id : 1;
 		$user_created = get_user_data('username') ?: 'admin';
 
-		// Pre-fetch all existing order_ids in 1 single query for O(1) duplicate lookup
+		// Pre-fetch all existing order_ids in both sales_order and penjualan_marketplace for O(1) duplicate lookup
 		$existing_orders = [];
 		$res_existing = $this->db->select('no_pesanan')->get('sales_order')->result();
 		foreach ($res_existing as $e_row) {
+			if (!empty($e_row->no_pesanan)) {
+				$existing_orders[$e_row->no_pesanan] = true;
+			}
+		}
+		$res_pm = $this->db->select('no_pesanan')->get('penjualan_marketplace')->result();
+		foreach ($res_pm as $e_row) {
 			if (!empty($e_row->no_pesanan)) {
 				$existing_orders[$e_row->no_pesanan] = true;
 			}
@@ -961,19 +1145,85 @@ class Rfm extends Admin
 		$today_str = date('Ymd');
 		$now_dt = date('Y-m-d H:i:s');
 
+		// Track orders created in THIS current batch to support multi-line item orders
+		$batch_orders = []; // no_pesanan => so_id
+
 		// Enable DB transaction for high performance bulk insert
 		$this->db->trans_start();
 
-		for ($r = 2; $r <= count($rows); $r++) {
-			$row = $rows[$r];
-			if (empty(array_filter($row))) continue;
+		foreach ($rows as $r => $row) {
+			if ($r === 1 || empty(array_filter($row))) continue;
 
 			$no_pesanan = isset($col_map['order_id']) ? trim((string)($row[$col_map['order_id']] ?? '')) : '';
 			if (empty($no_pesanan)) {
 				$no_pesanan = 'IMP-' . $today_str . '-' . str_pad($r - 1, 6, '0', STR_PAD_LEFT);
 			}
 
-			// Instant memory duplicate check
+			$product_name = isset($col_map['product']) ? trim((string)($row[$col_map['product']] ?? '')) : 'Produk General';
+			$sku_code = isset($col_map['sku']) ? trim((string)($row[$col_map['sku']] ?? '')) : '';
+			$variasi_name = isset($col_map['variasi']) ? trim((string)($row[$col_map['variasi']] ?? '')) : '';
+			$resi_code = isset($col_map['resi']) ? trim((string)($row[$col_map['resi']] ?? '')) : '';
+			$kurir_name = isset($col_map['kurir']) ? trim((string)($row[$col_map['kurir']] ?? '')) : '';
+			$provinsi = isset($col_map['provinsi']) ? trim((string)($row[$col_map['provinsi']] ?? '')) : '';
+
+			$qty_raw = isset($col_map['qty']) ? $row[$col_map['qty']] : 1;
+			$qty = max(1, (float)$this->_clean_number($qty_raw));
+
+			$unit_price_raw = isset($col_map['unit_price']) ? $row[$col_map['unit_price']] : 0;
+			$unit_price = (float)$this->_clean_number($unit_price_raw);
+
+			$total_raw = isset($col_map['total']) ? $row[$col_map['total']] : 0;
+			$total = (float)$this->_clean_number($total_raw);
+
+			if ($total <= 0 && $unit_price > 0) {
+				$total = $unit_price * $qty;
+			}
+			if ($unit_price <= 0 && $qty > 0 && $total > 0) {
+				$unit_price = $total / $qty;
+			}
+
+			// If this order was ALREADY created in THIS batch (multi-line item in the same order):
+			if (isset($batch_orders[$no_pesanan])) {
+				$so_id = $batch_orders[$no_pesanan];
+
+				$prod_id = $default_prod_id;
+				$p_lower = strtolower(trim($product_name));
+				if (isset($prod_map[$p_lower])) {
+					$prod_id = $prod_map[$p_lower];
+				} else {
+					foreach ($prod_map as $pname => $pid) {
+						if (strpos($p_lower, $pname) !== false || strpos($pname, $p_lower) !== false) {
+							$prod_id = $pid;
+							break;
+						}
+					}
+				}
+
+				// Insert additional line item
+				$this->db->insert('sales_order_item', [
+					'so_id'         => $so_id,
+					'produk_id'     => $prod_id,
+					'sku'           => $sku_code,
+					'nama_variasi'  => $variasi_name,
+					'qty'           => $qty,
+					'satuan'        => 'pcs',
+					'harga_satuan'  => $unit_price,
+					'diskon_persen' => 0,
+					'diskon_nominal'=> 0,
+					'subtotal'      => $total,
+					'catatan'       => $product_name,
+				]);
+
+				// Update order total
+				$this->db->set('subtotal', 'subtotal + ' . (float)$total, false);
+				$this->db->set('total', 'total + ' . (float)$total, false);
+				$this->db->where('id', $so_id);
+				$this->db->update('sales_order');
+
+				continue;
+			}
+
+			// Duplicate check against existing database orders
 			if (isset($existing_orders[$no_pesanan])) {
 				$skipped_count++;
 				continue;
@@ -986,7 +1236,7 @@ class Rfm extends Admin
 				$customer_name = $username_buyer;
 			}
 			if (empty($customer_name)) {
-				$customer_name = 'Customer Excel';
+				$customer_name = 'Customer Import';
 			}
 
 			$phone_raw = isset($col_map['phone']) ? trim((string)($row[$col_map['phone']] ?? '')) : '';
@@ -995,25 +1245,26 @@ class Rfm extends Admin
 			$alamat = isset($col_map['alamat']) ? trim((string)($row[$col_map['alamat']] ?? '')) : '';
 			$kota = isset($col_map['kota']) ? trim((string)($row[$col_map['kota']] ?? '')) : '';
 
-			// Dynamic customer synchronization into 'pelanggan'
+			// Customer matching & synchronization into 'pelanggan'
 			$row_pelanggan_id = null;
+			$c_name_clean = strtolower(trim($customer_name));
+			$is_generic_name = in_array($c_name_clean, ['customer excel', 'customer import', '-', '', 'null', 'pembeli']);
+
 			if (!empty($phone) && isset($cust_by_phone[$phone])) {
 				$row_pelanggan_id = $cust_by_phone[$phone];
-			} elseif (!empty($customer_name) && isset($cust_by_name[strtolower(trim($customer_name))])) {
-				$row_pelanggan_id = $cust_by_name[strtolower(trim($customer_name))];
+			} elseif (!$is_generic_name && isset($cust_by_name[$c_name_clean])) {
+				$row_pelanggan_id = $cust_by_name[$c_name_clean];
 			} else {
 				$c_kode = 'CUST-' . str_pad($next_cust_num++, 4, '0', STR_PAD_LEFT);
-				while ($this->db->where('kode_pelanggan', $c_kode)->get('pelanggan')->num_rows() > 0) {
-					$c_kode = 'CUST-' . str_pad($next_cust_num++, 4, '0', STR_PAD_LEFT);
-				}
 				$phone_save = !empty($phone) ? $phone : ('0899' . str_pad($next_cust_num, 8, '0', STR_PAD_LEFT));
 				$new_cust = [
 					'kode_pelanggan' => $c_kode,
 					'nama_pelanggan' => $customer_name ?: 'Customer Import',
 					'telepon'        => $phone_save,
 					'no_telp'        => $phone_save,
-					'alamat'         => !empty($alamat) ? $alamat : 'Imported via CSV',
+					'alamat'         => !empty($alamat) ? $alamat : 'Imported via Excel/CSV',
 					'kota'           => !empty($kota) ? $kota : '',
+					'provinsi'       => !empty($provinsi) ? $provinsi : '',
 					'tipe_pelanggan' => 'Retail',
 					'tier_pelanggan' => 'RETAIL',
 					'status'         => 'aktif',
@@ -1023,33 +1274,16 @@ class Rfm extends Admin
 				$this->db->insert('pelanggan', $new_cust);
 				$row_pelanggan_id = $this->db->insert_id();
 				if (!empty($phone_save)) $cust_by_phone[$phone_save] = $row_pelanggan_id;
-				$cust_by_name[strtolower(trim($customer_name))] = $row_pelanggan_id;
+				if (!$is_generic_name) $cust_by_name[$c_name_clean] = $row_pelanggan_id;
 				if (empty($phone)) $phone = $phone_save;
 			}
 			if (empty($row_pelanggan_id)) {
 				$row_pelanggan_id = $pelanggan_id;
 			}
 
-			$product_name = isset($col_map['product']) ? trim((string)($row[$col_map['product']] ?? '')) : 'Produk General';
-			$qty_raw = isset($col_map['qty']) ? $row[$col_map['qty']] : 1;
-			$qty = max(1, (float)str_replace(['.', ','], '', (string)$qty_raw));
-
-			$unit_price_raw = isset($col_map['unit_price']) ? $row[$col_map['unit_price']] : 0;
-			$unit_price = (float)str_replace(['.', ',', 'Rp', ' '], '', (string)$unit_price_raw);
-
-			$total_raw = isset($col_map['total']) ? $row[$col_map['total']] : 0;
-			$total = (float)str_replace(['.', ',', 'Rp', ' '], '', (string)$total_raw);
-
-			if ($total <= 0 && $unit_price > 0) {
-				$total = $unit_price * $qty;
-			}
-			if ($unit_price <= 0 && $qty > 0 && $total > 0) {
-				$unit_price = $total / $qty;
-			}
-
 			$date_raw = isset($col_map['date']) ? trim((string)($row[$col_map['date']] ?? '')) : '';
-			$date_time = !empty($date_raw) ? date('Y-m-d H:i:s', strtotime($date_raw)) : $now_dt;
-			$tanggal_so = !empty($date_raw) ? date('Y-m-d', strtotime($date_raw)) : date('Y-m-d');
+			$date_time = $this->_parse_clean_date($date_raw);
+			$tanggal_so = substr($date_time, 0, 10);
 
 			$raw_status = isset($col_map['status']) ? strtolower(trim((string)($row[$col_map['status']] ?? ''))) : 'selesai';
 			$status = 'delivered';
@@ -1059,24 +1293,33 @@ class Rfm extends Admin
 				$status = 'shipped';
 			}
 
-			$nomor_so_code = 'SO-IMP-' . $today_str . '-' . sprintf('%05d', $r) . '-' . rand(10, 99);
+			$nomor_so_code = 'TRX-IMP-' . $today_str . '-' . sprintf('%05d', $r) . '-' . rand(10, 99);
 
 			$so_data = [
 				'nomor_so'                => $nomor_so_code,
 				'no_pesanan'              => $no_pesanan,
 				'source'                  => 'excel_import',
 				'pelanggan_id'            => $row_pelanggan_id,
-				'gudang_id'               => $gudang_id,
 				'tanggal_so'              => $tanggal_so,
 				'status'                  => $status,
 				'status_pesanan'          => $raw_status ?: 'Selesai',
 				'waktu_pembayaran'        => $date_time,
+				'waktu_pesanan_dibuat'    => $date_time,
 				'username_pembeli'        => $customer_name,
 				'nama_penerima'           => $customer_name,
 				'no_telepon'              => $phone ?: '08123456789',
 				'alamat_pengiriman'       => $alamat,
 				'kota_kabupaten'          => $kota,
+				'provinsi'                => $provinsi,
+				'nomor_resi'              => $resi_code,
+				'kurir_ekspedisi'         => $kurir_name,
+				'sku_induk'               => $sku_code,
 				'nama_produk_marketplace' => $product_name,
+				'nama_variasi'            => $variasi_name,
+				'harga_awal'              => $unit_price,
+				'harga_setelah_diskon'    => $unit_price,
+				'total_harga_produk'      => $total,
+				'total_pembayaran'        => $total,
 				'subtotal'                => $total,
 				'total'                   => $total,
 				'catatan'                 => 'Import Excel RFM - Buyer: ' . $customer_name,
@@ -1088,6 +1331,8 @@ class Rfm extends Admin
 			$so_id = $this->db->insert_id();
 
 			if ($so_id) {
+				$batch_orders[$no_pesanan] = $so_id;
+
 				$prod_id = $default_prod_id;
 				$p_lower = strtolower(trim($product_name));
 				if (isset($prod_map[$p_lower])) {
@@ -1104,6 +1349,8 @@ class Rfm extends Admin
 				$this->db->insert('sales_order_item', [
 					'so_id'         => $so_id,
 					'produk_id'     => $prod_id,
+					'sku'           => $sku_code,
+					'nama_variasi'  => $variasi_name,
 					'qty'           => $qty,
 					'satuan'        => 'pcs',
 					'harga_satuan'  => $unit_price,
@@ -1126,7 +1373,7 @@ class Rfm extends Admin
 							'customer_phone'        => $phone ?: '',
 							'customer_pelanggan_id' => $row_pelanggan_id,
 							'no_pesanan'            => $no_pesanan,
-							'nomor_resi'            => '',
+							'nomor_resi'            => $resi_code,
 							'tanggal_pengiriman'    => $ship_date,
 							'followup_category_id'  => $cat->id,
 							'tanggal_label_muncul'  => $target_lbl,
@@ -1151,7 +1398,7 @@ class Rfm extends Admin
 		$this->db->trans_complete();
 
 		if ($success_count > 0) {
-			set_message("Berhasil meng-import {$success_count} data pesanan dari file Excel! ({$skipped_count} pesanan duplikat dilewati). Analisis RFM & Kohort telah diperbarui.", 'success');
+			set_message("Berhasil meng-import {$success_count} data pesanan dari file Excel/CSV! ({$skipped_count} pesanan duplikat dilewati). Analisis RFM & Kohort telah diperbarui.", 'success');
 		} else {
 			set_message("Tidak ada data pesanan baru yang berhasil diimport ({$skipped_count} pesanan duplikat dilewati).", 'warning');
 		}
@@ -1163,6 +1410,8 @@ class Rfm extends Admin
 	public function download_template_matrix()
 	{
 		$headers = ['No.', 'Recency', 'Frequency', 'Monetary', 'RFM', 'Segment', 'Goals', 'Actions'];
+		if (ob_get_length()) { ob_end_clean(); }
+
 		header('Content-Type: text/csv; charset=utf-8');
 		header('Content-Disposition: attachment; filename=template_matriks_rfm_125_aturan.csv');
 		$output = fopen('php://output', 'w');
@@ -1190,27 +1439,13 @@ class Rfm extends Admin
 	public function download_template_transactions()
 	{
 		$headers = ['No. Pesanan', 'Status Pesanan', 'Waktu Pembayaran Dilakukan', 'Nama Produk', 'Jumlah', 'Total Pembayaran', 'Username (Pembeli)', 'Nama Penerima', 'No. Telepon', 'Alamat Pengiriman', 'Kota/Kabupaten', 'Provinsi'];
+		if (ob_get_length()) { ob_end_clean(); }
+
 		header('Content-Type: text/csv; charset=utf-8');
 		header('Content-Disposition: attachment; filename=template_import_transaksi_sales_rfm.csv');
 		$output = fopen('php://output', 'w');
 		fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
 		fputcsv($output, $headers, ';');
-		
-		// Sample row
-		fputcsv($output, [
-			'TRX-20260918-001',
-			'Selesai',
-			date('Y-m-d H:i:s'),
-			'Laptop Pro 15-inch Intel i7 16GB SSD 512GB',
-			'1',
-			'15500000',
-			'budi_santoso',
-			'Budi Santoso',
-			'081234567890',
-			'Jl. Merdeka No. 12',
-			'Surabaya',
-			'Jawa Timur'
-		], ';');
 
 		fclose($output);
 		exit;
